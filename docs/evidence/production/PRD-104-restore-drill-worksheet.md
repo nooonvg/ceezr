@@ -27,6 +27,5 @@
 
 ## ما بقي (2026-10-10)
 
-- [ ] طابعا بداية ونهاية معتمدان: من `Get-History` في الجلسة نفسها أو سجل المتصفح إن وُجدا، وإلا من التمرين الشهري التالي بـ`date -u` قبل الخطوة 1 وبعد §5.
-- [ ] في التمرين التالي: §4.1 (إعادة ACL) و§4.2 (`0 | 0`) بعد اعتماد [ceezr-backups#3](https://github.com/uxxxug/ceezr-backups/pull/3). السبب: `PRD-104-restore-privileges-20261010.md`.
-- [ ] (اختياري، قراءة فقط) استعلام §4.2 على `ceezr_restore_drill` المحلية.
+- [x] طابعا بداية ونهاية معتمدان: `Get-History` Id 18 `StartExecutionTime` 17:34:32Z (التنزيل)، وId 92 18:25:25Z (`MATCH`)، والملخص 18:56:57Z. المدة 1→5 ≤ 1:22:25 (`PRD-104-backup-restore-20261009.md` §«تحديث: طوابع Get-History»).
+- [ ] **الشرط الوحيد الباقي:** على `ceezr_restore_drill` المحلية: §4.2 قبل §4.1 (رقم > 0)، ثم §4.1 بطابعي `Get-History`، ثم §4.2 = `0 | 0`. لا استعادة بيانات جديدة ولا إنتاج. السبب: `PRD-104-restore-privileges-20261010.md` و[ceezr-backups#3](https://github.com/uxxxug/ceezr-backups/pull/3) (مدموج).
