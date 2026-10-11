@@ -67,7 +67,5 @@ describe("WR-14 — الربط في الجذر والرئيسة", () => {
     expect(home).toContain('t("rider.home.activeRide.continue")');
   });
 
-  it("لا تعتمد على ذاكرة الجهاز", () => {
-    expect(home).not.toMatch(/localStorage|sessionStorage/);
-  });
+  // وغياب التخزين المحلي يفرضه `check-session-storage-policy.ts` على التطبيق كله.
 });

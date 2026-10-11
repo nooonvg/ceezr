@@ -109,7 +109,7 @@ describe("DriverRoot — عقدُ الوصلِ ساكناً (لا موجّهَ �
     expect(code).toContain('if (entryView.kind !== "offers") return;');
     expect(code).toContain("readDriverActiveJob()");
     expect(code).toContain("response.job !== null) go.activeJobFound()");
-    expect(code).not.toMatch(/localStorage|sessionStorage/);
+    // وغيابُ التخزينِ المحلّيِّ يفرضُه `check-session-storage-policy.ts` على التطبيقِ كلِّه.
   });
 
   it("الهيكلُ من UI-2 وحدَه، ولا حرفَ عربيٍّ في الشِّفرة", () => {
