@@ -310,3 +310,34 @@ describe("العناوينُ والوسوم — من القاموسِ في ال�
     }
   });
 });
+
+describe("WR-20 — المهمة النشطة تُفتح عند الدخول (§20)", () => {
+  it("الدخول الافتراضي مع مهمة نشطة من الخادم يفتح «مهمّتي»", () => {
+    const h = harness();
+    expect(h.view).toEqual({ screen: "root", tab: "offers" });
+    h.go.activeJobFound();
+    expect(h.view).toEqual({ screen: "root", tab: "job" });
+  });
+
+  it("لا يقطع شاشة فتحها السائق قبل وصول الرد", () => {
+    const h = harness();
+    h.go.openOffer(OFFER);
+    h.go.activeJobFound();
+    expect(h.view.screen).toBe("flow");
+    expect(h.state.tab).toBe("offers");
+  });
+
+  it("لا يقطع تبويبًا اختاره السائق قبل وصول الرد", () => {
+    const h = harness();
+    h.go.selectTab("account");
+    h.go.activeJobFound();
+    expect(h.view).toEqual({ screen: "root", tab: "account" });
+  });
+
+  it("تكرار الإشارة لا يغيّر شيئًا وهو في «مهمّتي»", () => {
+    const h = harness({ kind: "job" });
+    const before = h.state;
+    h.go.activeJobFound();
+    expect(h.state).toBe(before);
+  });
+});

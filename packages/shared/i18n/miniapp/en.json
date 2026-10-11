@@ -909,6 +909,8 @@
   "rider.home.error.account": "This user has no account yet. Reopen the app from the bot.",
   "rider.home.error.malformed": "That input was not accepted. Check the label and the point, then retry.",
   "rider.home.error.unavailable": "The service is unavailable right now. Nothing you saved was lost.",
+  "rider.home.activeRide.title": "You have an ongoing ride",
+  "rider.home.activeRide.continue": "Continue ride",
   "rider.home.history.open": "My ride history",
   "rider.home.lostFound.open": "Lost & found",
   "rider.home.map.unavailable": "The map is unavailable right now — you can still type your destination.",
