@@ -3,7 +3,7 @@
 - **الحالةُ**: مقبولٌ
 - **التاريخُ**: 2026-09-21
 - **يُكمِلُ**: [`0169`](0169-silence-about-payment-before-an-irreversible-tap-is-a-false-impression.md) · [`0170`](0170-a-guard-on-one-of-two-doors-is-half-enforcement.md)
-- **يستندُ إلى**: [`0167`](0167-a-guard-that-exits-green-where-it-cannot-read.md) — حاجزٌ يَخضَرُّ حيثُ لا يقرأُ
+- **يستندُ إلى**: [`0167`](0167-a-gate-that-passes-where-it-cannot-read-is-not-enforcement.md) — حاجزٌ يَخضَرُّ حيثُ لا يقرأُ
 - **لا يُنقُضُ**: [`0039`](0039-fare-mechanism-is-blocked-pending-regulatory-decision.md) — آليّةُ الأجرةِ تبقى محجوبةً
 
 ## ١) السياقُ — دعمٌ مبنيٌّ بسَعَتِه، ومخرجٌ واحدٌ لصاحبِ الشكوى

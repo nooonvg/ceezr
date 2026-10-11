@@ -2,7 +2,7 @@
 
 | الحقل | القيمة |
 | --- | --- |
-| البند | `R-17` — صحّةُ الناقلِ مشروطةٌ بـ`numInstances: 1` (`docs/production-readiness/PHASE-6-REALTIME.md` السطر 198) |
+| البند | `R-17` — صحّةُ الناقلِ مشروطةٌ بـ`numInstances: 1` (`docs/archive/reports-2026-08-09/production-readiness/PHASE-6-REALTIME.md` السطر 198) |
 | التاريخ | 2026-08-31 |
 | المنفّذ | وكيل Perplexity Computer — بأمرِ مديرِ المشروع |
 | الوثيقةُ الحاكمة | [ADR 0050](../../adr/0050-single-instance-is-a-correctness-invariant-not-a-comment.md) — و`ADR 0011` (اقترانُ `SESSION_STORE` بعددِ النسخِ) · `ADR 0016` · `ADR 0042` (لم يُمَسّ) |

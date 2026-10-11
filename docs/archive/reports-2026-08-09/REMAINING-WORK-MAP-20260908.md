@@ -51,11 +51,11 @@
 
 | القرارُ | الحالةُ | السندُ |
 | --- | --- | --- |
-| `DEC-09` | APPROVED | [ADR 0037](adr/0037-load-mix-structural-equality-and-unmeasured-baseline.md) |
-| `DEC-10` | APPROVED | [ADR 0033](adr/0033-launch-gate-splits-capacity-from-commercial-demand.md) |
-| `DEC-11` | **BLOCKED — Legal/Regulatory** | [ADR 0039](adr/0039-fare-mechanism-is-blocked-pending-regulatory-decision.md) |
-| `DEC-12` | APPROVED | [ADR 0038](adr/0038-adr-numbers-are-unique-and-enforced.md) |
-| `DEC-13` | APPROVED | [ADR 0034](adr/0034-capacity-target-versus-expected-commercial-load.md) |
+| `DEC-09` | APPROVED | [ADR 0037](../../adr/0037-load-mix-structural-equality-and-unmeasured-baseline.md) |
+| `DEC-10` | APPROVED | [ADR 0033](../../adr/0033-launch-gate-splits-capacity-from-commercial-demand.md) |
+| `DEC-11` | **BLOCKED — Legal/Regulatory** | [ADR 0039](../../adr/0039-fare-mechanism-is-blocked-pending-regulatory-decision.md) |
+| `DEC-12` | APPROVED | [ADR 0038](../../adr/0038-adr-numbers-are-unique-and-enforced.md) |
+| `DEC-13` | APPROVED | [ADR 0034](../../adr/0034-capacity-target-versus-expected-commercial-load.md) |
 
 **ومصدرُ إغلاقِ `DEC-11` حصراً مستشارٌ نظاميٌّ سعوديٌّ مؤهَّلٌ أو تأكيدٌ رسميٌّ من
 الجهةِ التنظيميّةِ.** فلا وكيلٌ يُغلِقُه ولا شيفرةٌ ولا اختبارٌ. **وأثرُه ليس

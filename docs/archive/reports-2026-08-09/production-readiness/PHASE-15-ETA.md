@@ -51,7 +51,7 @@
 | `tests/unit/eta-estimate-arrival.test.ts` | ١٩ اختباراً للوصلة والجسر |
 | `tests/unit/eta-osrm-snap.test.ts` | ٨ اختباراتٍ لقراءة الإلصاق مقابل خادمٍ مُزيَّفٍ يُصغي على منفذٍ حقيقيّ |
 | `docs/adr/0024-eta-is-routing-duration-or-nothing.md` | القرار |
-| `docs/production-readiness/PHASE-15-ETA.md` | هذا الملف |
+| `docs/archive/reports-2026-08-09/production-readiness/PHASE-15-ETA.md` | هذا الملف |
 
 ## ٤. الملفّات المُعدَّلة
 

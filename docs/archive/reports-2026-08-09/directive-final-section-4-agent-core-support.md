@@ -1,7 +1,7 @@
 # تقرير القسم 4 (التوجيه الختامي) — agent-core في الدعم فقط
 
-> **تنبيه ترقيم:** `docs/section-4-report.md` يعود إلى توجيه سابق (مراجعة تجربة
-> البوت) ولم يُمسّ. جدول المطابقة في `docs/directive-final-report.md`.
+> **تنبيه ترقيم:** `docs/archive/reports-2026-08-09/section-4-report.md` يعود إلى توجيه سابق (مراجعة تجربة
+> البوت) ولم يُمسّ. جدول المطابقة في `docs/archive/reports-2026-08-09/directive-final-report.md`.
 
 **التاريخ:** 2026-08-10
 **الملفات:** `tests/unit/agent-core-scope-confinement.test.ts` (**6/6**) ·

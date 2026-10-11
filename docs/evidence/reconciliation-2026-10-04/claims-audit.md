@@ -29,7 +29,7 @@
 | 11 | رؤوسُ أمانِ التطبيقِ المصغَّر = `render.yaml` | `live-audit.md` §2 | صحيحٌ مع فرق | الخمسةُ موجودة؛ `Strict-Transport-Security` الحيُّ `max-age=315360000` (عشرُ سنوات) مقابلَ `31536000` في المانيفست — Render يفرضُ قيمتَه على `onrender.com` |
 | 12 | «والمانيفستُ يُعلِنُ `starter`» | تعليقُ `gateway-keep-alive.yml` | **قديم** | `render.yaml` يقولُ `plan: free`. صُحِّحَ التعليقُ في هذا الالتزام |
 | 13 | ثلاثُ خدماتٍ (`gateway`/`worker`/`admin`) | `docs/render-deployment-vars.md` §1 | **قديم** | الحيُّ والمانيفستُ: `waslah-gateway` + `waslah-miniapp` (+ `waslah-miniapp-staging` موقوفٌ بيدِ المستخدم). وُسِمَ الملفُّ في هذا الالتزام |
-| 14 | «الكودُ منشورٌ (autoDeploy مفعّل)»، القاعدةُ `gczgllrulsqubkyehzep`، النسخُ إلى Google Drive | `docs/production-verification.md` | **قديم** | autoDeploy `no`؛ القاعدةُ `jafuchojgxzeuvibkkfx`؛ النسخُ من `uxxxug/ceezr-backups`. وُسِمَ الملفُّ في هذا الالتزام |
+| 14 | «الكودُ منشورٌ (autoDeploy مفعّل)»، القاعدةُ `gczgllrulsqubkyehzep`، النسخُ إلى Google Drive | `docs/archive/reports-2026-08-09/production-verification.md` | **قديم** | autoDeploy `no`؛ القاعدةُ `jafuchojgxzeuvibkkfx`؛ النسخُ من `uxxxug/ceezr-backups`. وُسِمَ الملفُّ في هذا الالتزام |
 
 ## 3. العاملُ المضمَّن
 
@@ -78,7 +78,7 @@
 - أكثرُها في السجلّاتِ التراكميّة: `ROADMAP.md` (82)، `docs/SYSTEM_STATE.md` (49)، `docs/ROADMAP-MASTER.md` (29). السببُ الغالب:
   نقلُ `bench/` و`probe/` إلى `deferred/field-experiments/` (`O-7` الحكم 4) وحذفُ ملفّاتٍ ذُكِرَت في مدخلاتٍ قديمة — فهي سجلٌّ لما كانَ لا ادّعاءٌ حاليّ.
 - **لا يُصحَّحُ السجلُّ التاريخيُّ بأثرٍ رجعيّ** (`ح-8`). الوثائقُ التشغيليّةُ الحاليّةُ صُحِّحَت أو وُسِمَت: `README`، `docs/runbook.md`،
-  `docs/render-deployment-vars.md`، `docs/production-verification.md`، و`gateway-keep-alive.yml`.
+  `docs/render-deployment-vars.md`، `docs/archive/reports-2026-08-09/production-verification.md`، و`gateway-keep-alive.yml`.
 
 ## 8. ما يحتاجُ قرارَ المالك (لم يُنفَّذ)
 

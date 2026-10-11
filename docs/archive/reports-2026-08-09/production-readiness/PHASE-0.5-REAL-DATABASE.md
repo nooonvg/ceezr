@@ -117,7 +117,7 @@ offers: 0                            ← ولا عرض واحد
 
 ## 5. الملفات
 
-- **متغيّرة:** `packages/application/bots/driver-dialog.ts` · `docs/production-readiness/PHASE-0-BASELINE.md` (تصحيح `DATABASE_URL` → `TEST_DATABASE_URL`)
+- **متغيّرة:** `packages/application/bots/driver-dialog.ts` · `docs/archive/reports-2026-08-09/production-readiness/PHASE-0-BASELINE.md` (تصحيح `DATABASE_URL` → `TEST_DATABASE_URL`)
 - **مضافة:** هذا الملف
 - **لم تُلمس ولماذا:** `sweep-unmatched-orders.ts` (سلوكها صحيح لغرضها — التصعيد لا البثّ) · `broadcast-offers.ts` و`match-order.ts` (تعديلهما يخصّ المرحلة 14) · `.github/workflows/ci.yml` (إصلاح CI يخصّ المرحلة 22/25 ويحتاج قرار خدمة قاعدة)
 

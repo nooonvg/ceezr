@@ -1,6 +1,6 @@
 # دليلُ `R-16` — حذفُ `TrackingService`: مسارُ تقييمٍ واحدٌ لا مساران
 
-**البند:** `R-16` — `docs/production-readiness/PHASE-6-REALTIME.md` §١٠ (السطر 197)
+**البند:** `R-16` — `docs/archive/reports-2026-08-09/production-readiness/PHASE-6-REALTIME.md` §١٠ (السطر 197)
 **التاريخ:** 2026-09-02
 **السند:** [`ADR 0052`](../../adr/0052-tracking-service-is-deleted-not-merged.md) · وينبني على [`ADR 0015`](../../adr/) و[`ADR 0042`](../../adr/)
 **الـcommit المُقاسُ عليه قبلَ الحذفِ:** `3bb8781e008a17305439d7d13114e5d9fcc902cc`
