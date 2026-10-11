@@ -1,0 +1,23 @@
+{
+  "id": "wr-15-notice-failures-logged",
+  "goal": "§15 موثوقية الإشعارات، خطوة أولى: لا يُبتلع فشل إشعار الراكب أو السائق صامتًا، وتفرّق السجلات بين «أنشأنا الإشعار» و«قبله Telegram API» و«فشل نهائيًا».",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "apps/gateway/src/bots/shared/counterpart-notifier.ts",
+    "apps/gateway/src/container.ts",
+    "packages/application/driver/rider-trip-notice.ts",
+    "tests/unit/counterpart-notifier.test.ts",
+    "tests/unit/rider-trip-notice.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "الفشل لا يُرفع إلى المستدعي (الطور محفوظ في القاعدة) لكنه يُسجَّل. إعادة المحاولة قائمة تحت المُرسِل (withOutboundResilience)، فلا إعادة ثانية هنا. الحقول: البوت ونوع الخطأ والطور ومعرّف الطلب فقط.",
+  "tests": [
+    "bun test tests/unit/counterpart-notifier.test.ts tests/unit/rider-trip-notice.test.ts"
+  ],
+  "evidence": "محليًا: 11/11، وlint وtypecheck ✓.",
+  "constraints": ["لا معرّف تيليجرام ولا نص رسالة في السجل", "لا ادعاء بأن المستخدم قرأ الرسالة"],
+  "limitations": "لا outbox بعد لإشعارات الأطوار: إعادة الإرسال بعد إعادة تشغيل الخدمة أو انقطاع طويل غير مضمونة حتى الهجرة.",
+  "status": "open"
+}

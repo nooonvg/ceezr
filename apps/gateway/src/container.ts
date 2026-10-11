@@ -357,7 +357,7 @@ export interface Container {
   };
   /**
    * `RIDE-NOTICE-01` — إخطارُ الراكبِ بطَورِ رحلتِه حينَ يضغطُ السائقُ في التطبيقِ
-   * المصغَّرِ: **نفسُ الجسرِ** `counterpartNotifier(riderSender)` الذي يُخطِرُ به حوارُ
+   * المصغَّرِ: **نفسُ الجسرِ** `counterpartNotifier(riderSender, log, "rider")` الذي يُخطِرُ به حوارُ
    * البوتِ عندَ القبولِ، لا مُرسِلٌ ثانٍ.
    */
   readonly riderTripNotice: RiderTripNoticeDeps;
@@ -1019,7 +1019,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
       tripCards: driverTripCards,
       ...(routing === null ? {} : { routing }),
       // الجسر إلى بوت العميل: من أنهى الرحلة سائقٌ، ومن يُبلَّغ بها عميلٌ على بوت آخر
-      counterpart: counterpartNotifier(riderSender),
+      counterpart: counterpartNotifier(riderSender, log, "rider"),
       // إنهاء الرحلة يُغلق الجلسة ويُوقف بثّ الموقع عن العميل — المرحلة ٦.
       tracking: liveTracking,
     },
@@ -1030,7 +1030,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
      * يُرسل بلا رابط ولا يُوعَد بما لا يُمكن.
      */
     acceptNotice: {
-      counterpart: counterpartNotifier(riderSender),
+      counterpart: counterpartNotifier(riderSender, log, "rider"),
       ...(config.botSurfaceMode === "miniapp" ? { miniAppUrl: config.miniAppUrl } : {}),
       ...(config.trackingTokenBaseUrl === null
         ? {}
@@ -1085,7 +1085,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
       sessions: riderSessions,
       lifecycle: lifecyclePort,
       ratings: ratingPort,
-      counterpart: counterpartNotifier(driverSender),
+      counterpart: counterpartNotifier(driverSender, log, "driver"),
     },
     language: languageDeps(riderSessions),
     /**
@@ -1156,8 +1156,9 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     driverOffers: { drivers, decisions: offerDecisions },
     riderTripNotice: {
       facts: createRiderTripFactsReader(sql),
-      counterpart: counterpartNotifier(riderSender),
+      counterpart: counterpartNotifier(riderSender, log, "rider"),
       miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
+      log,
     },
     driverLocation: {
       drivers,
