@@ -8,7 +8,7 @@
 ## 0. الفحص الإلزامي قبل أي تعديل — ما فهمته
 
 قرأت `MASTER_DIRECTIVE.md` كاملاً، و`roadmap.md`، و`repo-manifest.md`، وكل تقارير
-`docs/phase-2.*-step-*-report.md` (12 تقريراً) و`docs/section-1-report.md` زمنياً، وكل
+`docs/phase-2.*-step-*-report.md` (12 تقريراً) و`docs/archive/reports-2026-08-09/section-1-report.md` زمنياً، وكل
 ملفّات `docs/adr/` الثمانية، و`docs/runbook.md` و`docs/api.md`، ثم قرأت الطبقات الثلاث
 قراءة مباشرة لا استنتاجاً.
 

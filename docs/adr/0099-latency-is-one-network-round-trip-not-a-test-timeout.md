@@ -3,7 +3,7 @@
 - **الحالة:** مقبولٌ · مُنفَّذٌ (تحقيقٌ أمرَ بهِ المالكُ قبلَ `F2-01`)
 - **التاريخُ:** 2026-09-13
 - **يستندُ إلى:** [`ADR 0098`](0098-external-database-readiness-and-the-limit-of-measuring-from-here.md)
-  · [`ADR 0096`](0096-real-redis-in-ci-owned-by-the-job.md) (الخادمُ في الشغلةِ نفسِها)
+  · [`ADR 0096`](0096-self-hosted-real-redis-in-ci.md) (الخادمُ في الشغلةِ نفسِها)
 
 ## السياقُ — وتصحيحُ فرضيّةِ السؤالِ
 

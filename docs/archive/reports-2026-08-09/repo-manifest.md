@@ -60,11 +60,11 @@
 | 711 | `docs/adr/0003-city-id-on-every-table.md` |
 | 2432 | `docs/adr/0004-ports-live-in-application.md` |
 | 1167 | `docs/api.md` |
-| 14068 | `docs/phase-2.1-requirements.md` |
-| 5903 | `docs/phase-2.1-step-01-report.md` |
-| 8238 | `docs/phase-2.1-step-02-report.md` |
-| 6905 | `docs/phase-2.1-step-03-report.md` |
-| 3735 | `docs/roadmap.md` |
+| 14068 | `docs/archive/reports-2026-08-09/phase-2.1-requirements.md` |
+| 5903 | `docs/archive/reports-2026-08-09/phase-2.1-step-01-report.md` |
+| 8238 | `docs/archive/reports-2026-08-09/phase-2.1-step-02-report.md` |
+| 6905 | `docs/archive/reports-2026-08-09/phase-2.1-step-03-report.md` |
+| 3735 | `docs/archive/reports-2026-08-09/roadmap.md` |
 | 1365 | `docs/runbook.md` |
 | 15859 | `supabase/migrations/20260806120000_phase_2_1_core_schema.sql` |
 | 9883 | `supabase/migrations/20260806120100_phase_2_1_atomic_rpcs.sql` |

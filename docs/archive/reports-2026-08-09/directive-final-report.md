@@ -9,7 +9,7 @@
 
 ## جدول مطابقة الترقيم (مهمّ)
 
-المستودع يحوي `docs/section-0-report.md` … `section-5-report.md` من تنفيذ توجيه
+المستودع يحوي `docs/archive/reports-2026-08-09/section-0-report.md` … `section-5-report.md` من تنفيذ توجيه
 **سابق** بترقيم مختلف. **لم يُمسّ أيٌّ منها.** تقارير هذا التوجيه بأسماء مستقلّة:
 
 | قسم هذا التوجيه | ملفّه | التقرير السابق بنفس الرقم (لم يُمسّ) |
@@ -19,7 +19,7 @@
 | 3 — الهوية والدخول | `directive-final-section-3-identity-login.md` | `section-3-report.md` (تحقّق المدخلات) |
 | 4 — agent-core في الدعم | `directive-final-section-4-agent-core-support.md` | `section-4-report.md` (تجربة البوت) |
 | 4.2 — قروبات المدن | §5 أدناه | `section-5-report.md` (معرّفات القروبات) |
-| 4.4 — الاختبار العدائي | `docs/adversarial-test-report.md` | — |
+| 4.4 — الاختبار العدائي | `docs/archive/reports-2026-08-09/adversarial-test-report.md` | — |
 | 6 — التحسينات المحدودة | `directive-final-section-6-bounded-improvements.md` | — |
 
 ---
@@ -86,7 +86,7 @@
 
 ### و) الاختبار العدائي (§4.4)
 `adversarial.test.ts` — **22/22**، تغطي **14 بنداً من 14**. التفصيل الكامل في
-`docs/adversarial-test-report.md`.
+`docs/archive/reports-2026-08-09/adversarial-test-report.md`.
 
 ---
 

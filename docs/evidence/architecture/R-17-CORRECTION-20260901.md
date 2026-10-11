@@ -2,7 +2,7 @@
 
 | الحقل | القيمة |
 | --- | --- |
-| البند | `R-17` — صحّةُ الناقلِ مشروطةٌ بـ`numInstances: 1` (`docs/production-readiness/PHASE-6-REALTIME.md` السطر 198) |
+| البند | `R-17` — صحّةُ الناقلِ مشروطةٌ بـ`numInstances: 1` (`docs/archive/reports-2026-08-09/production-readiness/PHASE-6-REALTIME.md` السطر 198) |
 | التاريخ | 2026-09-01 |
 | المنفّذ | وكيل Perplexity Computer — بأمرِ مديرِ المشروع |
 | الوثيقةُ الحاكمة | [ADR 0051](../../adr/0051-process-topology-is-declared-not-inferred-from-session-store.md) — ناسخٌ **لشطرٍ واحدٍ** من [ADR 0050](../../adr/0050-single-instance-is-a-correctness-invariant-not-a-comment.md)، وسائرُه قائمٌ. و`ADR 0011` و`ADR 0042` **لم يُمَسّا** |
