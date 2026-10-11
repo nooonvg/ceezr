@@ -121,3 +121,48 @@ describe("RIDE-NOTICE-01 — إخطارُ الراكبِ بطَورِ رحلتِ
     await expect(noticeRiderOfTrip(undefined, ORDER, "ARRIVED")).resolves.toBeUndefined();
   });
 });
+
+describe("WR-15 — ما لا يصل الراكب يُسجَّل ولا يُبتلع صامتًا", () => {
+  test("إخفاق الإرسال يُسجَّل بالطور ومعرّف الطلب، بلا معرّف تيليجرام", async () => {
+    const events: { event: string; meta: Record<string, unknown> }[] = [];
+    const { deps } = notice({ throws: true });
+    await noticeRiderOfTrip(
+      { ...deps, log: (event, meta) => events.push({ event, meta }) },
+      ORDER,
+      "ARRIVED",
+    );
+    expect(events).toEqual([
+      { event: "rider_trip_notice.created", meta: { event: "ARRIVED", order_id: ORDER } },
+      {
+        event: "rider_trip_notice.failed",
+        meta: { event: "ARRIVED", order_id: ORDER, error: "Error" },
+      },
+    ]);
+    expect(JSON.stringify(events)).not.toContain(FACTS.riderTelegramId);
+  });
+
+  test("غياب الحقائق يُسجَّل", async () => {
+    const events: { event: string; meta: Record<string, unknown> }[] = [];
+    const { deps } = notice();
+    await noticeRiderOfTrip(
+      {
+        ...deps,
+        facts: { read: async () => null },
+        log: (event, meta) => events.push({ event, meta }),
+      },
+      ORDER,
+      "STARTED",
+    );
+    expect(events).toEqual([
+      { event: "rider_trip_notice.facts_missing", meta: { event: "STARTED", order_id: ORDER } },
+    ]);
+  });
+
+  test("النجاح يسجّل «أنشأنا الإشعار» وحده (قبول Telegram يسجّله الجسر)", async () => {
+    const events: unknown[] = [];
+    const { deps, sent } = notice();
+    await noticeRiderOfTrip({ ...deps, log: (event) => events.push(event) }, ORDER, "MATCHED");
+    expect(sent).toHaveLength(1);
+    expect(events).toEqual(["rider_trip_notice.created"]);
+  });
+});

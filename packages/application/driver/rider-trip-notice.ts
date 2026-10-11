@@ -44,6 +44,12 @@ export interface RiderTripNoticeDeps {
   readonly counterpart: CounterpartNotifier;
   /** أصلُ التطبيقِ — `null` يُرسِلُ النصَّ بلا زرٍّ. */
   readonly miniAppUrl: string | null;
+  /**
+   * `WR-15` (§15): ما لا يصلُ الراكبَ يُسجَّلُ حدثاً لا يُبتلَعُ صامتاً — حقائقُ غائبةٌ
+   * (`rider_trip_notice.facts_missing`) أو قراءةٌ/إرسالٌ أخفقَ (`rider_trip_notice.failed`).
+   * بالطَّورِ ومعرّفِ الطلبِ وحدَهما، لا معرّفَ تيليجرام ولا نصّ.
+   */
+  readonly log?: (event: string, meta: Record<string, unknown>) => void;
 }
 
 const VEHICLE_KEYS: Readonly<Record<string, string>> = {
@@ -111,13 +117,23 @@ export async function noticeRiderOfTrip(
   if (deps === undefined) return;
   try {
     const facts = await deps.facts.read(orderId);
-    if (facts === null) return;
+    if (facts === null) {
+      deps.log?.("rider_trip_notice.facts_missing", { event, order_id: orderId });
+      return;
+    }
     const text = riderTripText(event, orderId, facts);
     // بعدَ الإنهاءِ لا رحلةَ تُتابَعُ — فالزرُّ يفتحُ ملخّصَها لا شاشةَ تتبُّعٍ انتهى محلُّها.
     const screen = event === "COMPLETED" ? "summary" : "ride";
     const keyboard = rideButton(deps.miniAppUrl, orderId, facts.language, screen);
+    // §15: «أنشأنا الإشعار» — وقبولُ Telegram يُسجِّلُه الجسرُ (`counterpart.notify_sent`).
+    deps.log?.("rider_trip_notice.created", { event, order_id: orderId });
     await deps.counterpart.notify(facts.riderTelegramId, text, keyboard);
-  } catch {
-    // متعمَّدٌ: الطَّورُ محفوظٌ في القاعدةِ، والراكبُ يراه في التطبيقِ.
+  } catch (thrown) {
+    // لا يُرفَعُ: الطَّورُ محفوظٌ في القاعدةِ، والراكبُ يراه في التطبيقِ. لكنَّه يُسجَّل (`WR-15`).
+    deps.log?.("rider_trip_notice.failed", {
+      event,
+      order_id: orderId,
+      error: thrown instanceof Error ? thrown.name : "unknown",
+    });
   }
 }
