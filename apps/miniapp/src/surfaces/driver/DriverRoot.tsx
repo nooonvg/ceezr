@@ -83,7 +83,7 @@
 
 // `D-33` · `ADR 0188`: نصوصُ جزءِ `driver` تُسجَّلُ معَ حزمتِه لا في `shell`.
 import "../../../../../packages/shared/i18n/miniapp/ar-parts/driver.ts";
-import { type ReactNode, useMemo, useReducer, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useReducer, useState } from "react";
 import { miniAppTranslator } from "../../../../../packages/shared/i18n/miniapp/core.ts";
 import type { LanguageSurfaceProps } from "../../routing/RoleRouter.tsx";
 import { capturePhotoWithInput } from "../../services/capture-photo.ts";
@@ -112,6 +112,7 @@ import {
 } from "./driver-flow.ts";
 import { driverEntryView } from "./entry-view.ts";
 import { JobScreen } from "./job/JobScreen.tsx";
+import { readDriverActiveJob } from "./job/job-api.ts";
 import { LocationBroadcast } from "./location/LocationBroadcast.tsx";
 import { OfferDetailScreen } from "./offers/OfferDetailScreen.tsx";
 import { OffersScreen } from "./offers/OffersScreen.tsx";
@@ -138,6 +139,25 @@ export default function DriverRoot({ language, onLanguageChanged, entry }: Langu
   const t = miniAppTranslator(language);
   const view = driverFlowView(flow);
   const screenKey = currentScreenKey(flow);
+
+  // `WR-20` (§20): الدخولُ الافتراضيُّ (بلا هدفٍ في الرابط) يسألُ الخادمَ عن مَهمّةٍ نشطة،
+  // فإن وُجدَت فُتحَت «مهمّتي» بدلَ العروض. المصدرُ هوَ الخادمُ لا ذاكرةُ الجهاز، والقرارُ
+  // في `driverFlowReducer` لا يقطعُ شاشةً فتحَها السائقُ قبلَ الردّ. وإخفاقُ القراءةِ يُبقي
+  // العروضَ كما كانت، وتبويبُ «مهمّتي» يقرأُ المَهمّةَ بنفسِه عندَ فتحِه.
+  useEffect(() => {
+    if (entryView.kind !== "offers") return;
+    let cancelled = false;
+    readDriverActiveJob()
+      .then((response) => {
+        if (!cancelled && response.job !== null) go.activeJobFound();
+      })
+      .catch(() => {
+        /* العروضُ باقيةٌ، و«مهمّتي» تقرأُ بنفسِها */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [entryView, go]);
 
   const tabLabels = {
     offers: t("driver.tabs.offers"),

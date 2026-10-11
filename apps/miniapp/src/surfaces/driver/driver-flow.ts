@@ -55,6 +55,11 @@ export type DriverFlowAction =
   | { readonly type: "offerRejected" }
   /** D4→D6: رحلةٌ اكتملَت من «مهمّتي» — إلى ملخّصِها. */
   | { readonly type: "jobCompleted"; readonly orderId: string }
+  /**
+   * `WR-20` (§20): قراءةُ الخادمِ عندَ الدخولِ وجدَت مَهمّةً نشطةً — إلى «مهمّتي».
+   * لا يقطعُ سياقًا: يُطبَّقُ على جذرِ العروضِ وحدَه، فسائقٌ فتحَ شاشةً أو تبويبًا قبلَ وصولِ الردِّ يبقى حيثُ هو.
+   */
+  | { readonly type: "activeJobFound" }
   | { readonly type: "open"; readonly screen: DriverOpenable }
   /** D13: كشفُ الخصومِ من شاشةِ دعمِ السائقِ وحدَها. */
   | { readonly type: "openDeductionTrace" }
@@ -107,6 +112,9 @@ export function driverFlowReducer(
     case "offerRejected":
       if (top?.kind !== "offer") return state;
       return screenStackReducer(state, { type: "pop" });
+    case "activeJobFound":
+      if (state.tab !== "offers" || top !== null) return state;
+      return screenStackReducer(state, { type: "selectTab", tab: "job" });
     case "jobCompleted":
       if (state.tab !== "job" || top !== null) return state;
       return push(state, { kind: "summary", orderId: action.orderId });
@@ -149,6 +157,7 @@ export interface DriverFlowHandlers {
   readonly offerAccepted: () => void;
   readonly offerRejected: () => void;
   readonly jobCompleted: (orderId: string) => void;
+  readonly activeJobFound: () => void;
   readonly openDocuments: (focusDocType?: string) => void;
   readonly openVehicle: () => void;
   readonly openSubscription: () => void;
@@ -166,6 +175,7 @@ export function driverFlowHandlers(
     offerAccepted: () => dispatch({ type: "offerAccepted" }),
     offerRejected: () => dispatch({ type: "offerRejected" }),
     jobCompleted: (orderId) => dispatch({ type: "jobCompleted", orderId }),
+    activeJobFound: () => dispatch({ type: "activeJobFound" }),
     openDocuments: (focusDocType) =>
       dispatch({ type: "open", screen: { kind: "documents", focusDocType: focusDocType ?? null } }),
     openVehicle: () => dispatch({ type: "open", screen: { kind: "vehicle" } }),

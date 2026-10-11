@@ -909,6 +909,8 @@
   "rider.home.error.account": "اس صارف کا کوئی اکاؤنٹ نہیں ہے۔ ایپ بوٹ سے دوبارہ کھولیں۔",
   "rider.home.error.malformed": "یہ اندراج قبول نہیں ہوا۔ نام اور مقام دیکھ کر دوبارہ کوشش کریں۔",
   "rider.home.error.unavailable": "سروس اس وقت دستیاب نہیں۔ آپ کا محفوظ کردہ کچھ ضائع نہیں ہوا۔",
+  "rider.home.activeRide.title": "آپ کا ایک سفر جاری ہے",
+  "rider.home.activeRide.continue": "سفر جاری رکھیں",
   "rider.home.history.open": "میرے سفروں کا ریکارڈ",
   "rider.home.lostFound.open": "گمشدہ اشیاء",
   "rider.home.map.unavailable": "نقشہ اس وقت دستیاب نہیں — آپ پھر بھی اپنی منزل لکھ سکتے ہیں۔",

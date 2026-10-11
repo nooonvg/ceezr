@@ -67,6 +67,7 @@ const readFreshDeviceFixDeferred = (): Promise<DeviceFixResult> =>
   import("../destination/device-fix.ts").then((m) => m.readFreshDeviceFix());
 
 import { SosEntry } from "../sos/SosEntry.tsx";
+import { fetchActiveRideId } from "./active-ride.ts";
 import {
   HOME_SERVICES,
   type HomeService,
@@ -122,6 +123,13 @@ export interface HomeScreenProps {
   readonly onOpenAccount?: () => void;
   /** مدخلُ الاستغاثةِ (`PD-020` · `ADR 0159`) — اختياريٌّ كأخوتَيهِ. */
   readonly onOpenSos?: () => void;
+  /**
+   * `WR-14` (§14): متابعةُ الرحلةِ القائمةِ بمعرّفِها من الخادم. وغيابُه لا يرسمُ البطاقة،
+   * وإخفاقُ القراءةِ يُخفيها ولا يُسقطُ الرئيسة.
+   */
+  readonly onContinueRide?: (orderId: string) => void;
+  /** يُحقَنُ للاختبار؛ الافتراضيُّ أحدثُ صفٍّ في السجلِّ (`active-ride.ts`). */
+  readonly loadActiveRide?: () => Promise<string | null>;
   readonly initialLanguage?: MiniAppLanguage;
   readonly showTitle?: boolean;
   /** اسمُ المزوّدِ المُهيَّأِ فعلاً؛ `"none"` تعني: قُلِ الحدَّ ولا ترسمْ. */
@@ -178,6 +186,8 @@ export function HomeScreen({
   onOpenNotifications,
   onOpenAccount,
   onOpenSos,
+  onContinueRide,
+  loadActiveRide = fetchActiveRideId,
   initialLanguage = MINIAPP_DEFAULT_LANGUAGE,
   showTitle = true,
   mapProvider = "none",
@@ -227,6 +237,30 @@ export function HomeScreen({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // `WR-14`: الرحلةُ القائمةُ من الخادمِ بعدَ الرسم، فلا تُبدأُ التجربةُ من الصفرِ فوقَها.
+  const [activeRideId, setActiveRideId] = useState<string | null>(null);
+  useEffect(() => {
+    if (onContinueRide === undefined) return;
+    loadActiveRide()
+      .then((orderId) => {
+        if (mounted.current) setActiveRideId(orderId);
+      })
+      .catch(() => {});
+  }, [onContinueRide, loadActiveRide]);
+  const activeRideCard =
+    activeRideId === null || onContinueRide === undefined ? null : (
+      <div className="rh__active-ride" role="status">
+        <p className="rh__active-ride-title">{t("rider.home.activeRide.title")}</p>
+        <button
+          type="button"
+          className="rh__active-ride-continue"
+          onClick={() => onContinueRide(activeRideId)}
+        >
+          {t("rider.home.activeRide.continue")}
+        </button>
+      </div>
+    );
 
   // R1: المدينةُ من الخادمِ بعدَ الرسمِ لا قبلَه (لا تُؤخِّرُ السطحَ الأوّل)، وفشلُ قراءتِها لا
   // يُسقطُ الرئيسة: الحبّةُ تغيبُ ويبقى زرُّ التحديث.
@@ -398,6 +432,7 @@ export function HomeScreen({
           ) : null}
         </div>
         {cityBar}
+        {activeRideCard}
       </section>
     );
   }
@@ -413,6 +448,7 @@ export function HomeScreen({
   return (
     <section className="rh" dir={directionFor(language)} {...sectionName}>
       {cityBar}
+      {activeRideCard}
       <div className="rh__hero">
         {title}
         {services}

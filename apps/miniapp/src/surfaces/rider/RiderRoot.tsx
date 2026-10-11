@@ -798,6 +798,7 @@ export default function RiderRoot({ language, onLanguageChanged, entry }: Langua
             onOpenNotifications={() => setNotificationsOpen(true)}
             onOpenAccount={onOpenAccount}
             onOpenSos={onOpenSos}
+            onContinueRide={(orderId) => setFollowed(orderId)}
           />
         );
     }

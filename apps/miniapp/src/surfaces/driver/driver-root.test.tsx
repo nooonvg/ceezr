@@ -105,6 +105,13 @@ describe("DriverRoot — عقدُ الوصلِ ساكناً (لا موجّهَ �
     }
   });
 
+  it("WR-20: الدخولُ الافتراضيُّ يسألُ الخادمَ عن المَهمّةِ ويُسلِّمُ القرارَ للمخفِّض", () => {
+    expect(code).toContain('if (entryView.kind !== "offers") return;');
+    expect(code).toContain("readDriverActiveJob()");
+    expect(code).toContain("response.job !== null) go.activeJobFound()");
+    expect(code).not.toMatch(/localStorage|sessionStorage/);
+  });
+
   it("الهيكلُ من UI-2 وحدَه، ولا حرفَ عربيٍّ في الشِّفرة", () => {
     expect(code).toContain('mode="root"');
     expect(code).toContain('mode="flow"');

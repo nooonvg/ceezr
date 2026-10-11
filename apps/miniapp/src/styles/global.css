@@ -8724,3 +8724,32 @@ body {
 .sm__star--lit {
   color: var(--tg-text-color);
 }
+
+
+/* `WR-14` (§14): بطاقةُ «لديك رحلة قائمة — متابعة الرحلة» في الرئيسة. تُضافُ بالذيل (`ح-1`). */
+.rh__active-ride {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--w-line);
+  border-radius: var(--r-md);
+  background: var(--w-brand-soft);
+}
+
+.rh__active-ride-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.rh__active-ride-continue {
+  padding: 0.45rem 0.9rem;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--tg-button-color);
+  color: var(--tg-button-text-color);
+  font: inherit;
+  cursor: pointer;
+}
