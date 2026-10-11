@@ -101,9 +101,8 @@ import {
   readSignedReadConfig,
 } from "../../../packages/infrastructure/storage/signed-read.ts";
 import {
-  HttpUploadSigner,
   readSignedUploadConfig,
-  UnconfiguredUploadSigner,
+  selectUploadSigner,
 } from "../../../packages/infrastructure/storage/signed-upload.ts";
 import { PostgresDriverSupportStore } from "../../../packages/infrastructure/support/driver-support-store.ts";
 import { PostgresRiderSupportStore } from "../../../packages/infrastructure/support/rider-support-store.ts";
@@ -1159,9 +1158,15 @@ const driverDocuments =
     : (() => {
         const storage = readSignedUploadConfig(process.env);
         const readStorage = readSignedReadConfig(process.env);
-        if (storage === null) {
+        const upload = selectUploadSigner(process.env, storage);
+        if (upload.state === "not_configured") {
           log("driver_documents.signer_not_configured", {
             hint: "OBJECT_STORAGE_URL + OBJECT_STORAGE_SECRET_KEY",
+          });
+        } else if (upload.state === "paused") {
+          // لا نسخةَ مُثبَتةً لبايتاتِ المخزنِ بعد — `BACKUP-STORAGE-20261011.md`.
+          log("driver_documents.uploads_paused", {
+            hint: "DRIVER_DOCUMENT_UPLOADS=enabled after a verified Storage restore drill",
           });
         }
         return {
@@ -1172,8 +1177,7 @@ const driverDocuments =
             ),
             now: () => new Date(),
             store: new PostgresDriverDocumentStore(container.sql),
-            signer:
-              storage === null ? new UnconfiguredUploadSigner() : new HttpUploadSigner(storage),
+            signer: upload.signer,
             ...(storage === null
               ? {}
               : { existenceChecker: new HttpObjectExistenceChecker(storage) }),

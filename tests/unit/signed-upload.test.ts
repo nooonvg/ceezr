@@ -15,8 +15,10 @@
 
 import { describe, expect, it } from "bun:test";
 import {
+  driverDocumentUploadsEnabled,
   HttpUploadSigner,
   readSignedUploadConfig,
+  selectUploadSigner,
   UnconfiguredUploadSigner,
 } from "../../packages/infrastructure/storage/signed-upload.ts";
 import type { FetchLike } from "../../packages/shared/wasla/egress-gate.ts";
@@ -92,6 +94,41 @@ describe("مُوقِّعٌ بلا تهيئةٍ", () => {
     const result = await new UnconfiguredUploadSigner().signUpload();
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error).toBe("SIGNER_NOT_CONFIGURED");
+  });
+});
+
+describe("إيقافُ الرفعِ حتّى تثبتَ النسخة", () => {
+  const config = { baseUrl: BASE, secretKey: "k", bucket: "driver-documents" };
+
+  it("غيابُ المِفتاحِ إيقافٌ — والتهيئةُ الكاملةُ وحدَها لا تفتحُ الرفع", async () => {
+    const chosen = selectUploadSigner({}, config);
+    expect(chosen.state).toBe("paused");
+    const result = await chosen.signer.signUpload({
+      objectPath: "d/1/license.jpg",
+      contentType: "image/jpeg",
+      ttlSeconds: 60,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("SIGNER_NOT_CONFIGURED");
+  });
+
+  it("يفشلُ مغلقاً: كلُّ قيمةٍ غيرِ enabled حرفاً إيقاف", () => {
+    for (const value of ["", "true", "1", "yes", "ENABLED", "enable", "enabled,", "disabled"]) {
+      expect(driverDocumentUploadsEnabled({ DRIVER_DOCUMENT_UPLOADS: value })).toBe(false);
+      expect(selectUploadSigner({ DRIVER_DOCUMENT_UPLOADS: value }, config).state).toBe("paused");
+    }
+  });
+
+  it("enabled مع تهيئةٍ كاملةٍ ⇐ المُوقِّعُ الحقيقيّ", () => {
+    const chosen = selectUploadSigner({ DRIVER_DOCUMENT_UPLOADS: " enabled " }, config);
+    expect(chosen.state).toBe("active");
+    expect(chosen.signer).toBeInstanceOf(HttpUploadSigner);
+  });
+
+  it("enabled بلا تهيئةٍ ⇐ غيرُ مُهيَّأ، لا مُوقِّعٌ بلا مفتاح", () => {
+    expect(selectUploadSigner({ DRIVER_DOCUMENT_UPLOADS: "enabled" }, null).state).toBe(
+      "not_configured",
+    );
   });
 });
 
