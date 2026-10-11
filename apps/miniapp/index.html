@@ -119,10 +119,16 @@
           var c = res.consents ? Promise.resolve(res.consents) : fetch(base + "/v1/consents", { headers: h }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
           return { viewer: v, consents: c };
         });
+        // المشتقّانِ يُستهلَكانِ برمزِ الجلسةِ وحدَه (`identity/preboot.ts`)، فلا يُقرآنِ بعدَ فشلِها. والمُعالِجُ الفارغُ
+        // يمنعُ رفضًا غيرَ مُعالَجٍ مرّتين عندَ رفضِ `initData` — ولا يُغيِّرُ الوعدَينِ لمن يقرأ.
+        var pv = d.then(function (x) { return x.viewer; });
+        var pc = d.then(function (x) { return x.consents; });
+        pv.catch(function () {});
+        pc.catch(function () {});
         window.__waslahPreboot = {
           session: s,
-          viewer: d.then(function (x) { return x.viewer; }),
-          consents: d.then(function (x) { return x.consents; }),
+          viewer: pv,
+          consents: pc,
           accessToken: "",
         };
         s.then(function (res) {

@@ -1,0 +1,20 @@
+{
+  "id": "fix-preboot-unhandled-rejection",
+  "goal": "ألّا يُخلِّفَ فشلُ التبادلِ المُقدَّمِ في سكربتِ `index.html` الساكنِ رفضًا غيرَ مُعالَج.",
+  "canonical_source": [
+    "docs/adr/0259-boot-prefers-preboot-exchange.md",
+    "docs/evidence/production/PRD-002-deploy-20261011-a16f2873.md"
+  ],
+  "implementation": ["apps/miniapp/index.html", "apps/miniapp/src/preboot-html-rejection.test.ts"],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/evidence/production/PRD-002-deploy-20261011-a16f2873.md", "AGENTS.md"],
+  "decision": "مُعالِجٌ فارغٌ على وعدَي `viewer` و`consents` المشتقَّين؛ الوعدانِ نفساهما يُخزَّنانِ فيبقى رفضُهما رفضًا لمن يقرأ. لا تغييرَ في `identity/preboot.ts` ولا `boot.ts` ولا الخادم.",
+  "tests": [
+    "apps/miniapp/src/preboot-html-rejection.test.ts: قبلَ الإصلاحِ 2 fail (`preboot:400` غيرُ مُعالَج)، وبعدَه 4 pass"
+  ],
+  "evidence": "docs/evidence/production/PRD-002-deploy-20261011-a16f2873.md",
+  "constraints": ["لا تغييرَ في الخادمِ ولا العقود", "بصمةُ CSP للسكربتِ تُحقَنُ عندَ البناء"],
+  "limitations": ["لم يُتحقَّقْ من عميلِ تيليجرامَ حقيقيّ — المتصفّحُ الآليُّ وحدَه"],
+  "status": "PR للمراجعة"
+}
