@@ -96,6 +96,7 @@ import type { ScreenState } from "../../../system/state-text.ts";
 import { TRUTH_AGE_UNKNOWN_KEY, TRUTH_SOURCE_KEYS, truthAge } from "../../../system/truth.ts";
 import { Glyph } from "../../../system/ui/icons.tsx";
 import { vehicleTypeText } from "../../../system/vehicle-type.ts";
+import { OrderChat } from "../../chat/OrderChat.tsx";
 import { cancelRide as cancelViaApi } from "../search/ride-api.ts";
 import type { CancelRideResponse } from "../search/ride-contract.ts";
 import { cancelRefusalKey, newIdempotencyKey } from "../search/search-view.ts";
@@ -485,6 +486,33 @@ export function ActiveRideScreen({
                 .replace("{count}", String(driver.ratingCount))}
             </p>
           </div>
+        )}
+
+        {/* WR-04: غرفةُ المحادثةِ مع السائقِ المُسنَد — لا غرفةَ قبلَ الإسناد. */}
+        {driver === null ? null : (
+          <OrderChat
+            orderId={orderId}
+            statusText={t(rideStatusKey(view.status))}
+            labels={{
+              title: t("rider.active.chat.title"),
+              open: t("rider.active.chat.open"),
+              hide: t("rider.active.chat.hide"),
+              unread: t("rider.active.chat.unread"),
+              placeholder: t("rider.active.chat.placeholder"),
+              send: t("rider.active.chat.send"),
+              sending: t("rider.active.chat.sending"),
+              failed: t("rider.active.chat.failed"),
+              retry: t("rider.active.chat.retry"),
+              closed: t("rider.active.chat.closed"),
+              empty: t("rider.active.chat.empty"),
+              loadFailed: t("rider.active.chat.loadFailed"),
+              unavailable: t("rider.active.chat.unavailable"),
+              seen: t("rider.active.chat.seen"),
+              counterpart: t("rider.active.chat.counterpart"),
+              status: t("rider.active.chat.status"),
+              refresh: t("rider.active.chat.refresh"),
+            }}
+          />
         )}
 
         <div className="ar__facts">

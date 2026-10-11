@@ -80,6 +80,7 @@ import {
   type NotificationsDependencies,
 } from "./routes/notifications.ts";
 import { createOnboardingRoutes, type OnboardingRouteDependencies } from "./routes/onboarding.ts";
+import { createOrderChatRoutes, type OrderChatRouteDependencies } from "./routes/order-chat.ts";
 import {
   createPaymentWebhookRoutes,
   type PaymentWebhookDependencies,
@@ -202,6 +203,8 @@ export interface ServerDependencies {
    * منفصلٌ عن العروضِ** لأنَّ حقَّ المَهمّةِ حقُّ إسنادٍ لا حقُّ عرضٍ.
    */
   readonly driverJob?: DriverJobRouteDependencies;
+  /** `WR-04` — محادثةُ طرفَي الطلب؛ غيابُها لا يُركِّبُ المسارات. */
+  readonly orderChat?: OrderChatRouteDependencies;
   /**
    * حصيلةُ السائقِ وأدائُه (`F3-05` / `SD-06` · `SD-09`) — تُركَّبُ مع سرِّ
    * الجلسةِ والقاعدةِ. و**غيابُها يُعلَنُ `503`** ولا يُجابُ بأصفارٍ: حصيلةٌ
@@ -362,6 +365,9 @@ export function createServer(deps: ServerDependencies): Hono {
   }
   if (deps.driverJob !== undefined) {
     app.route("/", createDriverJobRoutes(deps.driverJob));
+  }
+  if (deps.orderChat !== undefined) {
+    app.route("/", createOrderChatRoutes(deps.orderChat));
   }
   if (deps.driverActivity !== undefined) {
     app.route("/", createDriverActivityRoutes(deps.driverActivity));

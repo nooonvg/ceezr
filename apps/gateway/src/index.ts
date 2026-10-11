@@ -67,6 +67,7 @@ import {
 } from "../../../packages/infrastructure/identity/telegram-init-data.ts";
 import { createViewerAccountReader } from "../../../packages/infrastructure/identity/viewer-account.ts";
 import { createViewerAccountLanguageWriter } from "../../../packages/infrastructure/identity/viewer-language.ts";
+import { createOrderChatStore } from "../../../packages/infrastructure/messaging/order-chat-store.ts";
 import { grammyTelegramSender } from "../../../packages/infrastructure/notification/telegram-api-sender.ts";
 import { createUserNotificationCenter } from "../../../packages/infrastructure/notification/user-notification-center.ts";
 import {
@@ -176,6 +177,7 @@ import {
   createOffersSessionVerifier,
   createSessionVerifier,
 } from "./realtime/adapters.ts";
+import { type ChatChannel, createChatChannel } from "./realtime/chat-channel.ts";
 import { createHttpBridge } from "./realtime/http-bridge.ts";
 import { isLiveLocationBroadcastPermitted } from "./realtime/live-tracking-policy.ts";
 import { createOffersChannel } from "./realtime/offers-channel.ts";
@@ -387,6 +389,8 @@ type GatewayServer = import("node:http").Server;
 let serverHandle: GatewayServer | null = null;
 let rideChannel: ReturnType<typeof createRideChannel> | null = null;
 let offersChannel: ReturnType<typeof createOffersChannel> | null = null;
+/** `WR-04` — قناةُ غرفِ المحادثة؛ تُركَّبُ بعدَ `ioServer`، والمساراتُ تبثُّ عبرَها متى وُجِدَت. */
+let chatChannel: ChatChannel | null = null;
 let ioServer: IoServer | null = null;
 
 /**
@@ -429,6 +433,10 @@ const lifecycle = createLifecycle({
       if (offersChannel !== null) {
         offersChannel.stop();
         offersChannel = null;
+      }
+      if (chatChannel !== null) {
+        chatChannel.stop();
+        chatChannel = null;
       }
       if (ioServer !== null) {
         ioServer.close();
@@ -1127,6 +1135,28 @@ const support =
       };
 
 /**
+ * `WR-04` — محادثةُ طرفَي الطلب. مسارُ HTTP هوَ الحقيقةُ (الحفظُ والاسترجاعُ)،
+ * والقناةُ الآنيّةُ إشارةٌ تُسرِّعُ الوصولَ فقط. غيابُ سرِّ الجلسةِ يُلغي المسارات.
+ */
+const orderChatStore = createOrderChatStore(container.sql);
+const orderChat =
+  config.miniappSessionSecret === null
+    ? undefined
+    : {
+        chat: {
+          sessions: createRevocableSessionReader(
+            createMiniAppSessionReader(config.miniappSessionSecret),
+            sessionRevocationStore,
+          ),
+          store: orderChatStore,
+          now: () => new Date(),
+          onPosted: (signal: { readonly orderId: string; readonly lastSeq: number }) =>
+            chatChannel?.publish(signal),
+          log,
+        },
+      };
+
+/**
  * تفضيلاتُ الإشعاراتِ (DEC-42) — مسارُ `GET/PUT /v1/me/notification-preferences`.
  * موصولٌ دائمًا في حاويةِ البوّابةِ: القارئُ والكاتبُ على القاعدة، والجلسةُ من
  * التطبيقِ المصغَّرِ. غيابُ `miniappSessionSecret` يُلغي المسارَ كله.
@@ -1525,6 +1555,7 @@ const app = createServer({
   ...(driverDocuments === undefined ? {} : { driverDocuments }),
   ...(driverOffers === undefined ? {} : { driverOffers }),
   ...(driverJob === undefined ? {} : { driverJob }),
+  ...(orderChat === undefined ? {} : { orderChat }),
   ...(driverActivity === undefined ? {} : { driverActivity }),
   ...(driverSubscription === undefined ? {} : { driverSubscription }),
   ...(driverSubscriptionInvoice === undefined ? {} : { driverSubscriptionInvoice }),
@@ -1906,4 +1937,22 @@ if (config.miniappSessionSecret !== null && isLiveLocationBroadcastPermitted(con
     ),
   });
   offersChannel.start();
+}
+
+/**
+ * `WR-04` — قناةُ المحادثةِ **خارجَ** حكمِ منعِ بثِّ الموقعِ: لا تحملُ موقعاً،
+ * فلا يشملُها قرارُ 2026-09-19. وتشترطُ سرَّ الجلسةِ وحدَه.
+ */
+if (config.miniappSessionSecret !== null) {
+  chatChannel = createChatChannel({
+    io: ioServer,
+    sessions: createOffersSessionVerifier(
+      config.miniappSessionSecret,
+      () => Date.now(),
+      sessionRevocationStore,
+    ),
+    store: orderChatStore,
+    log,
+  });
+  chatChannel.start();
 }

@@ -1,0 +1,62 @@
+{
+  "id": "wr-04-order-chat",
+  "goal": "§4 المحادثة الخاصة الدائمة: غرفة لكل طلب بطرفيه (الراكب والسائق المُسنَد)، تُحفظ في القاعدة وتُستعاد عند العودة، وتمنع غير المخوَّل من الخادم، وتعمل للتوصيل والمشوار.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0263-order-chat-in-miniapp.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/index.ts",
+    "apps/gateway/src/rate-limit/policy.ts",
+    "apps/gateway/src/realtime/chat-channel.ts",
+    "apps/gateway/src/routes/order-chat.ts",
+    "apps/gateway/src/server.ts",
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/surfaces/chat/OrderChat.tsx",
+    "apps/miniapp/src/surfaces/chat/order-chat-client.ts",
+    "apps/miniapp/src/surfaces/chat/order-chat-socket.ts",
+    "apps/miniapp/src/surfaces/chat/order-chat.test.tsx",
+    "apps/miniapp/src/surfaces/driver/job/JobScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/active/ActiveRideScreen.tsx",
+    "packages/application/messaging/order-chat.ts",
+    "packages/infrastructure/db/schema-contract.ts",
+    "packages/infrastructure/messaging/order-chat-store.ts",
+    "packages/shared/config/erasure-policy.ts",
+    "packages/shared/config/retention-policy.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "scripts/lib/css-class-coverage.ts",
+    "scripts/lib/skip-registry.ts",
+    "scripts/lib/wasla-boundary-registry.ts",
+    "scripts/lib/wasla-migration-matrix.ts",
+    "supabase/migrations/20261012100000_wr_04_order_chat.sql",
+    "supabase/migrations/20261012100100_wr_04_order_chat_index.sql",
+    "tests/integration/order-chat.test.ts",
+    "tests/unit/check-migration-matrix.test.ts",
+    "tests/unit/order-chat.test.ts",
+    "tests/unit/skip-audit.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/adr/0263-order-chat-in-miniapp.md",
+    "docs/migration/matrix.md",
+    "docs/wasla/boundary-audit.md"
+  ],
+  "decision": "HTTP مصدر الحقيقة والقناة الآنية إشارة `chat:update` فقط. القناة خارج شرط منع بث الموقع لأنها لا تحمل موقعًا. النقل استطلاع طويل لأن ترقية WebSocket عبر أصل Mini App تُجاب 400. الكتابة في matched/in_progress، والقراءة 7 أيام بعد الانتهاء.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/order-chat.test.ts",
+    "bun test tests/unit/order-chat.test.ts apps/miniapp/src/surfaces/chat"
+  ],
+  "evidence": "محليًا: تكامل 12/12 على PostGIS، ووحدات 13/13 و10/10، وكل اختبارات الوحدات وMini App 7262/0، وlint وtypecheck وbuild:miniapp والحراس ✓.",
+  "constraints": [
+    "لا نص رسالة ولا معرّف تيليجرام في السجل",
+    "لا رسالة بوت لكل رسالة محادثة",
+    "لا سعر ولا دفع في الغرفة",
+    "لا تخزين في الجهاز"
+  ],
+  "limitations": "إشعار الطرف الآخر وهو خارج Mini App غير منفّذ (يتبع WR-15). مدة بقاء الصفوف pendingDecision حتى يقررها المالك. الاختبار الفعلي على تيليجرام يحتاج حسابين وجهازين.",
+  "status": "open"
+}

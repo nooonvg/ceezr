@@ -369,6 +369,26 @@ export const TABLE_ERASURE: Readonly<Record<string, ErasureRule>> = {
    * ههنا تُزيدُ خصوصيّةً. وكتابةٌ صوريّةٌ تُرضي حاجزاً **كذبٌ مقيسٌ** (`ح-5`)،
    * فالصوابُ أن يُقالَ: يبقى بأساسٍ.
    */
+  /**
+   * `WR-04`: ما كتبَه المستخدمُ في محادثةِ طلبٍ — نصٌّ حرٌّ مِلكُه، يُمحى صفّاً
+   * في `erase_my_account` ويُنزَّلُ له وحدَه (لا رسائلُ الطرفِ الآخر).
+   */
+  order_messages: {
+    disposition: D.erase,
+    subjects: [S.rider, S.driver],
+    linkedBy: "order_messages.sender_user_id",
+    basis: null,
+    exportSection: "orderMessages",
+    deferredTo: null,
+  },
+  order_message_reads: {
+    disposition: D.erase,
+    subjects: [S.rider, S.driver],
+    linkedBy: "order_message_reads.user_id",
+    basis: null,
+    exportSection: "orderMessages",
+    deferredTo: null,
+  },
   order_offers: {
     disposition: D.retainLegalBasis,
     subjects: [S.driver],

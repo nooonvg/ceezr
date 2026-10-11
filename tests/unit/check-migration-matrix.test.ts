@@ -96,10 +96,12 @@ describe("مصفوفةُ الهجرةِ — الحالةُ الحاضرةُ في
   // على `telegram_id`، فينتقلُ بأكملِهِ معَ `users` في `W-3` متى نُفِّذَ.
   // ثمَّ من 66 إلى **67** بجدولِ `driver_document_reviewers` (`PD-042` · ADR 0256)،
   // `NONE` في الموجةِ ٠ لأنَّ وجهتَه `KEEP` لـMOVE تبعاً لوثائقِ السائق.
+  // ثمَّ من 67 إلى **69** بجدولَي `order_messages` و`order_message_reads` (`WR-04` ·
+  // ADR 0263)، `NONE` في الموجةِ ٠ لأنَّ محادثةَ المهمّةِ أثرُ تنفيذٍ يملكُه MOVE.
   // والأرقامُ السابقةُ محفوظةٌ لا ممحوّةٌ (`ح-8`).
   it("تغطّي كلَّ جدولٍ في جردِ الحدودِ بلا زيادةٍ", () => {
-    expect(WASLA_MIGRATION_MATRIX.length).toBe(67);
-    expect(new Set(WASLA_MIGRATION_MATRIX.map((e) => e.table)).size).toBe(67);
+    expect(WASLA_MIGRATION_MATRIX.length).toBe(69);
+    expect(new Set(WASLA_MIGRATION_MATRIX.map((e) => e.table)).size).toBe(69);
   });
 
   it("لا مُدخلَ يدّعي تنفيذاً اليومَ — ولا خطّةَ عمودٍ", () => {
