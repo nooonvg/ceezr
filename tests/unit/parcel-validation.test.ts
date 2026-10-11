@@ -53,16 +53,13 @@ describe("parcelValidationError", () => {
     expect(parcelValidationError("a".repeat(200))).toBeNull();
   });
 
-  it("returns empty error for empty string", () => {
-    const result = parcelValidationError("");
-    expect(result).not.toBeNull();
-    expect((result as { errorKey: string }).errorKey).toBe("rider.quote.parcel.error.empty");
+  // WR-18 — قرار المالك: وصف الطرد اختياري، فالفراغ صالح لا خطأ.
+  it("returns null for empty string (description is optional, WR-18)", () => {
+    expect(parcelValidationError("")).toBeNull();
   });
 
-  it("returns empty error for whitespace-only string", () => {
-    const result = parcelValidationError("   ");
-    expect(result).not.toBeNull();
-    expect((result as { errorKey: string }).errorKey).toBe("rider.quote.parcel.error.empty");
+  it("returns null for whitespace-only string (description is optional, WR-18)", () => {
+    expect(parcelValidationError("   ")).toBeNull();
   });
 
   it("returns too_short error for 2 characters", () => {

@@ -216,7 +216,7 @@
   "rider.ask_city": "Choose your city:",
   "rider.ask_dropoff": "Share your destination, or send /skip to explain it to the driver.",
   "rider.ask_name": "What is your name?",
-  "rider.ask_parcel": "Describe the parcel briefly: what is it, and roughly how big?",
+  "rider.ask_parcel": "Optionally describe the parcel: what is it, and roughly how big? Or send /skip to continue without a description.",
   "rider.ask_parcel_dropoff": "Share the parcel drop-off location using the location button.",
   "rider.ask_parcel_pickup": "Share the parcel pickup location using the location button.",
   "rider.ask_pickup": "Share your pickup location using the location button.",

@@ -39,7 +39,7 @@ import type { ApiEtaVerdict, ApiServiceOffer, ApiTaggedDistance } from "./quote-
 
 /**
  * هل التوصيلُ من الخدماتِ المتاحةِ في هذا الاقتباسِ؟ — إن حضرَ، صارَ حقلُ
- * الملاحظاتِ وصفَ طردٍ إلزاميّاً.
+ * الملاحظاتِ وصفَ طردٍ **اختياريًّا** (`WR-18`).
  */
 export function hasDeliveryService(offers: readonly ApiServiceOffer[]): boolean {
   return offers.some((o) => o.service === "delivery" && o.available);
@@ -57,7 +57,8 @@ export type ParcelValidationResult = { readonly errorKey: string } | null;
  */
 export function parcelValidationError(raw: string): ParcelValidationResult {
   const trimmed = raw.trim();
-  if (trimmed === "") return { errorKey: "rider.quote.parcel.error.empty" };
+  // `WR-18` — قرارُ المالك: الوصفُ اختياريٌّ، فالفراغُ صالحٌ لا خطأ.
+  if (trimmed === "") return null;
   if (trimmed.startsWith("/")) return { errorKey: "rider.quote.parcel.error.command" };
   if (trimmed.length < 3) return { errorKey: "rider.quote.parcel.error.too_short" };
   if (trimmed.length > 200) return { errorKey: "rider.quote.parcel.error.too_long" };
