@@ -53,6 +53,7 @@ import { Glyph } from "../../../system/ui/icons.tsx";
 import { openExternalLink } from "../../../tg/index.ts";
 import { OrderChat } from "../../chat/OrderChat.tsx";
 import type { SosSurfaceResponse, SosTriggerResponse } from "../../rider/sos/sos-contract.ts";
+import { offerLineText } from "../offers/offers-view.ts";
 import {
   completeDriverRide,
   type DriverActiveJobResponse,
@@ -444,9 +445,17 @@ export function JobScreen({
           seen: t("driver.job.chat.seen"),
           counterpart: t("driver.job.chat.counterpart"),
           status: t("driver.job.chat.status"),
+          offerFixed: t("driver.job.chat.offerFixed"),
+          offerSuggested: t("driver.job.chat.offerSuggested"),
+          offerOpen: t("driver.job.chat.offerOpen"),
           refresh: t("driver.job.chat.refresh"),
         }}
       />
+
+      {/* `WR-05` — معنى المبلغِ بعدَ القبول: ما اتّفقَ عليه الراكبُ في طلبِه. */}
+      {job.offerTerms === null ? null : (
+        <p className="dof__offer-terms">{offerLineText(t, job.offerTerms)}</p>
+      )}
 
       <div className="djb__stop djb__stop--pickup">
         <p className="djb__place">

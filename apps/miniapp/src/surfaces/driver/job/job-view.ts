@@ -41,6 +41,7 @@ import {
   type SosIncidentNarrative,
   sosIncidentNarrative,
 } from "../../../../../../packages/domain/safety/sos-surface.ts";
+import { type OfferLine, offerLine } from "../offers/offers-view.ts";
 import type { ApiDriverActiveJob, ApiDriverJobAction, ApiDriverJobPlace } from "./job-contract.ts";
 
 /** رموزُ العطبِ التي لهذه الشاشةِ نصٌّ لها — مُقابِلةٌ لقائمةِ الطبقةِ حرفاً. */
@@ -139,6 +140,8 @@ export interface ActiveJobModel {
   /** `null` = راكبٌ بلا اسمٍ مُسجَّلٍ — تُقالُ «راكبٌ» ولا يُخترَعُ اسمٌ. */
   readonly riderFirstName: string | null;
   readonly riderLanguageCode: string | null;
+  /** `WR-05` — معنى المبلغِ بعدَ القبول. */
+  readonly offerTerms: OfferLine | null;
 }
 
 /**
@@ -166,6 +169,7 @@ export function toActiveJob(job: ApiDriverActiveJob): ActiveJobModel {
     notes: job.notes,
     riderFirstName: job.rider.first_name,
     riderLanguageCode: job.rider.language_code,
+    offerTerms: offerLine(job.offer_mode, job.offer_sar),
   };
 }
 

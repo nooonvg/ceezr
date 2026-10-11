@@ -51,6 +51,7 @@ import {
   countdownSeconds,
   type DistanceLine,
   isRetryableOffersError,
+  offerLineText,
   offersErrorKey,
   toOfferDetail,
 } from "./offers-view.ts";
@@ -299,6 +300,10 @@ export function OfferDetailScreen({
       </UiCard>
 
       <UiCard title={t("driver.offers.detail.section.places")}>
+        {/* `WR-05` — معنى المبلغِ قبلَ القبول. */}
+        {detail.offerTerms === null ? null : (
+          <p className="dof__offer-terms">{offerLineText(t, detail.offerTerms)}</p>
+        )}
         <p className="dof__place">
           {t("driver.offers.pickup")}: {detail.pickupLabel ?? t("driver.offers.place.unnamed")}
         </p>

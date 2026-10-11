@@ -62,6 +62,9 @@ export interface ApiDriverOfferCard {
   readonly dropoff_notes?: string | null;
   readonly dropoff_link?: string | null;
   readonly dropoff_open_url?: string | null;
+  /** `WR-05` — سياسةُ المبلغِ ومبلغُه كما كتبَهما الراكب؛ تغيبُ من بوّابةٍ أقدم. */
+  readonly offer_mode?: "fixed" | "suggested" | "open" | null;
+  readonly offer_sar?: number | null;
 }
 
 export interface DriverOffersResponse {
@@ -103,6 +106,9 @@ export interface DriverOfferDetailResponse {
   readonly rider_distance: ApiTaggedDistance | null;
   readonly trip_distance: ApiTaggedDistance | null;
   readonly notes: string | null;
+  /** `WR-05` — سياسةُ المبلغِ ومبلغُه كما كتبَهما الراكب؛ تغيبُ من بوّابةٍ أقدم. */
+  readonly offer_mode?: "fixed" | "suggested" | "open" | null;
+  readonly offer_sar?: number | null;
 }
 
 export interface AcceptDriverOfferResponse {

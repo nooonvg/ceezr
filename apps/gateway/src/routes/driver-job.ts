@@ -192,6 +192,9 @@ export function createDriverJobRoutes(deps: DriverJobRouteDependencies): Hono {
                 first_name: job.rider.firstName,
                 language_code: job.rider.languageCode,
               },
+              // `WR-05` — معنى المبلغِ كما كتبَه الراكب (`null` ⇒ لم يُقرَأ أو طلبٌ أقدمُ من السياسة).
+              offer_mode: job.offerTerms?.mode ?? null,
+              offer_sar: job.offerTerms?.offerSar ?? null,
             },
     });
   });

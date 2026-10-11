@@ -91,6 +91,17 @@ export interface DriverOfferCard {
   /** `LOC-TRUST-01` — ما أدخلَه الراكبُ زيادةً على الاسم. غائبٌ = لم يُقرَأ (قاعدةٌ أقدم). */
   readonly pickupExtras?: DriverPlaceExtras;
   readonly dropoffExtras?: DriverPlaceExtras | null;
+  /** `WR-05` — معنى المبلغِ قبلَ القبول. غائبٌ = لم يُقرَأ. */
+  readonly offerTerms?: DriverOfferTerms;
+}
+
+/**
+ * `WR-05` — سياسةُ المبلغِ كما كتبَها الراكب: `mode` `null` لطلبٍ أقدمَ من السياسة.
+ * لا تحسبُها المنصّةُ ولا تُحصّلُها؛ تنقلُها كما تنقلُ ملاحظتَه.
+ */
+export interface DriverOfferTerms {
+  readonly mode: "fixed" | "suggested" | "open" | null;
+  readonly offerSar: number | null;
 }
 
 /**
@@ -142,6 +153,8 @@ export interface DriverOfferDetail {
   readonly tripDistance: TaggedDistance | null;
   /** ملاحظةُ الراكبِ كما كتبَها — نصٌّ لا يُترجَمُ ولا يُقصَّرُ ههنا. */
   readonly notes: string | null;
+  /** `WR-05` — معنى المبلغِ قبلَ القبول. غائبٌ = لم يُقرَأ. */
+  readonly offerTerms?: DriverOfferTerms;
 }
 
 /** أثرُ القبولِ — **بلا هويّةِ راكبٍ**: سطحُ التواصلِ بندٌ آخرُ. */

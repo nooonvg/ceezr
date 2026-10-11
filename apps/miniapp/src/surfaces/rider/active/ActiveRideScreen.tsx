@@ -510,6 +510,9 @@ export function ActiveRideScreen({
               seen: t("rider.active.chat.seen"),
               counterpart: t("rider.active.chat.counterpart"),
               status: t("rider.active.chat.status"),
+              offerFixed: t("rider.active.chat.offerFixed"),
+              offerSuggested: t("rider.active.chat.offerSuggested"),
+              offerOpen: t("rider.active.chat.offerOpen"),
               refresh: t("rider.active.chat.refresh"),
             }}
           />

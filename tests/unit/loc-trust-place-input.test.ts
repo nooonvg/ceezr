@@ -253,7 +253,9 @@ describe("حالةُ الاستخدام ← المخزن", () => {
     expect(seen).toHaveLength(0);
   });
 
-  it("المخزنُ ينادي request_ride_with_places بـjsonb فقط حينَ يوجدُ مكان", async () => {
+  // `WR-05`: المخزنُ ينادي غلافَ السياسةِ دائماً، وهو يُفوِّضُ إلى `request_ride_with_places`
+  // (والمكانُ الغائبُ `null` مقبولٌ فيه) — فالحكمُ على المكانَين باقٍ في القاعدة.
+  it("المخزنُ يمرِّرُ المكانَ jsonb حينَ يوجدُ و`null` حينَ يغيب", async () => {
     const calls: { text: string; values: readonly unknown[] }[] = [];
     const sql = {
       unsafe: async (text: string, values: readonly unknown[] = []) => {
@@ -279,7 +281,9 @@ describe("حالةُ الاستخدام ← المخزن", () => {
       notes: null,
     } as const;
     await createRideRequestCommand(sql).create(input);
-    expect(calls[0]?.text).not.toContain("request_ride_with_places");
+    expect(calls[0]?.text).toContain("request_ride_with_offer");
+    expect(calls[0]?.values[12]).toBeNull();
+    expect(calls[0]?.values[13]).toBeNull();
     await createRideRequestCommand(sql).create({
       ...input,
       pickupPlace: {
@@ -290,7 +294,7 @@ describe("حالةُ الاستخدام ← المخزن", () => {
         notes: "ن",
       },
     });
-    expect(calls[1]?.text).toContain("request_ride_with_places");
+    expect(calls[1]?.text).toContain("request_ride_with_offer");
     expect(JSON.parse(String(calls[1]?.values[12]))).toEqual({
       point_source: "MAP_PIN",
       accuracy_m: null,

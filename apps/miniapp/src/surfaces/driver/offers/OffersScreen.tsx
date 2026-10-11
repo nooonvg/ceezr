@@ -68,6 +68,7 @@ import {
   type DistanceLine,
   isRetryableOffersError,
   type OfferCardModel,
+  offerLineText,
   offersErrorKey,
   toOffersBoard,
 } from "./offers-view.ts";
@@ -443,6 +444,10 @@ export function OffersScreen({
                   <span className="dof__service">{t(card.serviceKey)}</span>
                 </div>
                 <UiTimer {...timer} />
+                {/* `WR-05` — معنى المبلغِ قبلَ القبول: محدَّدٌ أو مقترَحٌ أو بلا سعر. */}
+                {card.offerTerms === null ? null : (
+                  <p className="dof__offer-terms">{offerLineText(t, card.offerTerms)}</p>
+                )}
 
                 <p className="dof__place">
                   {t("driver.offers.pickup")}:{" "}

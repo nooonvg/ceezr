@@ -174,6 +174,11 @@ const STATUS_BY_ERROR: Readonly<Record<RequestRidePublicErrorCode, 400 | 401 | 4
   UNKNOWN_SERVICE: 400,
   NOTES_TOO_LONG: 400,
   PARCEL_DESCRIPTION_INVALID: 400,
+  // `WR-05` — سياسةُ المبلغ: عطبُ طلبٍ يُصلِحُه الراكب.
+  OFFER_MODE_INVALID: 400,
+  OFFER_AMOUNT_REQUIRED: 400,
+  OFFER_AMOUNT_INVALID: 400,
+  OFFER_AMOUNT_UNEXPECTED: 400,
   // `LOC-TRUST-01` — عطبُ طلبٍ يُصلِحُه المُنادي.
   PLACE_INVALID: 400,
   PLACE_LINK_UNSUPPORTED: 400,

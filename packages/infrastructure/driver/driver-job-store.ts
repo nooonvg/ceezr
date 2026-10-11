@@ -250,6 +250,7 @@ export class PostgresDriverJobStore implements DriverJobStore {
           job.dropoff === null || extras.dropoff === null
             ? job.dropoff
             : { ...job.dropoff, link: extras.dropoff.link, notes: extras.dropoff.notes },
+        offerTerms: extras.offerTerms,
       },
       locationBroadcast,
     });

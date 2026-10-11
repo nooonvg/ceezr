@@ -1177,6 +1177,11 @@ a.sys__action {
 }
 .qt__pickup {
 }
+/* WR-05 — السعرُ داخلَ النموذجِ بخياراتِه الثلاثة: مسافةٌ قبلَه تفصلُه عن وقتِ الحضور. */
+.qt__offer-mode {
+  margin-top: 0.75rem;
+}
+
 .qt__pickup-option {
   display: flex;
   align-items: center;
@@ -3880,6 +3885,15 @@ a.sys__action {
 .dof__place,
 .dof__status,
 .dof__round,
+/* WR-05 — معنى السعرِ على بطاقةِ العرضِ وشاشةِ المَهمّة. */
+.dof__offer-terms {
+  margin: 0;
+  font-size: var(--ui-size-label);
+  font-weight: 700;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
 .dof__notes {
   margin: 0;
   font-size: var(--ui-size-label);
@@ -8818,6 +8832,14 @@ body {
 
 .ocht__status {
   font-weight: 700;
+}
+
+/* WR-05 — معنى السعرِ في رأسِ المحادثة: سطرٌ واحدٌ هادئٌ لا يُشبهُ زرّاً. */
+.ocht__offer {
+  margin: 0;
+  font-size: var(--ui-size-caption);
+  font-weight: 700;
+  color: var(--tg-text-color);
 }
 
 .ocht__refresh {

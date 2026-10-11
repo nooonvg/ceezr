@@ -35,6 +35,7 @@
 
 import type { PlaceMeta } from "../../domain/places/place-input.ts";
 import type { RideStatus } from "../../domain/transport/ride-request.ts";
+import type { OfferMode } from "../../shared/order-terms/index.ts";
 import type { Result } from "../../shared/result/index.ts";
 
 export type RideStoreFailureReason =
@@ -119,6 +120,10 @@ export interface RideRequestCommand {
     readonly pickupAt?: Date | null;
     /** `ORDER-OFFER-01` — ما يعرضُه الراكبُ بالريال. null ⇒ قابلٌ للتفاوض. */
     readonly offerSar?: number | null;
+    /**
+     * `WR-05` — سياسةُ المبلغ. غيابُها (البوت) ⇒ `open` في المخزن، فلا طلبَ جديدٌ بلا سياسة.
+     */
+    readonly offerMode?: OfferMode;
     /**
      * `LOC-TRUST-01` — مصدرُ النقطةِ ودقّتُها ووقتُها والرابطُ الأصليُّ وملاحظاتُ المكان.
      * غيابُهما (البوتُ وعميلٌ قديم) يُبقي النداءَ القديمَ حرفاً.

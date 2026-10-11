@@ -35,6 +35,7 @@ import type {
 } from "../../application/dispatch/rotate-negotiation-turn.ts";
 import type { NegotiationSnapshot, NegotiationStatus } from "../../domain/dispatch/negotiation.ts";
 import type { CityId, DriverId, OrderId, RiderId, ServiceType } from "../../shared/kernel/index.ts";
+import { isOfferMode } from "../../shared/order-terms/index.ts";
 import { guard, readEnvelope, type Sql } from "../db/client.ts";
 
 /** رسالة الخطأ الموحّدة عند ردّ غير مفهوم — الردّ المكسور عطل تقني لا نتيجة عمل. */
@@ -97,16 +98,19 @@ export function createOrderNotesReader(sql: Sql): OrderNotesReader {
           {
             pickup_at: Date | null;
             rider_offer_sar: number | null;
+            rider_offer_mode: string | null;
             pickup_label: string | null;
             dropoff_label: string | null;
           }[]
         >`
-          select pickup_at, rider_offer_sar, pickup_label, dropoff_label
+          select pickup_at, rider_offer_sar, rider_offer_mode, pickup_label, dropoff_label
             from orders where id = ${orderId}
         `;
         return {
           pickupAt: rows[0]?.pickup_at ?? null,
           offerSar: rows[0]?.rider_offer_sar ?? null,
+          // `WR-05` — قيمةٌ خارجَ الثلاثِ لا تُعرَضُ معنىً مُختلَقاً: تُقرأُ «أقدمَ من السياسة».
+          offerMode: isOfferMode(rows[0]?.rider_offer_mode) ? rows[0].rider_offer_mode : null,
           pickupLabel: rows[0]?.pickup_label ?? null,
           dropoffLabel: rows[0]?.dropoff_label ?? null,
         };

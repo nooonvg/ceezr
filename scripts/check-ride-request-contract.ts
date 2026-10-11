@@ -359,7 +359,10 @@ export function findViolations(input: RepositoryInput): readonly string[] {
     !store.includes("request_ride(") &&
     !store.includes("request_ride_labeled(") &&
     // `ORDER-TERMS-01` — `request_ride_with_terms(` غلافٌ فوقَ `request_ride_labeled` حرفاً.
-    !store.includes("request_ride_with_terms(")
+    !store.includes("request_ride_with_terms(") &&
+    // `WR-05` — `request_ride_with_offer(` يحكمُ على سياسةِ المبلغِ ثمَّ يُفوِّضُ إلى
+    // `request_ride_with_places` فـ`request_ride_with_terms` حرفاً؛ فالحكمُ باقٍ في القاعدة.
+    !store.includes("request_ride_with_offer(")
   ) {
     violations.push(
       "مخزنُ الرحلةِ لا ينادي `request_ride(` — الحكمُ في القاعدةِ لا في المحوّلِ (القاعدة 0.5).",

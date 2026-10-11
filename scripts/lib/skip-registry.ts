@@ -577,6 +577,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-05-offer-mode.test.ts",
+    suites: ["WR-05 — سياسةُ المبلغِ في القاعدة"],
+    skipped: 5,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في `WR-05` أنَّ **سياسةَ المبلغِ تُكتَبُ مع الطلبِ في معاملتِه** وأنَّ المعطوبَ يُرفَضُ برمزِه قبلَ إنشاءِ أيِّ طلب، وأنَّ قيدَ `orders_rider_offer_mode_valid` يمنعُ صفّاً متناقضاً (ومنه «محدَّدٌ بلا مبلغ» الذي يمرُّ لو تُركَ NULL)، وأنَّ إعادةَ المفتاحِ لا تُغيِّرُها. وهذه أحكامُ دوالَّ وقيودٍ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012110000 و20261012110100). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/driver-location-broadcast.test.ts",
     suites: [
       "سياسةُ النبضةِ — سببٌ مُسمّىً ومُدّةٌ من إعدادِ المدينةِ",

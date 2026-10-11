@@ -193,6 +193,8 @@ export interface OfferCardModel {
   readonly dropoffLabel: string | null;
   readonly pickupNotes: string | null;
   readonly dropoffNotes: string | null;
+  /** `WR-05` */
+  readonly offerTerms: OfferLine | null;
 }
 
 export function toOfferCard(card: ApiDriverOfferCard): OfferCardModel {
@@ -209,6 +211,7 @@ export function toOfferCard(card: ApiDriverOfferCard): OfferCardModel {
     dropoffLabel: card.dropoff_label,
     pickupNotes: card.pickup_notes ?? null,
     dropoffNotes: card.dropoff_notes ?? null,
+    offerTerms: offerLine(card.offer_mode, card.offer_sar),
   };
 }
 
@@ -269,6 +272,8 @@ export interface OfferDetailModel {
   readonly dropoffNotes: string | null;
   readonly dropoffLink: string | null;
   readonly dropoffOpenUrl: string | null;
+  /** `WR-05` */
+  readonly offerTerms: OfferLine | null;
 }
 
 export function toOfferDetail(response: DriverOfferDetailResponse): OfferDetailModel {
@@ -296,6 +301,7 @@ export function toOfferDetail(response: DriverOfferDetailResponse): OfferDetailM
     dropoffNotes: response.dropoff?.notes ?? null,
     dropoffLink: response.dropoff?.link ?? null,
     dropoffOpenUrl: response.dropoff?.open_url ?? null,
+    offerTerms: offerLine(response.offer_mode, response.offer_sar),
   };
 }
 
@@ -310,4 +316,31 @@ export function canAcceptNow(input: {
   readonly secondsRemaining: number;
 }): boolean {
   return input.isClaimable && input.secondsRemaining > 0;
+}
+
+/**
+ * `WR-05` — سطرُ معنى المبلغِ للسائق: مفتاحُه ومبلغُه. `null` ⇒ طلبٌ أقدمُ من السياسة
+ * (أو بوّابةٌ أقدم) فلا يُخترَعُ معنىً لم يكتبْه الراكب.
+ */
+export interface OfferLine {
+  readonly key:
+    | "driver.offers.terms.fixed"
+    | "driver.offers.terms.suggested"
+    | "driver.offers.terms.open";
+  readonly amount: number | null;
+}
+
+export function offerLine(
+  mode: "fixed" | "suggested" | "open" | null | undefined,
+  amount: number | null | undefined,
+): OfferLine | null {
+  if (mode === "open") return { key: "driver.offers.terms.open", amount: null };
+  if (typeof amount !== "number") return null;
+  if (mode === "fixed") return { key: "driver.offers.terms.fixed", amount };
+  if (mode === "suggested") return { key: "driver.offers.terms.suggested", amount };
+  return null;
+}
+
+export function offerLineText(t: (key: string) => string, line: OfferLine): string {
+  return t(line.key).replace("{amount}", String(line.amount ?? ""));
 }

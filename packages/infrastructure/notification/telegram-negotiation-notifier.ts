@@ -73,6 +73,7 @@ export function createUnsubscribedGroupPublisher(
                   pickupAt: card.pickupAt ?? null,
                   parcel: card.notes,
                   ...(card.offerSar === undefined ? {} : { offerSar: card.offerSar }),
+                  ...(card.offerMode === undefined ? {} : { offerMode: card.offerMode }),
                 }),
               ];
         // `GRP-CARD-01` — «إلى» قبلَ الشروطِ متى سمّى الراكبُ وجهتَه، كبطاقةِ المشترك.

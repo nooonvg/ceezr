@@ -73,3 +73,9 @@ export type RideSearchResponse =
 export type CancelRideResponse =
   | { readonly ok: true; readonly cancelled: true }
   | { readonly ok: true; readonly cancelled: false; readonly refusal: string };
+
+/**
+ * `WR-05` — سياسةُ المبلغِ كما يختارُها الراكبُ في نموذجِ الطلب. البوّابةُ تحكمُ عليها
+ * بقاعدتِها (`packages/application/transport/offer-policy.ts`) ولا تثقُ بالعميل.
+ */
+export type RiderOfferMode = "fixed" | "suggested" | "open";

@@ -238,7 +238,12 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
       const found = extras.get(card.orderId);
       return found === undefined
         ? card
-        : { ...card, pickupExtras: found.pickup, dropoffExtras: found.dropoff };
+        : {
+            ...card,
+            pickupExtras: found.pickup,
+            dropoffExtras: found.dropoff,
+            offerTerms: found.offerTerms,
+          };
     });
 
     return ok({
@@ -324,6 +329,7 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
       riderDistance,
       tripDistance,
       notes: typeof payload.notes === "string" ? payload.notes : null,
+      ...(extras === undefined ? {} : { offerTerms: extras.offerTerms }),
     });
   }
 

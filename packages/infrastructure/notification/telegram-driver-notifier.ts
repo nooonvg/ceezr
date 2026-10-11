@@ -15,7 +15,7 @@ import type {
 import { openUrlFor } from "../../domain/places/place-open-url.ts";
 import { t } from "../../shared/i18n/index.ts";
 import { miniAppUrl } from "../../shared/miniapp-link/index.ts";
-import { orderTermsLines } from "../../shared/order-terms/index.ts";
+import { isOfferMode, orderTermsLines } from "../../shared/order-terms/index.ts";
 import { serviceMarker } from "../../shared/service-marker/index.ts";
 import { guard, type Sql } from "../db/client.ts";
 import { readOrderPlaceExtras } from "../transport/order-place-extras.ts";
@@ -138,8 +138,15 @@ export function createOfferPublisher(
         }
         // `ORDER-TERMS-01`: وقتُ الحضورِ (ونوعُ الطردِ في التوصيلِ) بعدَ «إلى» وقبلَ المسافةِ —
         // يُقرأُ من الطلبِ لحظةَ الإرسالِ، فلا تتغيّرُ حمولةُ صفِّ العرضِ.
-        const termRows = await sql<{ pickup_at: Date | null; rider_offer_sar: number | null }[]>`
-          select pickup_at, rider_offer_sar from orders where id = ${notification.orderId}
+        const termRows = await sql<
+          {
+            pickup_at: Date | null;
+            rider_offer_sar: number | null;
+            rider_offer_mode: string | null;
+          }[]
+        >`
+          select pickup_at, rider_offer_sar, rider_offer_mode
+            from orders where id = ${notification.orderId}
         `;
         const termRow = termRows[0];
         lines.push(
@@ -147,6 +154,8 @@ export function createOfferPublisher(
             pickupAt: termRow?.pickup_at ?? null,
             parcel: notification.notes,
             offerSar: termRow?.rider_offer_sar ?? null,
+            // `WR-05` — معنى المبلغِ في البطاقةِ نفسِها: محدَّدٌ أو مقترَحٌ أو بلا مبلغ.
+            offerMode: isOfferMode(termRow?.rider_offer_mode) ? termRow.rider_offer_mode : null,
           }),
         );
         lines.push(

@@ -42,7 +42,7 @@
  */
 
 import type { ServiceType } from "../../shared/kernel/index.ts";
-import type { DriverOfferPlace, DriverOrderStatus } from "./driver-offers.ts";
+import type { DriverOfferPlace, DriverOfferTerms, DriverOrderStatus } from "./driver-offers.ts";
 import type { BroadcastPolicy } from "./location-broadcast.ts";
 
 /**
@@ -86,6 +86,8 @@ export interface DriverActiveJob {
   /** ملاحظةُ الراكبِ كما كتبَها — لا تُترجَمُ ولا تُقصَّرُ ههنا. */
   readonly notes: string | null;
   readonly rider: DriverJobRider;
+  /** `WR-05` — معنى المبلغِ بعدَ القبول. غائبٌ = لم يُقرَأ. */
+  readonly offerTerms?: DriverOfferTerms;
 }
 
 /**

@@ -12,7 +12,7 @@ import ar from "../../../../../packages/shared/i18n/miniapp/ar.json";
 import en from "../../../../../packages/shared/i18n/miniapp/en.json";
 import ur from "../../../../../packages/shared/i18n/miniapp/ur.json";
 import { ApiError, ApiNetworkError } from "../../api/client.ts";
-import { OrderChat, type OrderChatLabels } from "./OrderChat.tsx";
+import { chatOfferLine, OrderChat, type OrderChatLabels } from "./OrderChat.tsx";
 import {
   applyThread,
   type ChatApi,
@@ -55,6 +55,9 @@ const LABEL_KEYS = [
   "counterpart",
   "status",
   "refresh",
+  "offerFixed",
+  "offerSuggested",
+  "offerOpen",
 ] as const;
 
 const labels = Object.fromEntries(
@@ -117,6 +120,45 @@ describe("WR-04 — دمجُ رسائلِ المحادثة", () => {
     expect(chatFailureOf(new ApiError(503, "X", ""))).toBe("network");
     expect(chatFailureOf(new ApiNetworkError())).toBe("network");
     expect(chatFailureOf(new ApiError(422, "MESSAGE_EMPTY", ""))).toBe("rejected");
+  });
+});
+
+describe("WR-05 — سطرُ السعرِ في رأسِ المحادثة", () => {
+  const offerLabels = {
+    offerFixed: "سعر محدد: {amount} ريال — غير قابل للتفاوض",
+    offerSuggested: "سعر مقترح: {amount} ريال — السعر قابل للتفاوض",
+    offerOpen: "السعر غير محدد",
+  };
+  it("الحالاتُ الثلاثُ بمعانيها، والطلبُ الأقدمُ بلا سطر", () => {
+    expect(chatOfferLine(offerLabels, "fixed", 40)).toBe("سعر محدد: 40 ريال — غير قابل للتفاوض");
+    expect(chatOfferLine(offerLabels, "suggested", 25)).toBe(
+      "سعر مقترح: 25 ريال — السعر قابل للتفاوض",
+    );
+    expect(chatOfferLine(offerLabels, "open", null)).toBe("السعر غير محدد");
+    expect(chatOfferLine(offerLabels, null, 40)).toBeNull();
+    expect(chatOfferLine(offerLabels, "fixed", null)).toBeNull();
+  });
+  it("الخيطُ يحملُ السياسةَ والمبلغ", () => {
+    const snap = applyThread(null, {
+      ok: true as const,
+      order: {
+        id: "o",
+        service: "transport" as const,
+        status: "matched",
+        writable: true,
+        offer_mode: "fixed" as const,
+        offer_sar: 40,
+      },
+      my_role: "driver" as const,
+      counterpart: { role: "rider" as const, first_name: null },
+      messages: [],
+      last_seq: 0,
+      my_last_read_seq: 0,
+      counterpart_last_read_seq: 0,
+      unread: 0,
+    });
+    expect(snap.offerMode).toBe("fixed");
+    expect(snap.offerSar).toBe(40);
   });
 });
 
