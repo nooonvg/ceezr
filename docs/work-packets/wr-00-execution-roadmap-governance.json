@@ -10,7 +10,8 @@
     "scripts/check-execution-roadmap.ts",
     "tests/unit/execution-roadmap.test.ts",
     ".github/workflows/execution-roadmap.yml",
-    "package.json"
+    "package.json",
+    "scripts/lib/docs-budget-baseline.json"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
