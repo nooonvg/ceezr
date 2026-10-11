@@ -334,16 +334,89 @@ describe("استهلاكُ التقديمِ الساكنِ (DEC-19 / F1-09)", ()
       accessToken: "pre",
     };
     let renewCalls = 0;
+    let exchanged = 0;
+    const persisted: string[] = [];
     // `consumePreboot` غيرُ محقون: الاستهلاكُ الحقيقيُّ من `window.__waslahPreboot`.
     const deps = baseDeps({
       renew: async () => {
         renewCalls += 1;
         return { renewed: false, reason: "NO_STORED_TOKEN" } as const;
       },
+      exchange: async () => {
+        exchanged += 1;
+        throw new Error("لا ينبغي أن تُنادى");
+      },
+      persist: async (token: string) => {
+        persisted.push(token);
+        return { stored: true } as never;
+      },
     });
     const [a, b] = await Promise.all([establishSession(deps), establishSession(deps)]);
-    expect([a, b].every((r) => r.established)).toBe(true);
+    // إقلاعٌ واحدٌ مُشترَك: جلسةٌ واحدةٌ من التقديم، لا تجديدَ ولا مبادلةَ ثانية.
+    expect(a).toEqual({ established: true, via: "exchanged" });
+    expect(b).toEqual(a);
+    expect(renewCalls).toBe(0);
+    expect(exchanged).toBe(0);
+    expect(persisted.length).toBe(0);
+    expect(getSession()?.accessToken).toBe("pre");
+  });
+
+  it("ADR 0259: نداءانِ متزامنانِ وفشلَ التقديم — تجديدٌ واحدٌ لا اثنان", async () => {
+    let renewCalls = 0;
+    const deps = baseDeps({
+      consumePreboot: () => Promise.reject(new Error("preboot:401")),
+      renew: async () => {
+        renewCalls += 1;
+        setSession({ accessToken: "renewed", expiresAt: Date.now() + HOUR_MS });
+        return {
+          renewed: true,
+          expiresAtMs: Date.now() + HOUR_MS,
+          absoluteExpiresAtMs: Date.now() + HOUR_MS,
+          persisted: true,
+        } as const;
+      },
+    });
+    const [a, b] = await Promise.all([establishSession(deps), establishSession(deps)]);
+    expect(a).toEqual({ established: true, via: "renewed" });
+    expect(b).toEqual(a);
     expect(renewCalls).toBe(1);
+  });
+
+  it("ADR 0259: انتهاءُ الإقلاعِ يُحرِّرُه — إعادةُ المحاولةِ بعدَ الفشلِ إقلاعٌ جديدٌ لا نتيجةٌ مُخبَّأة", async () => {
+    let renewCalls = 0;
+    const deps = baseDeps({
+      renew: async () => {
+        renewCalls += 1;
+        return { renewed: false, reason: "UNAVAILABLE" } as const;
+      },
+    });
+    expect(await establishSession(deps)).toEqual({ established: false, reason: "UNAVAILABLE" });
+    expect(await establishSession(deps)).toEqual({ established: false, reason: "UNAVAILABLE" });
+    expect(renewCalls).toBe(2);
+  });
+
+  it("ADR 0259: فشلُ حفظِ الرمزِ بعدَ إقامةِ التقديمِ يصعدُ — لا يُقرأُ فشلَ تبادلٍ فيُطلِقَ تجديداً", async () => {
+    let renewCalls = 0;
+    const pending = establishSession(
+      baseDeps({
+        consumePreboot: () =>
+          Promise.resolve({
+            ok: true as const,
+            accessToken: "pre",
+            expiresAtMs: Date.now() + HOUR_MS,
+            refreshToken: "fresh-chain",
+          }),
+        persist: async () => {
+          throw new Error("bridge");
+        },
+        renew: async () => {
+          renewCalls += 1;
+          return { renewed: false, reason: "NO_STORED_TOKEN" } as const;
+        },
+      }),
+    );
+    await expect(pending).rejects.toThrow("bridge");
+    expect(renewCalls).toBe(0);
   });
 
   it("يفشلُ كما يفشلُ التبادلُ العاديُّ إن رفضَ الخادمُ التبادلَ المُقدَّمَ", async () => {

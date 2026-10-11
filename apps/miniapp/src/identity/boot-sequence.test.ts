@@ -122,6 +122,49 @@ describe("تسلسلُ طلباتِ الإقلاع (ADR 0259)", () => {
     ]);
   });
 
+  it("تقديمٌ نجحَ لكنَّه منتهي الصلاحية: لا تُقامُ جلستُه، ولا يُستهلَكُ دورُه ولا موافقاتُه تحتَ الرمزِ المُجدَّد", async () => {
+    // `index.html` يكتبُ `accessToken` عندَ نجاحِ الطلبِ — منتهياً كانَ أو لا.
+    (globalThis as { __waslahPreboot?: unknown }).__waslahPreboot = {
+      session: Promise.resolve({ ok: true, accessToken: "stale", expiresAtMs: Date.now() - 1 }),
+      viewer: Promise.resolve({ ...VIEWER, role: "admin" }),
+      consents: Promise.resolve(CONSENTS),
+      accessToken: "stale",
+    };
+    const renewCalls = { n: 0 };
+    const boot = await establishSession(bootDeps(renewCalls, "renewed"));
+    expect(boot).toEqual({ established: true, via: "renewed" });
+    expect(getSession()?.accessToken).toBe("renewed");
+    expect(await fetchViewer()).toMatchObject({ role: "rider" });
+    await fetchConsentStatus();
+    expect(calls).toEqual([
+      { path: "/v1/me", auth: "Bearer renewed" },
+      { path: "/v1/consents", auth: "Bearer renewed" },
+    ]);
+  });
+
+  it("ردٌّ مُقدَّمٌ متأخّرٌ بعدَ جلسةٍ أحدث: الجلسةُ الأحدثُ تبقى، وبياناتُ التقديمِ لا تُستهلَكُ تحتَها", async () => {
+    let release: (v: unknown) => void = () => {};
+    (globalThis as { __waslahPreboot?: unknown }).__waslahPreboot = {
+      session: new Promise((r) => {
+        release = r;
+      }),
+      viewer: Promise.resolve({ ...VIEWER, role: "admin" }),
+      consents: Promise.resolve(CONSENTS),
+      accessToken: "older",
+    };
+    const pending = establishSession(bootDeps({ n: 0 }, null));
+    setSession({ accessToken: "newer", expiresAt: Date.now() + HOUR_MS });
+    release({ ok: true, accessToken: "older", expiresAtMs: Date.now() + HOUR_MS });
+    expect(await pending).toEqual({ established: true, via: "existing" });
+    expect(getSession()?.accessToken).toBe("newer");
+    expect(await fetchViewer()).toMatchObject({ role: "rider" });
+    await fetchConsentStatus();
+    expect(calls).toEqual([
+      { path: "/v1/me", auth: "Bearer newer" },
+      { path: "/v1/consents", auth: "Bearer newer" },
+    ]);
+  });
+
   it("لا بياناتِ مستخدمٍ قبلَ المصادقة: بلا جلسةٍ مُقامةٍ لا يُستهلَكُ دورٌ ولا موافقاتٌ مُقدَّمة", async () => {
     prebootSucceeded("pre");
     expect(getSession()).toBeNull();

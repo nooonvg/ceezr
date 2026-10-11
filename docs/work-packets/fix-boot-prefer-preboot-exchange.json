@@ -17,11 +17,11 @@
     "docs/adr/0259-boot-prefers-preboot-exchange.md",
     "docs/evidence/production/PRD-009-boot-sequence-20261011.md"
   ],
-  "decision": "ترتيبُ `establishSession`: الذاكرة ← التبادلُ المُقدَّم (إن نجحَ وصلاحيّتُه في المستقبل، ولا يطغى على جلسةٍ أُقيمَت في أثناءِ انتظاره) ← التجديد ← المبادلة. لا تغييرَ في الخادمِ ولا العقودِ ولا `index.html` ولا سياسةِ `SecureStorage` ولا مطابقةِ الرمز.",
+  "decision": "ترتيبُ `establishSession`: الذاكرة ← التبادلُ المُقدَّم (إن نجحَ وصلاحيّتُه في المستقبل، ولا يطغى على جلسةٍ أُقيمَت في أثناءِ انتظاره) ← التجديد ← المبادلة. لا تغييرَ في الخادمِ ولا العقودِ ولا `index.html` ولا سياسةِ `SecureStorage` ولا مطابقةِ الرمز. ونداءانِ متزامنانِ يتشاركانِ إقلاعًا واحدًا، وإقامةُ جلسةِ التقديمِ خارجَ `try` (المراجعةُ المستقلّة).",
   "tests": [
-    "apps/miniapp/src/identity/boot-sequence.test.ts: 4 (على main: 3 fail؛ بعد: 4 pass)",
-    "apps/miniapp/src/identity/boot.test.ts: 21 pass",
-    "bun run test: 7283 pass / 0 fail / 1690 skip",
+    "apps/miniapp/src/identity/boot-sequence.test.ts: 6 (على main: 4 fail؛ بعد: 6 pass)",
+    "apps/miniapp/src/identity/boot.test.ts: 24 pass (على 39eab3c3: 3 fail — التزامنُ وفشلُ الحفظ)",
+    "bun run test: 7288 pass / 0 fail / 1690 skip",
     "قياسٌ محكومٌ Slow 4G × 7: العائدُ 3351 ⇒ 1626ms، وطلباتُ API 7 ⇒ 4؛ وأوّلُ فتحٍ بلا فرق (1624 ⇒ 1644)"
   ],
   "evidence": "docs/evidence/production/PRD-009-boot-sequence-20261011.md",

@@ -109,7 +109,23 @@ const defaultExchange = (initData: string, observe?: ApiObserver): Promise<Excha
  *      بعدَ إعادةِ تحميلٍ، أو تعطّلُ شبكة).
  *   4. مبادلةُ `initData` — حين لا رمزَ محفوظاً أو رُفِض.
  */
-export async function establishSession(deps: BootDeps = {}): Promise<BootResult> {
+export function establishSession(deps: BootDeps = {}): Promise<BootResult> {
+  // ADR 0259: نداءانِ متزامنانِ يتشاركانِ إقلاعاً واحداً. وإلّا مضى الثاني — والتقديمُ
+  // مُستهلَكٌ في الأوّل — إلى تجديدٍ أو مبادلةٍ فأصدرَ جلسةً ثانية. لا ذاكرةَ للنتيجةِ بعدَ
+  // انتهائِها: إعادةُ المحاولةِ بعدَ شاشةِ فشلٍ إقلاعٌ جديد.
+  if (inflight !== null) return inflight;
+  const run = establishSessionOnce(deps);
+  inflight = run;
+  const release = (): void => {
+    if (inflight === run) inflight = null;
+  };
+  run.then(release, release);
+  return run;
+}
+
+let inflight: Promise<BootResult> | null = null;
+
+async function establishSessionOnce(deps: BootDeps): Promise<BootResult> {
   /**
    * `F1-08`: آخِرُ معرّفِ طلبٍ رآه هذا الإقلاعُ. والمُراقِبُ يُمرَّر إلى حدِّ API
    * فيأتي المعرّفُ **من رأسِ الردِّ نفسِه** لا من توليدٍ في العميلِ (ADR 0043).
@@ -137,20 +153,26 @@ export async function establishSession(deps: BootDeps = {}): Promise<BootResult>
   const preboot = (deps.consumePreboot ?? consumePrebootSession)();
   let prebootFailure: { readonly thrown: unknown } | null = null;
   if (preboot !== null) {
+    let prebootResponse: ExchangeResponse | null = null;
     try {
       const response = await preboot;
       // جلسةٌ منتهيةٌ لا تُقام لتوفيرِ نداء: تُعامَلُ فشلاً فيُجرَّبُ التجديد.
       if (!(response.expiresAtMs > (deps.now ?? Date.now)())) {
         throw new Error("preboot:expired");
       }
+      prebootResponse = response;
+    } catch (thrown) {
+      prebootFailure = { thrown };
+    }
+    // الإقامةُ خارجَ `try`: فشلُ حفظِ الرمزِ بعدَ `setSession` لا يُقرأُ فشلَ تبادلٍ
+    // فيُطلِقُ تجديداً وجلسةً ثانية — يصعدُ كما يصعدُ في المبادلةِ العاديّة.
+    if (prebootResponse !== null) {
       // ردٌّ متأخّرٌ لا يطغى على جلسةٍ أُقيمَت في أثناءِ انتظارِه (نداءٌ متزامن).
       if (sessionValid()) {
         record("existing", null);
         return { established: true, via: "existing" };
       }
-      return await adopt(response);
-    } catch (thrown) {
-      prebootFailure = { thrown };
+      return await adopt(prebootResponse);
     }
   }
 
