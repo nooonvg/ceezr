@@ -133,7 +133,7 @@
 
 - `tests/unit/rider-driver-proximity.test.ts` (١٧١ سطراً)
 - `docs/adr/0020-customer-live-map-closes-by-data-not-by-timeout.md`
-- `docs/production-readiness/PHASE-11-CUSTOMER-LIVE-TRACKING.md` (هذا الملفّ)
+- `docs/archive/reports-2026-08-09/production-readiness/PHASE-11-CUSTOMER-LIVE-TRACKING.md` (هذا الملفّ)
 
 ## ٦. ما لم يُلمس ولماذا
 

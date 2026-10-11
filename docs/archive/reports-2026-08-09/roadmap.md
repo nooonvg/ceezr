@@ -1,6 +1,6 @@
 > ## ⚠️ هذه الوثيقة لم تعد الخارطة الحاكمة
 >
-> **الخارطة النافذة والحاكمة هي [`docs/ROADMAP-MASTER.md`](./ROADMAP-MASTER.md)** — إصدار 1.0 بتاريخ 2026-08-26.
+> **الخارطة النافذة والحاكمة هي [`docs/ROADMAP-MASTER.md`](../../ROADMAP-MASTER.md)** — إصدار 1.0 بتاريخ 2026-08-26.
 >
 > ابدأ من هناك، لا من هنا. تلك الوثيقة تحدّد ما يجب أن يُبنى وبأي ترتيب وبأي دليل، وتتضمّن القاعدة الحاكمة للتوثيق، وجرد الأخطاء وحلولها، وتصميم تطبيق Mini App، وبوابات الإطلاق التجاري.
 >
@@ -38,28 +38,28 @@
 
 - **الخطوة 1 (منجَزة)**: المخطط الحقيقي على Supabase — 12 جدولاً كلها بـ `city_id` و RLS، 7 دوال ذرّية،
   5 مدن و65 صفّ إعدادات لمدن الإطلاق الخمس. تحقّق حقيقي على القاعدة: 5 سائقين متزامنين على طلب واحد ← فائز واحد و4 رفض
-  بـ `ORDER_NOT_CLAIMABLE`، وسائق من مدينة أخرى ← `CITY_MISMATCH`. التقرير: `docs/phase-2.1-step-01-report.md`.
+  بـ `ORDER_NOT_CLAIMABLE`، وسائق من مدينة أخرى ← `CITY_MISMATCH`. التقرير: `docs/archive/reports-2026-08-09/phase-2.1-step-01-report.md`.
 - **الخطوة 2 (منجَزة)**: طبقة الدومين الخالصة — geo، subscription، capability، dispatch، transport.
-  85 اختباراً ناجحاً، و4 بوابات CI جديدة. التقرير: `docs/phase-2.1-step-02-report.md`.
+  85 اختباراً ناجحاً، و4 بوابات CI جديدة. التقرير: `docs/archive/reports-2026-08-09/phase-2.1-step-02-report.md`.
 - **الخطوة 3 (منجَزة)**: سجل `platform_settings` المُتحقَّق منه، مهلة العرض، المنافذ، وحالة الاستخدام `matchOrder`.
   130 اختباراً ناجحاً، 7 بوابات CI، و`docs/adr/0004-ports-live-in-application.md`.
-  التقرير: `docs/phase-2.1-step-03-report.md`.
+  التقرير: `docs/archive/reports-2026-08-09/phase-2.1-step-03-report.md`.
 - **الخطوة 4 — بوابة HTTP تعمل فعلاً (منجَزة)**: `apps/gateway` صار خادم Hono حقيقياً يُقلع ويجيب:
   `/health`، `/ready` (يسمّي المتغيرات الناقصة)، و`POST /webhook/telegram/:bot` بتحقّق سرّ بزمن ثابت.
   و`apps/workers/src/jobs/expire-offers.ts` منفَّذ ومُختبَر. الاختبارات: 166 ناجحاً.
-  الباقي في `apps/` هيكل حتى وصول رموز البوتين ومفتاح الخدمة. التفصيل في `docs/phase-2.1-step-04-report.md`.
+  الباقي في `apps/` هيكل حتى وصول رموز البوتين ومفتاح الخدمة. التفصيل في `docs/archive/reports-2026-08-09/phase-2.1-step-04-report.md`.
 
 - **الخطوة 5 — منطق البوتين (منجَزة)**: حوار السائق والعميل مكتوب ومُختبَر بالكامل
   (`packages/application/bots/*`)، ومحوّل grammY يرسل فعلاً (`apps/gateway/src/bots/*`)،
   و48 مفتاح نصّ في ثلاث لغات، وبوابتا CI جديدتان. 220 اختباراً ناجحاً.
-  التفصيل في `docs/phase-2.1-step-05-report.md`.
+  التفصيل في `docs/archive/reports-2026-08-09/phase-2.1-step-05-report.md`.
 
 - **الخطوة 6 — الوصل بقاعدة حقيقية (منجَزة)**: `packages/infrastructure` صار محوّلات منفَّذة على
   PostgreSQL فعلاً (لا هياكل)، و`apps/gateway/src/container.ts` يوصّل 11 منفذاً بمحوّلاتها،
   و`index.ts` بلا معالج وهمي. حالة استخدام جديدة `broadcastOffers` تكتب العروض وتُخطر السائقين.
   9 اختبارات تكامل تعمل على قاعدة PostgreSQL+PostGIS محلية عبر HTTP webhook حتى صفوف الجداول.
   `lint` صار Biome حقيقياً منفصلاً عن `typecheck`. 229 اختبار وحدة + 9 تكامل.
-  التفصيل في `docs/phase-2.1-step-06-report.md`.
+  التفصيل في `docs/archive/reports-2026-08-09/phase-2.1-step-06-report.md`.
 
 - **المتبقي لإنهاء 2.1**: مفاتيح الإنتاج (service_role/DATABASE_URL، Upstash، رمزا البوتين،
   سرّ الويبهوك، 15 معرّف مجموعة تلغرام)، ثم دورات البثّ التالية وعامل انتهاء المهلة على Cron حقيقي،

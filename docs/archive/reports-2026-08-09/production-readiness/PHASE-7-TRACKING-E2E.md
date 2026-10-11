@@ -49,7 +49,7 @@
 | الملف | السطور | المحتوى |
 |---|---|---|
 | `tests/e2e/tracking-e2e.test.ts` | ٦٩٥ | سبعة اختبارات، ٦٧ توكيداً |
-| `docs/production-readiness/PHASE-7-TRACKING-E2E.md` | هذا الملف | تقرير البوابة |
+| `docs/archive/reports-2026-08-09/production-readiness/PHASE-7-TRACKING-E2E.md` | هذا الملف | تقرير البوابة |
 
 ## ٥. الملفات التي لم تُلمس — ولماذا
 

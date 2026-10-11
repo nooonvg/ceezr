@@ -240,7 +240,7 @@ Render** — وهوَ عينُ الحالِ الذي كشفَه
 
 `none` قيمة صالحة لا غياب: النظام يعمل كاملاً بلا ترجمة، والرسائل تُسلَّم بلغتها
 الأصلية. جعله إلزامياً كان سيمنع الإقلاع لغياب خدمةٍ مساعِدة —
-[ADR 0010](adr/0010-machine-translation-is-optional.md).
+[ADR 0010](adr/0010-translation-is-optional-not-required.md).
 
 | القيمة | `TRANSLATION_API_KEY` | `TRANSLATION_CONTACT_EMAIL` |
 | --- | --- | --- |

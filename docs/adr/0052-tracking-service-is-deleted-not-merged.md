@@ -11,7 +11,7 @@
 
 ## ١) المشكلةُ — بندٌ عالقٌ بحُجّةٍ انقضت
 
-`R-16` في [`docs/production-readiness/PHASE-6-REALTIME.md`](../production-readiness/PHASE-6-REALTIME.md) §١٠ منصوصٌ هكذا:
+`R-16` في [`docs/archive/reports-2026-08-09/production-readiness/PHASE-6-REALTIME.md`](../archive/reports-2026-08-09/production-readiness/PHASE-6-REALTIME.md) §١٠ منصوصٌ هكذا:
 
 > «`TrackingService` القديم مازال غير موصول (رموزٌ في الذاكرة، ومساره غير مركَّب). **لم يُحذف** لأن حذفه يُسقط ~٤٠ اختباراً، و**لم يُركَّب** لأن تركيبه بمخزنٍ في الذاكرة يُنشئ مصدر حقيقةٍ ثانياً للتتبّع.»
 

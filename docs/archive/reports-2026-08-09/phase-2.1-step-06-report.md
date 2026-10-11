@@ -19,7 +19,7 @@
 | 4 | `tests/integration` و`tests/e2e` فارغان | **`tests/integration` يعمل** | `tests/integration/full-ride.test.ts` |
 | 5 | حجّة انتظار المفاتيح | **سقطت** | Postgres محلية موثّقة في `docs/runbook.md`، وخدمة `postgis` في CI |
 | 6 | `lint` مجرّد `tsc --noEmit` | **Biome حقيقي** | `biome.json`، و`lint` منفصل عن `typecheck` في CI |
-| 7 | «الخطوة 4» مكرّرة ومتناقضة | **نُظِّفت** | `docs/roadmap.md` — سطر واحد لكل خطوة |
+| 7 | «الخطوة 4» مكرّرة ومتناقضة | **نُظِّفت** | `docs/archive/reports-2026-08-09/roadmap.md` — سطر واحد لكل خطوة |
 | 8 | i18n بُني قبل موعده بلا توثيق | **مُوثَّق انحرافاً واعياً** | `docs/adr/0005-i18n-extracted-early.md` |
 
 ## 3. ما بُني فعلاً

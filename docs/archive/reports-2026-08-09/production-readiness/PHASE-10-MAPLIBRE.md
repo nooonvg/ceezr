@@ -84,7 +84,7 @@ P10-8 قيمتُه أنه لم يكن في خطّة المرحلة: فحصٌ أ�
 | `docs/adr/0019-maplibre-from-pinned-cdn-under-csp-nonce.md` | القرار — **يُعدِّل ADR 0007 البند ١** |
 | `tests/unit/maps-maplibre-style.test.ts` | ١٢ حالة |
 | `tests/unit/admin-map-panel.test.ts` | ١٦ حالة |
-| `docs/production-readiness/PHASE-10-MAPLIBRE.md` | هذا الملف |
+| `docs/archive/reports-2026-08-09/production-readiness/PHASE-10-MAPLIBRE.md` | هذا الملف |
 
 ## ٥. ما لم يُلمَس ولماذا
 
