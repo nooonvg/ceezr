@@ -50,7 +50,13 @@ export type RenewFailureReason =
    */
   | "REJECTED"
   /** لم يصل ردٌّ (شبكةٌ أو خادمٌ معطَّل) — الرمزُ المحفوظُ يبقى كما هو. */
-  | "UNAVAILABLE";
+  | "UNAVAILABLE"
+  /**
+   * BOOT-DEADLINES: الرمزُ المحفوظُ لحسابِ تيليجرامَ غيرِ حسابِ الفتحِ الحاليّ (تبديلُ
+   * حساب). لا يُجدَّدُ ولا يُمسَح: الإقلاعُ يمضي إلى مبادلةِ `initData` الحاليّ، وحفظُ
+   * رمزِها يستبدلُه. والمقارنةُ تمنعُ ولا تمنح — الهويّةُ يحكمُ بها الخادم.
+   */
+  | "OTHER_ACCOUNT";
 
 export type RenewSessionResult =
   | {
@@ -66,6 +72,37 @@ export type RenewSessionResult =
  * يجدّد الجلسةَ إن كان على الجهازِ رمزُ تجديدٍ. لا يفترض أنّ في الذاكرةِ جلسةً:
  * الحالةُ الشائعةُ هي إقلاعُ التطبيقِ من جديدٍ والذاكرةُ فارغة.
  */
+/** مهلةُ طلبِ التجديد: إلغاؤه آمنٌ (لا حالةَ على الخادم، فالرمزُ القديمُ صالح). */
+export const RENEW_REQUEST_DEADLINE_MS = 10_000;
+
+/**
+ * موضوعُ رمزِ التجديدِ (`sub` = معرّفُ مستخدمِ تيليجرام) كما كتبه الخادمُ في حِمْلِه
+ * (`packages/infrastructure/identity/miniapp-refresh.ts`). قراءةٌ بلا تحقّقٍ من التوقيع:
+ * تُستعمَلُ للامتناعِ عن تجديدٍ لحسابٍ آخرَ لا لمنحِ شيء. وما لا يُقرأُ = `null`.
+ */
+export function refreshTokenSubject(token: string): string | null {
+  const parts = token.split(".");
+  if (parts.length !== 3) return null;
+  try {
+    const b64 = (parts[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4))) as {
+      sub?: unknown;
+    };
+    return typeof payload.sub === "string" && payload.sub.length > 0 ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+export interface RenewOptions {
+  /**
+   * معرّفُ مستخدمِ تيليجرامَ في بيانِ الفتحِ الحاليّ إن عُرِف. إن خالفَه موضوعُ الرمزِ
+   * المحفوظِ عُدَّ `OTHER_ACCOUNT` بلا نداء. وغيابُ أحدِهما = لا مقارنة.
+   */
+  readonly expectedSubject?: string | null;
+  readonly timeoutMs?: number;
+}
+
 export async function renewSessionFromStorage(
   store: DeviceSecureStore = telegramSecureStore,
   /**
@@ -73,9 +110,15 @@ export async function renewSessionFromStorage(
    * الطلبِ نفسُه الذي يراه الخادمُ. وغيابُه لا يغيّر شيئاً من السلوك.
    */
   observe?: ApiObserver,
+  options: RenewOptions = {},
 ): Promise<RenewSessionResult> {
   const stored = await loadRefreshToken(store);
   if (stored === null) return { renewed: false, reason: "NO_STORED_TOKEN" };
+  const expected = options.expectedSubject ?? null;
+  const subject = refreshTokenSubject(stored);
+  if (expected !== null && subject !== null && subject !== expected) {
+    return { renewed: false, reason: "OTHER_ACCOUNT" };
+  }
 
   let response: RefreshResponse;
   try {
@@ -84,6 +127,7 @@ export async function renewSessionFromStorage(
       body: { refreshToken: stored },
       // مسارٌ عامٌّ: التفويضُ فيه رمزُ التجديدِ نفسُه لا رمزُ وصولٍ صالح.
       public: true,
+      timeoutMs: options.timeoutMs ?? RENEW_REQUEST_DEADLINE_MS,
       ...(observe === undefined ? {} : { observe }),
     });
   } catch (thrown) {
