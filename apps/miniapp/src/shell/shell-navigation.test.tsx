@@ -170,7 +170,7 @@ describe("RootTabBar — معلمُ تنقّلٍ بوسومٍ من المستد�
   );
 
   it("nav بوسمٍ وأربعةُ أزرارٍ بترتيبِ §6", () => {
-    expect(html.startsWith('<nav class="app-frame__tabs" aria-label="nav-label">')).toBe(true);
+    expect(html.startsWith('<nav aria-label="nav-label" class="app-frame__tabs">')).toBe(true);
     expect(html.match(/<button type="button"/g)?.length).toBe(4);
     const order = [...html.matchAll(/>(t-[a-z]+)</g)].map((m) => m[1]);
     expect(order).toEqual(["t-home", "t-rides", "t-support", "t-account"]);
@@ -180,7 +180,7 @@ describe("RootTabBar — معلمُ تنقّلٍ بوسومٍ من المستد�
     expect(html.match(/aria-current="page"/g)?.length).toBe(1);
     // `UX-V2`: الزرُّ يحملُ رمزاً زخرفيّاً مخفيّاً ثمَّ وسمَه — والوسمُ داخلَ الزرِّ النشطِ نفسِه.
     expect(html).toMatch(
-      /class="app-frame__tab app-frame__tab--on" aria-current="page"><span class="app-frame__tab-icon">(?:(?!<\/button>).)*<span class="app-frame__tab-label">t-rides<\/span><\/button>/,
+      /aria-current="page" class="app-frame__tab app-frame__tab--on"><span class="app-frame__tab-icon">(?:(?!<\/button>).)*<span class="app-frame__tab-label">t-rides<\/span><\/button>/,
     );
     expect(html.match(/app-frame__tab--on/g)?.length).toBe(1);
   });
@@ -266,7 +266,7 @@ describe("ScreenFrame — الجذرُ والتدفّق (§6)", () => {
     );
     expect(html.startsWith('<main class="app-frame">')).toBe(true);
     expect(html).toContain('<h1 class="ui-hdr__title">title-x</h1>');
-    expect(html).toContain('<nav class="app-frame__tabs"');
+    expect(html).toMatch(/<nav [^>]*class="app-frame__tabs"/);
     expect(html).not.toContain("ui-hdr__back");
     expect(html).not.toContain('class="ui-act"');
   });
@@ -284,7 +284,7 @@ describe("ScreenFrame — الجذرُ والتدفّق (§6)", () => {
         <p>body</p>
       </ScreenFrame>,
     );
-    expect(html).toContain('class="ui-hdr__back" aria-label="back-label"');
+    expect(html).toContain('aria-label="back-label" class="ui-hdr__back"');
     expect(html).not.toContain("app-frame__tabs");
     expect(html).toContain('<div class="ui-act"><button type="button">go</button></div>');
   });
@@ -368,7 +368,7 @@ describe("ScreenTransition — حركةُ CSS وتركيزٌ برمجيّ", () =
       </ScreenTransition>,
     );
     expect(html).toBe(
-      '<div class="app-frame__screen app-frame__screen--forward" tabindex="-1"><p>x</p></div>',
+      '<div tabindex="-1" class="app-frame__screen app-frame__screen--forward"><p>x</p></div>',
     );
   });
 });

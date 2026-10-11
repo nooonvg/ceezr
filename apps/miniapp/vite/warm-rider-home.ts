@@ -10,6 +10,10 @@
  *      معاً، فلا يُسخَّنُ إلّا ما يحتاجُه السطحانِ. فإن انفصلا سقطَ البناءُ وأُعيدَ النظرُ لا أن يُسخَّنَ ما يُهدَرُ.
  *
  * **ما لا تفعلُه:** لا تقرأُ دوراً ولا تخزّنُه (`F1-05`) · لا تضيفُ وسماً ثابتاً إلى المستندِ (طلباتُ أوّلِ رسمٍ ≤ 6).
+ * **زيادةٌ 2026-10-11 (`PRD-009` · `ADR 0258`):** يُسخَّنُ معَ `rider-home` **تبعيّاتُها الثابتةُ التي ليسَت في رسمِ المدخلِ
+ * الثابت** — والقيمةُ المحقونةُ قائمةٌ مفصولةٌ بفواصل. السببُ مقيس: بعدَ Preact لم يعُد `vendor-react` (CommonJS) يستوردُ
+ * `rolldown-runtime`، فصارَ لا يُكتشَفُ إلّا عندَ تقييمِ `rider-home`، فيُضيفُ ذهابًا وإيابًا كاملًا (≈ 570ms على Slow 4G).
+ *
  * **الحالة:** مُنفَّذ · مُختبَر (`tests/unit/warm-rider-home.test.ts`).
  */
 
@@ -21,6 +25,32 @@ export interface WarmChunk {
   readonly fileName: string;
   readonly moduleIds: readonly string[];
   readonly imports: readonly string[];
+  readonly isEntry?: boolean;
+}
+
+/**
+ * ما يُسخَّن: `rider-home` أوّلًا، ثمَّ تبعيّاتُها الثابتةُ المباشرةُ التي لا يبلغُها المدخلُ ثابتًا (فتلكَ مُسخَّنةٌ
+ * بـ`modulepreload` في المستند). نقيّةٌ لتُختبَر.
+ */
+export function resolveWarmChunks(
+  chunks: readonly WarmChunk[],
+):
+  | { readonly ok: true; readonly fileNames: readonly string[] }
+  | { readonly ok: false; readonly reason: string } {
+  const rider = resolveWarmChunk(chunks);
+  if (!rider.ok) return rider;
+  const byName = new Map(chunks.map((c) => [c.fileName, c]));
+  const reached = new Set<string>();
+  const stack = chunks.filter((c) => c.isEntry === true).map((c) => c.fileName);
+  while (stack.length > 0) {
+    const name = stack.pop() as string;
+    if (reached.has(name)) continue;
+    reached.add(name);
+    for (const dep of byName.get(name)?.imports ?? []) stack.push(dep);
+  }
+  const riderChunk = byName.get(rider.fileName) as WarmChunk;
+  const extra = riderChunk.imports.filter((dep) => !reached.has(dep));
+  return { ok: true, fileNames: [rider.fileName, ...extra] };
 }
 
 /** اسمُ حزمةِ `rider-home` المبنيُّ، أو سببُ الرفضِ. نقيّةٌ لتُختبَر. */
@@ -71,11 +101,12 @@ export function warmRiderHome(): Plugin {
             fileName: item.fileName,
             moduleIds: item.moduleIds,
             imports: item.imports,
+            isEntry: item.isEntry,
           });
         }
-        const resolved = resolveWarmChunk(chunks);
+        const resolved = resolveWarmChunks(chunks);
         if (!resolved.ok) throw new Error(`F1-09 · D-31: ${resolved.reason}`);
-        return injectWarmChunk(html, `/${resolved.fileName}`);
+        return injectWarmChunk(html, resolved.fileNames.map((f) => `/${f}`).join(","));
       },
     },
   };

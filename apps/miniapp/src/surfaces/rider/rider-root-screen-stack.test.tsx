@@ -244,7 +244,7 @@ describe("RiderRoot — تبويباتُ الجذرِ", () => {
         onSelect={() => undefined}
       />,
     );
-    expect(html).toContain('<nav class="app-frame__tabs" aria-label="Main navigation">');
+    expect(html).toContain('<nav aria-label="Main navigation" class="app-frame__tabs">');
     expect(html.match(/<button type="button"/g)).toHaveLength(4);
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
     expect(html).toContain(">Home<");

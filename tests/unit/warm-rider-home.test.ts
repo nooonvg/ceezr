@@ -11,6 +11,7 @@ import { resolve } from "node:path";
 import {
   injectWarmChunk,
   resolveWarmChunk,
+  resolveWarmChunks,
   WARM_PLACEHOLDER,
   type WarmChunk,
 } from "../../apps/miniapp/vite/warm-rider-home.ts";
@@ -45,6 +46,48 @@ describe("resolveWarmChunk (F1-09 · D-31)", () => {
   });
 });
 
+describe("resolveWarmChunks — تبعيّاتُ `rider-home` خارجَ رسمِ المدخل (PRD-009 · ADR 0258)", () => {
+  const entry: WarmChunk = {
+    fileName: "assets/index.js",
+    moduleIds: [],
+    imports: ["assets/shell-B.js"],
+    isEntry: true,
+  };
+  const shell: WarmChunk = {
+    fileName: "assets/shell-B.js",
+    moduleIds: [],
+    imports: ["assets/vendor-react-V.js"],
+  };
+  const vendor: WarmChunk = { fileName: "assets/vendor-react-V.js", moduleIds: [], imports: [] };
+  const runtime: WarmChunk = {
+    fileName: "assets/rolldown-runtime-R.js",
+    moduleIds: [],
+    imports: [],
+  };
+  const rider: WarmChunk = {
+    ...RIDER,
+    imports: ["assets/shell-B.js", "assets/vendor-react-V.js", "assets/rolldown-runtime-R.js"],
+  };
+  const all = [entry, shell, vendor, runtime, rider, driver(["assets/rider-home-A.js"])];
+
+  it("يُسخِّنُ `rider-home` أوّلًا ثمَّ ما لا يبلغُه المدخلُ ثابتًا (`rolldown-runtime`)", () => {
+    expect(resolveWarmChunks(all)).toEqual({
+      ok: true,
+      fileNames: ["assets/rider-home-A.js", "assets/rolldown-runtime-R.js"],
+    });
+  });
+
+  it("سلبيّ: ما يبلغُه المدخلُ بالتعدّي (`shell` ← `vendor-react`) لا يُكرَّرُ تسخينُه", () => {
+    const r = resolveWarmChunks(all);
+    expect(r.ok && r.fileNames).not.toContain("assets/shell-B.js");
+    expect(r.ok && r.fileNames).not.toContain("assets/vendor-react-V.js");
+  });
+
+  it("سلبيّ: رفضُ `resolveWarmChunk` يمرُّ كما هوَ — لا تسخينَ لسطحَين منفصلَين", () => {
+    expect(resolveWarmChunks([entry, rider, driver([])]).ok).toBe(false);
+  });
+});
+
 describe("injectWarmChunk (F1-09 · D-31)", () => {
   it("يستبدلُ العلامةَ مرّةً واحدةً", () => {
     const html = `<script>var warm = "${WARM_PLACEHOLDER}";</script>`;
@@ -71,6 +114,11 @@ describe("موضعُ التسخينِ في سكربتِ ما قبلَ الإقل
   it("بعدَ شرطِ `initData` وإرسالِ الجلسةِ — لا تسخينَ خارجَ تيليجرامَ", () => {
     expect(warmAt).toBeGreaterThan(script.indexOf("if (initData.length === 0) return;"));
     expect(warmAt).toBeGreaterThan(script.indexOf('fetch(base + "/v1/session/telegram"'));
+  });
+
+  it("القيمةُ قائمةٌ بفواصل: كلُّ عنصرٍ وسمُ `modulepreload` مستقلّ (PRD-009 · ADR 0258)", () => {
+    expect(script.slice(warmAt)).toContain('warm.split(",")');
+    expect(script.slice(warmAt)).toContain('l.rel = "modulepreload"');
   });
 
   it("لا ينتظرُ نجاحَ الجلسةِ ولا الدورَ: خارجَ كلِّ `.then(`", () => {
