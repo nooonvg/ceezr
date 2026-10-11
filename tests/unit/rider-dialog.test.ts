@@ -566,6 +566,23 @@ describe("مسار التوصيل في حوار العميل", () => {
     expect(rides.createCalls).toHaveLength(0);
   });
 
+  // WR-18 — قرار المالك: وصف الطرد اختياري، و/skip في خطوته ينشئ الطلب بلا وصف.
+  it("يقبل /skip في خطوة وصف الطرد فينشئ طلب توصيل بلا وصف", async () => {
+    const d = deliveryDeps();
+    await handleRiderUpdate(text("/delivery"), d);
+    await handleRiderUpdate(location(PICKUP), d);
+    await handleRiderUpdate(location(DROPOFF), d);
+    const done = await handleRiderUpdate(text("/skip"), d);
+    expect(waitingVariants("riderSearchingDelivery", "ar")).toContain(done[0]?.text ?? "");
+    expect(rides.createCalls).toEqual([
+      expect.objectContaining({
+        service: "delivery",
+        destination: { lat: DROPOFF.latitude, lng: DROPOFF.longitude },
+        notes: null,
+      }),
+    ]);
+  });
+
   it("يرفض وصف طرد قصيراً ويبقى في نفس الخطوة حتى يصحّ", async () => {
     const d = deliveryDeps();
     await handleRiderUpdate(text("/delivery"), d);

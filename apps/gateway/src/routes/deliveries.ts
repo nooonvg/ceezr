@@ -41,11 +41,7 @@ import { IDEMPOTENCY_HEADER, RIDE_REQUEST_MAX_BYTES } from "./rides.ts";
 import { readBounded } from "./telegram-webhook.ts";
 
 /** رموزُ الأخطاءِ الخاصّةِ بالتوصيلِ — تُضافُ إلى رموزِ `requestRide` العامّة. */
-export type DeliveryCreateErrorCode =
-  | RequestRidePublicErrorCode
-  | "PARCEL_DESCRIPTION_REQUIRED"
-  | "PARCEL_DESCRIPTION_INVALID"
-  | "DROPOFF_REQUIRED";
+export type DeliveryCreateErrorCode = RequestRidePublicErrorCode | "DROPOFF_REQUIRED";
 
 // biome-ignore format: keep on single line for STATUS_MAP_OPENS check
 const STATUS_BY_ERROR: Readonly<Record<DeliveryCreateErrorCode, 400 | 401 | 403 | 404 | 409 | 413 | 503>> = {
@@ -65,7 +61,6 @@ const STATUS_BY_ERROR: Readonly<Record<DeliveryCreateErrorCode, 400 | 401 | 403 
   ACCOUNT_NOT_FOUND: 404,
   RIDER_NOT_REGISTERED: 403,
   RIDE_STORE_NOT_AVAILABLE: 503,
-  PARCEL_DESCRIPTION_REQUIRED: 400,
   PARCEL_DESCRIPTION_INVALID: 400,
   DROPOFF_REQUIRED: 400,
 };

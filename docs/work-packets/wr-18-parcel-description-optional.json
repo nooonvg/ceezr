@@ -1,0 +1,42 @@
+{
+  "id": "wr-18-parcel-description-optional",
+  "goal": "وصف الطرد اختياري في كل المسارات بقرار المالك (§18): لا يُرفض طلب توصيل لأن الوصف فارغ، والمكتوب يُحاكم بعقد واحد في /v1/rides و/v1/deliveries والبوت.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/decisions/DEC-11-20260917-owner-fare-policy.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/routes/deliveries.ts",
+    "apps/gateway/src/routes/rides.ts",
+    "apps/miniapp/src/surfaces/rider/quote/QuoteScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/quote/quote-view.ts",
+    "apps/miniapp/src/surfaces/rider/search/delivery-api.ts",
+    "apps/miniapp/src/surfaces/rider/search/request-by-service.ts",
+    "packages/application/bots/rider-dialog.ts",
+    "packages/application/transport/request-ride.ts",
+    "packages/domain/delivery/entity.ts",
+    "packages/domain/delivery/events.ts",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/ur.json",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/unit/delivery-behavior.test.ts",
+    "tests/unit/delivery-request.test.ts",
+    "tests/unit/parcel-validation.test.ts",
+    "tests/unit/rider-dialog.test.ts",
+    "tests/unit/wr-18-parcel-optional.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "قاعدة الطرد تنتقل إلى requestRide فتحكم المسارين؛ الفراغ null لا خطأ؛ البوت يستعمل /skip القائم في خطوة الوجهة اصطلاحًا لخطوة الطرد بلا واجهة جديدة.",
+  "tests": [
+    "bun test tests/unit/wr-18-parcel-optional.test.ts tests/unit/rider-dialog.test.ts tests/unit/delivery-request.test.ts tests/unit/delivery-route.test.ts tests/unit/parcel-validation.test.ts tests/unit/delivery-behavior.test.ts"
+  ],
+  "evidence": "محليًا: الاختبارات أعلاه خضراء، وlint وtypecheck وcheck-i18n ✓. القاعدة (request_ride) تقبل notes فارغة أصلًا. بطاقة السائق تعرض «لم يُحدَّد» عند الفراغ.",
+  "constraints": ["لا حقول حجم أو وزن أو قيمة", "لا تغيير في النقل", "لا واجهة جديدة"],
+  "limitations": "الحد الأدنى 3 أحرف للمكتوب باقٍ كما هو (عقد قائم لا قرار جديد).",
+  "status": "open"
+}

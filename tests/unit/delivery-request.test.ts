@@ -67,9 +67,24 @@ describe("domain/delivery — صحّة طلب التوصيل", () => {
     expect(made.error.code).toBe("DELIVERY_DROPOFF_REQUIRED");
   });
 
+  // WR-18 — قرار المالك: الوصف اختياري. الفراغ «لا وصف» والطلب صالح.
+  it("يقبل طلب توصيل بلا وصف ويحمل الوصف null", () => {
+    for (const raw of ["", "   "]) {
+      const made = makeDeliveryRequest({
+        cityId: JEDDAH.id,
+        riderId: RIDER,
+        pickup: PICKUP,
+        dropoff: DROPOFF,
+        parcelDescription: raw,
+      });
+      expect(made.ok).toBe(true);
+      if (!made.ok) continue;
+      expect(made.value.parcelDescription).toBeNull();
+    }
+  });
+
   it("يرفض الأوصاف غير الصالحة بسببٍ صريح لكل حالة", () => {
     const cases: readonly { readonly raw: string; readonly reason: string }[] = [
-      { raw: "   ", reason: "empty" },
       { raw: "أب", reason: "too_short" },
       { raw: "/skip", reason: "looks_like_command" },
       { raw: "ط".repeat(201), reason: "too_long" },

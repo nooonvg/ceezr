@@ -1121,6 +1121,11 @@ async function handleCommand(
     }
 
     case "/skip": {
+      // `WR-18`: وصفُ الطردِ اختياريٌّ — `/skip` في خطوتِه يُنشئُ الطلبَ بلا وصف.
+      if (state.step === "awaiting_parcel") {
+        if (rider === null) return [reply(sender, tr("rider.must_register_first"))];
+        return handleParcel("", sender, state, updateId, deps);
+      }
       if (state.step !== "awaiting_dropoff" || state.draftPickup === null) {
         return [reply(sender, tr("common.unknown_command"))];
       }

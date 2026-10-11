@@ -35,16 +35,17 @@ function simulateRequestClick(
 }
 
 describe("Delivery request behavior", () => {
-  it("empty delivery does not call onRequest", () => {
+  // WR-18 — قرار المالك: لا يُرفض طلب توصيل لأن الراكب لم يكتب وصفًا.
+  it("empty delivery calls onRequest (description is optional, WR-18)", () => {
     const result = simulateRequestClick("delivery", "");
-    expect(result.onRequestCalled).toBe(false);
-    expect(result.parcelErrorKey).toBe("rider.quote.parcel.error.empty");
+    expect(result.onRequestCalled).toBe(true);
+    expect(result.parcelErrorKey).toBeNull();
   });
 
-  it("whitespace-only delivery does not call onRequest", () => {
+  it("whitespace-only delivery calls onRequest (description is optional, WR-18)", () => {
     const result = simulateRequestClick("delivery", "   ");
-    expect(result.onRequestCalled).toBe(false);
-    expect(result.parcelErrorKey).toBe("rider.quote.parcel.error.empty");
+    expect(result.onRequestCalled).toBe(true);
+    expect(result.parcelErrorKey).toBeNull();
   });
 
   it("bot command delivery does not call onRequest", () => {

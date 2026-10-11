@@ -44,6 +44,7 @@
  *   ــ **لا تُعيدُ نصّاً معروضاً**: رموزٌ ومعرّفاتٌ وأختامٌ (القسم 9.11).
  */
 
+import { parseParcelDescription } from "../../domain/delivery/value-objects.ts";
 import { type PlaceMetaRefusal, readPlaceMeta } from "../../domain/places/place-input.ts";
 import { readPlacePoint } from "../../domain/places/place-kinds.ts";
 import { isServiceKind } from "../../domain/quote/service-offer.ts";
@@ -74,6 +75,11 @@ export type RequestRidePublicErrorCode =
   | "IDEMPOTENCY_KEY_INVALID"
   | "UNKNOWN_SERVICE"
   | "NOTES_TOO_LONG"
+  /**
+   * `WR-18`: وصفُ الطردِ **اختياريٌّ**، وما كُتِبَ منه يُحاكَمُ بعقدِه نفسِه في المسارين
+   * (`/v1/rides` بـ`service=delivery` و`/v1/deliveries`)، فلا يفرضُه أحدُهما ويتجاوزُه الآخر.
+   */
+  | "PARCEL_DESCRIPTION_INVALID"
   /** `LOC-TRUST-01` — مكانٌ معطوبُ الشكل، أو رابطٌ لا يُقبَل، أو ملاحظةُ مكانٍ طويلة، أو قراءةُ جهازٍ لا تُوثَق. */
   | PlaceMetaRefusal
   | "ACCOUNT_NOT_FOUND"
@@ -170,6 +176,13 @@ export async function requestRide(
   if ("refusal" in notes) {
     return err(notes.refusal === "NOTES_TOO_LONG" ? "NOTES_TOO_LONG" : "MALFORMED");
   }
+  // `WR-18`: الفراغُ مقبولٌ في التوصيل (الوصفُ اختياريٌّ)، والمكتوبُ بقواعدِ الطردِ نفسِها.
+  let rideNotes = notes.notes;
+  if (body.service === "delivery" && rideNotes !== null) {
+    const parcel = parseParcelDescription(rideNotes);
+    if (!parcel.ok) return err("PARCEL_DESCRIPTION_INVALID");
+    rideNotes = parcel.value;
+  }
 
   // `LOC-TRUST-01`: ما كانَ يسقطُ بينَ الشاشةِ والقاعدة — مصدرُ النقطةِ ودقّتُها ووقتُها
   // والرابطُ الأصليُّ وملاحظاتُ المكان. غيابُهما مقبولٌ (عميلٌ أقدمُ من العقد).
@@ -185,7 +198,7 @@ export async function requestRide(
     service: body.service,
     origin,
     destination,
-    notes: notes.notes,
+    notes: rideNotes,
     pickupLabel: readPlaceLabel(body.pickupLabel),
     dropoffLabel: readPlaceLabel(body.destinationLabel),
     pickupAt: readPickupAt(body.pickupAt),

@@ -35,7 +35,8 @@ export interface DeliveryRequest {
   readonly service: ServiceType;
   readonly pickup: Coordinates;
   readonly dropoff: Coordinates;
-  readonly parcelDescription: ParcelDescription;
+  /** `WR-18` — قرارُ المالك: الوصفُ اختياريٌّ. `null` = لم يكتبْ الراكبُ وصفًا، والطلبُ صالح. */
+  readonly parcelDescription: ParcelDescription | null;
 }
 
 /**
@@ -47,8 +48,13 @@ export function makeDeliveryRequest(
 ): Result<DeliveryRequest, DeliveryRequestError> {
   if (input.dropoff === null) return err(new DeliveryDropoffRequiredError());
 
-  const parcel = parseParcelDescription(input.parcelDescription);
-  if (!parcel.ok) return parcel;
+  // `WR-18`: الفراغُ ليسَ خطأً بل «لا وصف»؛ وما كُتِبَ يُحاكَمُ بعقدِه كما كان.
+  let parcelDescription: ParcelDescription | null = null;
+  if (input.parcelDescription.trim() !== "") {
+    const parcel = parseParcelDescription(input.parcelDescription);
+    if (!parcel.ok) return parcel;
+    parcelDescription = parcel.value;
+  }
 
   return ok({
     cityId: input.cityId,
@@ -56,6 +62,6 @@ export function makeDeliveryRequest(
     service: DELIVERY_SERVICE,
     pickup: input.pickup,
     dropoff: input.dropoff,
-    parcelDescription: parcel.value,
+    parcelDescription,
   });
 }

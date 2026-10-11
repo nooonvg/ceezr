@@ -15,7 +15,8 @@ export interface DeliveryRequestedEvent {
   readonly orderId: OrderId;
   readonly cityId: CityId;
   readonly riderId: RiderId;
-  readonly parcelDescription: ParcelDescription;
+  /** `null` حين لم يكتبْ الراكبُ وصفًا (`WR-18`). */
+  readonly parcelDescription: ParcelDescription | null;
   readonly occurredAt: Date;
 }
 
