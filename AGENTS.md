@@ -68,17 +68,17 @@ bun run ci          # lint + typecheck + build + الحواجز + الاختبا
 
 ثمَّ اقرأْ ما يمسُّ مهمّتَك فقط من §2. وإن وجدْتَ تعارضًا بينَ وثيقةٍ والكود، **فالكودُ والدليلُ الحيُّ يحكمان**، وصحِّحِ الوثيقةَ في التغييرِ نفسِه.
 
-### لقطةٌ موثَّقة — 2026-10-11 (أعِدْ حسابَها بالأوامرِ أعلاه، فقد تتقادم)
+### لقطةٌ موثَّقة — 2026-10-11 مساءً (أعِدْ حسابَها بالأوامرِ أعلاه، فقد تتقادم)
 
 | | القيمة | كيفَ تُحقِّقُها |
 |---|---|---|
-| `main` | `b8027993` (#483) | `git log -1 origin/main` |
+| `main` | `a16f2873` (#484) | `git log -1 origin/main` |
 | الإنتاج — gateway | `9519056f` (#466). ولا فرقَ في `apps/gateway` و`packages` و`supabase` و`render.yaml` بينَه وبينَ `main` | Render deploys + `git diff --stat 9519056f origin/main -- apps/gateway packages supabase render.yaml` |
-| الإنتاج — miniapp | `22a3898d` (#479، Preact). وما بعدَه في `apps/miniapp` اختباراتٌ فقط حتّى `main` | Render deploys |
+| الإنتاج — miniapp | `a16f2873` (#484، ADR 0259) — `dep-db5rqgnlot8c73fvqhlg`، 17/17 حزمةً مطابقة (`docs/evidence/production/PRD-002-deploy-20261011-a16f2873.md`) | Render deploys |
 | staging | `waslah-miniapp-staging` **موقوف** (suspended). ولا بيئةَ staging عاملة (`PRD-201` Blocked) | Render |
 | `/ready` | `ready`، و`degradedChecks: []` | `curl` |
 | بنودُ الجاهزيّة | Verified: 001 · 002 · 003 · 102 · 103 · 104 · 106. ADR-Closed: 004–007 · 105. Ready: 010. **Blocked**: 008 · 009 · 101 · 201–205 | البوّابةُ (§2) |
-| طلباتٌ مفتوحة | #484: إصلاحُ تسلسلِ الإقلاع (ADR 0259). و#485: هذا التنظيف. **كلاهما غيرُ مدموجٍ وغيرُ منشور**، والدمجُ نظيفٌ في الترتيبَين (محاكاةٌ محلّيّة) | `gh pr list` |
+| طلباتٌ مفتوحة | `fix/preboot-unhandled-rejection` (رفضٌ غيرُ مُعالَجٍ في سكربتِ `index.html`) | `gh pr list` |
 | المدنُ الخمس | كلُّها `is_active = true` بقروباتِها (قراءةٌ من الإنتاج، `select` فقط) | `docs/agent-core-activation.md` (رأسُها) |
 | `AGENT_CORE_ENABLED` | **غيرُ مُتحقَّقٍ منه**: ليسَ في `render.yaml`، وقراءةُ متغيّراتِ Render تكشفُ أسرارًا | قرارُ المالك |
 
