@@ -145,7 +145,7 @@
 | الإجراء المطلوب | اختبارُ رحلةٍ كاملةٍ من عميل Telegram حقيقي: launch → auth → consent → rider → driver → tracking → SOS → emergency contact، على iOS وAndroid وDesktop |
 | شرط القبول | كلُّ مسارٍ يعملُ بلا خطأ؛ `initData` يُوقَّعُ حقيقيًّا؛ BackButton وHaptics وthemeChanged تُختبَر |
 | الدليل | `docs/evidence/production/PRD-008-telegram-smoke-YYYYMMDD.md` يحتوي: لقطةُ شاشةٍ لكل خطوة، نسخةُ العميل، نتيجةُ كل مسار |
-| الحالة | **Blocked** (يحتاج أجهزة المالك). جزئيٌّ 2026-10-08: رسالتان حقيقيّتان لبوتَي السائقِ والراكبِ وصلتا webhook وعولِجتا (`done`) بجلسةٍ على Redis؛ رحلةُ الـMini App كلُّها ومصفوفةُ iOS/Android/Desktop لم تُختبَر — `docs/evidence/production/PRD-008-telegram-smoke-20261008.md` (بروتوكولُ الإكمال §3) |
+| الحالة | **Blocked** (يحتاج أجهزة المالك). جزئيٌّ 2026-10-08: رسالتان حقيقيّتان لبوتَي السائقِ والراكبِ وصلتا webhook وعولِجتا (`done`) بجلسةٍ على Redis؛ رحلةُ الـMini App كلُّها ومصفوفةُ iOS/Android/Desktop لم تُختبَر — `docs/evidence/production/PRD-008-telegram-smoke-20261008.md` (بروتوكولُ الإكمال §3) **2026-10-11 iOS:** الخطوتانِ 1–2 ناجحتانِ على iPhone Xs · iOS 18.7.10 · Telegram 12.9.4، بـ`session.issued` `bot=rider` 03:15:14Z وبلا أخطاء، وعلى بناءِ Preact الحيّ (§1و). والبقيّةُ لم تُختبَر. |
 
 ### PRD-009: إعادة قياس الأداء على الإنتاج
 
