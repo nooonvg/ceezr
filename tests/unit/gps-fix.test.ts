@@ -1,7 +1,7 @@
 /**
  * الغرض: اختبارات تقييم إصلاحة GPS — المرحلة ٣.
  *   كل حالة هنا كانت **تمرّ** في المُتحقِّق المحذوف `packages/tracking/location-validator.ts`
- *   ما لم يُذكر خلاف ذلك. القياس مسجَّل في docs/production-readiness/PHASE-3-GPS-VALIDATION.md
+ *   ما لم يُذكر خلاف ذلك. القياس مسجَّل في docs/archive/reports-2026-08-09/production-readiness/PHASE-3-GPS-VALIDATION.md
  * ينتمي إلى: tests/unit
  */
 

@@ -86,7 +86,8 @@ bun run test
 
 و`TRACKING_TOKEN_BASE_URL` **اختياريٌّ وغيابه موقفٌ لا عطل**: بدونه يعمل كلُّ شيء إلّا
 روابطَ التتبّع المؤقّتة (§4.2) — فلا يُعرَض زرٌّ يُنتج رابطاً لا يُفتح، ويُخطَر الراكب
-بقبول السائق بلا رابط. التفصيل في
+بقبول السائق بلا رابط. التعريفُ النافذُ في `render.yaml` (`TRACKING_TOKEN_BASE_URL`)، والتحقّقُ منه (`https` إلزاميٌّ في الإنتاج) في
+`packages/shared/config/index.ts`. وسياقُ القرارِ الأصليِّ (تاريخيّ) في
 [`docs/archive/reports-2026-08-09/section-4-2-tracking-links-report.md`](docs/archive/reports-2026-08-09/section-4-2-tracking-links-report.md).
 
 ## القروبات: أي بوت يُضاف إلى أيّها

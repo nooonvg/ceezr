@@ -11,7 +11,8 @@
     "package.json",
     "scripts/check-docs-hygiene.ts",
     "scripts/lib/docs-hygiene.ts",
-    "tests/unit/check-docs-hygiene.test.ts"
+    "tests/unit/check-docs-hygiene.test.ts",
+    "tests/unit/gps-fix.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
@@ -27,6 +28,7 @@
     "docs/adr/0097-docs-budget-ratchet-and-field-experiment-quarantine.md",
     "docs/adr/0099-latency-is-one-network-round-trip-not-a-test-timeout.md",
     "docs/adr/0171-a-promised-reply-with-no-path-is-a-complaint-that-can-only-be-rejected.md",
+    "docs/agent-core-activation.md",
     "docs/archive/README.md",
     "docs/archive/reports-2026-08-09/MOVE-final-report-20260912.md",
     "docs/archive/reports-2026-08-09/REMAINING-WORK-MAP-20260908.md",
@@ -96,13 +98,14 @@
     "docs/evidence/distributed/SCL-001-20260908.md",
     "docs/evidence/reconciliation-2026-10-04/claims-audit.md",
     "docs/evidence/toolchain/D-23-20260919.md",
+    "docs/governance/OWNER-QUESTIONS-20261009.md",
     "docs/render-deployment-vars.md",
     "docs/runtime-prerequisites.md"
   ],
-  "decision": "نقلٌ لا حذف: 57 تقريرًا منتهيًا (`phase-*` و`section-*` و`directive-*`، و`production-readiness/PHASE-*`، و`reports/`، و`roadmap.md` و`repo-manifest.md` المُعلَنان تاريخيَّين) إلى `docs/archive/reports-2026-08-09/` بـ`git mv`، مع تحديثِ الإشارات. وما تشيرُ إليه الحواجزُ بمسارِه، أو هو مرجعٌ نافذ، يبقى في مكانِه.",
+  "decision": "نقلٌ لا حذف: 56 تقريرًا منتهيًا (`phase-*` و`section-*` و`directive-*`، و`production-readiness/PHASE-*`، و`reports/`، و`roadmap.md` و`repo-manifest.md` المُعلَنان تاريخيَّين) إلى `docs/archive/reports-2026-08-09/` بـ`git mv`، مع تحديثِ الإشارات. وما تشيرُ إليه الحواجزُ بمسارِه، أو هو مرجعٌ نافذ، يبقى في مكانِه. وتدقيقٌ ثانٍ (2026-10-11): `agent-core-activation.md` يبقى (المرجعُ الوحيدُ لـ`AGENT_CORE_*`) بملاحظةِ تصحيح، و`docs/audits/` دليلٌ مؤرَّخٌ يُحفَظ، وتصحيحُ رؤوسِ `SYSTEM_STATE` المتقادمة، وأسئلةُ مالكٍ قديمةٌ إلى Q5، ولا تقسيمَ للسجلّاتِ الكبيرة (`AGENTS.md` §6).",
   "tests": [
     "tests/unit/check-docs-hygiene.test.ts: 10 (خرقٌ مزروعٌ لكلِّ قاعدة)",
-    "scripts/check-docs-hygiene.ts: 0 مشكلة على المستودع",
+    "scripts/check-docs-hygiene.ts: 0 مشكلة، ويسقطُ بخرقٍ حيٍّ (exit=1)",
     "bun run ci"
   ],
   "constraints": [
