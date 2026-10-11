@@ -76,14 +76,13 @@ function t(language: MiniAppLanguage, key: string): string {
   if (value === undefined) throw new Error(`${key} @ ${language}`);
   return value;
 }
-/** النصُّ كما يُرسَمُ في HTML (الاقتباسُ يُهرَّب). */
+/** النصُّ كما يُرسَمُ في HTML. Preact (ADR 0258) لا يُهرِّبُ الفاصلةَ العليا في النصّ، وReact كانَ يُهرِّبُها. */
 function html(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#x27;");
+    .replace(/"/g, "&quot;");
 }
 const never = <T,>() => new Promise<T>(() => {});
 
@@ -425,7 +424,7 @@ describe("[B] اللوحاتُ — كلُّ حالٍ صادقٌ بلغاتِه،
       const unchanged = r({ state: { kind: "ready", saved }, draft: saved, savedNotice: true });
       expect(unchanged.match(/role="radiogroup"/g)).toHaveLength(2);
       expect(unchanged).toContain(tt("rider.notifications.prefs.operational"));
-      expect(unchanged).toMatch(/<button disabled="" type="submit"/);
+      expect(unchanged).toMatch(/<button disabled type="submit"/);
       expect(unchanged).toContain(tt("rider.notifications.prefs.saved"));
 
       const changed = r({

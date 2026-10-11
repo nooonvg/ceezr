@@ -1,0 +1,3 @@
+[test]
+# PRD-009 · ADR 0258: `bun test src` من هذا المجلّد على Preact نفسِه الذي يُشحَن (كالجذر).
+preload = ["./test/preact-alias.ts"]

@@ -143,7 +143,8 @@ describe("كلُّ زرٍّ له فعلٌ حقيقيٌّ", () => {
     const out = html(busy);
     expect(out).toContain('aria-busy="true"');
     expect(out).toContain('aria-disabled="true"');
-    expect(out).not.toContain('disabled=""');
+    // `disabled` أصيلٌ بأيِّ تسلسل (React: `disabled=""`، Preact: `disabled`) — لا يظهر؛ `aria-disabled` وحدَه.
+    expect(out).not.toMatch(/\sdisabled(=""|[\s>])/);
     expect(out).toContain("ui-btn__spinner");
   });
 
@@ -225,7 +226,7 @@ describe("ui-tab — WAI-ARIA Tabs", () => {
         x
       </UiTabPanel>,
     );
-    expect(off).toContain('hidden=""');
+    expect(off).toMatch(/ hidden[ >]/);
   });
 });
 
@@ -397,8 +398,8 @@ describe("ui-rail — الحالةُ لا تُقالُ باللونِ وحدَه
     expect(out).toContain("ui-rail__check");
     expect(out).toContain('aria-current="step"');
     for (const t of ["SD", "SC", "SP"]) expect(out).toContain(t);
-    expect(out).not.toMatch(/ui-rail__dot" aria-hidden="true">1</);
-    expect(out).toMatch(/ui-rail__dot" aria-hidden="true">3</);
+    expect(out).not.toMatch(/aria-hidden="true" class="ui-rail__dot">1</);
+    expect(out).toMatch(/aria-hidden="true" class="ui-rail__dot">3</);
   });
 });
 
@@ -433,7 +434,7 @@ describe("ui-timer — مؤقّتُ CSS بلا عدٍّ يتجمّد", () => {
 describe("ui-pg — <progress> بلا بديلٍ ميّت", () => {
   it("لا محتوى داخليٌّ ولا نمطٌ مُضمَّن", () => {
     const out = html(<UiProgress value={40} max={100} label="P" />);
-    expect(out).toBe('<progress class="ui-pg" value="40" max="100" aria-label="P"></progress>');
+    expect(out).toBe('<progress value="40" max="100" aria-label="P" class="ui-pg"></progress>');
   });
 
   it("progressBounds يقصرُ القيمةَ ويرفضُ الحدَّ غيرَ الصالح", () => {
