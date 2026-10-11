@@ -72,13 +72,14 @@ bun run ci          # lint + typecheck + build + الحواجز + الاختبا
 
 | | القيمة | كيفَ تُحقِّقُها |
 |---|---|---|
-| `main` | `e449d019` (#486) | `git log -1 origin/main` |
-| الإنتاج — gateway | `9519056f` (#466). ولا فرقَ في `apps/gateway` و`packages` و`supabase` و`render.yaml` بينَه وبينَ `main` | Render deploys + `git diff --stat 9519056f origin/main -- apps/gateway packages supabase render.yaml` |
-| الإنتاج — miniapp | `e449d019` (#486) — `dep-db5scn7avr4c739tir6g`، 17/17 حزمةً و`index.html` مطابقة (`docs/evidence/production/PRD-002-deploy-20261011-a16f2873.md` §7) | Render deploys |
+| `main` | `0a733574` (#489) | `git log -1 origin/main` |
+| الإنتاج — gateway | `9519056f` (#466). ولا فرقَ في `apps/gateway` و`apps/workers` و`packages` و`render.yaml` بينَه وبينَ `main`؛ وفي `supabase/` هجرةُ `20261011120000` وحدَها، مُطبَّقةٌ على القاعدةِ مباشرةً | Render deploys + `git diff --stat 9519056f origin/main -- apps/gateway apps/workers packages supabase render.yaml` |
+| الإنتاج — miniapp | `0a733574` (#488 مُهَلُ الإقلاع) — `dep-db5t4r7lot8c7383qjpg`، 17/17 حزمةً و`index.html` مطابقة (`docs/evidence/production/PRD-002-deploy-20261011-0a733574.md`) | Render deploys |
 | staging | `waslah-miniapp-staging` **موقوف** (suspended). ولا بيئةَ staging عاملة (`PRD-201` Blocked) | Render |
 | `/ready` | `ready`، و`degradedChecks: []` | `curl` |
 | بنودُ الجاهزيّة | Verified: 001 · 002 · 003 · 102 · 103 · 104 · 106. ADR-Closed: 004–007 · 105. Ready: 010. **Blocked**: 008 · 009 · 101 · 201–205 | البوّابةُ (§2) |
-| طلباتٌ مفتوحة | لا شيءَ من عملِ الإقلاع (#484 و#486 مدموجان ومنشوران) | `gh pr list` |
+| طلباتٌ مفتوحة | لا شيءَ من عملِ الإقلاعِ ولا القاعدة (#484 #486 #488 منشورة، و#489 مُطبَّق) | `gh pr list` |
+| النسخُ الاحتياطيّ | ليليٌّ `verified` من `ceezr-backups`؛ **بايتاتُ Storage غيرُ منسوخةٍ حتّى تُضافَ مفاتيحُ S3** (الحاويةُ اليومَ فارغة)؛ وGoogle Drive غيرُ عامل | `docs/evidence/production/BACKUP-STORAGE-20261011.md` |
 | المدنُ الخمس | كلُّها `is_active = true` بقروباتِها (قراءةٌ من الإنتاج، `select` فقط؛ أُعيدَت 2026-10-11 مساءً: 5/5) | `docs/agent-core-activation.md` (رأسُها) |
 | بلاغاتُ SOS | أربعةٌ بلا قرار: `open` × 1 (منذ 2026-09-30) و`received` × 3 — قرارُ المشرفين، ولا تُغلَقُ آليًّا | `select status, count(*) from safety_incidents group by 1` |
 | `AGENT_CORE_ENABLED` | **غيرُ مُتحقَّقٍ منه**: ليسَ في `render.yaml`، وقراءةُ متغيّراتِ Render تكشفُ أسرارًا | قرارُ المالك |
