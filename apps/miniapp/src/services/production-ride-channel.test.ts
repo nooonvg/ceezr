@@ -6,6 +6,7 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { clearSession } from "../identity/session.ts";
 import {
   productionChannelBaseUrl,
   productionRideChannelTransport,
@@ -24,6 +25,8 @@ describe("production-ride-channel", () => {
   });
 
   it("قارئُ الجلسةِ يُرجِعُ `null` بلا جلسةٍ محفوظةٍ", () => {
+    // لا يعتمدُ على ترتيبِ الملفّات: الجلسةُ حالةُ وحدةٍ مشتركة في العمليّة.
+    clearSession();
     expect(productionSessionReader.read()).toBeNull();
   });
 
