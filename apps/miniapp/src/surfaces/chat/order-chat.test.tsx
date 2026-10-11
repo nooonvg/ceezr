@@ -54,6 +54,7 @@ const LABEL_KEYS = [
   "seen",
   "counterpart",
   "status",
+  "refresh",
 ] as const;
 
 const labels = Object.fromEntries(
@@ -160,6 +161,13 @@ describe("WR-04 — حدودُ العميل", () => {
     const source = read("./order-chat-socket.ts");
     expect(source).toContain('transports: ["polling"]');
     expect(source).toContain("upgrade: false");
+  });
+
+  it("لا مؤقّتَ استقصاءٍ دوريٍّ (ADR 0035 §4): الاسترجاعُ بالانضمامِ والعودةِ والزرّ", () => {
+    const code = read("./OrderChat.tsx").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(code).not.toMatch(/\bsetInterval\s*\(/);
+    expect(code).toContain("visibilitychange");
+    expect(code).toContain("labels.refresh");
   });
 
   it("لا شيءَ من المحادثةِ يُحفَظُ في الجهاز", () => {

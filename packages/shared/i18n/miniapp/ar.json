@@ -1715,5 +1715,7 @@
   "driver.job.chat.unavailable": "انتهت الجلسة. أعد فتح التطبيق لمتابعة المحادثة.",
   "driver.job.chat.seen": "قُرئت",
   "driver.job.chat.status": "حالة الطلب",
-  "driver.job.chat.counterpart": "الراكب"
+  "driver.job.chat.counterpart": "الراكب",
+  "rider.active.chat.refresh": "تحديث المحادثة",
+  "driver.job.chat.refresh": "تحديث المحادثة"
 }

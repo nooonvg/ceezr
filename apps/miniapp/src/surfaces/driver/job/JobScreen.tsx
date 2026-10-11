@@ -444,6 +444,7 @@ export function JobScreen({
           seen: t("driver.job.chat.seen"),
           counterpart: t("driver.job.chat.counterpart"),
           status: t("driver.job.chat.status"),
+          refresh: t("driver.job.chat.refresh"),
         }}
       />
 

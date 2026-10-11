@@ -171,7 +171,12 @@ export function chatFailureOf(error: unknown): ChatFailure {
   return "network";
 }
 
-/** معرّفُ عميلٍ لكلِّ رسالةٍ — يُولَّدُ مرّةً ويُعادُ استعمالُه في كلِّ إعادة. */
+/**
+ * معرّفُ عميلٍ لكلِّ رسالةٍ — يُولَّدُ مرّةً ويُعادُ استعمالُه في كلِّ إعادة. وهوَ
+ * **مفتاحُ لاتكرارٍ** كـ`newIdempotencyKey` في `search-view.ts` (`ADR 0043` يُجيزُه
+ * للعميلِ)، لا معرّفُ طلبٍ: ذاكَ يولّدُه الخادمُ وحدَه.
+ */
 export function newClientMessageId(): string {
-  return crypto.randomUUID();
+  const source = globalThis.crypto;
+  return source.randomUUID();
 }

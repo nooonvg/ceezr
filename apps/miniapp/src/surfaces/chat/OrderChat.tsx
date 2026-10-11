@@ -43,6 +43,7 @@ export interface OrderChatLabels {
   readonly seen: string;
   readonly counterpart: string;
   readonly status: string;
+  readonly refresh: string;
 }
 
 export interface OrderChatProps {
@@ -56,10 +57,6 @@ export interface OrderChatProps {
   readonly initiallyOpen?: boolean;
 }
 
-/** فاصلُ الاستطلاعِ: سريعٌ والغرفةُ مفتوحةٌ بلا قناة، وبطيءٌ احتياطاً معها. */
-export const CHAT_POLL_OPEN_MS = 4_000;
-export const CHAT_POLL_IDLE_MS = 15_000;
-export const CHAT_POLL_LIVE_MS = 30_000;
 const MESSAGE_MAX = 1000;
 
 function timeOf(iso: string): string {
@@ -133,13 +130,16 @@ export function OrderChat({
     return () => handle.close();
   }, [orderId, refresh, socket]);
 
-  // الاستطلاعُ الاحتياطيّ — لا يتوقّفُ ألبتّةَ، يتباطأُ فقط حينَ تعملُ القناة.
+  // لا استقصاءَ دوريّاً (`ADR 0035` §4): ما فاتَ يُسترجَعُ عندَ (إعادةِ) الانضمامِ
+  // إلى الغرفة، وعندَ عودةِ المستخدمِ إلى التطبيق، وبزرِّ «تحديث».
   useEffect(() => {
-    if (failure === "not_found" || failure === "session") return undefined;
-    const every = live ? CHAT_POLL_LIVE_MS : open ? CHAT_POLL_OPEN_MS : CHAT_POLL_IDLE_MS;
-    const timer = setInterval(() => void refresh(), every);
-    return () => clearInterval(timer);
-  }, [failure, live, open, refresh]);
+    if (typeof document === "undefined") return undefined;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [refresh]);
 
   // المفتوحةُ تُقرأُ: يتقدّمُ موضعُ القراءةِ إلى آخرِ رسالة.
   const lastSeq = snapshot?.lastSeq ?? 0;
@@ -270,6 +270,12 @@ export function OrderChat({
               </button>
             </p>
           ) : null}
+
+          {live ? null : (
+            <button type="button" className="ocht__refresh" onClick={() => void refresh()}>
+              {labels.refresh}
+            </button>
+          )}
 
           <ol ref={listRef} className="ocht__list" aria-live="polite">
             {snapshot !== null && snapshot.messages.length === 0 && pending.length === 0 ? (

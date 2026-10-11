@@ -510,6 +510,7 @@ export function ActiveRideScreen({
               seen: t("rider.active.chat.seen"),
               counterpart: t("rider.active.chat.counterpart"),
               status: t("rider.active.chat.status"),
+              refresh: t("rider.active.chat.refresh"),
             }}
           />
         )}

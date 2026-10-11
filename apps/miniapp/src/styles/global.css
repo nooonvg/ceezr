@@ -8820,6 +8820,17 @@ body {
   font-weight: 700;
 }
 
+.ocht__refresh {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tg-link-color);
+  font: inherit;
+  font-size: var(--ui-size-caption);
+  cursor: pointer;
+}
+
 .ocht__list {
   display: flex;
   flex-direction: column;

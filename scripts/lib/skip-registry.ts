@@ -563,6 +563,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/order-chat.test.ts",
+    suites: ["WR-04 — محادثةُ طرفَي الطلبِ على قاعدةٍ حقيقيّة"],
+    skipped: 12,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في `WR-04` أنَّ **طرفَ الغرفةِ يحكمُه الخادمُ** وأنَّ الطرفَ الثالثَ يُرَدُّ `CHAT_NOT_FOUND` من القاعدةِ نفسِها، وأنَّ معرّفَ العميلِ يمنعُ صفّاً ثانياً، وأنَّ الكتابةَ تُغلَقُ بعدَ الإكمالِ والقراءةَ بعدَ النافذة، وأنَّ المحوَ والتنزيلَ يشملانِ الرسائل. وهذه أحكامُ دوالَّ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012100000). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/driver-location-broadcast.test.ts",
     suites: [
       "سياسةُ النبضةِ — سببٌ مُسمّىً ومُدّةٌ من إعدادِ المدينةِ",

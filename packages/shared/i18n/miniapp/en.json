@@ -1715,5 +1715,7 @@
   "driver.job.chat.unavailable": "Your session ended. Reopen the app to continue the chat.",
   "driver.job.chat.seen": "Seen",
   "driver.job.chat.status": "Order status",
-  "driver.job.chat.counterpart": "Rider"
+  "driver.job.chat.counterpart": "Rider",
+  "rider.active.chat.refresh": "Refresh chat",
+  "driver.job.chat.refresh": "Refresh chat"
 }

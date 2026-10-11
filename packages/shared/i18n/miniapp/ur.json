@@ -1715,5 +1715,7 @@
   "driver.job.chat.unavailable": "سیشن ختم ہو گیا۔ گفتگو جاری رکھنے کے لیے ایپ دوبارہ کھولیں۔",
   "driver.job.chat.seen": "پڑھ لیا گیا",
   "driver.job.chat.status": "آرڈر کی حالت",
-  "driver.job.chat.counterpart": "سوار"
+  "driver.job.chat.counterpart": "سوار",
+  "rider.active.chat.refresh": "گفتگو تازہ کریں",
+  "driver.job.chat.refresh": "گفتگو تازہ کریں"
 }

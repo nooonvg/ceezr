@@ -30,14 +30,13 @@ export interface OrderChatRouteDependencies {
 /** رسالةٌ بألفِ محرفٍ عربيٍّ ومعرّفٍ — والحدُّ حدُّ نقلٍ لا قيمةٌ تجاريّة. */
 export const ORDER_CHAT_MAX_BYTES = 4096;
 
-const STATUS_BY_ERROR: Readonly<
-  Record<OrderChatPublicErrorCode, 400 | 401 | 404 | 409 | 422 | 503>
-> = {
+const STATUS_BY_ERROR: Readonly<Record<OrderChatPublicErrorCode, 401 | 404 | 409 | 422 | 503>> = {
   SESSION_REQUIRED: 401,
   SESSION_EXPIRED: 401,
   SESSION_INVALID: 401,
   SESSION_NOT_AVAILABLE: 503,
-  MALFORMED: 400,
+  // جسمٌ لا يُقرأُ رفضُ تحقّقٍ كأخواتِه — كما في مساراتِ الدعم.
+  MALFORMED: 422,
   ORDER_ID_INVALID: 422,
   CLIENT_ID_INVALID: 422,
   // لا فرقَ بينَ «لا طلبَ» و«ليسَ طلبَكَ».
