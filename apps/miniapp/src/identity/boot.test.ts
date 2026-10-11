@@ -14,7 +14,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { ApiError, ApiNetworkError } from "../api/client.ts";
 import { type BootDeps, establishSession } from "./boot.ts";
 import { clearPreboot } from "./preboot.ts";
-import { clearSession, setSession } from "./session.ts";
+import { clearSession, getSession, setSession } from "./session.ts";
 
 afterEach(() => {
   clearSession();
@@ -201,10 +201,48 @@ describe("استهلاكُ التقديمِ الساكنِ (DEC-19 / F1-09)", ()
     expect(exchanged).toBe(0);
   });
 
-  it("لا يستخدمُ التقديمَ حينَ ينجحُ التجديدُ — التجديدُ أرخصُ وأصدقُ", async () => {
-    let prebootCalls = 0;
+  it("ADR 0259: راكبٌ عائدٌ برمزٍ محفوظ — يُقامُ التبادلُ المُقدَّمُ **ولا يُنادى التجديد**", async () => {
+    let renewCalls = 0;
+    const persisted: string[] = [];
     const result = await establishSession(
       baseDeps({
+        renew: async () => {
+          renewCalls += 1;
+          return {
+            renewed: true,
+            expiresAtMs: Date.now() + HOUR_MS,
+            absoluteExpiresAtMs: Date.now() + HOUR_MS,
+            persisted: true,
+          } as const;
+        },
+        consumePreboot: () =>
+          Promise.resolve({
+            ok: true as const,
+            accessToken: "pre",
+            expiresAtMs: Date.now() + HOUR_MS,
+            refreshToken: "fresh-chain",
+          }),
+        persist: async (token: string) => {
+          persisted.push(token);
+          return { stored: true } as never;
+        },
+        exchange: async () => {
+          throw new Error("لا ينبغي أن تُنادى");
+        },
+      }),
+    );
+    expect(result).toEqual({ established: true, via: "exchanged" });
+    expect(renewCalls).toBe(0);
+    // رمزُ السلسلةِ الجديدةِ يستبدلُ المحفوظ — فلا يبقى الجهازُ على سلسلةٍ أقدم.
+    expect(persisted).toEqual(["fresh-chain"]);
+    expect(getSession()?.accessToken).toBe("pre");
+  });
+
+  it("ADR 0259: فشلُ التقديمِ (`initData` مُستهلَكٌ بعدَ إعادةِ تحميل) يعودُ إلى التجديدِ قبلَ أيِّ شاشةِ فشل", async () => {
+    let exchanged = 0;
+    const result = await establishSession(
+      baseDeps({
+        consumePreboot: () => Promise.reject(new Error("preboot:401")),
         renew: async () =>
           ({
             renewed: true,
@@ -212,32 +250,100 @@ describe("استهلاكُ التقديمِ الساكنِ (DEC-19 / F1-09)", ()
             absoluteExpiresAtMs: Date.now() + HOUR_MS,
             persisted: true,
           }) as const,
-        consumePreboot: () => {
-          prebootCalls += 1;
-          return Promise.resolve({ ok: true, accessToken: "x", expiresAtMs: 0 });
-        },
         exchange: async () => {
+          exchanged += 1;
           throw new Error("لا ينبغي أن تُنادى");
         },
       }),
     );
     expect(result).toEqual({ established: true, via: "renewed" });
-    expect(prebootCalls).toBe(0);
+    expect(exchanged).toBe(0);
   });
 
-  it("لا يستخدمُ التقديمَ حينَ تُرفَض الشبكةُ في التجديدِ", async () => {
-    let prebootCalls = 0;
+  it("ADR 0259: تقديمٌ **منتهي الصلاحية** لا يُقامُ لتوفيرِ نداء — يُجرَّبُ التجديد", async () => {
+    let renewCalls = 0;
+    const now = 1_000_000;
     const result = await establishSession(
       baseDeps({
+        now: () => now,
+        consumePreboot: () =>
+          Promise.resolve({ ok: true as const, accessToken: "stale", expiresAtMs: now }),
+        renew: async () => {
+          renewCalls += 1;
+          return {
+            renewed: true,
+            expiresAtMs: now + HOUR_MS,
+            absoluteExpiresAtMs: now + HOUR_MS,
+            persisted: true,
+          } as const;
+        },
+      }),
+    );
+    expect(result).toEqual({ established: true, via: "renewed" });
+    expect(renewCalls).toBe(1);
+    expect(getSession()?.accessToken).not.toBe("stale");
+  });
+
+  it("ADR 0259: ردٌّ مُقدَّمٌ **متأخّرٌ** لا يطغى على جلسةٍ أُقيمَت في أثناءِ انتظارِه", async () => {
+    let release: (v: { ok: true; accessToken: string; expiresAtMs: number }) => void = () => {};
+    const late = new Promise<{ ok: true; accessToken: string; expiresAtMs: number }>((r) => {
+      release = r;
+    });
+    const persisted: string[] = [];
+    let valid = false;
+    const pending = establishSession(
+      baseDeps({
+        sessionValid: () => valid,
+        consumePreboot: () => late,
+        persist: async (token: string) => {
+          persisted.push(token);
+          return { stored: true } as never;
+        },
+      }),
+    );
+    // جلسةٌ أحدثُ تُقامُ قبلَ وصولِ الردِّ المُقدَّم.
+    setSession({ accessToken: "newer", expiresAt: Date.now() + HOUR_MS });
+    valid = true;
+    release({ ok: true, accessToken: "older", expiresAtMs: Date.now() + HOUR_MS });
+    expect(await pending).toEqual({ established: true, via: "existing" });
+    expect(getSession()?.accessToken).toBe("newer");
+    expect(persisted).toEqual([]);
+  });
+
+  it("ADR 0259: فشلُ التقديمِ بالشبكةِ ثمَّ تعطّلُ التجديد = `UNAVAILABLE` بلا مبادلةٍ ثالثة", async () => {
+    let exchanged = 0;
+    const result = await establishSession(
+      baseDeps({
+        consumePreboot: () => Promise.reject(new ApiNetworkError("offline")),
         renew: async () => ({ renewed: false, reason: "UNAVAILABLE" }) as const,
-        consumePreboot: () => {
-          prebootCalls += 1;
-          return Promise.resolve({ ok: true, accessToken: "x", expiresAtMs: 0 });
+        exchange: async () => {
+          exchanged += 1;
+          throw new Error("لا ينبغي أن تُنادى");
         },
       }),
     );
     expect(result).toEqual({ established: false, reason: "UNAVAILABLE" });
-    expect(prebootCalls).toBe(0);
+    expect(exchanged).toBe(0);
+  });
+
+  it("ADR 0259: نداءانِ متزامنانِ — التقديمُ يُستهلَكُ مرّةً واحدة، والثاني يمضي في التجديد", async () => {
+    (globalThis as { __waslahPreboot?: unknown }).__waslahPreboot = {
+      session: Promise.resolve({ ok: true, accessToken: "pre", expiresAtMs: Date.now() + HOUR_MS }),
+      viewer: null,
+      consents: null,
+      accessToken: "pre",
+    };
+    let renewCalls = 0;
+    // `consumePreboot` غيرُ محقون: الاستهلاكُ الحقيقيُّ من `window.__waslahPreboot`.
+    const deps = baseDeps({
+      renew: async () => {
+        renewCalls += 1;
+        return { renewed: false, reason: "NO_STORED_TOKEN" } as const;
+      },
+    });
+    const [a, b] = await Promise.all([establishSession(deps), establishSession(deps)]);
+    expect([a, b].every((r) => r.established)).toBe(true);
+    expect(renewCalls).toBe(1);
   });
 
   it("يفشلُ كما يفشلُ التبادلُ العاديُّ إن رفضَ الخادمُ التبادلَ المُقدَّمَ", async () => {

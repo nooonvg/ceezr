@@ -72,6 +72,8 @@ export interface BootDeps {
   readonly exchange?: (initData: string, observe?: ApiObserver) => Promise<ExchangeResponse>;
   readonly persist?: typeof persistRefreshToken;
   readonly sessionValid?: () => boolean;
+  /** ساعةُ صلاحيةِ التبادلِ المُقدَّم — محقونةٌ في الاختبار. */
+  readonly now?: () => number;
   /**
    * `F1-09`: استهلاكُ تبادلِ الجلسةِ المُقدَّمِ من السكربتِ الساكنِ في `index.html`.
    * غيابُه يعني أنَّ السكربتَ الساكنَ لم يُبدِئْ تبادلًا (خارجَ تيليجرامَ مثلًا) —
@@ -96,12 +98,16 @@ const defaultExchange = (initData: string, observe?: ApiObserver): Promise<Excha
   });
 
 /**
- * ترتيبُ المحاولاتِ مقصودٌ: **الأرخصُ فالأغلى**.
+ * ترتيبُ المحاولاتِ مقصودٌ: **ما دُفِعَ ثمنُه فالأرخصُ فالأغلى** (ADR 0259).
  *   1. جلسةٌ صالحةٌ في الذاكرة — لا نداءَ إطلاقاً.
- *   2. تجديدٌ من رمزٍ محفوظ — نداءٌ واحدٌ بلا اعتمادٍ على تيليجرام، ويعمل حين
- *      يُعاد فتحُ التطبيقِ وقد ماتت الذاكرة.
- *   3. مبادلةُ `initData` — الطريقُ الوحيدُ حين لا رمزَ محفوظاً أو رُفِض.
- * وهو أيضاً ترتيبُ الاحتمالِ: أكثرُ الإقلاعاتِ يجدها في الأولى أو الثانية.
+ *   2. التبادلُ المُقدَّمُ إن أرسلَه سكربتُ المستند — **يُرسَلُ دائماً حينَ يوجدُ `initData`**،
+ *      فثمنُه مدفوعٌ قبلَ هذا السطر. وهو جلسةٌ أصدرَها الخادمُ الآنَ بعدَ تحقّقِ HMAC
+ *      و`auth_date` وحارسِ الإعادة، ومعَه قراءتا الإقلاعِ (ADR 0210) بالرمزِ نفسِه.
+ *      وتقديمُ التجديدِ عليه كانَ يُهدِرُه ويُهدِرُ قراءتَيه، فيتسلسلُ بعدَ تحميلِ الحزمِ
+ *      ثلاثةُ ذهابٍ وإيابٍ (التجديد ← `/v1/me` ← `/v1/consents`) لكلِّ راكبٍ عائد.
+ *   3. تجديدٌ من رمزٍ محفوظ — حينَ لا تقديمَ أو فشلَ (`initData` منتهٍ أو مُستهلَكٌ
+ *      بعدَ إعادةِ تحميلٍ، أو تعطّلُ شبكة).
+ *   4. مبادلةُ `initData` — حين لا رمزَ محفوظاً أو رُفِض.
  */
 export async function establishSession(deps: BootDeps = {}): Promise<BootResult> {
   /**
@@ -124,6 +130,28 @@ export async function establishSession(deps: BootDeps = {}): Promise<BootResult>
     // جلسةٌ في الذاكرةِ: لا نداءَ إطلاقاً فلا معرّفَ طلبٍ — وهذا حدٌّ لا نقصٌ.
     record("existing", null);
     return { established: true, via: "existing" };
+  }
+
+  // ADR 0259: التبادلُ المُقدَّمُ أوّلاً. يُستهلَكُ مرّةً واحدة؛ وفشلُه لا يُعرَضُ قبلَ أن
+  // يُجرَّبَ التجديد — فإعادةُ تحميلٍ بـ`initData` مُستهلَكٍ تجدُ الرمزَ المحفوظَ كما كانت.
+  const preboot = (deps.consumePreboot ?? consumePrebootSession)();
+  let prebootFailure: { readonly thrown: unknown } | null = null;
+  if (preboot !== null) {
+    try {
+      const response = await preboot;
+      // جلسةٌ منتهيةٌ لا تُقام لتوفيرِ نداء: تُعامَلُ فشلاً فيُجرَّبُ التجديد.
+      if (!(response.expiresAtMs > (deps.now ?? Date.now)())) {
+        throw new Error("preboot:expired");
+      }
+      // ردٌّ متأخّرٌ لا يطغى على جلسةٍ أُقيمَت في أثناءِ انتظارِه (نداءٌ متزامن).
+      if (sessionValid()) {
+        record("existing", null);
+        return { established: true, via: "existing" };
+      }
+      return await adopt(response);
+    } catch (thrown) {
+      prebootFailure = { thrown };
+    }
   }
 
   const renew = deps.renew ?? renewSessionFromStorage;
@@ -153,26 +181,17 @@ export async function establishSession(deps: BootDeps = {}): Promise<BootResult>
 
   let response: ExchangeResponse;
   try {
-    // `F1-09` / `DEC-19`: إن قدّمَ السكربتُ الساكنُ تبادلًا، استُهلِكَ بدلَ إرسالِ
-    // طلبٍ ثانٍ. والاستهلاكُ هنا لا يتجاوزُ التجديدَ من `SecureStorage` — إن نفعَ،
-    // نفعَ قبلَ هذا السطرِ ورجعَ. وما يصلُ ههنا هو حينَ لم يُجدَّ ولم تُرفَض الشبكة.
-    const preboot = (deps.consumePreboot ?? consumePrebootSession)();
-    if (preboot !== null) {
-      try {
-        response = await preboot;
-      } catch (prebootFailure) {
-        // `UI-SESS-01`: السكربتُ الساكنُ يرفضُ بـ`Error("preboot:<status>")` لا بـ`ApiError`،
-        // فكانَ رفضُ `401` يُصنَّفُ «لا اتصال» ويَعِدُ زرُّه بما لا يقعُ. والمبادلةُ
-        // العاديّةُ تُعيدُ الجوابَ مُصنَّفاً بحالتِه؛ وإن كانَ البيانُ مُستهلَكاً رفضَته
-        // حمايةُ الإعادةِ فيُقالُ «أعد فتحَ التطبيق» صدقاً.
-        if (prebootFailure instanceof ApiError || prebootFailure instanceof ApiNetworkError) {
-          throw prebootFailure;
-        }
-        response = await (deps.exchange ?? defaultExchange)(initData, observe);
+    if (prebootFailure !== null) {
+      // `UI-SESS-01`: السكربتُ الساكنُ يرفضُ بـ`Error("preboot:<status>")` لا بـ`ApiError`،
+      // فكانَ رفضُ `401` يُصنَّفُ «لا اتصال» ويَعِدُ زرُّه بما لا يقعُ. والمبادلةُ
+      // العاديّةُ تُعيدُ الجوابَ مُصنَّفاً بحالتِه؛ وإن كانَ البيانُ مُستهلَكاً رفضَته
+      // حمايةُ الإعادةِ فيُقالُ «أعد فتحَ التطبيق» صدقاً.
+      const failure = prebootFailure.thrown;
+      if (failure instanceof ApiError || failure instanceof ApiNetworkError) {
+        throw failure;
       }
-    } else {
-      response = await (deps.exchange ?? defaultExchange)(initData, observe);
     }
+    response = await (deps.exchange ?? defaultExchange)(initData, observe);
   } catch (thrown) {
     const reason = exchangeFailureReason(thrown);
     // معرّفُ الطلبِ من الخطأِ نفسِه إن حمله (ردٌّ وصل)، وإلّا فآخِرُ ما رآه
@@ -184,14 +203,19 @@ export async function establishSession(deps: BootDeps = {}): Promise<BootResult>
     return { established: false, reason, thrown };
   }
 
-  setSession({ accessToken: response.accessToken, expiresAt: response.expiresAtMs });
-  // ردٌّ بلا رمزِ تجديدٍ ردٌّ صحيحٌ في العقد: الجلسةُ تعيش في الذاكرةِ حتى
-  // تنتهي، ولا يُختلَق رمزٌ ولا يُعَدُّ ذلك فشلاً.
-  if (typeof response.refreshToken === "string" && response.refreshToken.length > 0) {
-    await (deps.persist ?? persistRefreshToken)(response.refreshToken);
+  return await adopt(response);
+
+  /** إقامةُ جلسةٍ من ردِّ مبادلةٍ — مُقدَّمةً كانت أو عاديّة. */
+  async function adopt(response: ExchangeResponse): Promise<BootResult> {
+    setSession({ accessToken: response.accessToken, expiresAt: response.expiresAtMs });
+    // ردٌّ بلا رمزِ تجديدٍ ردٌّ صحيحٌ في العقد: الجلسةُ تعيش في الذاكرةِ حتى
+    // تنتهي، ولا يُختلَق رمزٌ ولا يُعَدُّ ذلك فشلاً. وحفظُ الرمزِ الجديدِ يستبدلُ القديم.
+    if (typeof response.refreshToken === "string" && response.refreshToken.length > 0) {
+      await (deps.persist ?? persistRefreshToken)(response.refreshToken);
+    }
+    record("exchanged", null);
+    return { established: true, via: "exchanged" };
   }
-  record("exchanged", null);
-  return { established: true, via: "exchanged" };
 }
 
 /** فئاتُ رموزِ الحالة: بروتوكولٌ لا سياسة. */

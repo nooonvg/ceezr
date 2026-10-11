@@ -1,0 +1,39 @@
+{
+  "id": "fix-boot-prefer-preboot-exchange",
+  "goal": "إزالةُ الجلسةِ المزدوجةِ وثلاثةِ ذهابٍ وإيابٍ متسلسلةٍ (التجديد ← `/v1/me` ← `/v1/consents`) من إقلاعِ الراكبِ العائد، بإقامةِ التبادلِ المُقدَّمِ من `index.html` قبلَ التجديد.",
+  "canonical_source": [
+    "docs/adr/0259-boot-prefers-preboot-exchange.md",
+    "docs/evidence/production/PRD-009-boot-sequence-20261011.md",
+    "docs/adr/0210-session-exchange-embeds-boot-reads-to-drop-a-round-trip.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/identity/boot.ts",
+    "apps/miniapp/src/identity/boot.test.ts",
+    "apps/miniapp/src/identity/boot-sequence.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0259-boot-prefers-preboot-exchange.md",
+    "docs/evidence/production/PRD-009-boot-sequence-20261011.md"
+  ],
+  "decision": "ترتيبُ `establishSession`: الذاكرة ← التبادلُ المُقدَّم (إن نجحَ وصلاحيّتُه في المستقبل، ولا يطغى على جلسةٍ أُقيمَت في أثناءِ انتظاره) ← التجديد ← المبادلة. لا تغييرَ في الخادمِ ولا العقودِ ولا `index.html` ولا سياسةِ `SecureStorage` ولا مطابقةِ الرمز.",
+  "tests": [
+    "apps/miniapp/src/identity/boot-sequence.test.ts: 4 (على main: 3 fail؛ بعد: 4 pass)",
+    "apps/miniapp/src/identity/boot.test.ts: 21 pass",
+    "bun run test: 7283 pass / 0 fail / 1690 skip",
+    "قياسٌ محكومٌ Slow 4G × 7: العائدُ 3351 ⇒ 1626ms، وطلباتُ API 7 ⇒ 4؛ وأوّلُ فتحٍ بلا فرق (1624 ⇒ 1644)"
+  ],
+  "evidence": "docs/evidence/production/PRD-009-boot-sequence-20261011.md",
+  "constraints": [
+    "لا دمجَ ولا نشرَ بلا موافقةِ المالك",
+    "لا تخفيفَ لأيِّ تحقّق: HMAC و`auth_date` وحارسُ الإعادةِ على الخادمِ كما هي",
+    "لا استهلاكَ لقراءةٍ مُقدَّمةٍ تحتَ رمزٍ مخالفٍ أو بلا جلسة"
+  ],
+  "limitations": [
+    "القياسُ محلّيٌّ محكوم؛ زمنُ الخادمِ وجسرُ SecureStorage وفتحُ WebView في الإنتاجِ غيرُ مرصودة",
+    "`telegram-web-app.js` يحجزُ المدخلَ (+76/+108ms حدًّا أدنى) — مُثبَتٌ غيرُ مُعالَج",
+    "`secureStorageGet` و`secureStorageSet` بلا مهلة — خطرٌ غيرُ مرصودٍ غيرُ مُعالَج"
+  ],
+  "status": "PR مفتوحٌ للمراجعة — غيرُ مدموجٍ وغيرُ منشور"
+}
