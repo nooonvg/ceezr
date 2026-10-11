@@ -1,8 +1,14 @@
-import { beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { clearSession, setSession } from "../identity/session.ts";
 import { type ApiError, apiFetch } from "./client.ts";
 
 beforeEach(() => {
+  clearSession();
+});
+
+// الجلسةُ حالةٌ على مستوى الوحدة، يتقاسمُها كلُّ ملفٍّ في عمليّةِ `bun test` نفسِها.
+// فبلا مسحٍ بعدَ الاختبارِ الأخيرِ يرثُ الملفُّ التالي `"tok"` (فشلُ `production-ride-channel`).
+afterEach(() => {
   clearSession();
 });
 
