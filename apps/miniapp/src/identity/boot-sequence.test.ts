@@ -165,6 +165,37 @@ describe("تسلسلُ طلباتِ الإقلاع (ADR 0259)", () => {
     ]);
   });
 
+  it("تبديلُ الحساب: رمزٌ محفوظٌ لحسابٍ سابقٍ لا يحكم — الجلسةُ والدورُ لحسابِ `initData` الحاليّ، وسلسلتُه تحلُّ محلَّ القديمة", async () => {
+    // الحسابُ الحاليُّ (ب) سائقٌ في التبادلِ المُقدَّم. والرمزُ المحفوظُ للحسابِ (أ)، فلو جُدِّدَ
+    // لأقامَ جلسةَ (أ) ولقرأَ دورَه «راكب» من الخادم.
+    (globalThis as { __waslahPreboot?: unknown }).__waslahPreboot = {
+      session: Promise.resolve({
+        ok: true,
+        accessToken: "token-B",
+        expiresAtMs: Date.now() + HOUR_MS,
+        refreshToken: "chain-B",
+      }),
+      viewer: Promise.resolve({ ...VIEWER, role: "driver" }),
+      consents: Promise.resolve(CONSENTS),
+      accessToken: "token-B",
+    };
+    const renewCalls = { n: 0 };
+    const persisted: string[] = [];
+    const deps: BootDeps = {
+      ...bootDeps(renewCalls, "token-A"),
+      persist: async (token: string) => {
+        persisted.push(token);
+        return { stored: true } as never;
+      },
+    };
+    expect(await establishSession(deps)).toEqual({ established: true, via: "exchanged" });
+    expect(renewCalls.n).toBe(0);
+    expect(getSession()?.accessToken).toBe("token-B");
+    expect(persisted).toEqual(["chain-B"]);
+    expect(await fetchViewer()).toMatchObject({ kind: "viewer", role: "driver" });
+    expect(calls).toEqual([]);
+  });
+
   it("لا بياناتِ مستخدمٍ قبلَ المصادقة: بلا جلسةٍ مُقامةٍ لا يُستهلَكُ دورٌ ولا موافقاتٌ مُقدَّمة", async () => {
     prebootSucceeded("pre");
     expect(getSession()).toBeNull();
