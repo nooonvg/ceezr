@@ -35,12 +35,8 @@
     "tests/unit/check-migration-matrix.test.ts",
     "tests/unit/order-chat.test.ts"
   ],
-  "state": [
-    "docs/SYSTEM_STATE.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
   "affected_docs": [
     "docs/roadmap/execution/STATUS.md",
     "docs/adr/0263-order-chat-in-miniapp.md",
