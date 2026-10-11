@@ -27,13 +27,15 @@
     "packages/shared/i18n/miniapp/en.json",
     "packages/shared/i18n/miniapp/ur.json",
     "scripts/lib/css-class-coverage.ts",
+    "scripts/lib/skip-registry.ts",
     "scripts/lib/wasla-boundary-registry.ts",
     "scripts/lib/wasla-migration-matrix.ts",
     "supabase/migrations/20261012100000_wr_04_order_chat.sql",
     "supabase/migrations/20261012100100_wr_04_order_chat_index.sql",
     "tests/integration/order-chat.test.ts",
     "tests/unit/check-migration-matrix.test.ts",
-    "tests/unit/order-chat.test.ts"
+    "tests/unit/order-chat.test.ts",
+    "tests/unit/skip-audit.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
