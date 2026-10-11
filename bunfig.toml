@@ -1,0 +1,3 @@
+[test]
+# PRD-009 · ADR 0258: الاختباراتُ على Preact نفسِه الذي يُشحَن.
+preload = ["./apps/miniapp/test/preact-alias.ts"]

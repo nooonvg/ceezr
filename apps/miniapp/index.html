@@ -132,11 +132,15 @@
         // زيادةٌ `D-34` · `ADR 0189`: تُسخَّنُ **معَ إرسالِ الجلسةِ لا بعدَ نجاحِها** — لا تعتمدُ على نتيجتِها، وانتظارُها
         // يضعُها بعدَ ذهابٍ وإيابٍ كاملٍ. الاسمُ يحقنُه `vite/warm-rider-home.ts` عندَ البناءِ؛ وفي التطويرِ تبقى العلامةُ فلا شيءَ.
         var warm = "__WASLAH_WARM_RIDER_HOME__";
+        // زيادةٌ `PRD-009` · `ADR 0258`: القيمةُ قائمةٌ بفواصل — `rider-home` وتبعيّاتُها الثابتةُ خارجَ رسمِ المدخل.
         if (warm.charAt(0) === "/") {
-          var l = document.createElement("link");
-          l.rel = "modulepreload";
-          l.href = warm;
-          document.head.appendChild(l);
+          var w = warm.split(",");
+          for (var i = 0; i < w.length; i++) {
+            var l = document.createElement("link");
+            l.rel = "modulepreload";
+            l.href = w[i];
+            document.head.appendChild(l);
+          }
         }
       })();
     </script>

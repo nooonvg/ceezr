@@ -1,0 +1,53 @@
+{
+  "id": "perf-prd-009-preact-compat",
+  "goal": "إغلاقُ هامشِ PRD-009 على Slow 4G (الحدُّ 2000ms بهامشٍ ≥ 100ms) بإحلالِ Preact (`preact/compat`) محلَّ `react-dom` في البناء، بموافقةِ المالكِ على استثناءٍ محدودٍ من تجميدِ PRD-010، دونَ تغييرِ سلوكٍ أو حذفِ وظيفة.",
+  "canonical_source": [
+    "docs/governance/PRODUCTION_READINESS_GATE.md (PRD-009 · PRD-010)",
+    "موافقةُ المالكِ الصريحة 2026-10-11 على تغييرٍ بنيويٍّ لـPRD-009 باستثناءٍ محدودٍ من PRD-010",
+    "ADR 0044 · ADR 0185 · ADR 0251 · D-31"
+  ],
+  "implementation": [
+    "apps/miniapp/vite.config.ts",
+    "apps/miniapp/index.html",
+    "apps/miniapp/vite/warm-rider-home.ts",
+    "apps/miniapp/test/preact-alias.ts",
+    "apps/miniapp/bunfig.toml",
+    "bunfig.toml",
+    "apps/miniapp/package.json",
+    "bun.lock",
+    "tests/unit/warm-rider-home.test.ts",
+    "apps/miniapp/src/shell/shell-navigation.test.tsx",
+    "apps/miniapp/src/surfaces/rider/rider-r11-r15.test.tsx",
+    "apps/miniapp/src/surfaces/rider/rider-root-screen-stack.test.tsx",
+    "apps/miniapp/src/system/ui/ui-components.test.tsx"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0258-preact-compat-render-library.md",
+    "docs/evidence/production/PRD-009-preact-compat-20261011.md",
+    "docs/governance/PRODUCTION_READINESS_GATE.md"
+  ],
+  "decision": "ADR 0258: `react`/`react-dom` تُحَلُّ إلى `preact/compat` (10.29.8) في البناءِ والاختبارات؛ وتبعيّاتُ `rider-home` الثابتةُ خارجَ رسمِ المدخلِ (`rolldown-runtime`) تُسخَّنُ معَها. لا تغييرَ في `src/` غيرِ توكيداتِ تسلسلِ HTML.",
+  "tests": [
+    "bun test (الجذر) على Preact — 8965 اختبارًا، والإخفاقُ الوحيدُ قائمٌ على main",
+    "bun run lint · bun run typecheck · bun run build:miniapp",
+    "check-performance-budget",
+    "measure-tti بالمخازنِ في الذاكرة — 9 تشغيلاتٍ قبلُ/بعدُ، والتكافؤُ معَ CI بالبايت",
+    "axe-core 4.14 على 6 حالات + لقطاتٌ بكسلًا-ببكسل مقابلَ React",
+    "CI على الـPR (browser-tti · browser-first-paint)"
+  ],
+  "evidence": "docs/evidence/production/PRD-009-preact-compat-20261011.md — Slow 4G وسيطُ 9: 1928 → 1624ms (الأسوأ 1664)؛ Slow 3G: 6260 → 5220ms.",
+  "constraints": [
+    "لا تخفيضَ لحدِّ 2000ms ولا إعادةَ تشغيلٍ حتّى النجاح",
+    "لا حذفَ لوظيفةٍ لازمةٍ للشاشةِ الأولى؛ والاستغاثةُ باقيةٌ مسبقةَ التحميل (ADR 0159)",
+    "لا ميزةَ ولا مكتبةَ UI أخرى ضمنَ الاستثناء",
+    "لا دمجَ ولا نشرَ قبلَ موافقةِ المالكِ على النتائج"
+  ],
+  "limitations": [
+    "القياسُ المحلّيُّ والـCI محاكاةُ Chromium لا WebView تيليجرام",
+    "PRD-009 يبقى Blocked حتّى القياسِ على الإنتاجِ بعدَ النشر",
+    "الوجهةُ والتسعيرُ والرحلةُ النشطةُ والسائقُ مغطّاةٌ باختباراتِ الوحداتِ على Preact لا بمتصفّح"
+  ],
+  "status": "open — PR للمراجعة، غيرُ مدموج وغيرُ منشور"
+}

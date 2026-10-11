@@ -11,6 +11,7 @@
     "test": "bun test src"
   },
   "dependencies": {
+    "preact": "10.29.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "socket.io-client": "^4.8.3"
@@ -19,6 +20,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.1.1",
+    "preact-render-to-string": "6.8.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.2"
   }

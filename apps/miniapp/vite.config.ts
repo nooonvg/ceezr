@@ -61,6 +61,16 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": resolve(import.meta.dirname, "src"),
+      /**
+       * `PRD-009` · `ADR 0258`: مكتبةُ العرضِ Preact عبرَ `preact/compat` — الشيفرةُ تبقى بواجهةِ React
+       * (`import … from "react"`) والأنواعُ `@types/react`؛ الإحلالُ في البناءِ هنا وفي `bun test`
+       * (`bunfig.toml` ← `apps/miniapp/test/preact-alias.ts`). التراجعُ: حذفُ هذه الأسطرِ الخمسة.
+       */
+      "react/jsx-runtime": "preact/jsx-runtime",
+      "react/jsx-dev-runtime": "preact/jsx-runtime",
+      "react-dom/client": "preact/compat/client",
+      "react-dom": "preact/compat",
+      react: "preact/compat",
     },
   },
   build: {
@@ -81,6 +91,14 @@ export default defineConfig({
          */
         codeSplitting: {
           groups: [
+            {
+              /**
+               * مكتبةُ العرضِ (ADR 0044) — Preact منذ `ADR 0258`، والاسمُ باقٍ لأنّه مفتاحُ سجلِّ الميزانية.
+               * أوّلًا في القائمة: المجموعاتُ تسحبُ تبعيّاتِها، ولو تأخّرَت لابتلعَتها `shell`.
+               */
+              name: "vendor-react",
+              test: /[\\/]node_modules[\\/]preact[\\/]/,
+            },
             {
               /**
                * `shell` قبلَ `identity` في الترتيبِ: `session.ts` و`session-storage.ts`
@@ -167,10 +185,6 @@ export default defineConfig({
             {
               name: "onboarding",
               test: /\/src\/surfaces\/onboarding\//,
-            },
-            {
-              name: "vendor-react",
-              test: /[\\/]node_modules[\\/]react(?:-dom)?[\\/]/,
             },
           ],
         },
