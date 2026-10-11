@@ -1,0 +1,28 @@
+{
+  "id": "test-session-leak-ride-channel",
+  "goal": "إزالةُ اعتمادِ اختبارِ `production-ride-channel` على ترتيبِ الملفّات: كانَ يفشلُ في المجموعةِ الكاملة لأنَّ `api/client.test.ts` يتركُ جلسةَ `\"tok\"` في حالةِ الوحدةِ المشتركة.",
+  "canonical_source": [
+    "apps/miniapp/src/identity/session.ts (الجلسةُ حالةُ وحدةٍ تتقاسمُها ملفّاتُ `bun test` في العمليّةِ نفسِها)",
+    "إعادةُ إنتاجٍ محلّيّة: `bun test apps/miniapp/src/api/client.test.ts apps/miniapp/src/services/production-ride-channel.test.ts`"
+  ],
+  "implementation": [
+    "apps/miniapp/src/api/client.test.ts",
+    "apps/miniapp/src/services/production-ride-channel.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [],
+  "no_other_affected_docs_reason": "تغييرُ اختباراتٍ فقط بلا سلوكٍ ولا عقدٍ ولا قرار؛ فلا ADR ولا دليلَ إنتاجٍ يتأثّر",
+  "decision": "اختباراتٌ فقط: `afterEach(clearSession)` في `client.test.ts`، والاختبارُ المتأثّرُ يمسحُ الجلسةَ قبلَ تأكيدِه. لا كودَ إنتاجٍ ولا تغييرَ سلوك.",
+  "tests": [
+    "الملفّانِ معًا بالترتيبِ المُفشِل: 9 pass / 1 fail ⇒ 10 pass / 0 fail",
+    "bun run test (الجذر، bun 1.4.2): main `e4173c8` 7274 pass / 1 fail ⇒ 7275 pass / 0 fail (1690 skip كما هي)",
+    "bun run lint · bun run typecheck"
+  ],
+  "evidence": "وصفُ PR #482 — إعادةُ الإنتاجِ قبلُ/بعدُ.",
+  "constraints": ["لا كودَ إنتاج", "لا تخطّيَ لاختبارٍ ولا تعديلَ لتوكيده"],
+  "limitations": [
+    "CI على `main` لم يُظهِر الفشلَ لأنَّ ترتيبَ الملفّاتِ هناك مختلف؛ والإصلاحُ يزيلُ الاعتمادَ على أيِّ ترتيب"
+  ],
+  "status": "PR #482"
+}
