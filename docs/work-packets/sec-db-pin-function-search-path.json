@@ -1,0 +1,25 @@
+{
+  "id": "sec-db-pin-function-search-path",
+  "goal": "تثبيتُ `search_path` على الدوالِّ الـ24 التي يُبلِغُ عنها مُدقِّقُ Supabase بما يحفظُ حلَّ أسمائها الحاليّ، وحسمُ `spatial_ref_sys` بدليلٍ لا بإسكاتِ الأداة.",
+  "canonical_source": ["docs/evidence/production/SEC-DB-search-path-20261011.md"],
+  "implementation": [
+    "supabase/migrations/20261011120000_pin_function_search_path.sql",
+    "tests/integration/database-privilege-surface.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/evidence/production/SEC-DB-search-path-20261011.md"],
+  "decision": "23 دالّة ⇐ `public, pg_temp`، و`zatca_invoice_hash` ⇐ `public, extensions, pg_temp` (`digest` من pgcrypto). `spatial_ref_sys` بلا تغيير: يملكُه `supabase_admin` وهو عضوُ PostGIS، وPostgREST يرفضُه بـ42501 لغيابِ USAGE على public.",
+  "tests": [
+    "الطبقة ٤ في database-privilege-surface: كلُّ دالّةٍ غيرِ امتداديّةٍ في public مُثبَّتةُ المسار",
+    "الطبقة ٤: ثلاثُ دوالَّ تُنادى بمسارِ جلسةٍ فارغ"
+  ],
+  "evidence": "docs/evidence/production/SEC-DB-search-path-20261011.md",
+  "constraints": [
+    "لا تغييرَ في جسمِ دالّةٍ ولا صلاحيّةٍ ولا مالك",
+    "لا مسَّ لامتدادٍ ولا لـspatial_ref_sys",
+    "التطبيقُ على الإنتاجِ بعدَ CI والدمج"
+  ],
+  "limitations": ["دوالُّ SQL ذاتُ SET لا تُضمَّن — لا واحدةَ منها في مسارٍ ساخن"],
+  "status": "PR للمراجعة"
+}
