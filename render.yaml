@@ -64,6 +64,10 @@ services:
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
+      # رفعُ وثائقِ السائقِ موقوفٌ حتّى تثبتَ نسخةُ المخزنِ باستعادةٍ فعليّة؛
+      # يفتحُه المالكُ بالقيمةِ enabled وحدَها (BACKUP-STORAGE-20261011.md).
+      - key: DRIVER_DOCUMENT_UPLOADS
+        sync: false
       - key: UPSTASH_REDIS_REST_URL
         sync: false
       - key: UPSTASH_REDIS_REST_TOKEN

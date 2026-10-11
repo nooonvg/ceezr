@@ -1,0 +1,32 @@
+{
+  "id": "ops-pause-driver-document-uploads",
+  "goal": "ألّا تُودَعَ وثيقةُ سائقٍ في Storage قبلَ نسخةٍ قابلةٍ للاستعادةِ ومُثبَتةٍ عمليًّا.",
+  "canonical_source": ["docs/adr/0261-driver-document-uploads-paused-until-storage-restore.md"],
+  "implementation": [
+    "packages/infrastructure/storage/signed-upload.ts",
+    "apps/gateway/src/index.ts",
+    "render.yaml",
+    "deploy/staging/render.staging.yaml",
+    ".env.example",
+    "tests/unit/signed-upload.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0261-driver-document-uploads-paused-until-storage-restore.md",
+    "docs/evidence/production/BACKUP-STORAGE-20261011.md",
+    "docs/evidence/production/DEVICE-TEST-STEPS-20261011.md"
+  ],
+  "decision": "DRIVER_DOCUMENT_UPLOADS=enabled حرفًا وحدَها تفتحُ الرفع؛ غيرُها إيقافٌ يردُّ UPLOAD_NOT_AVAILABLE. ويفتحُه المالكُ بعدَ تمرينِ استعادةِ Storage ناجح.",
+  "tests": [
+    "tests/unit/signed-upload.test.ts: 4 حالاتٍ جديدة (الغياب، 8 قيمٍ خاطئة، enabled، enabled بلا تهيئة)"
+  ],
+  "evidence": "docs/evidence/production/BACKUP-STORAGE-20261011.md",
+  "constraints": [
+    "لا تغييرَ في الواجهةِ ولا النصوص",
+    "لا مساسَ بروابطِ القراءةِ ولا المراجعة",
+    "لا بياناتِ اختبارٍ في الإنتاج"
+  ],
+  "limitations": ["الفتحُ قرارُ تشغيلٍ يدويٌّ لا فحصٌ آليٌّ لـdb_backups"],
+  "status": "قيدَ المراجعة"
+}

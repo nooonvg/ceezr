@@ -91,6 +91,32 @@ function encodeObjectPath(objectPath: string): string {
 }
 
 /**
+ * **مِفتاحُ إيقافِ الرفعِ حتّى تثبتَ النسخةُ** (`BACKUP-STORAGE-20261011.md`).
+ * وثيقةُ السائقِ تُرفَعُ إلى المخزنِ لا إلى القاعدة، ونسخُ القاعدةِ لا يحملُ
+ * بايتاتِها. فلا يُمنَحُ إذنُ رفعٍ إلّا إذا كتبَ المالكُ القيمةَ `enabled` حرفاً
+ * بعدَ تمرينِ استعادةٍ ناجح — **وأيُّ قيمةٍ أخرى أو غيابُها إيقاف** (يفشلُ
+ * مغلقاً: خطأٌ إملائيٌّ لا يفتحُ الرفعَ). والقراءةُ والحالاتُ لا تتأثّر.
+ */
+export function driverDocumentUploadsEnabled(env: Record<string, string | undefined>): boolean {
+  return (env.DRIVER_DOCUMENT_UPLOADS ?? "").trim() === "enabled";
+}
+
+/**
+ * المُوقِّعُ الذي يُركَّب: الحقيقيُّ حين تكتملُ التهيئةُ **ويُفتَحُ الرفع**، وإلّا
+ * مُوقِّعٌ غيرُ مُهيَّأٍ يردُّ رفضاً مُصنَّفاً (`UPLOAD_NOT_AVAILABLE` للسائق).
+ */
+export function selectUploadSigner(
+  env: Record<string, string | undefined>,
+  config: SignedUploadConfig | null,
+): { readonly signer: UploadSigner; readonly state: "active" | "paused" | "not_configured" } {
+  if (config === null) return { signer: new UnconfiguredUploadSigner(), state: "not_configured" };
+  if (!driverDocumentUploadsEnabled(env)) {
+    return { signer: new UnconfiguredUploadSigner(), state: "paused" };
+  }
+  return { signer: new HttpUploadSigner(config), state: "active" };
+}
+
+/**
  * قراءةُ التهيئةِ من البيئةِ. **غيابُ المفتاحِ ليسَ عطباً يُرمى**: يُعادُ
  * `null` فيُبنى مُوقِّعٌ يردُّ `SIGNER_NOT_CONFIGURED`، وتبقى بقيّةُ الخدمةِ
  * تعملُ — لوحُ الحالاتِ يُقرأُ وإن تعذَّرَ الرفعُ.
