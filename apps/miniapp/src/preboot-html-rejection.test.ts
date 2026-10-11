@@ -60,7 +60,7 @@ async function unhandledDuring(action: () => Promise<void>): Promise<unknown[]> 
 }
 
 describe("سكربتُ التقديمِ الساكن — فشلُ التبادل", () => {
-  it("رفضُ الخادمِ (`400`) لا يُخلِّفُ رفضًا غيرَ مُعالَجٍ في `viewer` ولا `consents`", async () => {
+  it("رفضُ الخادمِ (خطأُ عميلٍ `4xx`) لا يُخلِّفُ رفضًا غيرَ مُعالَجٍ في `viewer` ولا `consents`", async () => {
     const seen = await unhandledDuring(async () => {
       const win = run(() => Promise.resolve({ ok: false, status: 400 }));
       // المستهلِكُ الحقيقيُّ (`boot.ts`) ينتظرُ الجلسةَ ويلتقطُ رفضَها؛ وما سواها لا يُقرأُ بلا رمز.
