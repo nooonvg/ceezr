@@ -1,0 +1,57 @@
+name: Execution roadmap
+
+# `DEC-25` · `ADR 0262`: كلُّ تغييرٍ تنفيذيٍّ يُعلِنُ بندَه من خارطةِ التنفيذ
+# (`docs/roadmap/execution/STATUS.md`)، ويُحدِّثُ صفَّه في التغييرِ نفسِه، قبلَ الدمج.
+# في `pull_request` يُقرأُ الإعلانُ من عنوانِ الطلبِ ووصفِه ورسائلِ الـcommit،
+# وفي `push` على `main` يُقرأُ من الطلبِ المرتبطِ بالـcommit إن وُجد، ومن الرسائلِ دائمًا.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  execution-roadmap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+
+      - name: الطلبُ المرتبطُ بالدفعة (push على main)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            --jq '.[0] | {title: (.title // ""), body: (.body // "")}' > /tmp/pr.json || echo '{"title":"","body":""}' > /tmp/pr.json
+
+      - name: بنيةُ الجدولِ وربطُ التغييرِ ببندِه (pull_request)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: bun run scripts/check-execution-roadmap.ts --range
+
+      - name: بنيةُ الجدولِ وربطُ التغييرِ ببندِه (push على main)
+        if: github.event_name == 'push'
+        env:
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          export PR_TITLE="$(bun -e 'console.log(JSON.parse(require("fs").readFileSync("/tmp/pr.json","utf8")).title)')"
+          export PR_BODY="$(bun -e 'console.log(JSON.parse(require("fs").readFileSync("/tmp/pr.json","utf8")).body)')"
+          bun run scripts/check-execution-roadmap.ts --range
+
+      - name: سقوطُ الحاجزِ مقيسٌ بخرقٍ مزروعٍ لكلِّ قاعدة
+        run: bun test tests/unit/execution-roadmap.test.ts

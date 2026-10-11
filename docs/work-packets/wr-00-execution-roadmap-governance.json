@@ -1,0 +1,44 @@
+{
+  "id": "wr-00-execution-roadmap-governance",
+  "goal": "تثبيتُ خارطةِ التنفيذِ التي أصدرَها المالكُ في المستودعِ مرجعًا ملزمًا، بتعليماتٍ حاكمةٍ وحارسٍ في CI يربطُ كلَّ تغييرٍ تنفيذيٍّ ببندِه ويُلزِمُ بتحديثِ حالتِه في الطلبِ نفسِه.",
+  "canonical_source": [
+    "docs/decisions/DEC-25-20261012-execution-roadmap-binding.md",
+    "docs/roadmap/execution/ORDER-20261012.md"
+  ],
+  "implementation": [
+    "scripts/lib/execution-roadmap.ts",
+    "scripts/check-execution-roadmap.ts",
+    "tests/unit/execution-roadmap.test.ts",
+    ".github/workflows/execution-roadmap.yml",
+    "package.json",
+    "scripts/lib/docs-budget-baseline.json"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    ".github/pull_request_template.md",
+    "docs/adr/0262-execution-roadmap-governance.md",
+    "docs/decisions/DEC-25-20261012-execution-roadmap-binding.md",
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/roadmap/execution/README.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/roadmap/execution/images/01-driver-available-state.jpg",
+    "docs/roadmap/execution/images/02-driver-unavailable-state.jpg",
+    "docs/roadmap/execution/images/03-driver-bottom-navigation-position.jpg",
+    "docs/roadmap/execution/images/04-rider-service-selection.jpg"
+  ],
+  "decision": "ADR 0262: مجلدٌ فرعيٌّ docs/roadmap/execution/ (جذرُ docs/ مقيَّدٌ بنظافةِ التوثيق)، ومعرّفاتُ WR-NN بأرقامِ أقسامِ الأمر، وسلّمُ ستِّ حالاتٍ من نصِّ المالك و«متوقف»، وحارسٌ للبنيةِ وللمدى.",
+  "tests": [
+    "tests/unit/execution-roadmap.test.ts — خرقٌ مزروعٌ لكلِّ قاعدة: حذفُ بند، حالةٌ خارجَ السلّم، حالةٌ بلا دليل، نشرٌ بلا commit، تيليجرام بلا دليل، متوقفٌ بلا عائق، تكرار، تغييرٌ بلا إعلان، بندٌ مُعلَنٌ لم يتغيّرْ صفُّه، WR-NONE بلا سبب، قالبٌ متروكٌ كما هو"
+  ],
+  "evidence": "محلّيًّا: bun test tests/unit/execution-roadmap.test.ts — 17/17؛ check-execution-roadmap.ts ✓؛ check-guard-enforcement ✓؛ check-runner-command-validity ✓.",
+  "constraints": [
+    "نصُّ المالكِ يُنقَلُ حرفيًّا ولا يُعدَّل",
+    "لا تغييرَ في سلوكِ المنتجِ ولا في الإنتاج",
+    "الحارسُ لا يحكمُ على صدقِ الدليلِ بل على وجودِ شكلِه، ويُصرَّحُ بذلك في ADR 0262"
+  ],
+  "limitations": "main غيرُ محميٍّ تقنيًّا: الحارسُ يُسقِطُ CI ولا يمنعُ الدمجَ بذاتِه. وصدقُ الدليلِ يبقى على المراجعة.",
+  "status": "open"
+}
