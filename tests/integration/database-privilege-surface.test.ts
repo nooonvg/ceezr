@@ -91,6 +91,49 @@ describeIf("سطح صلاحيات قاعدة البيانات", () => {
     expect(reachable).toEqual([]);
   });
 
+  it("الطبقة ٤: كلُّ دالّةٍ من دوالّنا مسارُ بحثِها مُثبَّت (SEC-DB-SEARCH-PATH)", async () => {
+    // `create or replace function` بلا `set search_path` يُعيدُ الدالّةَ إلى مسارِ
+    // الجلسة، فيتغيّرُ ما تُحَلُّ إليه أسماؤها بتغيّرِ الدورِ أو أداةِ الاستعادة.
+    const rows = await sql<{ sig: string; pinned: boolean }[]>`
+      select
+        p.oid::regprocedure::text as sig,
+        exists (
+          select 1 from unnest(coalesce(p.proconfig, '{}'::text[])) c
+          where c like 'search_path=%'
+        ) as pinned
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname = 'public'
+        and not exists (
+          select 1 from pg_depend d
+          where d.objid = p.oid
+            and d.classid = 'pg_proc'::regclass
+            and d.deptype = 'e'
+        )
+      order by 1
+    `;
+
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.filter((row) => !row.pinned).map((row) => row.sig)).toEqual([]);
+  });
+
+  it("الطبقة ٤: المسارُ المُثبَّتُ يحلُّ الأسماءَ حتّى بمسارِ جلسةٍ فارغ (كما تفعلُ أداةُ الاستعادة)", async () => {
+    const result = await sql.begin(async (tx) => {
+      await tx`set local search_path = ''`;
+      const [row] = await tx<{ hash: string; qr: string; due: Date }[]>`
+        select
+          public.zatca_invoice_hash('x') as hash,
+          public.zatca_simplified_invoice_qr('s', '3', now(), 115, 15) as qr,
+          public.pdpl_right_request_deadline(now()) as due
+      `;
+      return row;
+    });
+    expect(typeof result?.hash).toBe("string");
+    expect((result?.hash ?? "").length).toBeGreaterThan(0);
+    expect((result?.qr ?? "").length).toBeGreaterThan(0);
+    expect(result?.due).toBeInstanceOf(Date);
+  });
+
   it("الطبقة ٣: لا USAGE على مخطط public لدور anon ولا authenticated", async () => {
     const [row] = await sql<{ anon_usage: boolean; auth_usage: boolean }[]>`
       select
