@@ -8753,3 +8753,188 @@ body {
   font: inherit;
   cursor: pointer;
 }
+
+/* WR-04 — غرفةُ محادثةِ الطلب: بطاقةٌ مطويّةٌ بعددِ غيرِ المقروء، وسجلٌّ بفقاعتين. */
+.ocht {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--w-line);
+  border-radius: var(--r-lg);
+  background: var(--w-surface);
+  overflow: hidden;
+}
+
+.ocht__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--tg-text-color);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.ocht__title {
+  flex: 1;
+  font-weight: 800;
+}
+
+.ocht__badge {
+  min-width: 1.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--r-pill);
+  background: var(--ui-brand);
+  color: var(--tg-button-text-color);
+  font-size: var(--ui-size-caption);
+  font-weight: 800;
+  text-align: center;
+}
+
+.ocht__toggle-hint {
+  color: var(--tg-hint-color);
+  font-size: var(--ui-size-caption);
+}
+
+.ocht__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}
+
+.ocht__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  color: var(--tg-hint-color);
+  font-size: var(--ui-size-caption);
+}
+
+.ocht__status {
+  font-weight: 700;
+}
+
+.ocht__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-height: 18rem;
+  margin: 0;
+  padding: 0.25rem 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.ocht__empty {
+  color: var(--tg-hint-color);
+  font-size: var(--ui-size-caption);
+  text-align: center;
+}
+
+.ocht__msg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  max-width: 85%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-md);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ocht__msg--mine {
+  align-self: flex-start;
+  background: var(--w-brand-soft);
+  color: var(--tg-text-color);
+}
+
+.ocht__msg--theirs {
+  align-self: flex-end;
+  border: 1px solid var(--w-line);
+  background: var(--tg-bg-color);
+  color: var(--tg-text-color);
+}
+
+.ocht__msg--pending {
+  opacity: 0.75;
+}
+
+.ocht__body {
+  font-size: var(--ui-size-body);
+  line-height: 1.5;
+}
+
+.ocht__time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--tg-hint-color);
+  font-size: var(--ui-size-caption);
+}
+
+.ocht__notice {
+  margin: 0;
+  color: var(--tg-hint-color);
+  font-size: var(--ui-size-caption);
+}
+
+.ocht__retry {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tg-link-color);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ocht__form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.ocht__input {
+  flex: 1;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--w-line);
+  border-radius: var(--r-md);
+  background: var(--tg-bg-color);
+  color: var(--tg-text-color);
+  font: inherit;
+  resize: vertical;
+}
+
+.ocht__send {
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--tg-button-color);
+  color: var(--tg-button-text-color);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.ocht__send:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* يُقرأُ لقارئِ الشاشةِ ولا يُرى: «رسائل غير مقروءة: ٣». */
+.ocht__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

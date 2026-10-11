@@ -671,6 +671,33 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
 
   {
     method: "GET",
+    path: "/v1/orders/:orderId/chat",
+    file: "apps/gateway/src/routes/order-chat.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/orders/:orderId/chat/messages",
+    file: "apps/gateway/src/routes/order-chat.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/orders/:orderId/chat/read",
+    file: "apps/gateway/src/routes/order-chat.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "GET",
     path: "/v1/driver/job",
     file: "apps/gateway/src/routes/driver-job.ts",
     exposure: "مُصادَقٌ بجلسةٍ",
@@ -1477,8 +1504,10 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
  * 130 → 131 في 2026-10-10 (PD-042 · ADR 0256): `POST /admin/drivers/:id/documents/:docType/review` — جلسةُ مسؤولٍ وCSRF كأخيه `/verification`.
  * إلى محادثةِ المسؤولِ نفسِه — خلفَ حارسِ جلسةِ الإدارةِ كأخواتِهما.
  * 131 → 132 في 2026-10-09 (PRD-105 · ADR 0257): `POST /v1/onboarding/driver` — مُصادَقٌ بجلسةٍ كأخيه `/rider`.
+ * 132 → 135 في 2026-10-12 (WR-04 · ADR 0263): مساراتُ محادثةِ الطلبِ الثلاثةُ — مُصادَقةٌ بجلسةٍ،
+ *   والطرفُ يحكمُه الخادمُ.
  */
-export const ROUTE_POLICY_COUNT = 132;
+export const ROUTE_POLICY_COUNT = 135;
 export const LIMITED_ROUTE_COUNT = 10;
 export const EXEMPT_ROUTE_COUNT = 3;
 

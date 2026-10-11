@@ -234,6 +234,12 @@ export const TABLE_RETENTION: Readonly<Record<string, RetentionClass>> = {
    * تجاريٌّ (أو أثرٌ لحذفِ التنفيذِ في CORE) لا وظيفةُ صيانةٍ ليليّةٍ.
    */
   operational_jobs: RETENTION_CLASSES.lifecycleBound,
+  /**
+   * `WR-04`: محادثةُ الطلبِ وموضعُ قراءتِها — تُحجَبُ عن الطرفينِ بعدَ سبعةِ أيّامٍ
+   * من انتهاءِ الطلبِ (`order_chat_read_window`)، ومدّةُ بقاءِ الصفِّ نفسِه لم تُحسَمْ.
+   */
+  order_message_reads: RETENTION_CLASSES.pendingDecision,
+  order_messages: RETENTION_CLASSES.pendingDecision,
   order_offers: RETENTION_CLASSES.pendingDecision,
   orders: RETENTION_CLASSES.lifecycleBound,
   payment_transactions: RETENTION_CLASSES.financialSixYears,

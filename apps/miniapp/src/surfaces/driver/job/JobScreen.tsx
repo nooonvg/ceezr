@@ -51,6 +51,7 @@ import {
 import { EmptyState } from "../../../system/EmptyState.tsx";
 import { Glyph } from "../../../system/ui/icons.tsx";
 import { openExternalLink } from "../../../tg/index.ts";
+import { OrderChat } from "../../chat/OrderChat.tsx";
 import type { SosSurfaceResponse, SosTriggerResponse } from "../../rider/sos/sos-contract.ts";
 import {
   completeDriverRide,
@@ -421,6 +422,30 @@ export function JobScreen({
           )}
         </p>
       </div>
+
+      {/* WR-04: غرفةُ المحادثةِ مع الراكبِ — على المهمّةِ نفسِها لا في شاشةٍ منفصلة. */}
+      <OrderChat
+        orderId={job.orderId}
+        statusText={t(job.phaseKey)}
+        labels={{
+          title: t("driver.job.chat.title"),
+          open: t("driver.job.chat.open"),
+          hide: t("driver.job.chat.hide"),
+          unread: t("driver.job.chat.unread"),
+          placeholder: t("driver.job.chat.placeholder"),
+          send: t("driver.job.chat.send"),
+          sending: t("driver.job.chat.sending"),
+          failed: t("driver.job.chat.failed"),
+          retry: t("driver.job.chat.retry"),
+          closed: t("driver.job.chat.closed"),
+          empty: t("driver.job.chat.empty"),
+          loadFailed: t("driver.job.chat.loadFailed"),
+          unavailable: t("driver.job.chat.unavailable"),
+          seen: t("driver.job.chat.seen"),
+          counterpart: t("driver.job.chat.counterpart"),
+          status: t("driver.job.chat.status"),
+        }}
+      />
 
       <div className="djb__stop djb__stop--pickup">
         <p className="djb__place">

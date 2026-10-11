@@ -408,6 +408,8 @@ export const WASLA_MIGRATION_MATRIX: readonly MatrixEntry[] = [
     executed: false,
   },
   { ...noMigration("operational_jobs") },
+  { ...noMigration("order_message_reads") },
+  { ...noMigration("order_messages") },
   { ...noMigration("order_offers") },
   {
     table: "orders",
