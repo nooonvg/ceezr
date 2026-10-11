@@ -824,10 +824,23 @@ describeIf("دورة قروب غير المشتركين على قاعدة حقي
   it("ORDER-OFFER-01: بطاقةُ القروبِ تعرضُ «المدفوع» — مبلغُ الراكبِ أو «قابل للتفاوض»", async () => {
     await unsubscribedDriver(DRIVER_CHATS[0], "أحمد العمري", "0501111111");
     const orderId = await searchingOrder();
-    await sql`update orders set rider_offer_sar = 40 where id = ${orderId}`;
+    // طلبٌ أقدمُ من `WR-05` (`rider_offer_mode` null) يبقى بنصِّه القديم. والطلبُ الجديدُ
+    // يُكتَبُ `open`، فالمبلغُ يُضافُ مع إزالةِ السياسةِ وإلّا ردَّه قيدُ `orders_rider_offer_mode_valid`.
+    await sql`update orders set rider_offer_mode = null, rider_offer_sar = 40 where id = ${orderId}`;
     await publish(orderId);
     const card = groupCards().at(-1)?.text ?? "";
     expect(card).toContain(ar("driver.offer_card_paid", { amount: 40 }));
+    expect(card).not.toContain(ar("driver.offer_card_paid_negotiable"));
+  });
+
+  it("WR-05: بطاقةُ القروبِ تعرضُ معنى المبلغ — «سعر محدد — غير قابل للتفاوض»", async () => {
+    await unsubscribedDriver(DRIVER_CHATS[0], "أحمد العمري", "0501111111");
+    const orderId = await searchingOrder();
+    await sql`update orders set rider_offer_mode = 'fixed', rider_offer_sar = 55 where id = ${orderId}`;
+    await publish(orderId);
+    const card = groupCards().at(-1)?.text ?? "";
+    expect(card).toContain(ar("driver.offer_card_terms_fixed", { amount: 55 }));
+    expect(card).toContain("غير قابل للتفاوض");
     expect(card).not.toContain(ar("driver.offer_card_paid_negotiable"));
   });
 

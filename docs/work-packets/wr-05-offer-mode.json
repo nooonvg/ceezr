@@ -61,6 +61,7 @@
     "scripts/lib/skip-registry.ts",
     "supabase/migrations/20261012110000_wr_05_offer_mode.sql",
     "supabase/migrations/20261012110100_wr_05_offer_mode_validate.sql",
+    "tests/integration/unsubscribed-negotiation.test.ts",
     "tests/integration/wr-05-offer-mode.test.ts",
     "tests/unit/loc-trust-place-input.test.ts",
     "tests/unit/ride-request-store.test.ts",
