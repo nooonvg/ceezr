@@ -13,6 +13,7 @@
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
   "affected_docs": [
+    "docs/adr/0261-driver-document-uploads-paused-until-storage-restore.md",
     "docs/evidence/production/BACKUP-STORAGE-20261011.md",
     "docs/evidence/production/DEVICE-TEST-STEPS-20261011.md"
   ],
