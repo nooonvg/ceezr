@@ -1,0 +1,34 @@
+{
+  "id": "fix-boot-deadlines",
+  "goal": "ألّا يبقى الإقلاعُ على الهيكلِ بلا نهاية، وألّا يُعرَضَ تعطّلٌ مؤقّتٌ رفضًا للهويّة، وألّا يُجدَّدَ رمزٌ محفوظٌ لحسابٍ غيرِ حسابِ الفتح.",
+  "canonical_source": [
+    "docs/adr/0260-boot-deadlines-and-account-guard.md",
+    "docs/adr/0259-boot-prefers-preboot-exchange.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/identity/session-storage.ts",
+    "apps/miniapp/src/identity/renew.ts",
+    "apps/miniapp/src/identity/boot.ts",
+    "apps/miniapp/src/api/client.ts",
+    "apps/miniapp/src/identity/boot-deadlines.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/adr/0260-boot-deadlines-and-account-guard.md"],
+  "decision": "SecureStorage 3 ث لكلِّ عمليّة (فشلٌ = لا تخزين)، والتجديدُ 10 ث بإلغاءٍ آمن، والتقديمُ 15 ث ثمَّ التجديدُ وحدَه بلا مبادلةٍ ثانية، والمبادلةُ 20 ث، وحارسُ `sub` يمنعُ تجديدَ حسابٍ آخر.",
+  "tests": [
+    "apps/miniapp/src/identity/boot-deadlines.test.ts: 17 pass",
+    "bun run test: 7320 pass / 0 fail / 1690 skip"
+  ],
+  "evidence": "docs/adr/0260-boot-deadlines-and-account-guard.md",
+  "constraints": [
+    "لا تغييرَ في الخادمِ ولا العقودِ ولا index.html",
+    "لا تراجعَ إلى تخزينٍ أضعف",
+    "لا إلغاءَ لمبادلةِ initData"
+  ],
+  "limitations": [
+    "لم يُرصَدْ عميلُ تيليجرامَ حقيقيٌّ لا يجيبُ مخزنُه — محاكاةٌ في الاختبار",
+    "CloudStorage وDeviceStorage بلا مهلة — ليسا في مسارِ الإقلاع"
+  ],
+  "status": "PR للمراجعة"
+}
