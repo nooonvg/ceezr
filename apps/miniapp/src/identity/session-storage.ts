@@ -40,12 +40,67 @@ export interface DeviceSecureStore {
   remove(key: string): Promise<TgOutcome<boolean>>;
 }
 
-/** المحوّلُ الوحيدُ في الإنتاج: `SecureStorage` من طبقةِ تيليجرامَ، بلا بديل. */
-export const telegramSecureStore: DeviceSecureStore = {
+/**
+ * مهلةُ كلِّ عمليّةٍ على `SecureStorage` (BOOT-DEADLINES). مكتبةُ تيليجرامَ
+ * (سكربتُ WebApp الرسميّ) تُرسِلُ `web_app_secure_storage_*` وتنتظرُ حدثَ الردِّ
+ * **بلا مهلة**، وإن لم يكن جسرٌ (`TelegramWebviewProxy` ولا إطار) سقطَ الإرسالُ
+ * صامتًا فلا يُنادى المُعالِجُ أبدًا. وعميلٌ يعلنُ 9.0 ولا يجيبُ يُعلِّقُ الإقلاعَ على
+ * الهيكلِ إلى الأبد. وKeychain/Keystore يجيبانِ في أجزاءٍ من الثانية، فالثلاثُ ثوانٍ
+ * حدُّ «لا جواب» لا حدُّ «بطء». ولا مهلةَ على `restoreItem`: ذاك ينتظرُ المستخدم.
+ */
+export const SECURE_STORAGE_DEADLINE_MS = 3_000;
+
+/** ما يُعادُ عندَ انقضاءِ المهلة: «فشلَ المضيف» بتفصيلٍ صريح، لا رفضٌ ولا قيمة. */
+export const SECURE_STORAGE_TIMEOUT_DETAIL = "timeout";
+
+type Schedule = (run: () => void, ms: number) => unknown;
+
+function hostFailed<T>(detail: string): TgOutcome<T> {
+  return { ok: false, reason: "failed", detail };
+}
+
+function bounded<T>(
+  operation: () => Promise<TgOutcome<T>>,
+  ms: number,
+  schedule: Schedule,
+): Promise<TgOutcome<T>> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (outcome: TgOutcome<T>): void => {
+      if (settled) return;
+      settled = true;
+      resolve(outcome);
+    };
+    schedule(() => finish(hostFailed<T>(SECURE_STORAGE_TIMEOUT_DETAIL)), ms);
+    // الجوابُ المتأخّرُ بعدَ المهلةِ يُهمَل هنا. والكتابةُ المتأخّرةُ تقعُ على الجهازِ
+    // كما طُلِبَت (أحدثُ رمزٍ)، فلا تُفسِدُ جلسة؛ والقراءةُ المتأخّرةُ لا تُقيمُ شيئًا.
+    operation().then(finish, (thrown: unknown) => finish(hostFailed<T>(String(thrown))));
+  });
+}
+
+/**
+ * يُغلِّفُ مخزنًا بمهلةٍ على `set` و`get` و`remove`. انقضاؤها = `failed`/`timeout`،
+ * فيمضي كلُّ منادٍ في فرعِ «لا تخزين» الذي يملكُه أصلًا: القراءةُ ⇐ لا رمز، والحفظُ ⇐
+ * الجلسةُ في الذاكرةِ وحدَها، والمسحُ ⇐ لم يُمسَح. لا تراجعَ إلى تخزينٍ أضعف.
+ */
+export function boundedSecureStore(
+  store: DeviceSecureStore,
+  ms: number = SECURE_STORAGE_DEADLINE_MS,
+  schedule: Schedule = (run, delay) => setTimeout(run, delay),
+): DeviceSecureStore {
+  return {
+    set: (key, value) => bounded(() => store.set(key, value), ms, schedule),
+    get: (key) => bounded(() => store.get(key), ms, schedule),
+    remove: (key) => bounded(() => store.remove(key), ms, schedule),
+  };
+}
+
+/** المحوّلُ الوحيدُ في الإنتاج: `SecureStorage` من طبقةِ تيليجرامَ، بلا بديل، وبمهلة. */
+export const telegramSecureStore: DeviceSecureStore = boundedSecureStore({
   set: (key, value) => secureStorageSet(key, value),
   get: (key) => secureStorageGet(key),
   remove: (key) => secureStorageRemove(key),
-};
+});
 
 /**
  * نتيجةُ محاولةِ الحفظ. `stored: false` **ليست خطأً**: هي الحالةُ العاديةُ على

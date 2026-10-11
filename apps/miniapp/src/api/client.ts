@@ -122,6 +122,13 @@ export type ApiRequestInit = {
    * المنادي الذي لا يمرّره لا يتغيّر سلوكُه شعرةً، ولا شيءَ يُقاس بلا طالبٍ.
    */
   observe?: ApiObserver;
+  /**
+   * BOOT-DEADLINES: مهلةٌ اختياريّةٌ بالمللي ثانية **حتّى وصولِ الرأس**. انقضاؤها
+   * يُلغي الطلبَ فيُرمى `ApiNetworkError` كأيِّ «لم يصل ردّ». **لا تُمرَّرُ إلّا لطلبٍ
+   * إلغاؤه آمن**: التجديدُ بلا حالةٍ على الخادم فرمزُه القديمُ يبقى صالحًا. ولا تُمرَّرُ
+   * لمبادلةِ `initData`: قد تصلُ فيستهلكُها حارسُ الإعادة.
+   */
+  timeoutMs?: number;
 };
 
 function apiBase(): string {
@@ -184,14 +191,21 @@ export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Prom
   // `body` is spread in conditionally rather than passed as `undefined`:
   // `exactOptionalPropertyTypes` is on, and `RequestInit.body` accepts
   // `BodyInit | null` — never the literal `undefined`.
+  const abort =
+    init.timeoutMs === undefined || typeof AbortController === "undefined"
+      ? null
+      : new AbortController();
+  const timer = abort === null ? null : setTimeout(() => abort.abort(), init.timeoutMs);
   let res: Response;
   try {
     res = await fetch(`${apiBase()}${path}`, {
       method,
       headers,
       ...(init.body !== undefined ? { body: JSON.stringify(init.body) } : {}),
+      ...(abort === null ? {} : { signal: abort.signal }),
     });
   } catch {
+    if (timer !== null) clearTimeout(timer);
     // `F1-07`: الرسالةُ الأصليةُ لا تُنقَل: نصُّ خطأِ المتصفّحِ يحمل أحياناً
     // العنوانَ كاملاً، والعنوانُ يحمل مسارَ الجلسة. ولا شيءَ يُسجَّل ههنا.
     notify(init.observe, {
@@ -205,6 +219,7 @@ export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Prom
     throw new ApiNetworkError();
   }
 
+  if (timer !== null) clearTimeout(timer);
   const requestId = readRequestId(res.headers.get("x-request-id"));
 
   if (!res.ok) {

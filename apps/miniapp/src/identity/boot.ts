@@ -27,7 +27,7 @@ import { ApiError, ApiNetworkError, type ApiObserver, apiFetch } from "../api/cl
 import type { Telemetry } from "../telemetry/telemetry.ts";
 import { getRawInitData, isInsideTelegram } from "../tg/index.ts";
 import { consumePrebootSession } from "./preboot.ts";
-import { renewSessionFromStorage } from "./renew.ts";
+import { type RenewOptions, renewSessionFromStorage } from "./renew.ts";
 import { hasValidSession, setSession } from "./session.ts";
 import { type DeviceSecureStore, persistRefreshToken } from "./session-storage.ts";
 
@@ -68,6 +68,7 @@ export interface BootDeps {
   readonly renew?: (
     store?: DeviceSecureStore,
     observe?: ApiObserver,
+    options?: RenewOptions,
   ) => ReturnType<typeof renewSessionFromStorage>;
   readonly exchange?: (initData: string, observe?: ApiObserver) => Promise<ExchangeResponse>;
   readonly persist?: typeof persistRefreshToken;
@@ -86,6 +87,51 @@ export interface BootDeps {
    * وهو **مُستقبَلٌ لا مُنشَأٌ ههنا**: مسارُ الإقلاعِ لا يملك قرارَ المَصرِف.
    */
   readonly telemetry?: Telemetry;
+  /** BOOT-DEADLINES: مهلتا انتظارِ التبادلِ المُقدَّمِ والمبادلةِ — محقونتانِ في الاختبار. */
+  readonly deadlines?: { readonly prebootMs?: number; readonly exchangeMs?: number };
+}
+
+/**
+ * BOOT-DEADLINES: لا إقلاعَ يبقى على الهيكلِ بلا نهاية. وانقضاءُ المهلةِ **لا يُلغي
+ * الطلبَ ولا يُعيدُ مبادلةَ `initData`**: قد يكونُ وصلَ فاستهلكَه حارسُ الإعادة، ومبادلةٌ
+ * ثانيةٌ تُقرأُ حينئذٍ «رُفِضَت هويّتُك» — تعطّلٌ مؤقّتٌ يُعرَضُ رفضًا. فيُعرَضُ «لا اتصال»
+ * بإعادةِ محاولة. والقيمتانِ فوقَ ذهابٍ وإيابٍ على Slow 3G بأضعاف، ودونَ مهلةِ WebView (≈60 ث).
+ */
+export const PREBOOT_DEADLINE_MS = 15_000;
+export const EXCHANGE_DEADLINE_MS = 20_000;
+
+const TIMED_OUT: unique symbol = Symbol("timed-out");
+
+function withDeadline<T>(work: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(TIMED_OUT), ms);
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (thrown: unknown) => {
+        clearTimeout(timer);
+        reject(thrown);
+      },
+    );
+  });
+}
+
+/**
+ * معرّفُ مستخدمِ تيليجرامَ من `initData` الخامِ — **لا يُوثَقُ به للمنح**: يُقارَنُ
+ * بموضوعِ رمزِ التجديدِ المحفوظِ فيُمتنَعُ عن تجديدِ حسابٍ آخر. وما لا يُقرأُ = `null`.
+ */
+export function initDataSubject(initData: string | null): string | null {
+  if (initData === null || initData.length === 0) return null;
+  try {
+    const user = new URLSearchParams(initData).get("user");
+    if (user === null) return null;
+    const id = (JSON.parse(user) as { id?: unknown }).id;
+    return typeof id === "number" || (typeof id === "string" && id.length > 0) ? String(id) : null;
+  } catch {
+    return null;
+  }
 }
 
 const defaultExchange = (initData: string, observe?: ApiObserver): Promise<ExchangeResponse> =>
@@ -152,10 +198,17 @@ async function establishSessionOnce(deps: BootDeps): Promise<BootResult> {
   // يُجرَّبَ التجديد — فإعادةُ تحميلٍ بـ`initData` مُستهلَكٍ تجدُ الرمزَ المحفوظَ كما كانت.
   const preboot = (deps.consumePreboot ?? consumePrebootSession)();
   let prebootFailure: { readonly thrown: unknown } | null = null;
+  // BOOT-DEADLINES: تقديمٌ لم يُجِبْ في مهلتِه قد يكونُ استهلكَ `initData`، فلا مبادلةَ بعدَه.
+  let prebootPending = false;
   if (preboot !== null) {
     let prebootResponse: ExchangeResponse | null = null;
     try {
-      const response = await preboot;
+      const settled = await withDeadline(preboot, deps.deadlines?.prebootMs ?? PREBOOT_DEADLINE_MS);
+      if (settled === TIMED_OUT) {
+        prebootPending = true;
+        throw new Error("preboot:timeout");
+      }
+      const response = settled;
       // جلسةٌ منتهيةٌ لا تُقام لتوفيرِ نداء: تُعامَلُ فشلاً فيُجرَّبُ التجديد.
       if (!(response.expiresAtMs > (deps.now ?? Date.now)())) {
         throw new Error("preboot:expired");
@@ -177,10 +230,16 @@ async function establishSessionOnce(deps: BootDeps): Promise<BootResult> {
   }
 
   const renew = deps.renew ?? renewSessionFromStorage;
-  const renewal = await renew(undefined, observe);
+  // تبديلُ الحساب: رمزٌ محفوظٌ لحسابٍ غيرِ حسابِ الفتحِ لا يُجدَّد (`OTHER_ACCOUNT`).
+  const expectedSubject = initDataSubject((deps.rawInitData ?? getRawInitData)());
+  const renewal = await renew(undefined, observe, { expectedSubject });
   if (renewal.renewed) {
     record("renewed", null);
     return { established: true, via: "renewed" };
+  }
+  if (prebootPending) {
+    record("failed", "UNAVAILABLE");
+    return { established: false, reason: "UNAVAILABLE", thrown: new ApiNetworkError() };
   }
   // تعطّلُ الشبكةِ في التجديدِ لا يُتبَع بمبادلةٍ: الرمزُ المحفوظُ قد يكون صالحاً،
   // ومبادلةٌ الآنَ تُصدِر جلسةً ثانيةً بلا حاجة. الشاشةُ تعرض تعطّلاً والفعلُ للمستخدم.
@@ -213,7 +272,12 @@ async function establishSessionOnce(deps: BootDeps): Promise<BootResult> {
         throw failure;
       }
     }
-    response = await (deps.exchange ?? defaultExchange)(initData, observe);
+    const settled = await withDeadline(
+      (deps.exchange ?? defaultExchange)(initData, observe),
+      deps.deadlines?.exchangeMs ?? EXCHANGE_DEADLINE_MS,
+    );
+    if (settled === TIMED_OUT) throw new ApiNetworkError();
+    response = settled;
   } catch (thrown) {
     const reason = exchangeFailureReason(thrown);
     // معرّفُ الطلبِ من الخطأِ نفسِه إن حمله (ردٌّ وصل)، وإلّا فآخِرُ ما رآه
