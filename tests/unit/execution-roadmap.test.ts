@@ -8,7 +8,8 @@ import {
   structureProblems,
 } from "../../scripts/lib/execution-roadmap.ts";
 
-const HEADER = "| المعرّف | البند | القسم | الحالة | الأساس | الدليل | العائق |\n|---|---|---|---|---|---|---|\n";
+const HEADER =
+  "| المعرّف | البند | القسم | الحالة | الأساس | الدليل | العائق |\n|---|---|---|---|---|---|---|\n";
 
 function row(id: string, status = "لم يبدأ", evidence = "—", blocker = "—"): string {
   return `| ${id} | بند | §1 | ${status} | — | ${evidence} | ${blocker} |`;
@@ -35,20 +36,26 @@ describe("خارطة التنفيذ — بنية الجدول", () => {
   });
 
   it("حالة خارج السلّم تُرفض", () => {
-    expect(rules(structureProblems(table({ "WR-05": row("WR-05", "مكتمل") })))).toContain("bad-status");
+    expect(rules(structureProblems(table({ "WR-05": row("WR-05", "مكتمل") })))).toContain(
+      "bad-status",
+    );
   });
 
   it("«نُفذ في الشيفرة» بلا دليل يُرفض، وبدليل يُقبل", () => {
     expect(rules(structureProblems(table({ "WR-18": row("WR-18", "نُفذ في الشيفرة") })))).toContain(
       "status-without-evidence",
     );
-    expect(structureProblems(table({ "WR-18": row("WR-18", "نُفذ في الشيفرة", "PR #500") }))).toEqual([]);
+    expect(
+      structureProblems(table({ "WR-18": row("WR-18", "نُفذ في الشيفرة", "PR #500") })),
+    ).toEqual([]);
   });
 
   it("«نُشر في الإنتاج» بلا commit يُرفض", () => {
     const bad = table({ "WR-18": row("WR-18", "نُشر في الإنتاج وتحقق منه", "منشور") });
     expect(rules(structureProblems(bad))).toContain("deploy-without-commit");
-    const good = table({ "WR-18": row("WR-18", "نُشر في الإنتاج وتحقق منه", "gateway `a1b2c3d4` dep-x") });
+    const good = table({
+      "WR-18": row("WR-18", "نُشر في الإنتاج وتحقق منه", "gateway `a1b2c3d4` dep-x"),
+    });
     expect(structureProblems(good)).toEqual([]);
   });
 
@@ -58,7 +65,9 @@ describe("خارطة التنفيذ — بنية الجدول", () => {
   });
 
   it("«متوقف» بلا عائق يُرفض", () => {
-    expect(rules(structureProblems(table({ "WR-21": row("WR-21", "متوقف") })))).toContain("blocked-without-reason");
+    expect(rules(structureProblems(table({ "WR-21": row("WR-21", "متوقف") })))).toContain(
+      "blocked-without-reason",
+    );
   });
 
   it("بند مكرر يُرفض", () => {
@@ -120,7 +129,12 @@ describe("خارطة التنفيذ — التغيير وحالته معًا", (
 
   it("تغيير توثيقي وحده لا يحتاج إعلانًا", () => {
     expect(
-      rangeProblems({ changedFiles: ["docs/runbook.md"], declarationText: "", baseStatus: base, headStatus: base }),
+      rangeProblems({
+        changedFiles: ["docs/runbook.md"],
+        declarationText: "",
+        baseStatus: base,
+        headStatus: base,
+      }),
     ).toEqual([]);
   });
 

@@ -11,7 +11,12 @@
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { type Problem, rangeProblems, STATUS_PATH, structureProblems } from "./lib/execution-roadmap.ts";
+import {
+  type Problem,
+  rangeProblems,
+  STATUS_PATH,
+  structureProblems,
+} from "./lib/execution-roadmap.ts";
 
 const ZERO_SHA = "0000000000000000000000000000000000000000";
 
@@ -68,7 +73,9 @@ if (process.argv.includes("--range")) {
   } catch {
     baseStatus = null; // الجدولُ جديدٌ في هذا المدى
   }
-  const declarationText = [process.env.PR_TITLE ?? "", process.env.PR_BODY ?? "", messages].join("\n");
+  const declarationText = [process.env.PR_TITLE ?? "", process.env.PR_BODY ?? "", messages].join(
+    "\n",
+  );
   ranged = rangeProblems({ changedFiles, declarationText, baseStatus, headStatus });
   report(ranged, `المدى ${range.base.slice(0, 8)}..${range.head.slice(0, 8)}`);
 }

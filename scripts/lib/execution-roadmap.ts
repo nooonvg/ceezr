@@ -123,37 +123,67 @@ export function structureProblems(text: string): Problem[] {
   const rows = parseStatusTable(text);
   const problems: Problem[] = [];
   if (rows.length === 0) {
-    return [{ rule: "empty", detail: `لا صفَّ بمعرّفِ WR- في ${STATUS_PATH} — الجدولُ مفقودٌ أو تغيّرت بنيتُه.` }];
+    return [
+      { rule: "empty", detail: `لا صفَّ بمعرّفِ WR- في ${STATUS_PATH} — الجدولُ مفقودٌ أو تغيّرت بنيتُه.` },
+    ];
   }
 
   const seen = new Map<string, number>();
   for (const row of rows) seen.set(row.id, (seen.get(row.id) ?? 0) + 1);
   for (const id of CANONICAL_ITEMS) {
-    if (!seen.has(id)) problems.push({ rule: "missing-item", detail: `${id} محذوفٌ من الجدول، ولا يُحذَفُ بندٌ من أمرِ المالك.` });
+    if (!seen.has(id))
+      problems.push({
+        rule: "missing-item",
+        detail: `${id} محذوفٌ من الجدول، ولا يُحذَفُ بندٌ من أمرِ المالك.`,
+      });
   }
   for (const [id, count] of seen) {
     if (count > 1) problems.push({ rule: "duplicate-item", detail: `${id} مكرّرٌ ${count} مرّات.` });
-    if (!/^WR-\d{2}[A-Z]?$/.test(id)) problems.push({ rule: "bad-id", detail: `معرّفٌ غيرُ صالح: «${id}».` });
+    if (!/^WR-\d{2}[A-Z]?$/.test(id))
+      problems.push({ rule: "bad-id", detail: `معرّفٌ غيرُ صالح: «${id}».` });
   }
 
   for (const row of rows) {
     const blocked = row.status === BLOCKED;
     const r = rank(row.status);
     if (!blocked && r < 0) {
-      problems.push({ rule: "bad-status", detail: `${row.id}: الحالةُ «${row.status}» ليست من السلّم المعتمد.` });
+      problems.push({
+        rule: "bad-status",
+        detail: `${row.id}: الحالةُ «${row.status}» ليست من السلّم المعتمد.`,
+      });
       continue;
     }
     if (blocked && EMPTY_CELL.test(row.blocker)) {
-      problems.push({ rule: "blocked-without-reason", detail: `${row.id}: «متوقف» بلا عائقٍ مذكور.` });
+      problems.push({
+        rule: "blocked-without-reason",
+        detail: `${row.id}: «متوقف» بلا عائقٍ مذكور.`,
+      });
     }
     if (!blocked && r >= rank("نُفذ في الشيفرة") && EMPTY_CELL.test(row.evidence)) {
-      problems.push({ rule: "status-without-evidence", detail: `${row.id}: «${row.status}» بلا دليل.` });
+      problems.push({
+        rule: "status-without-evidence",
+        detail: `${row.id}: «${row.status}» بلا دليل.`,
+      });
     }
-    if (!blocked && r >= rank("نُشر في الإنتاج وتحقق منه") && !/\b[0-9a-f]{7,40}\b/.test(row.evidence)) {
-      problems.push({ rule: "deploy-without-commit", detail: `${row.id}: «${row.status}» بلا commit منشور في الدليل.` });
+    if (
+      !blocked &&
+      r >= rank("نُشر في الإنتاج وتحقق منه") &&
+      !/\b[0-9a-f]{7,40}\b/.test(row.evidence)
+    ) {
+      problems.push({
+        rule: "deploy-without-commit",
+        detail: `${row.id}: «${row.status}» بلا commit منشور في الدليل.`,
+      });
     }
-    if (!blocked && r >= rank("اجتاز اختبار تيليجرام الفعلي") && !row.evidence.includes("docs/evidence/")) {
-      problems.push({ rule: "field-without-evidence", detail: `${row.id}: «${row.status}» بلا مسارِ دليلٍ في docs/evidence/.` });
+    if (
+      !blocked &&
+      r >= rank("اجتاز اختبار تيليجرام الفعلي") &&
+      !row.evidence.includes("docs/evidence/")
+    ) {
+      problems.push({
+        rule: "field-without-evidence",
+        detail: `${row.id}: «${row.status}» بلا مسارِ دليلٍ في docs/evidence/.`,
+      });
     }
   }
   return problems;
@@ -189,7 +219,8 @@ export function rangeProblems(input: RangeInput): Problem[] {
   const known = new Set(parseStatusTable(input.headStatus).map((row) => row.id));
 
   for (const id of declaration.items) {
-    if (!known.has(id)) problems.push({ rule: "unknown-item", detail: `${id} مُعلَنٌ وليسَ في الجدول.` });
+    if (!known.has(id))
+      problems.push({ rule: "unknown-item", detail: `${id} مُعلَنٌ وليسَ في الجدول.` });
   }
 
   if (impl.length > 0 && declaration.items.length === 0) {
@@ -199,12 +230,17 @@ export function rangeProblems(input: RangeInput): Problem[] {
         detail: `تغييرٌ تنفيذيٌّ (${impl.length} ملفّ، أوّلُها ${impl[0]}) بلا «بنود الخارطة: WR-NN» ولا «WR-NONE: سبب».`,
       });
     } else if (declaration.none.length < 10) {
-      problems.push({ rule: "weak-none", detail: "«WR-NONE» يحتاجُ سببًا محدّدًا لا يقلُّ عن عشرةِ أحرف." });
+      problems.push({
+        rule: "weak-none",
+        detail: "«WR-NONE» يحتاجُ سببًا محدّدًا لا يقلُّ عن عشرةِ أحرف.",
+      });
     }
   }
 
   if (declaration.items.length > 0) {
-    const before = new Map(parseStatusTable(input.baseStatus ?? "").map((row) => [row.id, row.raw]));
+    const before = new Map(
+      parseStatusTable(input.baseStatus ?? "").map((row) => [row.id, row.raw]),
+    );
     const after = new Map(parseStatusTable(input.headStatus).map((row) => [row.id, row.raw]));
     for (const id of declaration.items) {
       if (!after.has(id)) continue;

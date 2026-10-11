@@ -22,7 +22,11 @@
     "docs/decisions/DEC-25-20261012-execution-roadmap-binding.md",
     "docs/roadmap/execution/ORDER-20261012.md",
     "docs/roadmap/execution/README.md",
-    "docs/roadmap/execution/STATUS.md"
+    "docs/roadmap/execution/STATUS.md",
+    "docs/roadmap/execution/images/01-driver-available-state.jpg",
+    "docs/roadmap/execution/images/02-driver-unavailable-state.jpg",
+    "docs/roadmap/execution/images/03-driver-bottom-navigation-position.jpg",
+    "docs/roadmap/execution/images/04-rider-service-selection.jpg"
   ],
   "decision": "ADR 0262: مجلدٌ فرعيٌّ docs/roadmap/execution/ (جذرُ docs/ مقيَّدٌ بنظافةِ التوثيق)، ومعرّفاتُ WR-NN بأرقامِ أقسامِ الأمر، وسلّمُ ستِّ حالاتٍ من نصِّ المالك و«متوقف»، وحارسٌ للبنيةِ وللمدى.",
   "tests": [
