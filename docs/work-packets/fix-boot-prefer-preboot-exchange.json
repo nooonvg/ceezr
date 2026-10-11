@@ -8,6 +8,7 @@
   ],
   "implementation": [
     "apps/miniapp/src/identity/boot.ts",
+    "apps/miniapp/src/identity/preboot.ts",
     "apps/miniapp/src/identity/boot.test.ts",
     "apps/miniapp/src/identity/boot-sequence.test.ts"
   ],
