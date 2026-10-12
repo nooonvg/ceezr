@@ -39,6 +39,7 @@
   "driver.offer_accept_button": "✅ قبول الطلب",
   "driver.offer_accepted": "الطلب لك. توجّه إلى نقطة الانطلاق.",
   "driver.offer_expired": "انتهت مهلة هذا الطلب.",
+  "driver.offer_card_cancelled": "ألغى صاحب الطلب هذا الطلب، فلم يعد متاحًا.",
   "driver.offer_received": "طلب جديد على بعد {distance} كم. لديك {seconds} ثانية للردّ.",
   "driver.offer_card_service": "{marker} الخدمة: {service}",
   "driver.offer_card_from": "📍 من: {pickup}",

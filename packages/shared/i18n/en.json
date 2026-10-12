@@ -39,6 +39,7 @@
   "driver.offer_accept_button": "✅ Accept order",
   "driver.offer_accepted": "The order is yours. Head to the pickup point.",
   "driver.offer_expired": "This order has expired.",
+  "driver.offer_card_cancelled": "The customer cancelled this order; it is no longer available.",
   "driver.offer_received": "New request {distance} km away. You have {seconds} seconds to reply.",
   "driver.offer_card_service": "{marker} Service: {service}",
   "driver.offer_card_from": "📍 From: {pickup}",

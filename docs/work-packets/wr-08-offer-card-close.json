@@ -1,0 +1,39 @@
+{
+  "id": "wr-08-offer-card-close",
+  "goal": "§8 و§24: بطاقة العرض الخاصة التي مات عرضها دون نقرة (انتهت مهلته أو سبق إليه غيره أو أُلغي طلبه) يُكتب مآلها عليها وتزول أزرار «قبول/رفض». وحمولة بطاقة العرض تحمل الخدمة واسمي المكانين والملاحظات من جديد (سقطت منذ 2026-09-21). ودورة التوصيل كاملة مقيسة على قاعدة حقيقية (WR-19).",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "apps/workers/src/container.ts",
+    "packages/application/dispatch/close-dead-offer-cards.ts",
+    "packages/infrastructure/dispatch/offer-card-adapters.ts",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/ur.json",
+    "scripts/lib/rollback-registry.ts",
+    "scripts/lib/skip-registry.ts",
+    "supabase/migrations/20261012200000_wr_08_offer_card_close.sql",
+    "supabase/migrations/20261012200100_wr_08_offer_card_payload.sql",
+    "tests/integration/scheduled-jobs.test.ts",
+    "tests/integration/wr-08-offer-card-close.test.ts",
+    "tests/integration/wr-19-delivery-cycle.test.ts",
+    "tests/unit/skip-audit.test.ts",
+    "tests/unit/wr-08-offer-card-close.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md", "docs/adr/0271-dead-offer-card-close.md"],
+  "decision": "ADR 0271: عمودان على notification_outbox وخطوة في شوط expire-offers القائم. والبطاقات القديمة غير الحية تُعلَّم مغلقة دون تعديل.",
+  "tests": [
+    "bun test tests/unit/wr-08-offer-card-close.test.ts",
+    "TEST_DATABASE_URL=... bun test tests/integration/wr-08-offer-card-close.test.ts",
+    "TEST_DATABASE_URL=... bun test tests/integration/wr-19-delivery-cycle.test.ts"
+  ],
+  "evidence": "محليًا على PostgreSQL 18 + PostGIS بسلسلة الهجرات كاملة: وحدات 7/7، وتكامل wr-08 5/5 وwr-19 1/1، وبلا الهجرة 20261012200100 يسقط اختباران (الحمولة وسطر الخدمة). و198/198 في ملفات outbox وfull-* وdelivery-* وwr-* وscheduled-jobs.",
+  "constraints": [
+    "لا تعديل بأثر رجعي لبطاقات سائقين حقيقيين",
+    "لا معرّف محادثة ولا رسالة ولا نص في السجل",
+    "لا شوط جديد"
+  ],
+  "limitations": "ظهور التعديل على هاتف السائق يحتاج حساب سائق اختبار (WR-26).",
+  "status": "open"
+}

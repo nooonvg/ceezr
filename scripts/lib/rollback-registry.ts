@@ -1049,6 +1049,17 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     documentedIn: null,
   },
   {
+    migration: "20261012200100_wr_08_offer_card_payload.sql",
+    change: "revoke_function:claim_notification_delivery(0)",
+    why: "الهجرةُ `20261012200100` (`WR-08`) تُعيدُ تعريفَ `claim_notification_delivery()` **بالتوقيعِ ومفاتيحِ المردِّ نفسِها** على صورةِ `20261012170000` حرفًا، وفرعُ `offer` وحدَه يعودُ إلى إثراءِ `PD-051` (الخدمةُ واسما المكانَين والملاحظاتُ من `orders`). والسحبُ إعادةُ قفلٍ كما كانَ. **ولا كسرَ لنسخةٍ سابقةٍ**: المعالجُ يقرأُ الحقولَ الأربعةَ اختياريّةً منذُ `PD-051`، والنسخةُ السابقةُ تعرضُها كما تعرضُها الحالية.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    documentedIn: null,
+  },
+  {
     migration: "20261012170000_wr_13_driver_city_relocation.sql",
     change: "revoke_function:notification_kind_priority(1)",
     why: "الهجرةُ `20261012170000` (`WR-13`) تُعيدُ تعريفَ `notification_kind_priority(text)` **بالتوقيعِ والمردِّ نفسِهما** لتُضيفَ رتبةَ `driver_city_notice` (=3). وبقيةُ الفروعِ منسوخةٌ حرفاً عن `20261012160000`. والسحبُ إعادةُ قفلٍ كما كانَ. **ولا كسرَ لنسخةٍ سابقةٍ**: المجهولُ يُرجِعُ 1.",

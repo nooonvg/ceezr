@@ -344,7 +344,9 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
 
     expect(details.get("expire-subscriptions")).toBe("expired=0");
     expect(details.get("recompute-ratings")).toBe("drivers=0 riders=0");
-    expect(details.get(`expire-offers:${cityId}`)).toBe("examined=0 expired=0");
+    expect(details.get(`expire-offers:${cityId}`)).toBe(
+      "examined=0 expired=0 cardsClosed=0 cardsFailed=0",
+    );
     expect(details.get(`cleanup-stale:${cityId}`)).toBe("deactivated=0 staleMinutes=180");
     expect(details.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=0 warned=0 failed=0");
     expect(details.get(`rotate-negotiations:${cityId}`)).toBe(
