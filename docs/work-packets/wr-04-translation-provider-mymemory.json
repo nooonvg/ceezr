@@ -6,7 +6,7 @@
     "docs/adr/0275-translation-provider-mymemory.md",
     "docs/adr/0274-chat-location-and-translation.md"
   ],
-  "implementation": ["render.yaml"],
+  "implementation": ["deploy/staging/render.staging.yaml", "render.yaml"],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
   "affected_docs": [
