@@ -1,0 +1,23 @@
+{
+  "id": "wr-04-translation-provider-mymemory",
+  "goal": "WR-04: تفعيل الترجمة الآلية في الإنتاج بمزوّد MyMemory كما اختار المالك، فتُترجَم رسائل الطرف الآخر في محادثة Mini App ومرحّل تيليجرام مع بقاء الأصل.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0275-translation-provider-mymemory.md",
+    "docs/adr/0274-chat-location-and-translation.md"
+  ],
+  "implementation": ["render.yaml"],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0275-translation-provider-mymemory.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0275: قرار المالك 2026-10-12 اعتماد MyMemory بلا مفتاح. العودة بضبط none.",
+  "tests": ["TRANSLATION_PROVIDER=mymemory bun run scripts/verify-translation.ts"],
+  "evidence": "محليًا: أربع حالات ar→en وen→ar وur→ar وar→ur ناجحة، والذاكرة المؤقتة تمنع الطلب المكرر.",
+  "constraints": ["لا مفتاح ولا سر", "لا إرسال لإحداثيات أو أسماء إلى المزوّد", "الأصل يبقى"],
+  "limitations": "حصة يومية محدودة، والجودة متوسطة في العامية. ولا اختبار على تيليجرام فعلي."
+}

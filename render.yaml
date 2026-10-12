@@ -81,7 +81,7 @@ services:
       - key: BOOTSTRAP_ADMIN_TELEGRAM_ID
         sync: false
       - key: TRANSLATION_PROVIDER
-        value: none # قرار المزوّد الإنتاجي مفتوح — ADR 0010
+        value: mymemory # قرار المالك 2026-10-12 — ADR 0275
       - key: TRANSLATION_API_KEY
         sync: false
       - key: TRANSLATION_CONTACT_EMAIL
