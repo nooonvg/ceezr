@@ -332,6 +332,7 @@
   "driver.offers.failed": "Could not read the offer board",
   "driver.offers.headline.blocked": "Your work is blocked now, so no round reaches you. The reasons are below.",
   "driver.offers.headline.staleLocation": "You are available, but your last location is old, so no offers reach you until it updates. Open Waslah and allow location.",
+  "driver.offers.headline.untrustedLocation": "You are available, but your last location jumped implausibly, so no offers reach you until a sound location arrives. Keep Waslah open with location allowed.",
   "driver.offers.headline.noLocation": "You are available, but we have no location for you, so no nearby offers reach you. Allow location for Waslah and keep it open.",
   "driver.offers.headline.notVerified": "You are available, but your account is not verified yet, so no offers reach you until it is.",
   "driver.offers.headline.unavailable": "You are not available now, and no round reaches you until you switch that.",

@@ -296,6 +296,7 @@ const ELIGIBILITY_HEADLINES: Readonly<Record<string, string>> = {
   NOT_VERIFIED: "driver.offers.headline.notVerified",
   NO_LOCATION: "driver.offers.headline.noLocation",
   STALE_LOCATION: "driver.offers.headline.staleLocation",
+  UNTRUSTED_LOCATION: "driver.offers.headline.untrustedLocation",
 };
 
 function eligibilityHeadline(reasons: readonly string[] | undefined): string | null {

@@ -72,6 +72,24 @@ describe("WR-11 — حكمُ الأهليّةِ بقواعدِ التوزيع", 
     ]);
   });
 
+  test("WR-23 — موضعٌ حكمُه ALERT يُسمّى للسائقِ ولا يُخلَطُ بالقديم، وWARNING لا يمنع", () => {
+    const fresh = {
+      verificationStatus: "verified",
+      hasLocation: true,
+      ageSeconds: 30,
+      maxAgeSeconds: 600,
+    };
+    expect(eligibilityReasonsFrom({ ...fresh, locationQuality: "ALERT" })).toEqual([
+      "UNTRUSTED_LOCATION",
+    ]);
+    expect(eligibilityReasonsFrom({ ...fresh, locationQuality: "WARNING" })).toEqual([]);
+    expect(eligibilityReasonsFrom({ ...fresh, locationQuality: null })).toEqual([]);
+    // القديمُ أولى بالقولِ كترتيبِ `rejectionReasonFor`.
+    expect(
+      eligibilityReasonsFrom({ ...fresh, ageSeconds: 3600, locationQuality: "ALERT" }),
+    ).toEqual(["STALE_LOCATION"]);
+  });
+
   test("الأسبابُ مرتَّبةٌ كترتيبِ التوزيع: التوثيقُ أوّلاً", () => {
     expect(
       eligibilityReasonsFrom({
@@ -98,6 +116,12 @@ describe("WR-11 · WR-16A — اللوحُ يقولُ السببَ ويُلوِ�
     );
     expect(toOffersBoard(board({ eligibility_reasons: ["STALE_LOCATION"] })).headlineKey).toBe(
       "driver.offers.headline.staleLocation",
+    );
+  });
+
+  test("WR-23 — موضعٌ غيرُ موثوقٍ له عنوانُه", () => {
+    expect(toOffersBoard(board({ eligibility_reasons: ["UNTRUSTED_LOCATION"] })).headlineKey).toBe(
+      "driver.offers.headline.untrustedLocation",
     );
   });
 

@@ -200,12 +200,14 @@ export async function readDriverEligibility(
       {
         verification_status: string;
         has_location: boolean;
+        location_quality: string | null;
         age_seconds: number | null;
         max_age_seconds: number | null;
       }[]
     >`
       select d.verification_status::text as verification_status,
              d.last_location is not null as has_location,
+             d.last_location_quality as location_quality,
              extract(epoch from (now() - d.last_location_at))::float8 as age_seconds,
              (select (s.value #>> '{}')::numeric::float8
                 from platform_settings s
@@ -223,6 +225,7 @@ export async function readDriverEligibility(
       hasLocation: row.has_location,
       ageSeconds: row.age_seconds === null ? null : Number(row.age_seconds),
       maxAgeSeconds: row.max_age_seconds === null ? 0 : Number(row.max_age_seconds),
+      locationQuality: row.location_quality,
     });
   } catch {
     return [];
@@ -235,6 +238,7 @@ export function eligibilityReasonsFrom(input: {
   readonly hasLocation: boolean;
   readonly ageSeconds: number | null;
   readonly maxAgeSeconds: number;
+  readonly locationQuality?: string | null;
 }): readonly DriverEligibilityReason[] {
   const reasons: DriverEligibilityReason[] = [];
   if (input.verificationStatus !== "verified") reasons.push("NOT_VERIFIED");
@@ -246,6 +250,8 @@ export function eligibilityReasonsFrom(input: {
       input.ageSeconds > input.maxAgeSeconds)
   ) {
     reasons.push("STALE_LOCATION");
+  } else if (input.locationQuality === "ALERT") {
+    reasons.push("UNTRUSTED_LOCATION");
   }
   return reasons;
 }

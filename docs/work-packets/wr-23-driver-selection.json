@@ -1,0 +1,35 @@
+{
+  "id": "wr-23-driver-selection",
+  "goal": "§23 اختيار السائقين بالقرب والتقييم: قياس الترتيب بإعدادات الإنتاج على PostGIS حقيقي، والاستبعاد الفعلي بسبب مسمى، وألا يُرتَّب بموقع غير موثوق (ALERT)، وعرض التقييم الافتراضي بأمانة.",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "packages/domain/dispatch/entity.ts",
+    "packages/infrastructure/dispatch/dispatch-adapters.ts",
+    "packages/domain/driver/driver-offers.ts",
+    "packages/infrastructure/driver/driver-offers-store.ts",
+    "apps/miniapp/src/surfaces/driver/offers/offers-view.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/integration/wr-23-driver-selection.test.ts",
+    "tests/unit/dispatch-matching.test.ts",
+    "tests/unit/wr-11-driver-eligibility-state.test.ts",
+    "scripts/lib/skip-registry.ts",
+    "tests/unit/skip-audit.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "السياسة لم تتغير (0.7/0.3، دفعة 5، 10 كم، 4.5 للجديد دون 3 تقييمات، حارس قدم 600 ثانية). أُضيف سبب استبعاد UNTRUSTED_LOCATION لآخر موقع حكمه ALERT (قفزة أو سرعة غير معقولة) في الدومين والمسار السريع، ويُقال للسائق في لوح عروضه. WARNING (دقة خشنة) يبقى مؤهلًا كما كان.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/wr-23-driver-selection.test.ts",
+    "bun test tests/unit/dispatch-matching.test.ts tests/unit/wr-11-driver-eligibility-state.test.ts"
+  ],
+  "evidence": "محليًا على PostgreSQL 18 + PostGIS: 6/6 (سبعة مؤهلين بترتيب محسوب يدويًا، وانقلاب الترتيب بتغيير الوزنين في القاعدة، وعشرة أسباب استبعاد مسماة، والمسار السريع لا يملأ نافذته بقديم أو ALERT، والجديد بـ4.5 ومتوسطه في القاعدة null، ومن رُفض عرضه أو انتهى لا يقبل). وإعدادات الإنتاج مقروءة قراءة فقط. وبطاقة المرشح للراكب لا تعرض تقييمًا حين يكون العدد صفرًا.",
+  "constraints": [
+    "لا تغيير في أوزان التوزيع أو حجم الدفعة أو نصف القطر",
+    "لا كتابة على بيانات الإنتاج",
+    "لا هجرة"
+  ],
+  "limitations": "الترتيب مقيس على قاعدة محلية؛ في الإنتاج سائق واحد موثق، فالترتيب الميداني بعدة سائقين حقيقيين غير منفذ."
+}
