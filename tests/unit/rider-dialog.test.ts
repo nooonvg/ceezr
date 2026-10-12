@@ -1010,6 +1010,20 @@ describe("لوحة /help — البند 6.3", () => {
   const helpDeps = (orders: readonly ActiveOrderSummary[] = []) =>
     build({ riders: riderDirectory(HELP_RIDER), activeOrdersOf: async () => orders });
 
+  it("وسمُ تلغرام الأرديُّ يبدأُ حوارَ الراكبِ بالأرديّةِ لا بالعربيّة", async () => {
+    const deps = helpDeps();
+    const replies = await handleRiderUpdate(
+      {
+        kind: "text",
+        from: { telegramUserId: "503", chatId: "503", languageHint: "ur" },
+        updateId: 1,
+        text: "/help",
+      },
+      deps,
+    );
+    expect(replies[0]?.text).toBe(translate("ur", "rider.guide"));
+  });
+
   it("يعرض أوامر العميل أزراراً inline لا نصّاً", async () => {
     const replies = await handleRiderUpdate(text("/help"), helpDeps());
     expect(replies).toHaveLength(3);

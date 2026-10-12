@@ -24,6 +24,17 @@ export function hasLanguage(lang: string): boolean {
   return Object.hasOwn(dictionaries, lang);
 }
 
+/**
+ * لغةُ البدايةِ من وسمِ عميلِ تلغرام (`from.language_code`) قبلَ أن يختارَ المستخدمُ.
+ * الوسمُ IETF (`ur` · `en-GB` · `pt-br`): يُقرأُ وسمُه الأوّلُ بحروفٍ صغيرةٍ، فإن كانت
+ * له قاموسٌ فهو، وإلّا فالافتراضيُّ. وكان الحوارانِ يقرآنِ `en` وحدَها فيُسجَّلُ
+ * صاحبُ تلغرامٍ أرديٍّ بالعربيّةِ ولا يرى لغتَه حتّى يغيّرَها يدًا.
+ */
+export function initialLanguageFromHint(hint: string | null | undefined): string {
+  const primary = (hint ?? "").trim().toLowerCase().split(/[-_]/)[0] ?? "";
+  return primary !== "" && hasLanguage(primary) ? primary : DEFAULT_LANGUAGE;
+}
+
 export function translate(
   lang: string,
   key: string,

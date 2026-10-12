@@ -46,7 +46,7 @@ import {
   createTranslationProvider,
   TRANSLATION_RETRY_BACKOFF_MS,
 } from "../../packages/infrastructure/i18n-translation/index.ts";
-import { translate } from "../../packages/shared/i18n/index.ts";
+import { initialLanguageFromHint, translate } from "../../packages/shared/i18n/index.ts";
 import type { Clock } from "../../packages/shared/kernel/index.ts";
 import { err, ok } from "../../packages/shared/result/index.ts";
 
@@ -595,5 +595,18 @@ describe("حوار اختيار اللغة", () => {
       rememberLanguage: async () => {},
     });
     expect(replies[0]?.chatId).toBe("700");
+  });
+});
+
+describe("initialLanguageFromHint — لغةُ البدايةِ من وسمِ تلغرام", () => {
+  it("يقرأُ الوسمَ الأوّلَ بحروفٍ صغيرةٍ ويرجعُ إلى العربيّةِ لما لا قاموسَ له", () => {
+    expect(initialLanguageFromHint("ur")).toBe("ur");
+    expect(initialLanguageFromHint("en-GB")).toBe("en");
+    expect(initialLanguageFromHint("en_us")).toBe("en");
+    expect(initialLanguageFromHint("AR")).toBe("ar");
+    expect(initialLanguageFromHint("fr")).toBe("ar");
+    expect(initialLanguageFromHint("")).toBe("ar");
+    expect(initialLanguageFromHint(undefined)).toBe("ar");
+    expect(initialLanguageFromHint(null)).toBe("ar");
   });
 });
