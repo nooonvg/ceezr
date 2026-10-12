@@ -11,13 +11,18 @@
  */
 
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
+import { openExternalLink } from "../../tg/app.ts";
+import { type DeviceFixResult, readFreshDeviceFix } from "../rider/destination/device-fix.ts";
 import {
   applyThread,
   type ChatApi,
   type ChatFailure,
+  type ChatLocation,
+  type ChatMessage,
   type ChatSnapshot,
   chatFailureOf,
   fromWireMessage,
+  mapsUrlOf,
   mergeMessages,
   newClientMessageId,
   type PendingMessage,
@@ -48,7 +53,28 @@ export interface OrderChatLabels {
   readonly offerFixed: string;
   readonly offerSuggested: string;
   readonly offerOpen: string;
+  /** `WR-04` — مشاركةُ نقطةِ الموقعِ داخلَ المحادثة. */
+  readonly shareLocation: string;
+  readonly locating: string;
+  readonly locationPreview: string;
+  readonly sendLocation: string;
+  readonly cancel: string;
+  readonly locationFailed: string;
+  readonly locationMessage: string;
+  readonly openInMaps: string;
+  /** «{meters}» يُستبدَلُ بنصفِ قطرِ الدقّة. */
+  readonly accuracy: string;
+  /** `WR-04` — الترجمة: النصُّ الأصليُّ يبقى متاحًا بنقرة. */
+  readonly translated: string;
+  readonly showOriginal: string;
+  readonly showTranslation: string;
 }
+
+type LocationDraft =
+  | { readonly state: "idle" }
+  | { readonly state: "locating" }
+  | { readonly state: "preview"; readonly location: ChatLocation }
+  | { readonly state: "failed" };
 
 /** `WR-05` — سطرُ السعرِ بمعناه، أو `null` لطلبٍ أقدمَ من السياسة. */
 export function chatOfferLine(
@@ -74,6 +100,9 @@ export interface OrderChatProps {
   readonly socket?: ChatSocketFactory | null;
   /** يُفتَحُ مبسوطاً — للاختبارِ والروابطِ التي تقصدُ المحادثةَ مباشرةً. */
   readonly initiallyOpen?: boolean;
+  /** قراءةُ الموقعِ عندَ ضغطِ «شارك موقعي» وحدَه — لا قبلَه ولا في الخلفيّة. */
+  readonly readFix?: () => Promise<DeviceFixResult>;
+  readonly openLink?: (url: string) => unknown;
 }
 
 const MESSAGE_MAX = 1000;
@@ -91,6 +120,8 @@ export function OrderChat({
   api = productionChatApi,
   socket = productionChatSocket,
   initiallyOpen = false,
+  readFix = readFreshDeviceFix,
+  openLink = openExternalLink,
 }: OrderChatProps) {
   const baseId = useId();
   const [open, setOpen] = useState(initiallyOpen);
@@ -99,6 +130,8 @@ export function OrderChat({
   const [pending, setPending] = useState<readonly PendingMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [live, setLive] = useState(false);
+  const [locationDraft, setLocationDraft] = useState<LocationDraft>({ state: "idle" });
+  const [originals, setOriginals] = useState<ReadonlySet<string>>(new Set());
   const snapshotRef = useRef<ChatSnapshot | null>(null);
   const inFlight = useRef(false);
   const listRef = useRef<HTMLOListElement | null>(null);
@@ -193,7 +226,13 @@ export function OrderChat({
         ),
       );
       try {
-        const result = await api.send(orderId, item.clientMessageId, item.body);
+        const result = await api.send(
+          orderId,
+          item.clientMessageId,
+          item.kind === "location" && item.location !== undefined
+            ? { kind: "location", location: item.location }
+            : { kind: "text", text: item.body },
+        );
         const confirmed = fromWireMessage(result.message);
         const current = snapshotRef.current;
         if (current !== null) {
@@ -211,6 +250,8 @@ export function OrderChat({
         const kind = chatFailureOf(error);
         if (kind === "closed") {
           setPending((p) => p.filter((x) => x.clientMessageId !== item.clientMessageId));
+          // النصُّ لا يضيعُ بصمت: يعودُ إلى الحقلِ إن كانَ فارغًا، والغرفةُ تُعرَضُ مغلقة.
+          if ((item.kind ?? "text") === "text") setDraft((d) => (d.length === 0 ? item.body : d));
           void refresh();
           return;
         }
@@ -236,6 +277,90 @@ export function OrderChat({
     setPending((p) => [...p, item]);
     setDraft("");
     void deliver(item);
+  };
+
+  const startLocation = async () => {
+    setLocationDraft({ state: "locating" });
+    try {
+      const fix = await readFix();
+      if (!fix.ok) {
+        setLocationDraft({ state: "failed" });
+        return;
+      }
+      setLocationDraft({
+        state: "preview",
+        location: { lat: fix.lat, lng: fix.lng, accuracyM: fix.accuracyM ?? null, label: null },
+      });
+    } catch {
+      setLocationDraft({ state: "failed" });
+    }
+  };
+
+  const sendLocation = (location: ChatLocation) => {
+    const item: PendingMessage = {
+      clientMessageId: newClientMessageId(),
+      body: `${location.lat.toFixed(6)},${location.lng.toFixed(6)}`,
+      state: "sending",
+      kind: "location",
+      location,
+    };
+    setPending((p) => [...p, item]);
+    setLocationDraft({ state: "idle" });
+    void deliver(item);
+  };
+
+  const toggleOriginal = (id: string) =>
+    setOriginals((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const locationCard = (location: ChatLocation) => (
+    <span className="ocht__loc">
+      <span className="ocht__loc-title">{location.label ?? labels.locationMessage}</span>
+      <span className="ocht__loc-coords" dir="ltr">
+        {`${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}
+      </span>
+      {location.accuracyM !== null ? (
+        <span className="ocht__loc-acc">
+          {labels.accuracy.replace("{meters}", String(Math.round(location.accuracyM)))}
+        </span>
+      ) : null}
+      <button
+        type="button"
+        className="ocht__loc-open"
+        onClick={() => void openLink(mapsUrlOf(location))}
+      >
+        {labels.openInMaps}
+      </button>
+    </span>
+  );
+
+  const messageBody = (m: ChatMessage) => {
+    if (m.kind === "location" && m.location !== null) return locationCard(m.location);
+    if (m.translation === null) {
+      return (
+        <span className="ocht__body" dir="auto">
+          {m.body}
+        </span>
+      );
+    }
+    const showingOriginal = originals.has(m.id);
+    return (
+      <>
+        <span className="ocht__body" dir="auto">
+          {showingOriginal ? m.body : m.translation.text}
+        </span>
+        <span className="ocht__tr">
+          {showingOriginal ? null : <span>{labels.translated} · </span>}
+          <button type="button" className="ocht__tr-toggle" onClick={() => toggleOriginal(m.id)}>
+            {showingOriginal ? labels.showTranslation : labels.showOriginal}
+          </button>
+        </span>
+      </>
+    );
   };
 
   // لا غرفةَ لهذا الطلب (لم يُسنَدْ بعدُ أو انقضت النافذة): لا بطاقةَ ألبتّة.
@@ -311,7 +436,7 @@ export function OrderChat({
                 key={m.id}
                 className={m.mine ? "ocht__msg ocht__msg--mine" : "ocht__msg ocht__msg--theirs"}
               >
-                <span className="ocht__body">{m.body}</span>
+                {messageBody(m)}
                 <span className="ocht__time">
                   {timeOf(m.createdAt)}
                   {m.mine && snapshot !== null && m.seq <= snapshot.counterpartLastReadSeq
@@ -322,7 +447,13 @@ export function OrderChat({
             ))}
             {pending.map((p) => (
               <li key={p.clientMessageId} className="ocht__msg ocht__msg--mine ocht__msg--pending">
-                <span className="ocht__body">{p.body}</span>
+                {p.kind === "location" && p.location !== undefined ? (
+                  locationCard(p.location)
+                ) : (
+                  <span className="ocht__body" dir="auto">
+                    {p.body}
+                  </span>
+                )}
                 <span className="ocht__time">
                   {p.state === "sending" ? labels.sending : labels.failed}
                   {p.state === "failed" ? (
@@ -335,10 +466,60 @@ export function OrderChat({
             ))}
           </ol>
 
+          {snapshot !== null && snapshot.writable && locationDraft.state !== "idle" ? (
+            <div className="ocht__locdraft" role="status">
+              {locationDraft.state === "locating" ? <p>{labels.locating}</p> : null}
+              {locationDraft.state === "failed" ? (
+                <p>
+                  {labels.locationFailed}{" "}
+                  <button
+                    type="button"
+                    className="ocht__retry"
+                    onClick={() => void startLocation()}
+                  >
+                    {labels.retry}
+                  </button>
+                </p>
+              ) : null}
+              {locationDraft.state === "preview" ? (
+                <>
+                  <p className="ocht__locdraft-title">{labels.locationPreview}</p>
+                  {locationCard(locationDraft.location)}
+                  <button
+                    type="button"
+                    className="ocht__send"
+                    onClick={() => sendLocation(locationDraft.location)}
+                  >
+                    {labels.sendLocation}
+                  </button>
+                </>
+              ) : null}
+              {locationDraft.state !== "locating" ? (
+                <button
+                  type="button"
+                  className="ocht__retry"
+                  onClick={() => setLocationDraft({ state: "idle" })}
+                >
+                  {labels.cancel}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
           {snapshot !== null && !snapshot.writable ? (
             <p className="ocht__notice">{labels.closed}</p>
           ) : (
             <form className="ocht__form" onSubmit={onSubmit}>
+              <button
+                type="button"
+                className="ocht__attach"
+                aria-label={labels.shareLocation}
+                title={labels.shareLocation}
+                disabled={snapshot === null || locationDraft.state === "locating"}
+                onClick={() => void startLocation()}
+              >
+                {labels.shareLocation}
+              </button>
               <textarea
                 className="ocht__input"
                 value={draft}

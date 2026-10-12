@@ -8,6 +8,7 @@
  */
 
 import type {
+  OrderChatLocation,
   OrderChatMessage,
   OrderChatRole,
   OrderChatStore,
@@ -25,6 +26,8 @@ const REJECTIONS: readonly OrderChatStoreRejection[] = [
   "CHAT_CLOSED",
   "MESSAGE_EMPTY",
   "MESSAGE_TOO_LONG",
+  "MESSAGE_KIND_INVALID",
+  "LOCATION_INVALID",
   "CLIENT_ID_INVALID",
 ];
 
@@ -62,6 +65,34 @@ function rejectionFrom(payload: Payload): OrderChatStoreError {
   return malformed;
 }
 
+function readFinite(value: unknown): number | null {
+  const parsed =
+    typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** حمولةُ الموقعِ كما حفظَتها القاعدة؛ ناقصةٌ أو خارجَ النطاقِ ⇒ `null` (فترفضُ الرسالةَ كلَّها). */
+export function readStoredLocation(value: unknown): OrderChatLocation | null {
+  if (!isRecord(value)) return null;
+  const lat = readFinite(value.lat);
+  const lng = readFinite(value.lng);
+  if (lat === null || lng === null || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+  return {
+    lat,
+    lng,
+    accuracyM: readFinite(value.accuracy_m),
+    label: typeof value.label === "string" && value.label.length > 0 ? value.label : null,
+  };
+}
+
+function readLanguage(value: unknown): string | null {
+  return typeof value === "string" && /^[a-z]{2,3}([-_][A-Za-z0-9]{1,8})*$/i.test(value)
+    ? value
+    : null;
+}
+
 export function readChatMessage(value: unknown): OrderChatMessage | null {
   if (!isRecord(value)) return null;
   const seq = readInt(value.seq);
@@ -77,6 +108,13 @@ export function readChatMessage(value: unknown): OrderChatMessage | null {
   ) {
     return null;
   }
+  const kind = value.kind === undefined || value.kind === null ? "text" : value.kind;
+  if (kind !== "text" && kind !== "location") return null;
+  let location: OrderChatLocation | null = null;
+  if (kind === "location") {
+    location = readStoredLocation(value.payload);
+    if (location === null) return null;
+  }
   return {
     id: value.id,
     seq,
@@ -85,6 +123,8 @@ export function readChatMessage(value: unknown): OrderChatMessage | null {
     clientMessageId: typeof value.client_message_id === "string" ? value.client_message_id : null,
     body: value.body,
     createdAt,
+    kind,
+    location,
   };
 }
 
@@ -128,7 +168,9 @@ export function readChatThread(payload: Payload): OrderChatThread | null {
     counterpart: {
       role: counterpartRole,
       firstName: typeof counterpart.first_name === "string" ? counterpart.first_name : null,
+      language: readLanguage(counterpart.language),
     },
+    myLanguage: readLanguage(payload.my_language),
     messages,
     lastSeq,
     myLastReadSeq,
@@ -193,11 +235,32 @@ export function createOrderChatStore(sql: Sql): OrderChatStore {
       if (!TELEGRAM_ID_PATTERN.test(input.telegramUserId)) {
         return err({ rejection: "CHAT_NOT_FOUND" });
       }
-      const result = await call(
-        sql,
-        "select post_order_message($1::bigint, $2::uuid, $3::uuid, $4::text) as result",
-        [input.telegramUserId, input.orderId, input.clientMessageId, input.body],
-      );
+      const location = input.kind === "location" ? (input.location ?? null) : null;
+      if (input.kind === "location" && location === null) {
+        return err({ rejection: "LOCATION_INVALID" });
+      }
+      const result =
+        location === null
+          ? await call(
+              sql,
+              "select post_order_message($1::bigint, $2::uuid, $3::uuid, $4::text) as result",
+              [input.telegramUserId, input.orderId, input.clientMessageId, input.body],
+            )
+          : await call(
+              sql,
+              "select post_order_message_kind($1::bigint, $2::uuid, $3::uuid, 'location', null, $4::text::jsonb) as result",
+              [
+                input.telegramUserId,
+                input.orderId,
+                input.clientMessageId,
+                JSON.stringify({
+                  lat: location.lat,
+                  lng: location.lng,
+                  accuracy_m: location.accuracyM,
+                  label: location.label,
+                }),
+              ],
+            );
       if (!result.ok) return result;
       if (result.value.ok !== true) return err(rejectionFrom(result.value));
       const status = result.value.status;

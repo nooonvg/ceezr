@@ -45,6 +45,8 @@ const STATUS_BY_ERROR: Readonly<Record<OrderChatPublicErrorCode, 401 | 404 | 409
   CHAT_CLOSED: 409,
   MESSAGE_EMPTY: 422,
   MESSAGE_TOO_LONG: 422,
+  MESSAGE_KIND_INVALID: 422,
+  LOCATION_INVALID: 422,
   CHAT_STORE_NOT_AVAILABLE: 503,
 };
 
@@ -65,7 +67,25 @@ export function wireMessage(message: OrderChatMessage) {
     sender_role: message.senderRole,
     mine: message.mine,
     client_message_id: message.clientMessageId,
+    kind: message.kind ?? "text",
     body: message.body,
+    location:
+      message.location === undefined || message.location === null
+        ? null
+        : {
+            lat: message.location.lat,
+            lng: message.location.lng,
+            accuracy_m: message.location.accuracyM,
+            label: message.location.label,
+          },
+    translation:
+      message.translation === undefined || message.translation === null
+        ? null
+        : {
+            text: message.translation.text,
+            from: message.translation.from,
+            to: message.translation.to,
+          },
     created_at: message.createdAt,
   };
 }

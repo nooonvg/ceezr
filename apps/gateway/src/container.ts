@@ -36,7 +36,10 @@ import type {
   GroupJoinGateDependencies,
   TelegramGroupGatePort,
 } from "../../../packages/application/groups/group-join-gate.ts";
-import type { TranslationProvider } from "../../../packages/application/i18n-translation/index.ts";
+import type {
+  TranslateMessageDependencies,
+  TranslationProvider,
+} from "../../../packages/application/i18n-translation/index.ts";
 import type {
   RatingFlagPort,
   ReputationReader,
@@ -276,6 +279,11 @@ export interface Container {
    * (القاعدة 0.6)، ولَأمكنَ أن يمتنعَ أحدُهما ويُجيبَ الآخرُ عن المدّةِ نفسِها.
    */
   readonly routing: RoutingProvider | null;
+  /**
+   * `WR-04` — تبعيّاتُ الترجمةِ نفسُها التي يقرؤها مُرحِّلُ تيليجرام (المزوّدُ والذاكرةُ
+   * المؤقّتةُ وسجلُّ الفشل)، مكشوفةٌ كي تُترجِمَ محادثةُ Mini App بالقرارِ نفسِه لا بنسخةٍ ثانية.
+   */
+  readonly translation: TranslateMessageDependencies;
   /**
    * مُرسِل بوت السائق مكشوف لأن لوحة الإدارة تسلّم رمز الدخول في محادثة المسؤول
    * الخاصة معه — القناة نفسها لا قناة ثانية بمفتاح ثانٍ يُنسى تدويره.
@@ -1127,6 +1135,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
 
   return {
     routing,
+    translation,
     driverDialogSessions: driverSessions,
     handler: createUpdateHandler({
       // ترطيب اللغة بمخزن جلسة كلّ بوت على حدة: من كتب لغته في بوت السائق يجدها

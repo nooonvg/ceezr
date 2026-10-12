@@ -12,11 +12,13 @@ import {
   ReadUrlSignerAdapter,
   UnconfiguredAssetReader,
 } from "../../../packages/application/driver/vehicle-asset-reader.ts";
+import { translateMessage } from "../../../packages/application/i18n-translation/translate-message.ts";
 import { createDriverPhoneProofs } from "../../../packages/application/identity/onboard-driver.ts";
 import { PortFailureError } from "../../../packages/application/ports/index.ts";
 import type { OperatingCityDeps } from "../../../packages/application/rider-city/operating-city.ts";
 import type { EmergencyContactDeps } from "../../../packages/application/safety/emergency-contact.ts";
 import { createFulfillmentLifecycle } from "../../../packages/application/wasla/fulfillment-lifecycle.ts";
+import { isSupportedLanguage } from "../../../packages/domain/i18n-translation/value-objects.ts";
 import { parseCitySettings, subscriptionPriceFor } from "../../../packages/domain/policy/entity.ts";
 import type { SubscriptionPlan } from "../../../packages/domain/subscription/entity.ts";
 import {
@@ -1163,6 +1165,20 @@ const orderChat =
           onPosted: (signal: { readonly orderId: string; readonly lastSeq: number }) =>
             chatChannel?.publish(signal),
           log,
+          // `WR-04` — ترجمةُ رسالةِ الطرفِ الآخرِ إلى لغةِ القارئ بمزوّدِ `TRANSLATION_PROVIDER`
+          // نفسِه. `none` ⇒ `translated: false` فيُعرَضُ الأصلُ وحدَه بلا خطأ.
+          translate: async (input: {
+            readonly text: string;
+            readonly from: string;
+            readonly to: string;
+          }) => {
+            if (!isSupportedLanguage(input.from) || !isSupportedLanguage(input.to)) return null;
+            const result = await translateMessage(
+              { text: input.text, pair: { from: input.from, to: input.to } },
+              container.translation,
+            );
+            return result.translated ? result.text : null;
+          },
         },
       };
 

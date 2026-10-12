@@ -9092,3 +9092,71 @@ body {
   border-radius: var(--r-lg);
   background: var(--w-surface-2);
 }
+
+/* `WR-04` — بطاقةُ الموقعِ وزرُّ مشاركتِه، وسطرُ الترجمة. */
+.ocht__attach {
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--tg-hint-color);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--tg-text-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.ocht__attach:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ocht__loc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ocht__loc-title {
+  font-weight: 700;
+}
+
+.ocht__loc-coords {
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+
+.ocht__loc-acc {
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.ocht__loc-open,
+.ocht__tr-toggle {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--tg-link-color);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ocht__tr {
+  font-size: 0.85em;
+  opacity: 0.85;
+}
+
+.ocht__locdraft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px dashed var(--tg-hint-color);
+  border-radius: var(--r-md);
+}
+
+.ocht__locdraft-title {
+  margin: 0;
+  font-weight: 700;
+}

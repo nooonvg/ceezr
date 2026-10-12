@@ -1,0 +1,52 @@
+{
+  "id": "wr-04-chat-location-translation",
+  "goal": "WR-04: رسالة موقع داخل محادثة الطلب بفعل صريح من المستخدم، وترجمة رسائل الطرف الآخر إلى لغة القارئ مع بقاء الأصل، دون فتح مرفقات ثنائية قبل WR-21.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0274-chat-location-and-translation.md",
+    "docs/adr/0263-order-chat-in-miniapp.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/container.ts",
+    "apps/gateway/src/index.ts",
+    "apps/gateway/src/routes/order-chat.ts",
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/surfaces/chat/OrderChat.tsx",
+    "apps/miniapp/src/surfaces/chat/order-chat-client.ts",
+    "apps/miniapp/src/surfaces/chat/order-chat.test.tsx",
+    "apps/miniapp/src/surfaces/driver/job/JobScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/active/ActiveRideScreen.tsx",
+    "packages/application/messaging/order-chat.ts",
+    "packages/infrastructure/messaging/order-chat-store.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "scripts/lib/rollback-registry.ts",
+    "supabase/migrations/20261013000500_wr_04_chat_location_kind.sql",
+    "supabase/migrations/20261013000600_wr_04_chat_location_kind_validate.sql",
+    "tests/integration/order-chat.test.ts",
+    "tests/unit/order-chat.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0274-chat-location-and-translation.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0274: نوع الرسالة text|location بقيد في الجدول، والترجمة عند القراءة بمزوّد مرحّل تيليجرام نفسه، والأصل يبقى. المرفقات الثنائية مغلقة حتى WR-21.",
+  "tests": [
+    "bun test tests/integration/order-chat.test.ts (TEST_DATABASE_URL على PostGIS محلية)",
+    "bun test tests/unit/order-chat.test.ts",
+    "bun test apps/miniapp/src/surfaces/chat"
+  ],
+  "evidence": "محليًا: order-chat.test.ts 16/16 على PostgreSQL+PostGIS، وunit 24/24، وعميل Mini App 20/20.",
+  "constraints": [
+    "لا قراءة موقع قبل ضغط المستخدم",
+    "لا إحداثيات في السجل التشغيلي",
+    "لا نوع مرفق ثنائي قبل WR-21",
+    "الترجمة لا تستبدل الأصل"
+  ],
+  "limitations": "الترجمة معطلة في الإنتاج ما دام TRANSLATION_PROVIDER=none. ولا اختبار على تيليجرام فعلي ولا على جهاز (WR-26)."
+}
