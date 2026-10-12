@@ -11,20 +11,26 @@
  *   ولذلك **لا أداةَ إشرافٍ ههنا**: لوحةُ الإدارةِ الفعليةُ تبقى على الخادم.
  */
 
+import {
+  directionFor,
+  miniAppTranslator,
+} from "../../../../../packages/shared/i18n/miniapp/index.ts";
 import type { LanguageSurfaceProps } from "../../routing/RoleRouter.tsx";
 import { EmptyState } from "../../system/EmptyState.tsx";
 
-export default function AdminRoot(_props: LanguageSurfaceProps) {
+/**
+ * كانَ النصُّ عربيًّا مكتوبًا في المكوّنِ (ومعه «ADR 0007» و«إثبات توجيه») فيراهُ المشرفُ
+ * الإنجليزيُّ والأرديُّ بالعربيّةِ ومصطلحاتِ المطوّرين. صارَ بلغةِ السطحِ واتّجاهِها.
+ */
+export default function AdminRoot({ language }: LanguageSurfaceProps) {
+  const t = miniAppTranslator(language);
   return (
-    <section aria-labelledby="admin-root-title">
+    <section aria-labelledby="admin-root-title" dir={directionFor(language)}>
       <h1 id="admin-root-title" style={{ margin: 0, fontSize: "1.5rem" }}>
-        وَصْلة
+        {t("admin.root.brand")}
       </h1>
       {/* `F1-07` — `UX-5`: حالةُ الفراغِ تُقال صراحةً ولا تُترَك بياضاً يُقرأ عطلاً. */}
-      <EmptyState
-        title="لا أدوات إشراف هنا"
-        body="أدوات الإشراف تبقى في لوحة الإدارة على الخادم (ADR 0007). هذا السطح إثبات توجيه لا لوحة إدارة."
-      />
+      <EmptyState title={t("admin.root.title")} body={t("admin.root.body")} />
     </section>
   );
 }

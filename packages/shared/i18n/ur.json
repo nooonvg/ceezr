@@ -245,6 +245,7 @@
   "rider.parcel_too_long": "تفصیل بہت طویل ہے۔ اسے مختصر کریں۔",
   "rider.registered": "{name}، آپ {city} میں رجسٹر ہو گئے ہیں۔",
   "rider.searching": "قریبی ڈرائیور تلاش کیا جا رہا ہے…",
+  "rider.already_searching": "آپ کا ایک آرڈر ابھی جاری ہے، اس کے ختم ہونے تک نیا آرڈر نہیں کھل سکتا۔ اسے دیکھنے کے لیے «{status_button}» دبائیں، یا منسوخ کرنے کے لیے «{cancel_button}»۔",
   "rider.service_delivery": "ڈیلیوری",
   "rider.service_transport": "سواری",
   "rider.share_location_button": "میرا مقام شیئر کریں",

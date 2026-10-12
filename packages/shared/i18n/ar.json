@@ -245,6 +245,7 @@
   "rider.parcel_too_long": "الوصف طويل جداً. اختصره.",
   "rider.registered": "تم تسجيلك يا {name} في {city}.",
   "rider.searching": "جارٍ البحث عن سائق قريب…",
+  "rider.already_searching": "لديك طلب قائم لم ينتهِ بعد، فلا يُفتح طلب جديد حتى ينتهي. اضغط «{status_button}» لمتابعته، أو «{cancel_button}» إن أردت إلغاءه.",
   "rider.service_delivery": "توصيل طلب",
   "rider.service_transport": "نقل أشخاص",
   "rider.share_location_button": "مشاركة موقعي",

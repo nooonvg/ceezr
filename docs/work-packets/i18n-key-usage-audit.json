@@ -1,0 +1,30 @@
+{
+  "id": "i18n-key-usage-audit",
+  "goal": "جرد الترجمات 2026-10-12: لا مفتاح تناديه الشيفرة ولا وجود له في القاموس فيظهر خامًا، والتهجئة الإنجليزية للعلامة WASLA وحدها (ADR 0182)، وسطح المشرف بلغة صاحبه.",
+  "canonical_source": ["docs/adr/0182-english-brand-spelling-is-wasla.md"],
+  "implementation": [
+    "packages/application/bots/rider-dialog.ts",
+    "apps/miniapp/src/surfaces/driver/summary/DriverRideSummaryScreen.tsx",
+    "apps/miniapp/src/surfaces/admin/AdminRoot.tsx",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/ur.json",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/unit/i18n-key-usage.test.ts",
+    "tests/unit/rider-dialog.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [],
+  "decision": "rider.already_searching لم يوجد قط في القواميس، فكان الراكب الذي يطلب وله طلب قائم يرى المفتاح خامًا في البوت (رحلة وتوصيل). أُضيف بالعربية والإنجليزية والأردية ويسمّي زرَّي «أين طلبي؟» و«إلغاء طلبي» بمفاتيحهما، ولا يطبع معرّف الطلب. وملخّص رحلة السائق كان يعرض common.error/common.loading/common.submitting خامًا، فصارت مفاتيح driver.summary.*. وسطح المشرف كان نصًا عربيًا ثابتًا فيه «ADR 0007»، فصار بلغة الحساب. والقاموسان الإنجليزيان عادا إلى Wasla وWaslah في 45 موضعًا بعد قرار المالك WASLA، فوُحّدت.",
+  "tests": [
+    "bun test tests/unit/i18n-key-usage.test.ts tests/unit/rider-dialog.test.ts",
+    "bun run scripts/check-i18n.ts"
+  ],
+  "evidence": "الحاجز الجديد أمسك مفتاحًا مؤقتًا (app.name) أثناء الإصلاح نفسه قبل تصحيحه. bun test كاملًا 7537/7537.",
+  "constraints": ["لا تغيير في سلوك الطلب أو الرفض", "لا هجرة"],
+  "limitations": "المفاتيح المبنية بقالب خارج الحاجز الآلي، وفُحصت أسرها يدويًا مقابل أنواع الدومين. وجودة الصياغة الإنجليزية والأردية تحتاج مراجعة لغوية بشرية.",
+  "no_other_affected_docs_reason": "الإصلاح في القواميس والشيفرة والاختبارات وحدها؛ لا وثيقة عقد أو قرار تتغير، وADR 0182 يبقى كما هو والتنفيذ يعود إليه."
+}
