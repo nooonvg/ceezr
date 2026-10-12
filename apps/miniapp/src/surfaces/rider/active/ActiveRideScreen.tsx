@@ -539,6 +539,18 @@ export function ActiveRideScreen({
               offerSuggested: t("rider.active.chat.offerSuggested"),
               offerOpen: t("rider.active.chat.offerOpen"),
               refresh: t("rider.active.chat.refresh"),
+              shareLocation: t("rider.active.chat.shareLocation"),
+              locating: t("rider.active.chat.locating"),
+              locationPreview: t("rider.active.chat.locationPreview"),
+              sendLocation: t("rider.active.chat.sendLocation"),
+              cancel: t("rider.active.chat.cancel"),
+              locationFailed: t("rider.active.chat.locationFailed"),
+              locationMessage: t("rider.active.chat.locationMessage"),
+              openInMaps: t("rider.active.chat.openInMaps"),
+              accuracy: t("rider.active.chat.accuracy"),
+              translated: t("rider.active.chat.translated"),
+              showOriginal: t("rider.active.chat.showOriginal"),
+              showTranslation: t("rider.active.chat.showTranslation"),
             }}
           />
         )}

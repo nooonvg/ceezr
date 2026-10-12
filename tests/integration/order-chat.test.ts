@@ -64,6 +64,23 @@ function post(tg: number, orderId: string, clientId: string, body: string): Prom
   `);
 }
 
+function postKind(
+  tg: number,
+  orderId: string,
+  clientId: string,
+  kind: string,
+  payload: unknown,
+): Promise<Payload> {
+  // نصٌّ يُمرَّرُ كما هو: عددٌ هائلٌ (`1e400`) لا يُكتَبُ في JavaScript إلّا نصًّا.
+  const json =
+    payload === null ? null : typeof payload === "string" ? payload : JSON.stringify(payload);
+  return one(sql<{ result: Payload }[]>`
+    select post_order_message_kind(
+      ${tg}::bigint, ${orderId}::uuid, ${clientId}::uuid, ${kind}, null, ${json}::text::jsonb
+    ) as result
+  `);
+}
+
 function list(tg: number, orderId: string, after = 0): Promise<Payload> {
   return one(sql<{ result: Payload }[]>`
     select list_order_messages(${tg}::bigint, ${orderId}::uuid, ${after}::bigint, 200) as result
@@ -344,6 +361,114 @@ describeIf("WR-04 — محادثةُ طرفَي الطلبِ على قاعدةٍ
     `);
     const sections = exported.sections as { orderMessages?: { body: string }[] };
     expect(sections.orderMessages?.map((m) => m.body)).toEqual(["من الراكبة"]);
+  });
+
+  it("رسالةُ الموقعِ تُحفَظُ بإحداثيّاتٍ مفحوصةٍ ويراها الطرفُ الآخرُ نوعًا وحمولة", async () => {
+    await clearOrders();
+    const orderId = await seedOrder("transport", true);
+    const clientId = crypto.randomUUID();
+    const sent = await postKind(RIDER_TG, orderId, clientId, "location", {
+      lat: 21.4858123456,
+      lng: 39.1925,
+      accuracy_m: 14.27,
+      extra: "لا يُحفَظ",
+    });
+    expect(sent.ok).toBe(true);
+    expect(sent.status).toBe("added");
+    const message = sent.message as Message & { kind: string; payload: Record<string, unknown> };
+    expect(message.kind).toBe("location");
+    expect(message.payload).toEqual({
+      lat: 21.485812,
+      lng: 39.1925,
+      accuracy_m: 14.3,
+      label: null,
+    });
+    // نصٌّ احتياطيٌّ يقرؤه عميلٌ أقدمُ دونَ أن يسقط.
+    expect(message.body).toBe("21.485812,39.192500");
+
+    const driverView = messagesOf(await list(DRIVER_TG, orderId)) as readonly (Message & {
+      kind: string;
+      payload: Record<string, unknown> | null;
+    })[];
+    expect(driverView.map((m) => m.kind)).toEqual(["location"]);
+    expect(driverView[0]?.payload?.lat).toBe(21.485812);
+
+    // المعرّفُ نفسُه لا ينشئُ رسالةَ موقعٍ ثانية.
+    const again = await postKind(RIDER_TG, orderId, clientId, "location", { lat: 1, lng: 1 });
+    expect(again.status).toBe("duplicate");
+    expect(messagesOf(await list(DRIVER_TG, orderId))).toHaveLength(1);
+    // والرسالةُ الجديدةُ تُنبِّهُ الطرفَ الآخرَ كما تُنبِّهُ النصّيّة.
+    const notices = await sql<{ n: number }[]>`
+      select count(*)::int as n from notification_outbox
+       where order_id = ${orderId} and kind = 'order_chat_message'`;
+    expect(notices[0]?.n).toBe(1);
+  });
+
+  it("الموقعُ غيرُ السليمِ يُرفَضُ برمزٍ مسمّى ولا يُحفَظ", async () => {
+    await clearOrders();
+    const orderId = await seedOrder("transport", true);
+    const bad: unknown[] = [
+      null,
+      {},
+      { lat: 91, lng: 10 },
+      { lat: 10, lng: -180.5 },
+      { lat: "21.4", lng: 39.1 },
+      '{"lat": 1e400, "lng": 39.1}',
+      { lat: 21.4, lng: 39.1, label: "x".repeat(121) },
+    ];
+    for (const payload of bad) {
+      expect(
+        (await postKind(RIDER_TG, orderId, crypto.randomUUID(), "location", payload)).error,
+      ).toBe("LOCATION_INVALID");
+    }
+    expect(
+      (await postKind(RIDER_TG, orderId, crypto.randomUUID(), "image", { lat: 1, lng: 1 })).error,
+    ).toBe("MESSAGE_KIND_INVALID");
+    expect(messagesOf(await list(DRIVER_TG, orderId))).toHaveLength(0);
+    // والقيدُ في الجدولِ نفسِه يمنعُ كتابةً تتجاوزُ الدالّة.
+    let blocked = false;
+    try {
+      await sql`
+        insert into order_messages (order_id, city_id, sender_user_id, sender_role, client_message_id, body, kind, payload)
+        select ${orderId}, ${cityId}, u.id, 'rider', gen_random_uuid(), 'x', 'location', '{"lat": 200, "lng": 1}'::jsonb
+          from users u where u.telegram_id = ${RIDER_TG}`;
+    } catch {
+      blocked = true;
+    }
+    expect(blocked).toBe(true);
+  });
+
+  it("الطرفُ الثالثُ لا يرسلُ موقعًا، والمحادثةُ المغلقةُ لا تقبلُه", async () => {
+    await clearOrders();
+    const orderId = await seedOrder("transport", true);
+    for (const tg of [OTHER_DRIVER_TG, STRANGER_TG]) {
+      expect(
+        (await postKind(tg, orderId, crypto.randomUUID(), "location", { lat: 21.4, lng: 39.1 }))
+          .error,
+      ).toBe("CHAT_NOT_FOUND");
+    }
+    await sql`update orders set status = 'completed'::order_status, completed_at = now() where id = ${orderId}`;
+    expect(
+      (await postKind(RIDER_TG, orderId, crypto.randomUUID(), "location", { lat: 21.4, lng: 39.1 }))
+        .error,
+    ).toBe("CHAT_CLOSED");
+  });
+
+  it("السجلُّ يحملُ لغةَ القارئِ ولغةَ الطرفِ الآخرِ من `users.language_code` للترجمة", async () => {
+    await clearOrders();
+    const orderId = await seedOrder("transport", true);
+    await sql`update users set language_code = 'ar' where telegram_id = ${RIDER_TG}`;
+    await sql`update users set language_code = 'ur' where telegram_id = ${DRIVER_TG}`;
+    try {
+      const riderView = await list(RIDER_TG, orderId);
+      expect(riderView.my_language).toBe("ar");
+      expect((riderView.counterpart as { language: string | null }).language).toBe("ur");
+      const driverView = await list(DRIVER_TG, orderId);
+      expect(driverView.my_language).toBe("ur");
+      expect((driverView.counterpart as { language: string | null }).language).toBe("ar");
+    } finally {
+      await sql`update users set language_code = 'ar' where telegram_id in (${RIDER_TG}, ${DRIVER_TG})`;
+    }
   });
 
   // آخرُ القياساتِ عمداً: المحوُ يُجهِّلُ حسابَ الراكبة.

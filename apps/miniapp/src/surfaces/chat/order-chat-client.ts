@@ -19,6 +19,25 @@ import { ApiError, ApiNetworkError, apiFetch } from "../../api/client.ts";
 
 export type ChatRole = "rider" | "driver";
 
+export type ChatMessageKind = "text" | "location";
+
+/** `WR-04` — نقطةٌ واحدةٌ اختارَ المستخدمُ إرسالَها. */
+export interface ChatLocation {
+  readonly lat: number;
+  readonly lng: number;
+  readonly accuracyM: number | null;
+  readonly label: string | null;
+  /** رابطُ فتحِ النقطةِ في الخرائطِ كما بناه الخادم — لا يُركَّبُ هنا (`F1-10`). */
+  readonly mapsUrl?: string | null;
+}
+
+/** ترجمةُ رسالةِ الطرفِ الآخرِ إلى لغةِ القارئ — والأصلُ في `body`. */
+export interface ChatTranslation {
+  readonly text: string;
+  readonly from: string;
+  readonly to: string;
+}
+
 export interface ChatMessage {
   readonly id: string;
   readonly seq: number;
@@ -27,6 +46,9 @@ export interface ChatMessage {
   readonly clientMessageId: string | null;
   readonly body: string;
   readonly createdAt: string;
+  readonly kind: ChatMessageKind;
+  readonly location: ChatLocation | null;
+  readonly translation: ChatTranslation | null;
 }
 
 export interface ChatSnapshot {
@@ -51,7 +73,15 @@ export interface PendingMessage {
   readonly clientMessageId: string;
   readonly body: string;
   readonly state: "sending" | "failed";
+  /** غيابُهما ⇒ نصّ. */
+  readonly kind?: ChatMessageKind;
+  readonly location?: ChatLocation;
 }
+
+/** ما يُرسَلُ للخادم: نصٌّ أو نقطةُ موقع. */
+export type ChatOutgoing =
+  | { readonly kind: "text"; readonly text: string }
+  | { readonly kind: "location"; readonly location: ChatLocation };
 
 interface WireMessage {
   readonly id: string;
@@ -61,6 +91,15 @@ interface WireMessage {
   readonly client_message_id: string | null;
   readonly body: string;
   readonly created_at: string;
+  readonly kind?: ChatMessageKind;
+  readonly location?: {
+    readonly lat: number;
+    readonly lng: number;
+    readonly accuracy_m: number | null;
+    readonly label: string | null;
+    readonly maps_url?: string | null;
+  } | null;
+  readonly translation?: ChatTranslation | null;
 }
 
 interface WireThread {
@@ -82,7 +121,33 @@ interface WireThread {
   readonly unread: number;
 }
 
+function finite(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 export function fromWireMessage(m: WireMessage): ChatMessage {
+  const lat = finite(m.location?.lat);
+  const lng = finite(m.location?.lng);
+  const location: ChatLocation | null =
+    m.kind === "location" && lat !== null && lng !== null
+      ? {
+          lat,
+          lng,
+          accuracyM: finite(m.location?.accuracy_m),
+          label: typeof m.location?.label === "string" ? m.location.label : null,
+          mapsUrl:
+            typeof m.location?.maps_url === "string" && m.location.maps_url.startsWith("https://")
+              ? m.location.maps_url
+              : null,
+        }
+      : null;
+  const translation =
+    m.translation !== undefined &&
+    m.translation !== null &&
+    typeof m.translation.text === "string" &&
+    m.translation.text.trim().length > 0
+      ? m.translation
+      : null;
   return {
     id: m.id,
     seq: m.seq,
@@ -91,6 +156,10 @@ export function fromWireMessage(m: WireMessage): ChatMessage {
     clientMessageId: m.client_message_id,
     body: m.body,
     createdAt: m.created_at,
+    // نوعٌ مجهولٌ أو موقعٌ بلا إحداثيّاتٍ صالحة يُعرَضُ نصًّا: لا بطاقةَ موقعٍ بلا موقع.
+    kind: location === null ? "text" : "location",
+    location,
+    translation,
   };
 }
 
@@ -99,7 +168,7 @@ export interface ChatApi {
   readonly send: (
     orderId: string,
     clientMessageId: string,
-    text: string,
+    outgoing: ChatOutgoing,
   ) => Promise<{ readonly status: "added" | "duplicate"; readonly message: WireMessage }>;
   readonly markRead: (orderId: string, seq: number) => Promise<unknown>;
 }
@@ -109,10 +178,13 @@ export const productionChatApi: ChatApi = {
     apiFetch<WireThread>(`/v1/orders/${orderId}/chat?after=${String(afterSeq)}`, {
       method: "GET",
     }),
-  send: (orderId, clientMessageId, text) =>
+  send: (orderId, clientMessageId, outgoing) =>
     apiFetch(`/v1/orders/${orderId}/chat/messages`, {
       method: "POST",
-      body: { clientMessageId, text },
+      body:
+        outgoing.kind === "location"
+          ? { clientMessageId, kind: "location", location: outgoing.location }
+          : { clientMessageId, text: outgoing.text },
     }),
   markRead: (orderId, seq) =>
     apiFetch(`/v1/orders/${orderId}/chat/read`, { method: "POST", body: { seq } }),

@@ -129,6 +129,7 @@ export const CONTRACT_FUNCTIONS: readonly string[] = [
   "persist_driver_location_batch",
   "plan_upgrade_quote",
   "post_order_message",
+  "post_order_message_kind",
   "provision_bootstrap_admin",
   "quote_ride",
   "read_emergency_contact",

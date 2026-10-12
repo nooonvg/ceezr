@@ -39,12 +39,37 @@ export const ORDER_CHAT_PUBLIC_ERROR_CODES = [
   "CHAT_CLOSED",
   "MESSAGE_EMPTY",
   "MESSAGE_TOO_LONG",
+  "MESSAGE_KIND_INVALID",
+  "LOCATION_INVALID",
   "CHAT_STORE_NOT_AVAILABLE",
 ] as const;
 
 export type OrderChatPublicErrorCode = (typeof ORDER_CHAT_PUBLIC_ERROR_CODES)[number];
 
 export type OrderChatRole = "rider" | "driver";
+
+/** `WR-04` — نوعُ الرسالة. المرفقاتُ الثنائيّةُ غيرُ مقبولةٍ حتّى يُفتَحَ التخزينُ (`WR-21`). */
+export type OrderChatMessageKind = "text" | "location";
+
+/** نقطةٌ واحدةٌ أرسلَها المستخدمُ بفعلٍ صريح — ليسَت تتبّعًا مستمرًّا. */
+export interface OrderChatLocation {
+  readonly lat: number;
+  readonly lng: number;
+  readonly accuracyM: number | null;
+  readonly label: string | null;
+}
+
+/**
+ * ترجمةُ رسالةِ الطرفِ الآخرِ إلى لغةِ القارئ. النصُّ الأصليُّ يبقى في `body` كما كُتِب،
+ * والترجمةُ إضافةٌ لا بديل. `null` ⇒ لا ترجمة (لغةٌ واحدة، أو مزوّدٌ غيرُ مضبوط، أو فشل).
+ */
+export interface OrderChatTranslation {
+  readonly text: string;
+  readonly from: string;
+  readonly to: string;
+}
+
+export const ORDER_CHAT_LOCATION_LABEL_MAX = 120;
 
 export interface OrderChatMessage {
   readonly id: string;
@@ -55,6 +80,10 @@ export interface OrderChatMessage {
   readonly clientMessageId: string | null;
   readonly body: string;
   readonly createdAt: string;
+  /** غيابُه يعني `text` — رسائلُ أقدمُ من `20261013000500`. */
+  readonly kind?: OrderChatMessageKind;
+  readonly location?: OrderChatLocation | null;
+  readonly translation?: OrderChatTranslation | null;
 }
 
 export interface OrderChatThread {
@@ -63,7 +92,14 @@ export interface OrderChatThread {
   readonly status: string;
   readonly writable: boolean;
   readonly myRole: OrderChatRole;
-  readonly counterpart: { readonly role: OrderChatRole; readonly firstName: string | null };
+  readonly counterpart: {
+    readonly role: OrderChatRole;
+    readonly firstName: string | null;
+    /** `users.language_code` للطرفِ الآخر — مصدرُ لغةِ الترجمة. */
+    readonly language?: string | null;
+  };
+  /** `users.language_code` للقارئ — لغةُ الترجمة. */
+  readonly myLanguage?: string | null;
   readonly messages: readonly OrderChatMessage[];
   readonly lastSeq: number;
   readonly myLastReadSeq: number;
@@ -84,6 +120,8 @@ export type OrderChatStoreRejection =
   | "CHAT_CLOSED"
   | "MESSAGE_EMPTY"
   | "MESSAGE_TOO_LONG"
+  | "MESSAGE_KIND_INVALID"
+  | "LOCATION_INVALID"
   | "CLIENT_ID_INVALID";
 
 export type OrderChatStoreError =
@@ -102,6 +140,9 @@ export interface OrderChatStore {
     readonly orderId: string;
     readonly clientMessageId: string;
     readonly body: string;
+    /** غيابُهما ⇒ رسالةٌ نصّيّة. */
+    readonly kind?: OrderChatMessageKind;
+    readonly location?: OrderChatLocation;
   }): Promise<
     Result<
       { readonly status: "added" | "duplicate"; readonly message: OrderChatMessage },
@@ -128,6 +169,15 @@ export interface OrderChatDeps {
   /** يُنادى بعدَ حفظِ رسالةٍ جديدةٍ (لا المكرَّرة) — القناةُ الآنيّةُ تبثُّ الإشارة. */
   readonly onPosted?: (signal: OrderChatSignal) => void;
   readonly log?: (event: string, meta: Record<string, unknown>) => void;
+  /**
+   * `WR-04` — ترجمةُ نصِّ الطرفِ الآخرِ إلى لغةِ القارئ. غيابُه أو `null` ⇒ يُعرَضُ الأصلُ وحدَه.
+   * لا يرمي: الفشلُ يُعادُ `null` فلا تُحجَبُ المحادثةُ بسببِ المزوّد.
+   */
+  readonly translate?: (input: {
+    readonly text: string;
+    readonly from: string;
+    readonly to: string;
+  }) => Promise<string | null>;
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -168,6 +218,74 @@ export function readAfterSeq(value: unknown): number | null {
 }
 
 /** قراءةُ الغرفةِ — `GET /v1/orders/:orderId/chat?after=<seq>`. */
+function finiteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/** فحصُ نقطةِ الموقعِ في البوّابةِ قبلَ القاعدة (والقاعدةُ تفحصُها ثانيةً). */
+export function readChatLocation(value: unknown): OrderChatLocation | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const raw = value as Record<string, unknown>;
+  const lat = finiteNumber(raw.lat);
+  const lng = finiteNumber(raw.lng);
+  if (lat === null || lng === null) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+  const accuracy = finiteNumber(raw.accuracyM);
+  let label: string | null = null;
+  if (raw.label !== undefined && raw.label !== null) {
+    if (typeof raw.label !== "string") return null;
+    const trimmed = raw.label.trim();
+    if (trimmed.length > ORDER_CHAT_LOCATION_LABEL_MAX) return null;
+    label = trimmed.length === 0 ? null : trimmed;
+  }
+  return {
+    lat,
+    lng,
+    accuracyM: accuracy !== null && accuracy >= 0 && accuracy <= 100_000 ? accuracy : null,
+    label,
+  };
+}
+
+const TRANSLATABLE_LANGUAGES = new Set(["ar", "en", "ur"]);
+
+function primaryLanguage(tag: string | null | undefined): string | null {
+  if (typeof tag !== "string") return null;
+  const primary = tag.trim().toLowerCase().split(/[-_]/)[0] ?? "";
+  return TRANSLATABLE_LANGUAGES.has(primary) ? primary : null;
+}
+
+/**
+ * يُترجِمُ رسائلَ الطرفِ الآخرِ النصّيّةَ إلى لغةِ القارئ. رسائلُ القارئِ نفسِه ورسائلُ الموقعِ
+ * لا تُترجَم. والفشلُ يتركُ الرسالةَ بأصلِها (`translation: null`) ولا يُسقِطُ القراءة.
+ */
+export async function translateThread(
+  deps: Pick<OrderChatDeps, "translate" | "log">,
+  thread: OrderChatThread,
+): Promise<OrderChatThread> {
+  const translate = deps.translate;
+  const to = primaryLanguage(thread.myLanguage);
+  const from = primaryLanguage(thread.counterpart.language);
+  if (translate === undefined || to === null || from === null || to === from) return thread;
+  let failed = 0;
+  const messages = await Promise.all(
+    thread.messages.map(async (message) => {
+      if (message.mine || (message.kind ?? "text") !== "text") return message;
+      try {
+        const text = await translate({ text: message.body, from, to });
+        if (text === null || text.trim().length === 0 || text.trim() === message.body.trim()) {
+          return { ...message, translation: null };
+        }
+        return { ...message, translation: { text, from, to } };
+      } catch {
+        failed += 1;
+        return { ...message, translation: null };
+      }
+    }),
+  );
+  if (failed > 0) deps.log?.("order_chat.translation_failed", { order_id: thread.orderId, failed });
+  return { ...thread, messages };
+}
+
 export async function readOrderChat(
   deps: OrderChatDeps,
   input: {
@@ -193,7 +311,7 @@ export async function readOrderChat(
     if ("reason" in result.error) deps.log?.("order_chat.store_failed", { op: "list" });
     return err(publicCodeFrom(result.error));
   }
-  return ok(result.value);
+  return ok(await translateThread(deps, result.value));
 }
 
 /** إرسالُ رسالةٍ — `POST /v1/orders/:orderId/chat/messages`. */
@@ -221,15 +339,30 @@ export async function postOrderChatMessage(
   const body = input.body as Record<string, unknown>;
   const clientMessageId = readUuid(body.clientMessageId);
   if (clientMessageId === null) return err("CLIENT_ID_INVALID");
-  if (typeof body.text !== "string" || body.text.trim().length === 0) return err("MESSAGE_EMPTY");
-  if (body.text.length > ORDER_CHAT_MESSAGE_MAX) return err("MESSAGE_TOO_LONG");
+  const kind = body.kind === undefined ? "text" : body.kind;
+  if (kind !== "text" && kind !== "location") return err("MESSAGE_KIND_INVALID");
 
-  const result = await deps.store.post({
-    telegramUserId: identified.value,
-    orderId,
-    clientMessageId,
-    body: body.text,
-  });
+  let postInput: Parameters<OrderChatStore["post"]>[0];
+  if (kind === "location") {
+    const location = readChatLocation(body.location);
+    if (location === null) return err("LOCATION_INVALID");
+    postInput = {
+      telegramUserId: identified.value,
+      orderId,
+      clientMessageId,
+      body: location.label ?? `${location.lat},${location.lng}`,
+      kind,
+      location,
+    };
+  } else {
+    if (typeof body.text !== "string" || body.text.trim().length === 0) {
+      return err("MESSAGE_EMPTY");
+    }
+    if (body.text.length > ORDER_CHAT_MESSAGE_MAX) return err("MESSAGE_TOO_LONG");
+    postInput = { telegramUserId: identified.value, orderId, clientMessageId, body: body.text };
+  }
+
+  const result = await deps.store.post(postInput);
   if (!result.ok) {
     if ("reason" in result.error) deps.log?.("order_chat.store_failed", { op: "post" });
     return err(publicCodeFrom(result.error));
@@ -237,6 +370,7 @@ export async function postOrderChatMessage(
   // السجلُّ يقولُ «حُفِظَت رسالةٌ في طلبِ كذا» — لا نصَّها ولا مرسلَها.
   deps.log?.("order_chat.message_saved", {
     order_id: orderId,
+    kind,
     status: result.value.status,
     seq: result.value.message.seq,
   });

@@ -18,6 +18,7 @@ import {
   type ChatApi,
   type ChatMessage,
   chatFailureOf,
+  fromWireMessage,
   mergeMessages,
   settlePending,
 } from "./order-chat-client.ts";
@@ -34,6 +35,9 @@ function msg(seq: number, mine = false, clientMessageId: string | null = null): 
     clientMessageId,
     body: `نص ${String(seq)}`,
     createdAt: "2026-10-12T10:00:00Z",
+    kind: "text",
+    location: null,
+    translation: null,
   };
 }
 
@@ -58,6 +62,18 @@ const LABEL_KEYS = [
   "offerFixed",
   "offerSuggested",
   "offerOpen",
+  "shareLocation",
+  "locating",
+  "locationPreview",
+  "sendLocation",
+  "cancel",
+  "locationFailed",
+  "locationMessage",
+  "openInMaps",
+  "accuracy",
+  "translated",
+  "showOriginal",
+  "showTranslation",
 ] as const;
 
 const labels = Object.fromEntries(
@@ -225,5 +241,103 @@ describe("WR-04 — حدودُ العميل", () => {
     const driver = read("../driver/job/JobScreen.tsx");
     expect(rider).toContain("driver === null ? null : (\n          <OrderChat");
     expect(driver).toContain("<OrderChat\n        orderId={job.orderId}");
+  });
+});
+
+describe("WR-04 — رسالةُ الموقعِ والترجمةُ في العميل", () => {
+  const base = {
+    id: "m1",
+    seq: 1,
+    sender_role: "driver" as const,
+    mine: false,
+    client_message_id: null,
+    body: "24.467200,39.611100",
+    created_at: "2026-10-12T10:00:00Z",
+  };
+
+  it("رسالةُ الموقعِ تُقرأُ بإحداثيّاتِها ودقّتِها", () => {
+    const m = fromWireMessage({
+      ...base,
+      kind: "location",
+      location: { lat: 24.4672, lng: 39.6111, accuracy_m: 12.5, label: null },
+    });
+    expect(m.kind).toBe("location");
+    expect(m.location).toEqual({
+      lat: 24.4672,
+      lng: 39.6111,
+      accuracyM: 12.5,
+      label: null,
+      mapsUrl: null,
+    });
+  });
+
+  it("موقعٌ بلا إحداثيّاتٍ صالحةٍ يُعرَضُ نصًّا لا بطاقةً فارغة", () => {
+    const m = fromWireMessage({ ...base, kind: "location", location: null });
+    expect(m.kind).toBe("text");
+    expect(m.location).toBeNull();
+  });
+
+  it("رسالةٌ من خادمٍ أقدمَ (بلا نوعٍ ولا ترجمة) نصٌّ بلا ترجمة", () => {
+    const m = fromWireMessage({ ...base, body: "مرحبا" });
+    expect(m.kind).toBe("text");
+    expect(m.translation).toBeNull();
+  });
+
+  it("الترجمةُ إضافةٌ والأصلُ يبقى في `body`", () => {
+    const m = fromWireMessage({
+      ...base,
+      body: "أنا عند الباب",
+      kind: "text",
+      translation: { text: "I am at the door", from: "ar", to: "en" },
+    });
+    expect(m.body).toBe("أنا عند الباب");
+    expect(m.translation?.text).toBe("I am at the door");
+    // ترجمةٌ فارغةٌ ليسَت ترجمة.
+    expect(
+      fromWireMessage({ ...base, translation: { text: "  ", from: "ar", to: "en" } }).translation,
+    ).toBeNull();
+  });
+
+  it("رابطُ الخرائطِ يُقرأُ من الخادمِ وحدَه، وغيرُ https يُسقَط", () => {
+    const loc = { lat: 24.4672, lng: 39.6111, accuracy_m: null, label: null };
+    const served = fromWireMessage({
+      ...base,
+      kind: "location",
+      location: { ...loc, maps_url: "https://maps.google.com/?q=24.4672,39.6111" },
+    });
+    expect(served.location?.mapsUrl).toBe("https://maps.google.com/?q=24.4672,39.6111");
+    const unsafe = fromWireMessage({
+      ...base,
+      kind: "location",
+      location: { ...loc, maps_url: "javascript:alert(1)" },
+    });
+    expect(unsafe.location?.mapsUrl).toBeNull();
+  });
+
+  it("زرُّ مشاركةِ الموقعِ ظاهرٌ ومعطَّلٌ قبلَ أوّلِ قراءة، ولا يُطلَبُ الموقعُ عندَ العرض", () => {
+    let asked = 0;
+    const html = renderToStaticMarkup(
+      <OrderChat
+        orderId="o"
+        labels={labels}
+        statusText="مُسنَد"
+        api={silentApi}
+        socket={null}
+        initiallyOpen
+        readFix={() => {
+          asked += 1;
+          return Promise.resolve({ ok: false, reason: "test" });
+        }}
+      />,
+    );
+    expect(html).toContain("ocht__attach");
+    expect(html).toContain("«shareLocation»");
+    expect(asked).toBe(0);
+  });
+
+  it("لا زرَّ لنوعِ مرفقٍ لا يدعمُه الخادم (صور/فيديو/صوت/مستندات حتّى يُفتَحَ التخزين)", () => {
+    const code = read("./OrderChat.tsx").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(code).not.toMatch(/type="file"/);
+    expect(code).not.toMatch(/getUserMedia|MediaRecorder/);
   });
 });

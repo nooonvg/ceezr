@@ -1390,6 +1390,28 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     criticalPath: "دورةُ الرحلةِ والإسناد",
     documentedIn: null,
   },
+  {
+    migration: "20261013000500_wr_04_chat_location_kind.sql",
+    change: "revoke_function:post_order_message(4)",
+    why: "الهجرةُ `20261013000500` (`WR-04`) تُعيدُ تعريفَ `post_order_message(bigint, uuid, uuid, text)` **بالتوقيعِ والمردِّ نفسِهما** لتُحيلَ إلى `post_order_message_kind` بنوعِ `text`؛ فقواعدُ الإرسالِ (الطرفان، والكتابةُ قبلَ الانتهاء، ومنعُ التكرار، والتنبيه) في مصدرٍ واحد. والمردُّ يزيدُ مفتاحَي `kind` و`payload` لا يقرؤهما المُنادي القائم. والسحبُ إعادةُ قفلٍ كما كانَ: لـ`service_role` وحدَها. والعودةُ إعادةُ تطبيقِ النسخةِ من `20261012150000`.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    documentedIn: null,
+  },
+  {
+    migration: "20261013000500_wr_04_chat_location_kind.sql",
+    change: "revoke_function:list_order_messages(4)",
+    why: "الهجرةُ `20261013000500` (`WR-04`) تُعيدُ تعريفَ `list_order_messages(bigint, uuid, bigint, integer)` **بالتوقيعِ نفسِه**، وتزيدُ المردَّ `kind` و`payload` لكلِّ رسالة، و`my_language` ولغةَ الطرفِ الآخرِ للترجمة. والقارئُ الأقدمُ يتجاهلُ المفاتيحَ الجديدة. والسحبُ إعادةُ قفلٍ كما كانَ. والعودةُ إعادةُ تطبيقِ النسخةِ من `20261012100000`.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    documentedIn: null,
+  },
 ];
 
 /**

@@ -449,6 +449,18 @@ export function JobScreen({
           offerSuggested: t("driver.job.chat.offerSuggested"),
           offerOpen: t("driver.job.chat.offerOpen"),
           refresh: t("driver.job.chat.refresh"),
+          shareLocation: t("driver.job.chat.shareLocation"),
+          locating: t("driver.job.chat.locating"),
+          locationPreview: t("driver.job.chat.locationPreview"),
+          sendLocation: t("driver.job.chat.sendLocation"),
+          cancel: t("driver.job.chat.cancel"),
+          locationFailed: t("driver.job.chat.locationFailed"),
+          locationMessage: t("driver.job.chat.locationMessage"),
+          openInMaps: t("driver.job.chat.openInMaps"),
+          accuracy: t("driver.job.chat.accuracy"),
+          translated: t("driver.job.chat.translated"),
+          showOriginal: t("driver.job.chat.showOriginal"),
+          showTranslation: t("driver.job.chat.showTranslation"),
         }}
       />
 
