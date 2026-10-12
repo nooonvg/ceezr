@@ -10,6 +10,7 @@
 import { startRideKeyboard } from "../../../packages/application/bots/rating-dialog.ts";
 import type { BroadcastPublisher } from "../../../packages/application/broadcast/ports.ts";
 import type { OfferPublisher } from "../../../packages/application/dispatch/broadcast-offers.ts";
+import { closeDeadOfferCards } from "../../../packages/application/dispatch/close-dead-offer-cards.ts";
 import {
   type CancellationMessenger,
   createOrderCancelledHandler,
@@ -73,6 +74,7 @@ import {
 } from "../../../packages/infrastructure/dispatch/dispatch-adapters.ts";
 import { createStaleGroupCardPort } from "../../../packages/infrastructure/dispatch/negotiation-adapters.ts";
 import { createNegotiationWiring } from "../../../packages/infrastructure/dispatch/negotiation-wiring.ts";
+import { createDeadOfferCardPort } from "../../../packages/infrastructure/dispatch/offer-card-adapters.ts";
 import { createUnmatchedOrderFinder } from "../../../packages/infrastructure/dispatch/unmatched-adapters.ts";
 import { createDocumentExpiryRpcPort } from "../../../packages/infrastructure/driver/document-expiry-rpc.ts";
 import { createPaymentRepository } from "../../../packages/infrastructure/financial/payment-adapters.ts";
@@ -909,6 +911,31 @@ export function buildWorkerContainer(
         };
 
   /**
+   * `WR-08` (ADR 0271) — بطاقةُ العرضِ الخاصّةُ التي ماتَ عرضُها (انتهى أو سُبِقَ إليه أو أُلغي
+   * طلبُه) يُكتَبُ مآلُها عليها ببوتِ السائقِ الذي أرسلَها، بلا لوحةٍ فيزولُ زرّا «قبول/رفض».
+   * ونصُّ «انتهى» و«سُبِقَ» هو نصُّ النقرةِ نفسُه (`WR-08`، #507)، فلا يتبدّلُ ما كتبَته النقرة.
+   */
+  const editOfferMessage = telegram.editMessageText;
+  const offerCards =
+    editOfferMessage === undefined
+      ? undefined
+      : {
+          cards: createDeadOfferCardPort(sql),
+          edit: (chatId: string, messageId: string, text: string) =>
+            editOfferMessage(chatId, messageId, text, undefined),
+          text: (outcome: "expired" | "taken" | "cancelled", languageCode: string) =>
+            translate(
+              languageCode,
+              outcome === "expired"
+                ? "driver.offer_expired"
+                : outcome === "taken"
+                  ? "driver.offer_taken"
+                  : "driver.offer_card_cancelled",
+            ),
+          log: (event: string, meta: Record<string, unknown>) => log.info(event, meta),
+        };
+
+  /**
    * المدن تُقرأ عند بناء القائمة لا في كل شوط: تفعيل مدينة جديدة حدثٌ نادر
    * يستحقّ إعادة نشر العامل، واستعلامُ المدن كل دقيقة إنفاقٌ بلا مقابل.
    */
@@ -1051,7 +1078,16 @@ export function buildWorkerContainer(
                   clock: systemClock,
                 });
                 if (!report.ok) throw new Error(JSON.stringify(report.error));
-                return `examined=${report.value.examined} expired=${report.value.appliedCount}`;
+                // `WR-08` — بعدَ الإنهاءِ لا قبلَه: عرضٌ انتهى في هذا المرورِ تُغلَقُ بطاقتُه فيه.
+                // وعطلُ البطاقاتِ لا يُسقطُ الشوط: يُذكَرُ في سطرِ المآل.
+                let cards = "";
+                if (offerCards !== undefined) {
+                  const closedCards = await closeDeadOfferCards(cityId, offerCards);
+                  cards = closedCards.ok
+                    ? ` cardsClosed=${closedCards.value.closed} cardsFailed=${closedCards.value.failed}`
+                    : ` cardsError=${closedCards.error.code}`;
+                }
+                return `examined=${report.value.examined} expired=${report.value.appliedCount}${cards}`;
               },
             },
             {

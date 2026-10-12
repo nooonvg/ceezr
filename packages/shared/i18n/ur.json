@@ -39,6 +39,7 @@
   "driver.offer_accept_button": "✅ آرڈر قبول کریں",
   "driver.offer_accepted": "آرڈر آپ کا ہے۔ پک اپ کے مقام کی طرف روانہ ہوں۔",
   "driver.offer_expired": "اس آرڈر کی مدت ختم ہو گئی۔",
+  "driver.offer_card_cancelled": "گاہک نے یہ آرڈر منسوخ کر دیا، اب یہ دستیاب نہیں۔",
   "driver.offer_received": "نئی درخواست {distance} کلومیٹر کے فاصلے پر۔ جواب دینے کے لیے آپ کے پاس {seconds} سیکنڈ ہیں۔",
   "driver.offer_card_service": "{marker} سروس: {service}",
   "driver.offer_card_from": "📍 کہاں سے: {pickup}",
