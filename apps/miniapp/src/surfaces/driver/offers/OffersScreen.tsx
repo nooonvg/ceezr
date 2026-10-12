@@ -369,7 +369,15 @@ export function OffersScreen({
       ) : null}
       <p className="dof__headline">{t(board.headlineKey)}</p>
 
-      <div className={`dof__availability${board.isAvailable ? " dof__availability--on" : ""}`}>
+      <div
+        className={`dof__availability${
+          board.isReady
+            ? " dof__availability--on"
+            : board.isAvailable
+              ? " dof__availability--attention"
+              : ""
+        }`}
+      >
         <span className="dof__availability-dot" aria-hidden="true">
           <Glyph name="power" />
         </span>

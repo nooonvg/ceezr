@@ -219,6 +219,11 @@ export function toOfferCard(card: ApiDriverOfferCard): OfferCardModel {
 export interface OffersBoardModel {
   readonly headlineKey: string;
   readonly isAvailable: boolean;
+  /**
+   * `WR-11` — متوفّرٌ **ومؤهَّلٌ** لما يُعرَف: غيرُ محجوبٍ، وموثَّقٌ، وموضعُه حاضرٌ حديث.
+   * وحدَه يُلوَّنُ أخضر؛ والمتوفّرُ غيرُ المؤهَّلِ لونٌ محايدٌ وعنوانٌ يقولُ السبب.
+   */
+  readonly isReady: boolean;
   readonly isBlocked: boolean;
   readonly blockLines: readonly OfferBlockLine[];
   readonly cards: readonly OfferCardModel[];
@@ -229,18 +234,39 @@ export interface OffersBoardModel {
  * لوثيقةٍ منتهيةٍ لو رأى «لا عروضَ الآنَ» لَظنَّ السوقَ هادئاً وانتظرَ يوماً
  * كامِلاً بلا عملٍ. والسببُ الحقيقيُّ يُقالُ أوّلَ سطرٍ.
  */
+/** `WR-11` — عنوانُ المتوفّرِ غيرِ المؤهَّلِ بالسببِ الأوّل، أو `null` إن لم يُعرَف سبب. */
+const ELIGIBILITY_HEADLINES: Readonly<Record<string, string>> = {
+  NOT_VERIFIED: "driver.offers.headline.notVerified",
+  NO_LOCATION: "driver.offers.headline.noLocation",
+  STALE_LOCATION: "driver.offers.headline.staleLocation",
+};
+
+function eligibilityHeadline(reasons: readonly string[] | undefined): string | null {
+  for (const reason of reasons ?? []) {
+    const key = ELIGIBILITY_HEADLINES[reason];
+    if (key !== undefined) return key;
+  }
+  return null;
+}
+
 export function toOffersBoard(response: DriverOffersResponse): OffersBoardModel {
   const cards = response.offers.map(toOfferCard);
+  /**
+   * `WR-11` — المتوفّرُ غيرُ المؤهَّلِ لا يُقالُ له «لا عرضَ في هذه اللحظة» كأنَّ السوقَ هادئ:
+   * يُقالُ له السببُ الذي يستبعدُه به التوزيع. وعرضٌ قائمٌ في يدِه يُقدَّمُ على الشرح.
+   */
+  const ineligible = eligibilityHeadline(response.eligibility_reasons);
   const headlineKey = response.is_blocked
     ? "driver.offers.headline.blocked"
     : !response.is_available
       ? "driver.offers.headline.unavailable"
-      : cards.length === 0
-        ? "driver.offers.headline.waiting"
-        : "driver.offers.headline.working";
+      : cards.length > 0
+        ? "driver.offers.headline.working"
+        : (ineligible ?? "driver.offers.headline.waiting");
   return {
     headlineKey,
     isAvailable: response.is_available,
+    isReady: response.is_available && !response.is_blocked && ineligible === null,
     isBlocked: response.is_blocked,
     blockLines: toOfferBlockLines(response.block_reasons),
     cards,
