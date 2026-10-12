@@ -13,7 +13,10 @@
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
-  "affected_docs": ["docs/roadmap/execution/STATUS.md", "docs/evidence/production/WR-17-WR-24-deploy-20261012.md"],
+  "affected_docs": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/evidence/production/WR-17-WR-24-deploy-20261012.md"
+  ],
   "decision": "settle_unsubscribed_negotiation ترد ORDER_HELD بلا كتابة حين يكون للطلب مرشح حي لقرار الراكب (كما claim_ride)، وتحرر المرشح الفائت بـEXPIRED ثم تتفق. والبوت يقول للراكب إن سائقًا ينتظر قراره.",
   "tests": [
     "TEST_DATABASE_URL=… bun test tests/integration/wr-24-concurrent-races.test.ts",

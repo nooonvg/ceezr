@@ -305,8 +305,8 @@ describeIf("WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقي
             { matched_at: Date }[]
           >`select matched_at from orders where id = ${orderId}::uuid`
         )[0];
-        expect((matched?.matched_at as Date).getTime()).toBeLessThan(
-          (row?.expires_at as Date).getTime(),
+        expect((matched as { matched_at: Date }).matched_at.getTime()).toBeLessThan(
+          (row as { expires_at: Date }).expires_at.getTime(),
         );
       } else {
         expect(state.status).toBe("searching");
@@ -433,7 +433,7 @@ describeIf("WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقي
         }
         // العاملُ يُنهي ما التقطَه بالدالّةِ نفسِها التي يستعملُها في الإنتاج.
         for (const rows of batch) {
-          const delivery = (rows[0]?.r as Json).delivery as Json | null;
+          const delivery = ((rows[0] as { r: Json }).r as Json).delivery as Json | null;
           if (delivery === null) continue;
           await sql`
             select finish_notification_delivery(${String(delivery.delivery_id)}::uuid,
