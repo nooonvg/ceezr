@@ -29,8 +29,9 @@ import {
 import { driverLeaveKeyboard } from "../../../../packages/application/bots/negotiation-cards.ts";
 import type { Keyboard } from "../../../../packages/application/bots/types.ts";
 import {
-  noticeRiderOfTrip,
   type RiderTripEvent,
+  riderTripKeyboard,
+  riderTripText,
 } from "../../../../packages/application/driver/rider-trip-notice.ts";
 import { warnExpiringDocuments } from "../../../../packages/application/driver/warn-expiring-documents.ts";
 import { noticeText } from "../../../../packages/application/subscription/deliver-notices.ts";
@@ -297,18 +298,17 @@ export async function buildMessageGallery(options: GalleryOptions): Promise<Mess
     COMPLETED: "انتهاء الرحلة",
   };
   for (const event of ["MATCHED", "ARRIVED", "STARTED", "COMPLETED"] as const) {
-    await noticeRiderOfTrip(
-      {
-        facts: { read: async () => tripFacts },
-        counterpart: {
-          notify: async (chatId, text, keyboard) => {
-            await rec.raw.sendMessage(chatId, text, toTelegramMarkup(keyboard));
-          },
-        },
-        miniAppUrl: options.miniAppUrl,
-      },
-      FAKE.order,
-      event,
+    await rec.raw.sendMessage(
+      PRIVATE_CHAT,
+      riderTripText(event, FAKE.order, tripFacts),
+      toTelegramMarkup(
+        riderTripKeyboard(
+          options.miniAppUrl,
+          FAKE.order,
+          LANG,
+          event === "COMPLETED" ? "summary" : "ride",
+        ),
+      ),
     );
     add(
       {
@@ -316,7 +316,7 @@ export async function buildMessageGallery(options: GalleryOptions): Promise<Mess
         bot: "rider",
         title: tripTitles[event],
         when: "حين يغيّر السائق حالة الرحلة من التطبيق",
-        source: "packages/application/driver/rider-trip-notice.ts",
+        source: "packages/application/dispatch/deliver-rider-trip-notice.ts",
       },
       `rider-trip-${event.toLowerCase()}`,
       true,

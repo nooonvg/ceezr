@@ -946,6 +946,7 @@
   "rider.notifications.kind.order_cancelled": "ألغيت الرحلة",
   "rider.notifications.kind.safety_incident": "بلاغ استغاثة",
   "rider.notifications.kind.safety_resolution_blocked": "حظر حساب بعد بلاغ استغاثة",
+  "rider.notifications.kind.rider_trip_notice": "تحديث رحلتك",
   "rider.notifications.kind.safety_resolution_closed": "أغلق بلاغ الاستغاثة",
   "rider.notifications.kind.subscription_notice": "إشعار اشتراك",
   "rider.notifications.kind.unknown": "نوع غير معروف: {kind}",

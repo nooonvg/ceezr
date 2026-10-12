@@ -9,6 +9,7 @@
 
 import { describe, expect, test } from "bun:test";
 import type { Keyboard } from "../../packages/application/bots/types.ts";
+import { createRiderTripNoticeHandler } from "../../packages/application/dispatch/deliver-rider-trip-notice.ts";
 import type { DriverJobDeps } from "../../packages/application/driver/driver-job.ts";
 import {
   completeDriverRide,
@@ -17,10 +18,12 @@ import {
 } from "../../packages/application/driver/driver-job.ts";
 import {
   noticeRiderOfTrip,
+  type RiderTripEvent,
   type RiderTripFacts,
   type RiderTripNoticeDeps,
   riderTripText,
 } from "../../packages/application/driver/rider-trip-notice.ts";
+import type { OutboxDelivery } from "../../packages/application/notification/deliver-notification.ts";
 import { err, ok } from "../../packages/shared/result/index.ts";
 
 const ORDER = "5c6a72c2-34b3-4b21-9cec-592f63d828c9";
@@ -32,30 +35,73 @@ const FACTS: RiderTripFacts = {
   vehicle: "sedan",
 };
 
+interface Queued {
+  readonly orderId: string;
+  readonly event: RiderTripEvent;
+}
+
+/** صندوقُ صادرٍ في الذاكرةِ بمفتاحِ منعِ التكرارِ نفسِه (`<order>:<event>`). */
+function notice(options: { readonly throws?: boolean; readonly missing?: boolean } = {}): {
+  deps: RiderTripNoticeDeps;
+  queued: Queued[];
+} {
+  const queued: Queued[] = [];
+  return {
+    queued,
+    deps: {
+      outbox: {
+        enqueue: async (orderId, event) => {
+          if (options.throws === true) throw new Error("db down");
+          if (options.missing === true) return null;
+          const seen = queued.some((q) => q.orderId === orderId && q.event === event);
+          if (!seen) queued.push({ orderId, event });
+          return { created: !seen };
+        },
+      },
+    },
+  };
+}
+
 interface Sent {
   readonly to: string;
   readonly text: string;
   readonly keyboard: Keyboard | null;
 }
 
-function notice(options: { readonly throws?: boolean } = {}): {
-  deps: RiderTripNoticeDeps;
-  sent: Sent[];
-} {
-  const sent: Sent[] = [];
+function delivery(payload: Record<string, unknown>, attempts = 1, maxAttempts = 3): OutboxDelivery {
   return {
-    sent,
-    deps: {
-      facts: { read: async () => FACTS },
-      counterpart: {
-        notify: async (to, text, keyboard) => {
-          if (options.throws === true) throw new Error("telegram down");
-          sent.push({ to, text, keyboard });
-        },
-      },
-      miniAppUrl: "https://waslah-miniapp.onrender.com/",
-    },
+    deliveryId: "d-1",
+    kind: "rider_trip_notice",
+    cityId: "c-1" as OutboxDelivery["cityId"],
+    claimToken: "tok",
+    attempts,
+    maxAttempts,
+    batchLimit: 1,
+    requestId: null,
+    payload,
   };
+}
+
+function handler(options: {
+  readonly reply?: string | null;
+  readonly throws?: boolean;
+  readonly facts?: RiderTripFacts | null;
+}) {
+  const sent: Sent[] = [];
+  const events: { event: string; meta: Record<string, unknown> }[] = [];
+  const handle = createRiderTripNoticeHandler({
+    facts: { read: async () => (options.facts === undefined ? FACTS : options.facts) },
+    sender: {
+      sendReturningId: async (to, text, keyboard) => {
+        if (options.throws === true) throw new TypeError("network");
+        sent.push({ to, text, keyboard });
+        return options.reply === undefined ? "777" : options.reply;
+      },
+    },
+    miniAppUrl: "https://waslah-miniapp.onrender.com/",
+    log: (event, meta) => events.push({ event, meta }),
+  });
+  return { handle, sent, events };
 }
 
 function jobDeps(riderNotice: RiderTripNoticeDeps, fail = false): DriverJobDeps {
@@ -76,7 +122,7 @@ function jobDeps(riderNotice: RiderTripNoticeDeps, fail = false): DriverJobDeps 
   };
 }
 
-describe("RIDE-NOTICE-01 — إخطارُ الراكبِ بطَورِ رحلتِه", () => {
+describe("RIDE-NOTICE-01 · WR-15 — إيداعُ إشعارِ الطورِ من مسارِ السائق", () => {
   test("كلُّ طَورٍ له نصٌّ بلغةِ الراكبِ لا مفتاحٌ خامٌ", () => {
     for (const event of ["MATCHED", "ARRIVED", "STARTED", "COMPLETED"] as const) {
       const text = riderTripText(event, ORDER, FACTS);
@@ -86,35 +132,54 @@ describe("RIDE-NOTICE-01 — إخطارُ الراكبِ بطَورِ رحلتِ
     expect(riderTripText("ARRIVED", ORDER, FACTS)).toContain("ABC 123");
   });
 
-  test("الوصولُ والبدءُ والإنهاءُ تُخطِرُ الراكبَ على معرِّفِه", async () => {
+  test("الوصولُ والبدءُ والإنهاءُ تُودِعُ صفّاً لكلِّ طورٍ، ولا تُرسلُ من المسار", async () => {
     const n = notice();
     const deps = jobDeps(n.deps);
     expect((await markDriverArrived(deps, { accessToken: "t", orderId: ORDER })).ok).toBe(true);
     expect((await startDriverRide(deps, { accessToken: "t", orderId: ORDER })).ok).toBe(true);
     expect((await completeDriverRide(deps, { accessToken: "t", orderId: ORDER })).ok).toBe(true);
-    expect(n.sent.map((s) => s.to)).toEqual(["8738396069", "8738396069", "8738396069"]);
-    // الإنهاءُ يفتحُ الملخّصَ، وما قبلَه يفتحُ شاشةَ الرحلةِ.
-    const urls = n.sent.map((s) =>
-      s.keyboard?.kind === "inline" ? (s.keyboard.rows[0]?.[0]?.webAppUrl ?? "") : "",
-    );
-    expect(urls[0]).toContain("ride_");
-    expect(urls[2]).toContain("summary_");
+    expect(n.queued.map((q) => q.event)).toEqual(["ARRIVED", "STARTED", "COMPLETED"]);
   });
 
-  test("طَورٌ رُفِضَ لا يُخطِرُ أحداً", async () => {
+  test("الضغطةُ المكرّرةُ لا تُودِعُ صفّاً ثانياً وتُسجَّلُ «مكرّرة»", async () => {
+    const n = notice();
+    const events: string[] = [];
+    const deps = { ...n.deps, log: (event: string) => events.push(event) };
+    await noticeRiderOfTrip(deps, ORDER, "ARRIVED");
+    await noticeRiderOfTrip(deps, ORDER, "ARRIVED");
+    expect(n.queued).toHaveLength(1);
+    expect(events).toEqual(["rider_trip_notice.created", "rider_trip_notice.deduplicated"]);
+  });
+
+  test("طَورٌ رُفِضَ لا يُودِعُ شيئاً", async () => {
     const n = notice();
     const result = await markDriverArrived(jobDeps(n.deps, true), {
       accessToken: "t",
       orderId: ORDER,
     });
     expect(result.ok).toBe(false);
-    expect(n.sent).toHaveLength(0);
+    expect(n.queued).toHaveLength(0);
   });
 
-  test("عطلُ تلغرامَ لا يُحوِّلُ الطَّورَ الناجحَ رفضاً", async () => {
+  test("عطلُ الإيداعِ يُسجَّلُ ولا يُحوِّلُ الطَّورَ الناجحَ رفضاً", async () => {
+    const events: { event: string; meta: Record<string, unknown> }[] = [];
     const n = notice({ throws: true });
-    const result = await markDriverArrived(jobDeps(n.deps), { accessToken: "t", orderId: ORDER });
+    const deps = jobDeps({ ...n.deps, log: (event, meta) => events.push({ event, meta }) });
+    const result = await markDriverArrived(deps, { accessToken: "t", orderId: ORDER });
     expect(result.ok).toBe(true);
+    expect(events).toEqual([
+      {
+        event: "rider_trip_notice.enqueue_failed",
+        meta: { event: "ARRIVED", order_id: ORDER, error: "Error" },
+      },
+    ]);
+  });
+
+  test("طلبٌ غيرُ موجودٍ يُسجَّلُ", async () => {
+    const events: string[] = [];
+    const n = notice({ missing: true });
+    await noticeRiderOfTrip({ ...n.deps, log: (event) => events.push(event) }, ORDER, "STARTED");
+    expect(events).toEqual(["rider_trip_notice.order_missing"]);
   });
 
   test("غيابُ المنفذِ يُسكِتُ الإخطارَ وحدَه", async () => {
@@ -122,47 +187,51 @@ describe("RIDE-NOTICE-01 — إخطارُ الراكبِ بطَورِ رحلتِ
   });
 });
 
-describe("WR-15 — ما لا يصل الراكب يُسجَّل ولا يُبتلع صامتًا", () => {
-  test("إخفاق الإرسال يُسجَّل بالطور ومعرّف الطلب، بلا معرّف تيليجرام", async () => {
-    const events: { event: string; meta: Record<string, unknown> }[] = [];
-    const { deps } = notice({ throws: true });
-    await noticeRiderOfTrip(
-      { ...deps, log: (event, meta) => events.push({ event, meta }) },
-      ORDER,
-      "ARRIVED",
+describe("WR-15 — معالجُ العاملِ: قبولُ Telegram API ليسَ ظهوراً على الهاتف", () => {
+  test("يُرسلُ إلى محادثةِ الراكبِ المقروءةِ لحظةَ الالتقاطِ، ويُسجِّلُ المحاولةَ والقبول", async () => {
+    const h = handler({});
+    const result = await h.handle(
+      delivery({ order_id: ORDER, event: "COMPLETED", chat_id: "8738396069", language: "ar" }),
     );
-    expect(events).toEqual([
-      { event: "rider_trip_notice.created", meta: { event: "ARRIVED", order_id: ORDER } },
-      {
-        event: "rider_trip_notice.failed",
-        meta: { event: "ARRIVED", order_id: ORDER, error: "Error" },
-      },
+    expect(result.ok && result.value.messageId).toBe("777");
+    expect(h.sent.map((s) => s.to)).toEqual(["8738396069"]);
+    const url =
+      h.sent[0]?.keyboard?.kind === "inline"
+        ? (h.sent[0].keyboard.rows[0]?.[0]?.webAppUrl ?? "")
+        : "";
+    expect(url).toContain("summary_");
+    expect(h.events.map((e) => e.event)).toEqual([
+      "rider_trip_notice.attempted",
+      "rider_trip_notice.accepted",
     ]);
-    expect(JSON.stringify(events)).not.toContain(FACTS.riderTelegramId);
+    expect(JSON.stringify(h.events)).not.toContain("8738396069");
   });
 
-  test("غياب الحقائق يُسجَّل", async () => {
-    const events: { event: string; meta: Record<string, unknown> }[] = [];
-    const { deps } = notice();
-    await noticeRiderOfTrip(
-      {
-        ...deps,
-        facts: { read: async () => null },
-        log: (event, meta) => events.push({ event, meta }),
-      },
-      ORDER,
-      "STARTED",
+  test("رفضُ تيليجرام فشلٌ يُعادُ، وآخرُ محاولةٍ تُسجَّلُ فشلاً نهائيّاً", async () => {
+    const first = handler({ reply: null });
+    const r1 = await first.handle(delivery({ order_id: ORDER, event: "ARRIVED", chat_id: "1" }, 1));
+    expect(r1.ok && r1.value.failure).toBe("TELEGRAM_REJECTED");
+    expect(first.events.at(-1)?.event).toBe("rider_trip_notice.send_failed");
+
+    const last = handler({ throws: true });
+    const r3 = await last.handle(
+      delivery({ order_id: ORDER, event: "ARRIVED", chat_id: "1" }, 3, 3),
     );
-    expect(events).toEqual([
-      { event: "rider_trip_notice.facts_missing", meta: { event: "STARTED", order_id: ORDER } },
-    ]);
+    expect(r3.ok && r3.value.failure).toBe("TypeError");
+    expect(last.events.at(-1)?.event).toBe("rider_trip_notice.final_failure");
   });
 
-  test("النجاح يسجّل «أنشأنا الإشعار» وحده (قبول Telegram يسجّله الجسر)", async () => {
-    const events: unknown[] = [];
-    const { deps, sent } = notice();
-    await noticeRiderOfTrip({ ...deps, log: (event) => events.push(event) }, ORDER, "MATCHED");
-    expect(sent).toHaveLength(1);
-    expect(events).toEqual(["rider_trip_notice.created"]);
+  test("راكبٌ لا محادثةَ له يُعلَنُ undeliverable لا يُعادُ", async () => {
+    const h = handler({ facts: null });
+    const result = await h.handle(delivery({ order_id: ORDER, event: "MATCHED" }));
+    expect(result.ok && result.value.undeliverable).toBe(true);
+    expect(h.sent).toHaveLength(0);
+  });
+
+  test("حمولةٌ معطوبةٌ تُتركُ بلا إعادة", async () => {
+    const h = handler({});
+    const result = await h.handle(delivery({ order_id: ORDER, event: "TELEPORTED" }));
+    expect(result.ok && result.value.abandon).toBe(true);
+    expect(h.sent).toHaveLength(0);
   });
 });

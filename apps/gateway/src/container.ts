@@ -110,7 +110,7 @@ import {
 } from "../../../packages/infrastructure/notification/miniapp-entry-sender.ts";
 import { createOutboundResilience } from "../../../packages/infrastructure/notification/outbound-resilience.ts";
 import { withOutboundResilience } from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
-import { createRiderTripFactsReader } from "../../../packages/infrastructure/notification/rider-trip-facts.ts";
+import { createRiderTripNoticeOutbox } from "../../../packages/infrastructure/notification/rider-trip-notice-outbox.ts";
 import { grammyGroupJoinGate } from "../../../packages/infrastructure/notification/telegram-join-gate.ts";
 import {
   grammyLiveLocationChannel,
@@ -356,9 +356,8 @@ export interface Container {
     readonly decisions: OfferDecisionPort;
   };
   /**
-   * `RIDE-NOTICE-01` — إخطارُ الراكبِ بطَورِ رحلتِه حينَ يضغطُ السائقُ في التطبيقِ
-   * المصغَّرِ: **نفسُ الجسرِ** `counterpartNotifier(riderSender, log, "rider")` الذي يُخطِرُ به حوارُ
-   * البوتِ عندَ القبولِ، لا مُرسِلٌ ثانٍ.
+   * `RIDE-NOTICE-01` ثمَّ `WR-15` (ADR 0265) — إخطارُ الراكبِ بطَورِ رحلتِه حينَ يضغطُ
+   * السائقُ في التطبيقِ المصغَّرِ: صفٌّ في صندوقِ الصادرِ يُرسلُه العاملُ ببوتِ الراكب.
    */
   readonly riderTripNotice: RiderTripNoticeDeps;
   close(): Promise<void>;
@@ -1154,12 +1153,8 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     reputation: { flags: ratingFlagPort, reader: reputationReader },
     safety: { trigger: safety.trigger },
     driverOffers: { drivers, decisions: offerDecisions },
-    riderTripNotice: {
-      facts: createRiderTripFactsReader(sql),
-      counterpart: counterpartNotifier(riderSender, log, "rider"),
-      miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
-      log,
-    },
+    // `WR-15` (ADR 0265) — الإيداعُ في صندوقِ الصادرِ لا الإرسالُ: العاملُ يُرسلُ ويُعيد.
+    riderTripNotice: { outbox: createRiderTripNoticeOutbox(sql), log },
     driverLocation: {
       drivers,
       ingest: {
