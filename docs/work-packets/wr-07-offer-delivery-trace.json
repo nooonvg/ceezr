@@ -1,0 +1,22 @@
+{
+  "id": "wr-07-offer-delivery-trace",
+  "goal": "§7 تتبّع بطاقة العرض حتى البوت: كل مآل لإشعار العرض يُسجَّل بسببه (تخلٍّ مُسمّى، محاولة، قبول Telegram API، فشل مؤقت ونهائي، غياب العنوان)، مع تشخيص إنتاجي لآخر طلب حقيقي.",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "packages/application/dispatch/deliver-offer-notification.ts",
+    "apps/workers/src/container.ts",
+    "tests/unit/wr-07-offer-notice-trace.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/evidence/production/WR-07-offer-path-diagnosis-20261012.md"
+  ],
+  "decision": "السجل اختياري في المعالج كي لا تنكسر المستدعيات القديمة. «accepted» تعني قبول Telegram API لا ظهور البطاقة. والفشل النهائي بمستوى error، وما سواه info.",
+  "tests": ["bun test tests/unit/wr-07-offer-notice-trace.test.ts"],
+  "evidence": "محليًا: 8/8، وlint وtypecheck ✓. والتشخيص الإنتاجي في docs/evidence/production/WR-07-offer-path-diagnosis-20261012.md.",
+  "constraints": ["لا معرّف تيليجرام ولا نص في السجل", "لا تغيير في منطق الإرسال أو التخلّي أو إعادة المحاولة"],
+  "limitations": "ظهور البطاقة على الهاتف لا يقيسه النظام. والبطاقة المنتهية أو المحسومة لغير صاحبها لا تُعلَّم بعد (WR-08).",
+  "status": "open"
+}
