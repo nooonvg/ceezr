@@ -154,12 +154,8 @@ export function createOfferNotificationHandler(
       return ok({ abandon: false, messageId: sent.value, failure: null });
     }
     const failed = { ...meta, max_attempts: delivery.maxAttempts, error: sent.error.detail };
-    log?.(
-      delivery.attempts >= delivery.maxAttempts
-        ? "offer_notice.final_failure"
-        : "offer_notice.send_failed",
-      failed,
-    );
+    if (delivery.attempts >= delivery.maxAttempts) log?.("offer_notice.final_failure", failed);
+    else log?.("offer_notice.send_failed", failed);
     return ok({ abandon: false, messageId: null, failure: sent.error.detail });
   };
 }
