@@ -604,6 +604,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     runsIn: "اختبارات التكامل على قاعدة حقيقية",
     whyNotRun: null,
   },
+  {
+    file: "tests/integration/wr-10-group-card-close.test.ts",
+    suites: ["WR-10 — بطاقاتُ القروبِ المنتهية (PostGIS)"],
+    skipped: 3,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في إغلاقِ بطاقةِ القروبِ أنَّ المنفذَ يلتقطُ الدورةَ المغلقةَ ذاتَ البطاقةِ غيرِ المغلقةِ وحدَها، ويشتقُّ المآلَ من طورِ الطلب، ويعلّمُ الإغلاقَ ويعدُّ المحاولاتِ ويكفُّ بعدَ الحدّ. وهذه أعمدةٌ وتعداداتٌ وقيودٌ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012180000). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
 
   {
     file: "tests/integration/wr-09-rider-choice.test.ts",

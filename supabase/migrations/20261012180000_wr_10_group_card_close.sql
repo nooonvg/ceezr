@@ -17,7 +17,10 @@
 -- قديمةً في القروبِ الحقيقيِّ (أمرُ المالكِ §10: لا إزعاجَ لأعضاءِ المجموعة). وإغلاقُها
 -- لاحقًا قرارُ تشغيلٍ: `update unsubscribed_negotiations set group_card_closed_at = null where ...`.
 --
--- **العودة:** حذفُ العمودينِ والفهرس. والشيفرةُ السابقةُ لا تقرؤُهما.
+-- **بلا فهرس:** الجدولُ صغيرٌ (6 صفوفٍ في الإنتاج) والقراءةُ مقيَّدةٌ بالمدينةِ وبحدٍّ، ففهرسٌ
+-- جديدٌ قفلٌ بلا عائد.
+--
+-- **العودة:** حذفُ العمودين. والشيفرةُ السابقةُ لا تقرؤُهما.
 -- =============================================================================
 
 alter table unsubscribed_negotiations
@@ -29,6 +32,3 @@ update unsubscribed_negotiations
  where group_card_closed_at is null
    and status not in ('collecting', 'negotiating');
 
-create index if not exists unsubscribed_negotiations_open_card_idx
-  on unsubscribed_negotiations (city_id)
-  where group_message_id is not null and group_card_closed_at is null;

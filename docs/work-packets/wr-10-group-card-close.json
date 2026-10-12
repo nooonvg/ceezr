@@ -12,6 +12,8 @@
     "packages/shared/i18n/en.json",
     "packages/shared/i18n/ur.json",
     "tests/unit/wr-10-group-card-close.test.ts",
+    "tests/unit/skip-audit.test.ts",
+    "scripts/lib/skip-registry.ts",
     "tests/integration/wr-10-group-card-close.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
@@ -22,7 +24,7 @@
     "bun test tests/unit/wr-10-group-card-close.test.ts",
     "TEST_DATABASE_URL=... bun test tests/integration/wr-10-group-card-close.test.ts"
   ],
-  "evidence": "محليًا: وحدات 6/6 وتكامل 3/3 على PostGIS، وتمرين العودة على 246 هجرة ✓.",
+  "evidence": "محليًا: وحدات 6/6 وتكامل 3/3 على PostGIS، وتمرين العودة على 246 هجرة، وفحص سلامة الهجرات ✓.",
   "constraints": [
     "لا تعديل لبطاقات القروب الحقيقي القديمة",
     "لا معرّف قروب ولا رسالة في السجل",
