@@ -36,6 +36,7 @@ import type {
   DriverOfferStoreRejection,
 } from "../../application/driver/offer-ports.ts";
 import {
+  type DriverEligibilityReason,
   type DriverOfferBoard,
   type DriverOfferCard,
   type DriverOfferClaim,
@@ -184,6 +185,71 @@ interface ResultRow {
   readonly result: unknown;
 }
 
+/**
+ * `WR-11` — أسبابُ الاستبعادِ المعروفةُ بلا طلب، بالقواعدِ نفسِها التي يحكمُ بها التوزيع:
+ * التوثيقُ (`NOT_VERIFIED`)، ثمَّ الموضعُ (`NO_LOCATION`)، ثمَّ قِدَمُه بزمنِ الخادمِ
+ * `last_location_at` مقابلَ `driver_location_max_age_seconds` لمدينتِه — والصفرُ يُطفئُ الحارس
+ * (`isLocationStale`). قراءةٌ فقط، وتعذُّرُها يُعيدُ قائمةً فارغةً: اللوحُ لا يسقطُ لشرحٍ إضافيّ.
+ */
+export async function readDriverEligibility(
+  sql: Sql,
+  telegramId: string,
+): Promise<readonly DriverEligibilityReason[]> {
+  try {
+    const rows = await sql<
+      {
+        verification_status: string;
+        has_location: boolean;
+        age_seconds: number | null;
+        max_age_seconds: number | null;
+      }[]
+    >`
+      select d.verification_status::text as verification_status,
+             d.last_location is not null as has_location,
+             extract(epoch from (now() - d.last_location_at))::float8 as age_seconds,
+             (select (s.value #>> '{}')::numeric::float8
+                from platform_settings s
+               where s.key = 'driver_location_max_age_seconds' and s.city_id = d.city_id
+               limit 1) as max_age_seconds
+        from drivers d
+        join users u on u.id = d.user_id
+       where u.telegram_id = ${telegramId}::bigint
+       limit 1
+    `;
+    const row = rows[0];
+    if (row === undefined) return [];
+    return eligibilityReasonsFrom({
+      verificationStatus: row.verification_status,
+      hasLocation: row.has_location,
+      ageSeconds: row.age_seconds === null ? null : Number(row.age_seconds),
+      maxAgeSeconds: row.max_age_seconds === null ? 0 : Number(row.max_age_seconds),
+    });
+  } catch {
+    return [];
+  }
+}
+
+/** الحكمُ النقيُّ — مرتَّبٌ كترتيبِ `rejectionReasonFor`، والسببُ الأوّلُ أولى بالقول. */
+export function eligibilityReasonsFrom(input: {
+  readonly verificationStatus: string;
+  readonly hasLocation: boolean;
+  readonly ageSeconds: number | null;
+  readonly maxAgeSeconds: number;
+}): readonly DriverEligibilityReason[] {
+  const reasons: DriverEligibilityReason[] = [];
+  if (input.verificationStatus !== "verified") reasons.push("NOT_VERIFIED");
+  if (!input.hasLocation) reasons.push("NO_LOCATION");
+  else if (
+    input.maxAgeSeconds > 0 &&
+    (input.ageSeconds === null ||
+      !Number.isFinite(input.ageSeconds) ||
+      input.ageSeconds > input.maxAgeSeconds)
+  ) {
+    reasons.push("STALE_LOCATION");
+  }
+  return reasons;
+}
+
 export class PostgresDriverOfferStore implements DriverOfferStore {
   readonly #sql: Sql;
 
@@ -247,6 +313,8 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
           };
     });
 
+    const eligibilityReasons = await readDriverEligibility(this.#sql, telegramId);
+
     return ok({
       serverTime,
       isAvailable: payload.is_available,
@@ -256,6 +324,7 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
           : readInstant(payload.availability_changed_at),
       isBlocked: payload.is_blocked,
       blockReasons,
+      eligibilityReasons,
       offers: enriched,
     });
   }

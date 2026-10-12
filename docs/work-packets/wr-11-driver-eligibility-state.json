@@ -1,0 +1,29 @@
+{
+  "id": "wr-11-driver-eligibility-state",
+  "goal": "شاشة السائق تقول الحقيقة (§11 · §16-أ): المتوفّر غير المؤهَّل (غير موثَّق، أو بلا موضع، أو بموضع قديم) يرى سببه ولا يُلوَّن أخضر، وعبارة إرسال الموضع لا تدّعي بثًّا والتطبيق مغلق.",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "apps/gateway/src/routes/driver-offers.ts",
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/surfaces/driver/offers/OffersScreen.tsx",
+    "apps/miniapp/src/surfaces/driver/offers/offers-contract.ts",
+    "apps/miniapp/src/surfaces/driver/offers/offers-view.ts",
+    "packages/domain/driver/driver-offers.ts",
+    "packages/infrastructure/driver/driver-offers-store.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/unit/wr-11-driver-eligibility-state.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "الأسباب تُحسب في المخزن بقراءة واحدة بقواعد rejectionReasonFor نفسها (التوثيق، ثم وجود الموضع، ثم قِدَمه بـlast_location_at مقابل driver_location_max_age_seconds للمدينة، والصفر يطفئ الحارس)، بلا هجرة ولا تغيير في التوزيع. والحقل اختياري في العقد فالبوابة الأقدم لا تكسر الواجهة.",
+  "tests": [
+    "bun test tests/unit/wr-11-driver-eligibility-state.test.ts tests/unit/check-location-broadcast-contract.test.ts tests/unit/check-driver-offers-contract.test.ts"
+  ],
+  "evidence": "محليًا: 13/13، وtypecheck وlint وحواجز المستودع. لم يُنشر بعد.",
+  "constraints": ["لا تغيير في قواعد التوزيع", "لا هجرة", "لا ادعاء بث في الخلفية"],
+  "limitations": "زر «تحديث اللوح» وحالة انقطاع الاتصال لم يُعدَّلا؛ وتذكير القسم 12 لا يُذكر في العبارة قبل نشر WR-12.",
+  "status": "open"
+}

@@ -147,6 +147,8 @@ export function createDriverOfferRoutes(deps: DriverOfferRouteDependencies): Hon
       availability_changed_at: board.availabilityChangedAt,
       is_blocked: board.isBlocked,
       block_reasons: board.blockReasons,
+      // `WR-11`: لِمَ لا يصلُ المتوفّرَ عرضٌ وإن لم يُحجَب (التوثيقُ والموضعُ وقِدَمُه).
+      eligibility_reasons: board.eligibilityReasons ?? [],
       offers: board.offers.map((offer) => ({
         offer_id: offer.offerId,
         order_id: offer.orderId,

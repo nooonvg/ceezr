@@ -76,6 +76,11 @@ export interface DriverOffersResponse {
   readonly is_blocked: boolean;
   /** `EXPIRED:insurance` ونظائرُها — نصٌّ من القاعدةِ يُقسَمُ في `offers-view`. */
   readonly block_reasons: readonly string[];
+  /**
+   * `WR-11` — أسبابُ استبعادِ المتوفّرِ غيرِ المحجوب: `NOT_VERIFIED`/`NO_LOCATION`/`STALE_LOCATION`.
+   * اختياريّةٌ: بوّابةٌ أقدمُ لا ترسلُها فيبقى اللوحُ كما كان.
+   */
+  readonly eligibility_reasons?: readonly string[];
   readonly offers: readonly ApiDriverOfferCard[];
 }
 

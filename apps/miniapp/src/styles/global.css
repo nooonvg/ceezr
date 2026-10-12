@@ -8402,6 +8402,17 @@ body {
   color: var(--ui-mute);
 }
 
+/* `WR-11` — متوفّرٌ غيرُ مؤهَّلٍ: لونٌ محايدٌ لا أخضر، والعنوانُ فوقَه يقولُ السبب. */
+.dof__availability--attention {
+  border-color: color-mix(in srgb, var(--ui-amber) 45%, transparent);
+  background: color-mix(in srgb, var(--ui-amber) 8%, var(--w-surface));
+}
+
+.dof__availability--attention .dof__availability-dot {
+  background: var(--ui-amber);
+  color: var(--ui-amber-on);
+}
+
 .dof__availability--on .dof__availability-dot {
   background: var(--ui-ok);
   color: var(--ui-ok-on);

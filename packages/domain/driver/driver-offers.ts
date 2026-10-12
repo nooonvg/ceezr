@@ -123,8 +123,17 @@ export interface DriverOfferBoard {
   readonly isBlocked: boolean;
   /** أسبابُ حجبِ البثِّ (`F12-14`) — تُفسِّرُ لوحاً فارغاً ولا تُخترَعُ. */
   readonly blockReasons: readonly string[];
+  /**
+   * `WR-11` — لِمَ لا يصلُ سائقًا متوفّرًا عرضٌ وإن لم يكن محجوبًا: الأسبابُ نفسُها التي
+   * يستبعدُه بها التوزيعُ (`rejectionReasonFor`) ممّا يُعرَفُ بلا طلب. فارغةٌ = مؤهَّلٌ لما يُعرَف.
+   * اختياريّةٌ كي لا تنكسرَ المستدعياتُ القديمة.
+   */
+  readonly eligibilityReasons?: readonly DriverEligibilityReason[];
   readonly offers: readonly DriverOfferCard[];
 }
+
+/** أسبابُ الاستبعادِ التي تُعرَفُ بلا طلبٍ بعينِه — بأسمائِها في `RejectionReason`. */
+export type DriverEligibilityReason = "NOT_VERIFIED" | "NO_LOCATION" | "STALE_LOCATION";
 
 /** موضعٌ باسمِه وإحداثيّتِه — والاسمُ قد يغيبُ فيُقالُ عَدَمُه لا فراغُه. */
 export interface DriverOfferPlace {
