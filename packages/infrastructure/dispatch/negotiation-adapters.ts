@@ -8,6 +8,11 @@
  */
 
 import type {
+  GroupCardOutcome,
+  StaleGroupCard,
+  StaleGroupCardPort,
+} from "../../application/dispatch/close-stale-group-cards.ts";
+import type {
   EscalationOutcome,
   EscalationPort,
   EscalationReason,
@@ -77,6 +82,59 @@ export function createUnsubscribedCyclePort(sql: Sql): UnsubscribedCyclePort {
         await sql`
           update unsubscribed_negotiations
              set group_message_id = ${messageId}::bigint
+           where id = ${negotiationId}::uuid
+        `;
+      }),
+  };
+}
+
+/**
+ * `WR-10` — بطاقاتُ القروبِ التي انتهت دورتُها ولم تُغلَق. المآلُ من طورِ الطلبِ حيًّا:
+ * مُسنَدٌ (`matched`/`in_progress`/`completed`) أو «لم يَعُد متاحًا» لما سواه.
+ */
+export function createStaleGroupCardPort(sql: Sql): StaleGroupCardPort {
+  return {
+    listStale: (cityId, limit, maxAttempts) =>
+      guard("negotiations.listStaleGroupCards", async (): Promise<readonly StaleGroupCard[]> => {
+        const rows = await sql<
+          { id: string; group_id: string; message_id: string; order_status: string }[]
+        >`
+          select n.id, c.telegram_unsubscribed_drivers_group_id::text as group_id,
+                 n.group_message_id::text as message_id, o.status::text as order_status
+            from unsubscribed_negotiations n
+            join cities c on c.id = n.city_id
+            join orders o on o.id = n.order_id
+           where n.city_id = ${cityId}::uuid
+             and n.group_message_id is not null
+             and n.group_card_closed_at is null
+             and n.status not in ('collecting', 'negotiating')
+             and n.group_card_close_attempts < ${maxAttempts}
+             and c.telegram_unsubscribed_drivers_group_id is not null
+           order by n.updated_at
+           limit ${limit}
+        `;
+        return rows.map((row) => ({
+          negotiationId: row.id,
+          groupId: row.group_id,
+          messageId: row.message_id,
+          outcome: (["matched", "in_progress", "completed"].includes(row.order_status)
+            ? "assigned"
+            : "closed") satisfies GroupCardOutcome,
+        }));
+      }),
+    markClosed: (negotiationId) =>
+      guard("negotiations.markGroupCardClosed", async () => {
+        await sql`
+          update unsubscribed_negotiations
+             set group_card_closed_at = now()
+           where id = ${negotiationId}::uuid and group_card_closed_at is null
+        `;
+      }),
+    markAttemptFailed: (negotiationId) =>
+      guard("negotiations.markGroupCardAttemptFailed", async () => {
+        await sql`
+          update unsubscribed_negotiations
+             set group_card_close_attempts = group_card_close_attempts + 1
            where id = ${negotiationId}::uuid
         `;
       }),
