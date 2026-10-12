@@ -54,7 +54,14 @@ export interface RequestRideInput {
   readonly dropoffPlace?: PlaceWire | null;
 }
 
-export function requestRide(input: RequestRideInput): Promise<RequestRideResponse> {
+/**
+ * `WR-17`: `fetchFn` يُحقَنُ اختياريًّا كما في `requestDelivery` — فيُقاسُ جسمُ `POST /v1/rides` الذي
+ * يخرجُ من نموذجِ الطلبِ حرفًا، بلا `window` ولا `mock.module` يتسرّبُ إلى ملفّاتِ اختبارٍ أخرى.
+ */
+export function requestRide(
+  input: RequestRideInput,
+  fetchFn: <T>(path: string, init: Parameters<typeof apiFetch>[1]) => Promise<T> = apiFetch,
+): Promise<RequestRideResponse> {
   const {
     idempotencyKey,
     notes,
@@ -66,7 +73,7 @@ export function requestRide(input: RequestRideInput): Promise<RequestRideRespons
     dropoffPlace,
     ...rest
   } = input;
-  return apiFetch<RequestRideResponse>("/v1/rides", {
+  return fetchFn<RequestRideResponse>("/v1/rides", {
     method: "POST",
     idempotencyKey,
     body: {

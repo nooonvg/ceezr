@@ -973,10 +973,30 @@ a.sys__action {
   gap: 0.875rem;
 }
 
-.qt__measures {
+/*
+ * `WR-17` — المراجعةُ المختصرة: الخدمةُ والمكانانِ والمسافةُ والمدّةُ في بطاقةٍ واحدةٍ أعلى النموذج،
+ * بدلَ قسمِ «القياسات» المستقلِّ وقائمةِ بطاقاتِ الخدمات.
+ */
+.qt__review {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  padding: 1rem;
+}
+
+.qt__review-service {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin: 0;
+}
+
+.qt__measures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1rem;
+  margin: 0;
 }
 
 .qt__measure {
@@ -1034,55 +1054,15 @@ a.sys__action {
   color: var(--tg-text-color);
 }
 
-.qt__services {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-}
-
 .qt__subtitle {
   margin: 0;
   font-size: 1rem;
   font-weight: 800;
 }
 
-.qt__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.qt__card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  padding: 0.875rem;
-}
-
-/*
- * الخدمةُ غيرُ المتاحةِ **تُعرَضُ** معطَّلةً ولا تُخفى: مَن يعلمُ أنَّ الخدمةَ في
- * المنتَجِ ثمَّ لا يراها يظنُّ العطبَ في التطبيقِ. والإطارُ المتقطِّعُ يُقرأُ
- * «موضعٌ مُعلَنٌ أنَّه لا يعملُ الآنَ».
- */
-.qt__card--off {
-  border-style: dashed;
-  background: transparent;
-  color: var(--tg-hint-color);
-}
-
 .qt__card-label {
   font-size: 1rem;
   font-weight: 800;
-}
-
-.qt__card-reason {
-  grid-column: 1 / -1;
-  font-size: var(--ui-size-caption);
-  color: var(--tg-hint-color);
 }
 
 /* ما لم يُبنَ يُقالُ بصوتٍ خافتٍ صادقٍ لا بزرٍّ صامتٍ. */
@@ -1115,9 +1095,9 @@ a.sys__action {
  * ==========================================================================
  */
 
-/* زرُّ الطلبِ على البطاقةِ المتاحةِ وحدَها — بارزٌ لأنَّه الفعلُ الرئيسُ. */
-.qt__card-request {
-  align-self: center;
+/* `WR-17` — زرُّ الإرسالِ الوحيدُ أسفلَ النموذج، بعدَ بيانِ طريقةِ الدفع — بارزٌ لأنَّه الفعلُ الرئيس. */
+.qt__submit {
+  align-self: stretch;
   margin-block-start: 0;
   min-block-size: 44px;
   padding: 0.5rem 1rem;
@@ -5834,7 +5814,6 @@ body {
 .sys__action,
 [class$="__submit"],
 [class$="__primary"],
-.qt__card-request,
 .rh__go {
   align-self: stretch;
   min-block-size: 52px;
@@ -5882,11 +5861,10 @@ body {
 }
 
 /* البطاقاتُ وصفوفُ القوائمِ. */
-.qt__card,
+.qt__review,
 .rh__place,
 .rh__recent-row,
 .qt__payment,
-.qt__measures,
 .qt__request {
   border: 1px solid var(--w-line);
   border-radius: var(--r-lg);
@@ -5894,7 +5872,6 @@ body {
 }
 
 .qt__payment,
-.qt__measures,
 .qt__request {
   padding: 1rem;
 }
@@ -8301,13 +8278,12 @@ body {
   box-shadow: none;
 }
 
-.qt__result > .qt__pickup {
+.qt__review > .qt__pickup {
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--w-line);
+  padding: 0.5rem 0.75rem;
   border-inline-start: 4px solid var(--ui-info);
-  border-radius: var(--r-lg);
-  background: var(--w-surface);
+  border-radius: var(--r-md);
+  background: var(--w-page);
 }
 
 .qt__request > .qt__pickup {
@@ -8337,18 +8313,6 @@ body {
   margin: 0;
 }
 
-.qt__services > .qt__subtitle {
-  padding-inline: 0.25rem;
-  font-size: var(--ui-size-label);
-  color: var(--ui-mute);
-}
-
-.qt__card-head {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-}
-
 .qt__card-icon {
   display: inline-flex;
   align-items: center;
@@ -8359,11 +8323,6 @@ body {
   border-radius: var(--r-md);
   background: var(--w-brand-soft);
   color: var(--w-glyph-brand);
-}
-
-.qt__card--off .qt__card-icon {
-  background: var(--w-surface-2);
-  color: var(--ui-mute);
 }
 
 .rs__hero {
