@@ -1480,7 +1480,7 @@
   "rider.quote.pickup.label": "Driver arrival time",
   "rider.quote.pickup.now": "Now",
   "rider.quote.pickup.later": "At a set time",
-  "rider.quote.pickup.laterHint": "We start looking for a driver now, and the driver sees the pickup time before accepting.",
+  "rider.quote.pickup.laterHint": "If the time is far off we keep your order scheduled and only start searching for a driver shortly before it; if it is close we start searching now. The driver sees the pickup time before accepting.",
   "rider.quote.pickup.timeRequired": "Choose the pickup time, or choose now.",
   "rider.quote.offer.label": "Amount in SAR",
   "rider.quote.offer.placeholder": "e.g. 40",
@@ -1813,5 +1813,15 @@
   "rider.notifications.kind.driver_city_notice": "Driver city update",
   "admin.root.brand": "WASLA",
   "admin.root.title": "Supervision tools are in the admin console",
-  "admin.root.body": "Orders, drivers and reports are managed from the admin console, not from this app."
+  "admin.root.body": "Orders, drivers and reports are managed from the admin console, not from this app.",
+  "rider.search.status.scheduled": "Your order is scheduled",
+  "rider.history.status.scheduled": "Scheduled",
+  "rider.search.phase.scheduled": "Your order will not be sent to any driver before the search start time. We will notify you in Telegram when the search starts and when a driver accepts, and you can cancel it before then at no cost.",
+  "rider.search.scheduled.pickupAt": "Pickup time: {time}",
+  "rider.search.scheduled.searchAt": "Driver search starts: {time}",
+  "rider.search.scheduled.am": "AM",
+  "rider.search.scheduled.pm": "PM",
+  "rider.search.scheduled.tomorrow": "tomorrow {time}",
+  "rider.search.scheduled.date": "{date} {time}",
+  "rider.search.scheduled.readFailed": "We could not load your scheduled order right now. Try refreshing in a moment."
 }

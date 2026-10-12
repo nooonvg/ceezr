@@ -45,6 +45,11 @@ export type RequestRideResponse =
       readonly createdAt: string;
       /** `true` يعني: ضغطتُك الثانيةُ لم تُنشئْ رحلةً ثانيةً (`ARCH-006`). */
       readonly reused: boolean;
+      /** `WR-06` — `scheduled` لموعدٍ أبعدَ من مهلةِ الإطلاق، وإلّا `searching`. غيابُه (خادمٌ أقدم) ⇒ بحث. */
+      readonly status?: ApiRideStatus;
+      readonly pickupAt?: string | null;
+      /** لحظةُ بدءِ البحثِ عن سائقٍ للمجدول. */
+      readonly dispatchAt?: string | null;
     }
   | {
       readonly ok: true;
@@ -67,6 +72,9 @@ export type RideSearchResponse =
       readonly notifiedDriverCount: number;
       readonly elapsedSeconds: number;
       readonly cancellableWithoutPenalty: boolean;
+      /** `WR-06` — موعدا المجدول؛ `null` لما ليسَ مجدولًا، وغيابُهما خادمٌ أقدم. */
+      readonly pickupAt?: string | null;
+      readonly dispatchAt?: string | null;
     }
   | { readonly ok: true; readonly found: false; readonly refusal: string };
 

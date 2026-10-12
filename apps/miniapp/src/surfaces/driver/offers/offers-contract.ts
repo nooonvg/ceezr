@@ -36,6 +36,7 @@ export type ApiDriverOfferService = "transport" | "delivery";
 export type ApiDriverOfferStatus = "pending" | "accepted" | "rejected" | "expired" | "cancelled";
 
 export type ApiDriverOrderStatus =
+  | "scheduled"
   | "searching"
   | "matched"
   | "in_progress"

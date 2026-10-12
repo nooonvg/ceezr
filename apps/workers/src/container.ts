@@ -36,6 +36,7 @@ import {
   createWiderCircleOpenedHandler,
   type UnmatchedRiderMessenger,
 } from "../../../packages/application/dispatch/deliver-unmatched-notification.ts";
+import { releaseScheduledOrders } from "../../../packages/application/dispatch/release-scheduled-orders.ts";
 import { createDisputeResolutionHandler } from "../../../packages/application/dispute/deliver-dispute-resolution.ts";
 import type { DocumentExpiryWarningSender } from "../../../packages/application/driver/warn-expiring-documents.ts";
 import { archiveDueLocationPartitions } from "../../../packages/application/geo/archive-location-partitions.ts";
@@ -75,6 +76,11 @@ import {
 import { createStaleGroupCardPort } from "../../../packages/infrastructure/dispatch/negotiation-adapters.ts";
 import { createNegotiationWiring } from "../../../packages/infrastructure/dispatch/negotiation-wiring.ts";
 import { createDeadOfferCardPort } from "../../../packages/infrastructure/dispatch/offer-card-adapters.ts";
+import {
+  createPickupReminderStateReader,
+  createScheduledOrderReleaser,
+  enqueueScheduledReminders,
+} from "../../../packages/infrastructure/dispatch/scheduled-orders-adapters.ts";
 import { createUnmatchedOrderFinder } from "../../../packages/infrastructure/dispatch/unmatched-adapters.ts";
 import { createDocumentExpiryRpcPort } from "../../../packages/infrastructure/driver/document-expiry-rpc.ts";
 import { createPaymentRepository } from "../../../packages/infrastructure/financial/payment-adapters.ts";
@@ -205,6 +211,14 @@ export const JOB_INTERVALS = {
    * يجد كلَّ المؤهّلين مستبعَدين بعرضٍ حيّ لا يكتب شيئاً ولا يستهلك دورةَ بثّ.
    */
   redispatchSearching: 20,
+  /**
+   * `WR-06` (ADR 0273) — إطلاقُ المجدولِ إلى البحث. أقصرُ من شوطِ البثِّ: الإطلاقُ يبثُّ ما
+   * أطلقَه فورًا، فالتأخّرُ عن `dispatch_at` لا يتجاوزُ هذه الثواني. وحرِجٌ بنبضةٍ لكلِّ مدينة:
+   * توقّفُه يعني طلباتٍ لا يُبحَثُ لها عن سائقٍ أبدًا.
+   */
+  releaseScheduled: 15,
+  /** `WR-06` — تذكيراتُ المجدول (الراكبُ قبلَ موعدِه، والسائقُ المُسنَدُ قبلَ الحضور). */
+  enqueueScheduledReminders: 60,
   recomputeRatings: 3600,
   backupDatabase: 86400, // يوميّ لا أقلّ — البند 7.2
   /**
@@ -461,6 +475,7 @@ export const DRIVER_LOCATION_IDLE_DRAIN_CEILING_MS = 120_000;
 const CRITICAL_CITY_JOBS: readonly { readonly prefix: string; readonly everySeconds: number }[] = [
   { prefix: "expire-offers", everySeconds: JOB_INTERVALS.expireOffers },
   { prefix: "redispatch-searching", everySeconds: JOB_INTERVALS.redispatchSearching },
+  { prefix: "release-scheduled", everySeconds: JOB_INTERVALS.releaseScheduled },
   {
     prefix: "deliver-subscription-notices",
     everySeconds: JOB_INTERVALS.deliverSubscriptionNotices,
@@ -776,6 +791,8 @@ export function buildWorkerContainer(
     sender: asIdentifyingSender(withTrafficPriority(telegram, "driver_candidate_notice")),
     miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
     startKeyboard: startRideKeyboard,
+    // `WR-06` — تذكيرُ الحضورِ يُطوى إن أُلغيَ الطلبُ أو وصلَ السائقُ قبلَ الإرسال.
+    pickupReminderState: createPickupReminderStateReader(sql),
     log: (event, meta) =>
       event === "driver_candidate_notice.final_failure"
         ? log.error(event, meta)
@@ -871,6 +888,7 @@ export function buildWorkerContainer(
    * أيّ فرقٍ بين ما يُبَثّ عند الإنشاء وما يُبَثّ عند الإعادة هو تفرّعُ سلوكٍ لا
    * يظهر إلّا كشكوى «العرض الثاني يذهب لسائقٍ أبعد» ولا يفسّره أحد.
    */
+  const scheduledReleaser = createScheduledOrderReleaser(sql);
   const redispatchBroadcast = {
     orders: createOrderRepository(sql),
     offers: createOfferRepository(sql),
@@ -1088,6 +1106,27 @@ export function buildWorkerContainer(
                     : ` cardsError=${closedCards.error.code}`;
                 }
                 return `examined=${report.value.examined} expired=${report.value.appliedCount}${cards}`;
+              },
+            },
+            {
+              /**
+               * `WR-06` (ADR 0273) — ما حانَ إطلاقُه من المجدولِ يصيرُ «يبحث» ويُبَثُّ فورًا، وما
+               * فاتَ موعدُه (النظامُ كانَ معطَّلًا) يُلغى ويُعلَمُ الراكب. `runOnStart` لازمٌ:
+               * أوّلُ ما يفعلُه عاملٌ عادَ بعدَ تعطّلٍ هو إدراكُ ما فاتَه.
+               */
+              name: `release-scheduled:${cityId}`,
+              everySeconds: JOB_INTERVALS.releaseScheduled,
+              runOnStart: true,
+              run: async () => {
+                const report = await releaseScheduledOrders(cityId, {
+                  releaser: scheduledReleaser,
+                  broadcast: redispatchBroadcast,
+                  limit: REDISPATCH_LIMIT,
+                  log: (message, meta) => log.info(message, meta),
+                });
+                if (!report.ok) throw new Error(JSON.stringify(report.error));
+                const value = report.value;
+                return `released=${value.released.length} missed=${value.missed.length} rebroadcast=${value.broadcast?.rebroadcast.length ?? 0} deferred=${value.broadcastFailed}`;
               },
             },
             {
@@ -1414,6 +1453,17 @@ export function buildWorkerContainer(
                     select relocate_drivers_by_location(100) as result`;
                   const r = rows[0]?.result ?? {};
                   return `moved=${String(r.moved ?? 0)} outside=${String(r.outside ?? 0)} held=${String(r.held ?? 0)}`;
+                },
+              },
+              {
+                // `WR-06` (ADR 0273) — تذكيرُ الراكبِ بمجدولِه وتذكيرُ السائقِ المُسنَدِ بالحضور،
+                // بمفتاحٍ لكلِّ طلبٍ فلا يتكرّرُ بعدَ إعادةِ تشغيل. الإرسالُ من `deliver-notifications`.
+                name: "enqueue-scheduled-reminders",
+                everySeconds: JOB_INTERVALS.enqueueScheduledReminders,
+                runOnStart: true,
+                run: async () => {
+                  const counts = await enqueueScheduledReminders(sql, 100);
+                  return `riders=${counts.riderReminders} drivers=${counts.driverReminders}`;
                 },
               },
               {

@@ -591,6 +591,24 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-06-scheduled-dispatch.test.ts",
+    suites: [
+      "WR-06 ج — الإنشاءُ مجدولًا أو فوريًّا",
+      "WR-06 ج — الإطلاقُ والتعافي",
+      "WR-06 ج — التذكيرات",
+    ],
+    skipped: 18,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في الجدولةِ الحقيقيّة (ADR 0273) أنَّ `request_ride_with_offer` يحفظُ الموعدَ البعيدَ `scheduled` بلا عرضٍ لأيِّ سائق، وأنَّ `release_due_scheduled_orders` يُطلِقُه في وقتِه مرّةً واحدةً تحتَ سباقِ مثيلَين (`for update skip locked`) ويتخطّى ما يمسكُه إلغاء، ويُلغي ما فاتَ موعدُه بعدَ تعطّل، وأنَّ `enqueue_scheduled_reminders` لا يُكرِّر، وأنَّ عدّادَ البحثِ يبدأُ من `searching_since`. وهذه أقفالٌ وقيودٌ ودوالُّ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261013000000 إلى 20261013000300). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-12-location-reminder.test.ts",
     suites: ["WR-12 — تذكيرُ السائقِ المتوفّرِ بتحديثِ موقعِه (ADR 0268)"],
     skipped: 4,

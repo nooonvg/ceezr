@@ -24,6 +24,7 @@
 
 /** حالة الطلب كما تُقرأ من القاعدة — نفس مفردات orders.status. */
 export type WatchedTripStatus =
+  | "scheduled"
   | "searching"
   | "matched"
   | "in_progress"

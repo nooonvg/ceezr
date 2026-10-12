@@ -29,6 +29,7 @@ import { PortFailureError } from "../../packages/application/ports/index.ts";
 import type { Order } from "../../packages/domain/transport/entity.ts";
 import { translate } from "../../packages/shared/i18n/index.ts";
 import type { DriverId, OrderId, RiderId } from "../../packages/shared/kernel/index.ts";
+import { formatPickupMoment } from "../../packages/shared/order-terms/index.ts";
 import { err, ok } from "../../packages/shared/result/index.ts";
 import {
   cityDirectory,
@@ -683,6 +684,41 @@ describe("تتبّع الطلب: /status", () => {
     expect(replies[0]?.text).toContain(ar("menu.rider.ride"));
     expect(replies[0]?.text).not.toContain("/ride");
     expect(replies[0]?.keyboard).toEqual(mainMenuKeyboard("rider", "ar"));
+  });
+
+  it("WR-06: المجدولُ يقولُ موعدَه ولحظةَ بدءِ البحث، بلا سطرِ انتظارٍ ولا «ما زلنا نبحث»", async () => {
+    const pickupAt = new Date(NOW.getTime() + 3 * 60 * 60_000);
+    const dispatchAt = new Date(pickupAt.getTime() - 20 * 60_000);
+    const replies = await handleRiderUpdate(
+      text("/status"),
+      statusDeps([active({ status: "scheduled", pickupAt, dispatchAt })]),
+    );
+    const body = replies[0]?.text ?? "";
+    const tr = (key: string, params?: Readonly<Record<string, string | number>>) =>
+      ar(key, { ...params });
+    expect(body).toContain(
+      ar("rider.status_scheduled", {
+        time: formatPickupMoment(pickupAt, NOW, tr),
+        search_time: formatPickupMoment(dispatchAt, NOW, tr),
+      }),
+    );
+    expect(waitingVariants("riderStillSearching", "ar").some((line) => body.includes(line))).toBe(
+      false,
+    );
+    expect(body).not.toContain(ar("rider.status_waiting", { minutes: 4 }));
+  });
+
+  it("WR-06: بعدَ الإطلاقِ يُقاسُ الانتظارُ من بدءِ البحثِ لا من الحجز", async () => {
+    const replies = await handleRiderUpdate(
+      text("/status"),
+      statusDeps([
+        active({
+          createdAt: new Date(NOW.getTime() - 3 * 60 * 60_000),
+          searchingSince: new Date(NOW.getTime() - 2 * 60_000),
+        }),
+      ]),
+    );
+    expect(replies[0]?.text ?? "").toContain(ar("rider.status_waiting", { minutes: 2 }));
   });
 
   it("في البحث: يقول لم يُسنَد أحد بعد ولا يخترع سائقاً", async () => {

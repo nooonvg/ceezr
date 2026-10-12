@@ -101,6 +101,8 @@ export function readRideNotes(
 
 /** حالاتُ الطلبِ كما يعرفُها المخطَّطُ (`order_status`) — تُقرأُ ولا تُختلَقُ. */
 export const RIDE_STATUSES = [
+  /** `WR-06` — مجدولٌ لم يحِن إطلاقُه إلى البحث. */
+  "scheduled",
   "searching",
   "matched",
   "in_progress",
@@ -128,7 +130,9 @@ export function isRideStatus(value: unknown): value is RideStatus {
  * حالاتِها القائمةِ (صفٌّ في `unsubscribed_negotiations` · أثرُ `order.escalated`
  * المُسلَّمُ) لا من رسائلٍ تُرسَلُ مرّةً ثم تُحذَفُ (`PD-050`).
  */
-export type SearchPhase = "silent" | "announced" | "widened" | "escalated" | "assigned" | "closed";
+export type SearchPhase =
+  /** `WR-06` — الطلبُ مجدولٌ: لا بحثَ بعدُ، والبحثُ يبدأُ في موعدِ إطلاقِه. */
+  "scheduled" | "silent" | "announced" | "widened" | "escalated" | "assigned" | "closed";
 
 export interface RideSearchSnapshot {
   readonly status: RideStatus;
@@ -149,6 +153,7 @@ export interface RideSearchSnapshot {
  */
 export function searchPhaseOf(snapshot: RideSearchSnapshot): SearchPhase {
   if (snapshot.status === "matched" || snapshot.status === "in_progress") return "assigned";
+  if (snapshot.status === "scheduled") return "scheduled";
   if (snapshot.status !== "searching") return "closed";
   if (snapshot.escalated) return "escalated";
   if (snapshot.widerCircleOpened) return "widened";
@@ -164,7 +169,7 @@ export function searchPhaseOf(snapshot: RideSearchSnapshot): SearchPhase {
  * أثرٌ ماليٌّ لاحقاً بلا أن يمرَّ على هذا الحكمِ.
  */
 export function cancellableWithoutPenalty(status: RideStatus): boolean {
-  return status === "searching";
+  return status === "searching" || status === "scheduled";
 }
 
 /** حدُّ ما يُعرَضُ من الثواني — والمؤقّتُ يُقاسُ من ختمِ الإنشاءِ لا من فتحِ الشاشةِ. */

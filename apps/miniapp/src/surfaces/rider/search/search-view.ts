@@ -34,6 +34,7 @@ import {
   elapsedSecondsSince,
   isRideStatus,
 } from "../../../../../../packages/domain/transport/ride-request.ts";
+import { formatPickupMoment } from "../../../../../../packages/shared/order-terms/index.ts";
 
 /** حالةُ الرحلةِ ⇒ مفتاحُ نصٍّ. وما لا يُعرَفُ يُقالُ عامّاً لا خاماً. */
 export function rideStatusKey(status: string): string {
@@ -217,4 +218,32 @@ function defaultRandom(): string {
   // بديلٌ لبيئةٍ بلا `crypto`: عشوائيٌّ مضاعفٌ معَ الوقتِ، لا الوقتُ وحدَه.
   const noise = `${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
   return `${Date.now().toString(36)}.${noise}`;
+}
+
+/**
+ * `WR-06` — لحظةُ المجدولِ نصًّا بيومِها («1:30 م»، «غدًا 1:30 م»، «15/10 1:30 م») بتوقيتِ الرياض،
+ * بالقاعدةِ نفسِها التي يكتبُ بها البوتُ رسائلَه (`formatPickupMoment`). ولحظةٌ لا تُقرأُ ⇒ `null`
+ * فلا يُرسَمُ سطرٌ يُوهمُ موعدًا.
+ */
+export function scheduledMomentText(
+  t: (key: string) => string,
+  iso: string | null | undefined,
+  nowMs: number,
+): string | null {
+  if (iso === null || iso === undefined) return null;
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return null;
+  const keys: Readonly<Record<string, string>> = {
+    "common.time_am": "rider.search.scheduled.am",
+    "common.time_pm": "rider.search.scheduled.pm",
+    "common.tomorrow_at": "rider.search.scheduled.tomorrow",
+    "common.date_at": "rider.search.scheduled.date",
+  };
+  return formatPickupMoment(at, nowMs, (key, params) => {
+    let text = t(keys[key] ?? key);
+    for (const [name, value] of Object.entries(params ?? {})) {
+      text = text.replace(`{${name}}`, String(value));
+    }
+    return text;
+  });
 }

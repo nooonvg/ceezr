@@ -91,6 +91,7 @@ export function outcomeKey(outcome: string): string {
 
 /** الحالةُ الخامُّ ⇒ مفتاحُ نصِّها. وما لا يُعرَفُ يُعرَضُ خامّاً لا مُخفىً. */
 const STATUS_KEYS: Readonly<Record<string, string>> = {
+  scheduled: "rider.history.status.scheduled",
   searching: "rider.history.status.searching",
   matched: "rider.history.status.matched",
   in_progress: "rider.history.status.inProgress",

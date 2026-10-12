@@ -100,6 +100,7 @@ import { OrderChat } from "../../chat/OrderChat.tsx";
 import { RideCandidateCard } from "../search/RideCandidateCard.tsx";
 import { cancelRide as cancelViaApi } from "../search/ride-api.ts";
 import type { CancelRideResponse } from "../search/ride-contract.ts";
+import { ScheduledRideCard } from "../search/ScheduledRideCard.tsx";
 import { cancelRefusalKey, newIdempotencyKey } from "../search/search-view.ts";
 import { RideShareCard } from "../share/RideShareCard.tsx";
 import { SosCard } from "../sos/SosCard.tsx";
@@ -410,6 +411,17 @@ export function ActiveRideScreen({
     }
 
     const { view } = state;
+    // `WR-06` — زرُّ «طلبي» في رسالةِ الجدولةِ يفتحُ هذه الشاشة: المجدولُ لا سائقَ له ولا عدّادَ
+    // انتظار، فبطاقتُه موعدُه وبابُ إلغائه. وإن أُطلِقَ أو أُلغي أُعيدَت قراءةُ هذه الشاشة.
+    if (view.status === "scheduled") {
+      return (
+        <ScheduledRideCard
+          orderId={orderId}
+          language={language}
+          onChanged={() => void refresh(orderId)}
+        />
+      );
+    }
     /** الساعةُ تُقرأُ **لحظةَ الرسمِ**: لا حالةَ تدقُّ، ولا رقمَ يتحرّكُ وحدَه. */
     const drawnAtMs = now();
     const elapsed = elapsedText(

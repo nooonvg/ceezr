@@ -65,6 +65,8 @@ beforeAll(async () => {
 
 afterEach(async () => {
   if (DATABASE_URL === undefined || riderId === "") return;
+  // `WR-06` ج: الموعدُ البعيدُ يُحفَظُ مجدولًا فيُودِعُ خبرَ «حُفظ مجدولًا» للراكب.
+  await sql`delete from notification_outbox where order_id in (select id from orders where rider_id = ${riderId})`;
   await sql`delete from order_offers where order_id in (select id from orders where rider_id = ${riderId})`;
   await sql`delete from orders where rider_id = ${riderId}`;
 });
@@ -72,6 +74,7 @@ afterEach(async () => {
 afterAll(async () => {
   if (DATABASE_URL === undefined) return;
   if (riderId !== "") {
+    await sql`delete from notification_outbox where order_id in (select id from orders where rider_id = ${riderId})`;
     await sql`delete from order_offers where order_id in (select id from orders where rider_id = ${riderId})`;
     await sql`delete from orders where rider_id = ${riderId}`;
     await sql`delete from riders where id = ${riderId}`;

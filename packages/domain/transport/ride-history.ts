@@ -209,7 +209,12 @@ export interface RideEvent {
 export type RideOutcomeClass = "IN_FLIGHT" | "COMPLETED" | "NOT_COMPLETED" | "OTHER";
 
 export function rideOutcomeClassOf(status: string): RideOutcomeClass {
-  if (status === "searching" || status === "matched" || status === "in_progress") {
+  if (
+    status === "scheduled" ||
+    status === "searching" ||
+    status === "matched" ||
+    status === "in_progress"
+  ) {
     return "IN_FLIGHT";
   }
   if (status === "completed") return "COMPLETED";

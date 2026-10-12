@@ -22,9 +22,31 @@
 
 import { t } from "../../shared/i18n/index.ts";
 import { miniAppUrl } from "../../shared/miniapp-link/index.ts";
+import { formatPickupMoment } from "../../shared/order-terms/index.ts";
 import type { Keyboard } from "../bots/types.ts";
 
-export type RiderTripEvent = "MATCHED" | "ARRIVED" | "STARTED" | "COMPLETED";
+export type RiderTripEvent =
+  | "MATCHED"
+  | "ARRIVED"
+  | "STARTED"
+  | "COMPLETED"
+  /** `WR-06` — حُفِظَ الطلبُ مجدولًا (تأكيد). */
+  | "SCHEDULED"
+  /** `WR-06` — تذكيرُ الراكبِ قبلَ موعدِه. */
+  | "SCHEDULE_REMINDER"
+  /** `WR-06` — أُطلِقَ المجدولُ: بدأَ البحثُ عن سائق. */
+  | "SEARCH_STARTED"
+  /** `WR-06` — فاتَ موعدُ المجدولِ قبلَ إطلاقِه (تعطّلُ النظام) فأُلغي. */
+  | "SCHEDULE_MISSED";
+
+/** `WR-06` — الأحداثُ التي لا تُرسَلُ إلّا والطلبُ في حالتِها؛ وإلّا فقدَ الخبرُ معناه. */
+export const RIDER_TRIP_EVENT_REQUIRES_STATUS: Readonly<
+  Partial<Record<RiderTripEvent, readonly string[]>>
+> = {
+  SCHEDULED: ["scheduled"],
+  SCHEDULE_REMINDER: ["scheduled"],
+  SEARCH_STARTED: ["searching"],
+};
 
 /** ما يلزمُ لمخاطبةِ الراكبِ — يُقرأُ حيّاً من القاعدةِ لحظةَ الإخطارِ. */
 export interface RiderTripFacts {
@@ -33,6 +55,10 @@ export interface RiderTripFacts {
   readonly driverName: string | null;
   readonly plate: string | null;
   readonly vehicle: string | null;
+  /** `WR-06` — حالةُ الطلبِ لحظةَ الإرسال وموعدا المجدول (اختياريّةٌ لقرّاءٍ أقدم). */
+  readonly status?: string | null;
+  readonly pickupAt?: Date | null;
+  readonly dispatchAt?: Date | null;
 }
 
 export interface RiderTripFactsReader {
@@ -74,7 +100,21 @@ export function riderTripText(
     plate: facts.plate ?? unknown,
     vehicle: vehicleKey === undefined ? (facts.vehicle ?? unknown) : tr(vehicleKey),
   };
+  const now = Date.now();
+  const timeParams = {
+    order: params.order,
+    time: facts.pickupAt ? formatPickupMoment(facts.pickupAt, now, tr) : unknown,
+    search_time: facts.dispatchAt ? formatPickupMoment(facts.dispatchAt, now, tr) : unknown,
+  };
   switch (event) {
+    case "SCHEDULED":
+      return tr("tracking.rider_scheduled", timeParams);
+    case "SCHEDULE_REMINDER":
+      return tr("tracking.rider_schedule_reminder", timeParams);
+    case "SEARCH_STARTED":
+      return tr("tracking.rider_search_started", timeParams);
+    case "SCHEDULE_MISSED":
+      return tr("tracking.rider_schedule_missed", timeParams);
     case "MATCHED":
       return tr("tracking.rider_matched", params);
     case "ARRIVED":

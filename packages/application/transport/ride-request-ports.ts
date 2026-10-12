@@ -88,6 +88,14 @@ export interface CreatedRide {
   readonly createdAtMs: number;
   /** `true` = المفتاحُ نفسُه سبقَ، فلا صفَّ جديدَ — وهذا **نجاحٌ** لا فشلٌ. */
   readonly reused: boolean;
+  /**
+   * `WR-06` — حالةُ الطلبِ بعدَ الإنشاء: `scheduled` إن كانَ موعدُه أبعدَ من مهلةِ الإطلاق،
+   * وإلّا `searching`. غيابُها (مخزنٌ أقدم) يُقرأُ `searching`.
+   */
+  readonly status?: RideStatus;
+  /** موعدُ الحضورِ و**لحظةُ بدءِ البحث** للمجدول — `null` لما ليسَ مجدولًا. */
+  readonly pickupAtMs?: number | null;
+  readonly dispatchAtMs?: number | null;
 }
 
 export type RideRequestVerdict =
@@ -145,6 +153,11 @@ export interface RideSearchState {
   /** وصلَ الطلبُ إلى قروبِ الإسنادِ بتصعيدٍ مُسلَّمٍ — رايةٌ داخليةٌ مثلُ سابقتِها. */
   readonly escalated: boolean;
   readonly cancellableWithoutPenalty: boolean;
+  /** `WR-06` — بدءُ البحثِ الفعليّ (إطلاقُ المجدول)؛ غيابُه ⇒ `createdAtMs`. */
+  readonly searchStartedAtMs?: number;
+  /** `WR-06` — موعدُ الحضورِ ولحظةُ الإطلاقِ (للمجدولِ وحدَه). */
+  readonly pickupAtMs?: number | null;
+  readonly dispatchAtMs?: number | null;
 }
 
 export type RideSearchRefusal = "INVALID_ORDER_ID" | "ORDER_NOT_FOUND";

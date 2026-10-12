@@ -164,6 +164,9 @@ export function createActiveOrdersLookup(sql: Sql) {
         pickup_label: string | null;
         dropoff_label: string | null;
         created_at: Date;
+        pickup_at: Date | null;
+        dispatch_at: Date | null;
+        searching_since: Date | null;
         driver_name: string | null;
         vehicle_type: string | null;
         plate_number: string | null;
@@ -178,6 +181,7 @@ export function createActiveOrdersLookup(sql: Sql) {
       }[]
     >`
       select o.id, o.service, o.status, o.pickup_label, o.dropoff_label, o.created_at,
+             o.pickup_at, o.dispatch_at, o.searching_since,
              du.full_name as driver_name, d.vehicle_type, d.plate_number,
              d.vehicle_photo_file_id,
              -- المرحلة ١١: الإحداثيّات تُقرأ في **نفس** الاستعلام لا في ثانٍ،
@@ -204,7 +208,7 @@ export function createActiveOrdersLookup(sql: Sql) {
         left join drivers d on d.id = o.assigned_driver_id
         left join users du on du.id = d.user_id
        where o.rider_id = ${riderId}
-         and o.status in ('searching', 'matched', 'in_progress')
+         and o.status in ('scheduled', 'searching', 'matched', 'in_progress')
        order by o.created_at asc
        limit ${MAX_ACTIVE_ORDERS}
     `;
@@ -215,6 +219,9 @@ export function createActiveOrdersLookup(sql: Sql) {
       pickupLabel: row.pickup_label,
       dropoffLabel: row.dropoff_label,
       createdAt: new Date(row.created_at),
+      pickupAt: row.pickup_at === null ? null : new Date(row.pickup_at),
+      dispatchAt: row.dispatch_at === null ? null : new Date(row.dispatch_at),
+      searchingSince: row.searching_since === null ? null : new Date(row.searching_since),
       pickup: pointOf(row.pickup_lat, row.pickup_lng),
       dropoff: pointOf(row.dropoff_lat, row.dropoff_lng),
       // الاسم هو شرط وجود السائق: صفّ سائق بلا مستخدم حالة تلف لا تُعرض

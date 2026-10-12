@@ -95,7 +95,12 @@ export async function readRideSearch(
         widerCircleOpened: state.widerCircleOpened,
         escalated: state.escalated,
       }),
-      elapsedSeconds: elapsedSecondsSince(state.createdAtMs, deps.now().getTime()),
+      // `WR-06`: من بدءِ البحثِ لا من الإنشاء — مجدولٌ أُطلِقَ الآنَ لم يبحث منذُ أمس.
+      // والمجدولُ لم يبدأْ بحثُه أصلًا فمدّتُه صفر.
+      elapsedSeconds:
+        state.status === "scheduled"
+          ? 0
+          : elapsedSecondsSince(state.searchStartedAtMs ?? state.createdAtMs, deps.now().getTime()),
     },
   });
 }

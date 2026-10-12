@@ -81,6 +81,11 @@ export interface DeliveryRouteDependencies {
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
 }
 
+/** `WR-06` — لحظةٌ اختياريّةٌ إلى ISO؛ الغيابُ `null` صريحًا لا حقلٌ محذوف. */
+function isoOrNull(ms: number | null | undefined): string | null {
+  return ms === null || ms === undefined ? null : new Date(ms).toISOString();
+}
+
 export function createDeliveryRoutes(deps: DeliveryRouteDependencies): Hono {
   const app = new Hono();
 
@@ -172,6 +177,10 @@ export function createDeliveryRoutes(deps: DeliveryRouteDependencies): Hono {
       orderId: verdict.ride.orderId,
       createdAt: new Date(verdict.ride.createdAtMs).toISOString(),
       reused: verdict.ride.reused,
+      // `WR-06` — المجدولُ يُعلَنُ للعميلِ بحالتِه وموعدَيه: «يبدأُ البحثُ في …» لا «نبحثُ الآن».
+      status: verdict.ride.status ?? "searching",
+      pickupAt: isoOrNull(verdict.ride.pickupAtMs),
+      dispatchAt: isoOrNull(verdict.ride.dispatchAtMs),
     });
   });
 

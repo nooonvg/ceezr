@@ -1480,7 +1480,7 @@
   "rider.quote.pickup.label": "وقت حضور السائق",
   "rider.quote.pickup.now": "الآن",
   "rider.quote.pickup.later": "في وقت محدّد",
-  "rider.quote.pickup.laterHint": "نبدأ البحث عن سائق الآن، ويرى السائق وقت الحضور قبل أن يقبل.",
+  "rider.quote.pickup.laterHint": "إن كان الموعد بعيدًا نحفظ طلبك مجدولًا ولا نبدأ البحث عن سائق إلا قبله بوقت كافٍ، وإن كان قريبًا نبدأ البحث الآن. ويرى السائق وقت الحضور قبل أن يقبل.",
   "rider.quote.pickup.timeRequired": "اختر وقت الحضور، أو اختر «الآن».",
   "rider.quote.offer.label": "المبلغ بالريال",
   "rider.quote.offer.placeholder": "مثلاً 40",
@@ -1813,5 +1813,15 @@
   "rider.notifications.kind.driver_city_notice": "تغيّر مدينة السائق",
   "admin.root.brand": "وَصْلة",
   "admin.root.title": "أدوات الإشراف في لوحة الإدارة",
-  "admin.root.body": "تُدار الطلبات والسائقون والبلاغات من لوحة الإدارة، لا من هذا التطبيق."
+  "admin.root.body": "تُدار الطلبات والسائقون والبلاغات من لوحة الإدارة، لا من هذا التطبيق.",
+  "rider.search.status.scheduled": "طلبك مجدول",
+  "rider.history.status.scheduled": "مجدول",
+  "rider.search.phase.scheduled": "لن يُرسَل طلبك إلى أي سائق قبل موعد بدء البحث. سنُعلمك في تيليجرام حين يبدأ البحث وحين يقبل سائق، ويمكنك إلغاؤه قبل ذلك دون أي أثر.",
+  "rider.search.scheduled.pickupAt": "موعد الحضور: {time}",
+  "rider.search.scheduled.searchAt": "يبدأ البحث عن سائق: {time}",
+  "rider.search.scheduled.am": "ص",
+  "rider.search.scheduled.pm": "م",
+  "rider.search.scheduled.tomorrow": "غدًا {time}",
+  "rider.search.scheduled.date": "{date} {time}",
+  "rider.search.scheduled.readFailed": "تعذّرت قراءة طلبك المجدول الآن. حاول التحديث بعد قليل."
 }
