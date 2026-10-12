@@ -1,0 +1,51 @@
+{
+  "id": "wr-12-location-reminder",
+  "goal": "تذكير السائق المتوفّر كل 5 دقائق بتحديث موقعه إذا لم يصل موقع حديث، بزر لفتح وَصْلة وزر لجعله غير متوفر، وإسقاط أهلية الموقع الأقدم من 10 دقائق بالإعداد القائم.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0268-driver-location-reminder.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/surfaces/rider/notifications/notifications-view.ts",
+    "apps/workers/src/container.ts",
+    "packages/application/bots/driver-dialog.ts",
+    "packages/application/dispatch/deliver-location-reminder.ts",
+    "packages/infrastructure/db/schema-contract.ts",
+    "packages/shared/config/notification-kinds.ts",
+    "packages/shared/config/traffic-priority.ts",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "packages/shared/i18n/ur.json",
+    "scripts/lib/rollback-registry.ts",
+    "scripts/lib/skip-registry.ts",
+    "supabase/migrations/20261012160000_wr_12_location_reminder.sql",
+    "supabase/migrations/20261012160100_wr_12_location_reminder_validate.sql",
+    "tests/integration/wr-12-location-reminder.test.ts",
+    "tests/unit/check-traffic-priority-guard.test.ts",
+    "tests/unit/driver-dialog.test.ts",
+    "tests/unit/embedded-worker.test.ts",
+    "tests/unit/skip-audit.test.ts",
+    "tests/unit/wr-12-location-reminder.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0268-driver-location-reminder.md",
+    "docs/roadmap/execution/STATUS.md"
+  ],
+  "decision": "نوع صادر driver_location_reminder يودعه enqueue_driver_location_reminders من شوط كل 60 ثانية بحسب آخر موقع فعلي لا changed_at، بسقف 3 لكل نوبة. المُطالِب يقرأ التوافر والقِدم لحظة الإرسال. وفترة السماح بالإعداد القائم driver_location_max_age_seconds=600 بعد النشر.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/wr-12-location-reminder.test.ts",
+    "bun test tests/unit/wr-12-location-reminder.test.ts tests/unit/driver-dialog.test.ts tests/unit/check-traffic-priority-guard.test.ts"
+  ],
+  "evidence": "محليًا على PostGIS بسلسلة الهجرات كاملة: 4/4 تكامل (من يُذكَّر ومن لا يُذكَّر، التكرار والسقف ونوبة جديدة بعد موقع، المهلة صفر، قراءة المُطالِب)، و9/9 وحدات للمعالج، واختبار زر avail:off في حوار السائق.",
+  "constraints": [
+    "لا ادعاء بأخذ الموقع في الخلفية",
+    "لا استقصاء دوري في Mini App (ADR 0035 §4)",
+    "لا تغيير لحالة توافر السائق بلا فعل منه"
+  ],
+  "limitations": "التذكير يصل خلال دقيقة من استحقاقه. وفترة السماح تتطلب تغيير إعداد بعد النشر. وظهوره على الهاتف لا يقيسه النظام (WR-26)."
+}

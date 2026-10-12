@@ -1026,6 +1026,30 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     documentedIn: null,
   },
   {
+    migration: "20261012160000_wr_12_location_reminder.sql",
+    change: "revoke_function:notification_kind_priority(1)",
+    why: "الهجرةُ `20261012160000` (`WR-12`) تُعيدُ تعريفَ `notification_kind_priority(text)` **بالتوقيعِ والمردِّ نفسِهما** لتُضيفَ رتبةَ `driver_location_reminder` (=3، متوسّط). وبقيةُ الفروعِ منسوخةٌ حرفاً عن `20261012150000`. والسحبُ إعادةُ قفلٍ كما كانَ: لـ`service_role` وحدَها. **ولا كسرَ لنسخةٍ سابقةٍ**: المجهولُ يُرجِعُ 1.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: true,
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    documentedIn: null,
+  },
+
+  {
+    migration: "20261012160000_wr_12_location_reminder.sql",
+    change: "revoke_function:claim_notification_delivery(0)",
+    why: "الهجرةُ `20261012160000` (`WR-12`) تُعيدُ تعريفَ `claim_notification_delivery()` **بالتوقيعِ ومفاتيحِ المردِّ نفسِها** لتُضيفَ `driver_location_reminder` بفرعٍ يقرأُ محادثةَ السائقِ ولغتَه وتوافرَه الآنَ وهل ما زالَ موقعُه قديماً. وبقيةُ الدالّةِ منسوخةٌ حرفاً عن `20261012150000`. **ولا كسرَ لنسخةٍ سابقةٍ**: صفوفُ النوعِ الجديدِ لا تلتقطُها الصورةُ السابقةُ فتبقى `pending`.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: true,
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    documentedIn: null,
+  },
+
+  {
     migration: "20261012140000_wr_09_rider_choice.sql",
     change: "revoke_function:notification_kind_priority(1)",
     why: "الهجرةُ `20261012140000` (`WR-09`) تُعيدُ تعريفَ `notification_kind_priority(text)` بـ`create or replace` **بالتوقيعِ والمردِّ نفسِهما** لتُضيفَ فرعاً يُرجِعُ رتبةَ `driver_candidate_notice` (=1، حرجٌ: مطالبةُ إسنادٍ لها مؤقّت). وبقيةُ الفروعِ منسوخةٌ حرفاً عن `20261012120000`. والسحبُ إعادةُ قفلِ السطحِ كما كانَ: لـ`service_role` وحدَها قبلُ وبعدُ. **ولا كسرَ لنسخةٍ سابقةٍ**: المجهولُ يُرجِعُ 1 أصلاً. والعودةُ بالصورةِ السابقةِ تكفي.",

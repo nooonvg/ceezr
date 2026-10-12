@@ -591,6 +591,21 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-12-location-reminder.test.ts",
+    suites: ["WR-12 — تذكيرُ السائقِ المتوفّرِ بتحديثِ موقعِه (ADR 0268)"],
+    skipped: 4,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في تذكيرِ الموقعِ أنَّ `enqueue_driver_location_reminders` يختارُ المتوفّرَ بموقعٍ قديمٍ وحدَه (لا الحديثَ ولا الموقوفَ ولا حديثَ التفعيلِ ولا مَن في رحلة)، وأنَّ التكرارَ والسقفَ يُحترَمان، وأنَّ المُطالِبَ يقرأُ حالَ السائقِ لحظةَ الإرسال. وهذه أحكامُ دوالَّ واستعلاماتٍ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012160000 و20261012160100). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+
+  {
     file: "tests/integration/wr-09-rider-choice.test.ts",
     suites: ["WR-09 — الراكبُ يختارُ السائقَ خلالَ مهلةٍ يحكمُها الخادم"],
     skipped: 10,

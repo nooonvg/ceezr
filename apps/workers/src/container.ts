@@ -16,6 +16,7 @@ import {
 } from "../../../packages/application/dispatch/deliver-cancellation-notification.ts";
 import { createDriverCandidateNoticeHandler } from "../../../packages/application/dispatch/deliver-candidate-notices.ts";
 import { createChatMessageNoticeHandler } from "../../../packages/application/dispatch/deliver-chat-message-notice.ts";
+import { createLocationReminderHandler } from "../../../packages/application/dispatch/deliver-location-reminder.ts";
 import {
   createLostItemReportHandler,
   type LostItemMessenger,
@@ -230,6 +231,11 @@ export const JOB_INTERVALS = {
   deliverNotifications: 5,
   /** `WR-09` — تحريرُ المرشَّحِ الفائتِ وإخطارُ سائقِه. والانتهاءُ يُحكَمُ كسولاً في القاعدةِ أيضاً. */
   expireOrderCandidates: 5,
+  /**
+   * `WR-12` — كلَّ دقيقة: المهلةُ نفسُها بالدقائق (خمسٌ افتراضًا) فدقّةُ الثانيةِ بلا معنى،
+   * والإيداعُ مفتاحُه دلوُ الزمنِ فتكرارُ الشوطِ لا يُكرِّرُ التذكير.
+   */
+  enqueueLocationReminders: 60,
   /**
    * كلّ عشر ثوانٍ: البثُّ محدودٌ بحجم دفعةٍ من إعداد المدينة (٢٥ افتراضاً)، فهذا
    * سقفٌ نظريّ حوالي ١٥٠ رسالة في الدقيقة للمدينة — تحت حدّ تلغرام بفارقٍ مريح،
@@ -776,6 +782,18 @@ export function buildWorkerContainer(
     log: (event, meta) =>
       event === "order_chat_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
   });
+  /**
+   * `WR-12` (ADR 0268) — تذكيرُ السائقِ المتوفّرِ بتحديثِ موقعِه. ببوتِ السائق، ويُطوى إن
+   * أوقفَ توافرَه أو وصلَ منه موقعٌ حديثٌ قبلَ الإرسال.
+   */
+  const locationReminderHandler = createLocationReminderHandler({
+    sender: asIdentifyingSender(withTrafficPriority(telegram, "driver_location_reminder")),
+    miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
+    log: (event, meta) =>
+      event === "driver_location_reminder.final_failure"
+        ? log.error(event, meta)
+        : log.info(event, meta),
+  });
   const notificationHandlers = {
     offer: createOfferNotificationHandler(offerPublisher),
     dispute_resolution: createDisputeResolutionHandler({
@@ -804,6 +822,7 @@ export function buildWorkerContainer(
     rider_trip_notice: riderTripNoticeHandler,
     driver_candidate_notice: driverCandidateNoticeHandler,
     order_chat_message: chatMessageNoticeHandler,
+    driver_location_reminder: locationReminderHandler,
   };
 
   /**
@@ -1307,6 +1326,18 @@ export function buildWorkerContainer(
                     select expire_order_candidates(50) as result`;
                   const result = rows[0]?.result ?? {};
                   return `expired=${String(result.expired ?? 0)} cancelled=${String(result.cancelled ?? 0)}`;
+                },
+              },
+              {
+                // `WR-12` (ADR 0268) — السائقُ المتوفّرُ الذي لم يصل منه موقعٌ خلالَ المهلةِ يُذكَّر،
+                // بسقفٍ لكلِّ نوبةٍ ومفتاحِ دلوٍ زمنيّ. الإرسالُ نفسُه من `deliver-notifications`.
+                name: "enqueue-location-reminders",
+                everySeconds: JOB_INTERVALS.enqueueLocationReminders,
+                runOnStart: false,
+                run: async () => {
+                  const rows = await sql<{ result: Record<string, unknown> }[]>`
+                    select enqueue_driver_location_reminders(100) as result`;
+                  return `enqueued=${String(rows[0]?.result?.enqueued ?? 0)}`;
                 },
               },
               {
