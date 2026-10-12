@@ -192,6 +192,7 @@
   "negotiation.rider_agree_button": "✅ تم الاتفاق",
   "negotiation.rider_decline_button": "🔁 السائق التالي",
   "negotiation.rider_turn_closed": "⏳ أُغلقت المحادثة مع هذا السائق. ننتقل للتالي فوراً.",
+  "negotiation.order_held": "⏳ لديك سائق ينتظر قرارك في تطبيق وَصْلة لهذا الطلب. اقبله أو ارفضه أولًا، ثم اضغط «تم الاتفاق» إن أردت هذا السائق.",
   "negotiation.rider_turn_opened": "💬 سائق ({position}) مستعدّ للاتفاق معك. اكتب هنا وستصله رسالتك مباشرة. لديك {seconds} ثانية، ثم نمرّ للسائق التالي.",
   "rating.already_rated": "⚠️ قيّمت هذه الرحلة من قبل، والتقييم لا يُعدَّل.",
   "rating.ask_rating_driver": "⭐ كيف كانت رحلتك مع {driver}؟",
