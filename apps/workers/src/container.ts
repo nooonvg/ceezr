@@ -797,7 +797,9 @@ export function buildWorkerContainer(
         : log.info(event, meta),
   });
   const notificationHandlers = {
-    offer: createOfferNotificationHandler(offerPublisher),
+    offer: createOfferNotificationHandler(offerPublisher, (event, meta) =>
+      event === "offer_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
+    ),
     dispute_resolution: createDisputeResolutionHandler({
       driver: createTicketOwnerNotifier(
         asSupportSender(withTrafficPriority(telegram, "dispute_resolution")),

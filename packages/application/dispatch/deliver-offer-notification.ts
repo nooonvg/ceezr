@@ -9,6 +9,10 @@
  * ينتمي إلى: application/dispatch
  * يُستخدم من: apps/workers/src/jobs/deliver-notifications.ts
  * ملاحظات مستقبلية: مهلةُ العرضِ تُقرأُ من الحمولةِ الحيّةِ لا من إعدادٍ ثانٍ.
+ *   `WR-07` (2026-10-12): كلُّ مآلٍ يُسجَّلُ بسببِه — `offer_notice.abandoned`
+ *   (العرضُ لم يَعُد حيًّا) و`attempted` و`accepted` (قبولُ Telegram API لا ظهورُ
+ *   البطاقةِ على الهاتف) و`undeliverable` و`send_failed`/`final_failure` — بمعرّفي
+ *   العرضِ والطلبِ وحدهما، بلا معرّفِ تيليجرام ولا نصّ.
  */
 import type { DistanceKm } from "../../domain/geo/value-objects.ts";
 import type { DriverId, OfferId, OrderId } from "../../shared/kernel/index.ts";
@@ -74,21 +78,44 @@ function offerExpired(expiresAt: string, now: Date): boolean {
   return Number.isNaN(ms) || ms <= now.getTime();
 }
 
-export function createOfferNotificationHandler(publisher: OfferPublisher): NotificationHandler {
+/** سجلُّ مآلاتِ إشعارِ العرضِ (`WR-07`). اختياريٌّ كي لا تنكسرَ المستدعياتُ القديمة. */
+export type OfferNoticeLog = (event: string, meta: Record<string, unknown>) => void;
+
+/** سببُ التخلّي المُسمّى: يفرّقُ «لم يَعُد حيًّا» عن «حمولةٌ تالفة». */
+function offerAbandonReason(offer: OfferPayload | null, now: Date): string | null {
+  if (offer === null) return "PAYLOAD_INVALID";
+  if (offer.offerStatus !== "pending") return `OFFER_${offer.offerStatus.toUpperCase()}`;
+  if (offerExpired(offer.expiresAt, now)) return "OFFER_EXPIRED";
+  return null;
+}
+
+export function createOfferNotificationHandler(
+  publisher: OfferPublisher,
+  log?: OfferNoticeLog,
+): NotificationHandler {
   return async (delivery) => {
     const offer = readOfferPayload(delivery.payload);
+    const abandonReason = offerAbandonReason(offer, new Date());
     /**
      * العرضُ الميّتُ لا يُبعَثُ: انتهت مهلته أو لم يَعُد pending أو زال صفُّه
      * قبل أن يصلَه الإشعارُ. لا إعادةُ إرسالٍ أبديةٌ لصفٍّ لن يُقبل أبدًا —
      * تخلٍّ نهائيٌّ (dead) يُسجَّلُ بالرمزِ كالـfinish، فلا يُسلبَ الصفَّ من حائزه.
      */
-    if (
-      offer === null ||
-      offer.offerStatus !== "pending" ||
-      offerExpired(offer.expiresAt, new Date())
-    ) {
+    if (offer === null || abandonReason !== null) {
+      log?.("offer_notice.abandoned", {
+        delivery_id: delivery.deliveryId,
+        offer_id: offer?.offerId ?? null,
+        order_id: offer?.orderId ?? null,
+        reason: abandonReason ?? "PAYLOAD_INVALID",
+      });
       return ok({ abandon: true, messageId: null, failure: null });
     }
+    const meta = {
+      delivery_id: delivery.deliveryId,
+      offer_id: offer.offerId,
+      order_id: offer.orderId,
+      attempt: delivery.attempts,
+    };
     const notification: OfferNotification = {
       orderId: offer.orderId,
       offerId: offer.offerId,
@@ -103,11 +130,16 @@ export function createOfferNotificationHandler(publisher: OfferPublisher): Notif
       dropoffLabel: offer.dropoffLabel,
       notes: offer.notes,
     };
+    log?.("offer_notice.attempted", {
+      ...meta,
+      expires_in_seconds: notification.expiresInSeconds,
+    });
     const sent = await publisher.publishOffer(notification);
     // `SEC-19-ب-٤` — لو كانَ عنوانُ السائقِ غائبًا (telegram_id = null) رمى الناشرُ
     // `TELEGRAM_DELIVERY_UNAVAILABLE`. لا يُعادُ ولا يُتخلَّى عنه كـ`dead`، بل
     // يُعلَنُ `undeliverable` بسببٍ مُسمّىً — مفصولاً عن فشلِ المحاولاتِ.
     if (!sent.ok && sent.error.detail === "TELEGRAM_DELIVERY_UNAVAILABLE") {
+      log?.("offer_notice.undeliverable", { ...meta, reason: "TELEGRAM_DELIVERY_UNAVAILABLE" });
       return ok({
         abandon: false,
         messageId: null,
@@ -116,10 +148,14 @@ export function createOfferNotificationHandler(publisher: OfferPublisher): Notif
         undeliverableReason: "TELEGRAM_DELIVERY_UNAVAILABLE",
       });
     }
-    return ok({
-      abandon: false,
-      messageId: sent.ok ? sent.value : null,
-      failure: sent.ok ? null : sent.error.detail,
-    });
+    if (sent.ok) {
+      // قبولُ Telegram API وحده: لا يُثبِتُ ظهورَ البطاقةِ ولا إشعارَ الهاتف.
+      log?.("offer_notice.accepted", meta);
+      return ok({ abandon: false, messageId: sent.value, failure: null });
+    }
+    const failed = { ...meta, max_attempts: delivery.maxAttempts, error: sent.error.detail };
+    if (delivery.attempts >= delivery.maxAttempts) log?.("offer_notice.final_failure", failed);
+    else log?.("offer_notice.send_failed", failed);
+    return ok({ abandon: false, messageId: null, failure: sent.error.detail });
   };
 }
