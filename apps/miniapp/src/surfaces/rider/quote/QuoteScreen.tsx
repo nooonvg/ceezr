@@ -250,6 +250,8 @@ export function QuoteScreen({
   /** `ORDER-TERMS-01` — «الآن» أو وقتٌ محدَّدٌ «HH:MM». */
   const [pickupMode, setPickupMode] = useState<"now" | "later">("now");
   const [pickupClock, setPickupClock] = useState("");
+  /** `WR-06` — «في وقت محدّد» بلا وقتٍ يُقرأ لا يُرسَلُ «الآن» صامتًا. */
+  const [pickupError, setPickupError] = useState(false);
   /** `ORDER-OFFER-01` — «المبلغ الذي تدفعه»: نصٌّ خامٌّ، وفارغُه «قابلٌ للتفاوض». */
   const [offerText, setOfferText] = useState("");
   const [offerError, setOfferError] = useState<"required" | "invalid" | null>(null);
@@ -566,8 +568,19 @@ export function QuoteScreen({
                 className="qt__pickup-time"
                 aria-label={t("rider.quote.pickup.later")}
                 value={pickupClock}
-                onChange={(event) => setPickupClock(event.target.value)}
+                onChange={(event) => {
+                  setPickupClock(event.target.value);
+                  setPickupError(false);
+                }}
               />
+            )}
+            {pickupMode === "later" && (
+              <p className="qt__notes-hint">{t("rider.quote.pickup.laterHint")}</p>
+            )}
+            {pickupError && (
+              <p className="qt__notes-error" role="alert">
+                {t("rider.quote.pickup.timeRequired")}
+              </p>
             )}
           </fieldset>
 
@@ -699,6 +712,12 @@ export function QuoteScreen({
                           return;
                         }
                         setOfferError(null);
+                        const pickupAt = pickupMode === "later" ? pickupAtFrom(pickupClock) : null;
+                        if (pickupMode === "later" && pickupAt === null) {
+                          setPickupError(true);
+                          return;
+                        }
+                        setPickupError(false);
                         onRequest({
                           service: card.service,
                           originLat: origin.lat,
@@ -726,7 +745,7 @@ export function QuoteScreen({
                           notes: noteValue,
                           // مفتاحٌ واحدٌ لهذه النيّةِ، ويُعادُ في كلِّ محاولةٍ (`ARCH-006`).
                           idempotencyKey: newIdempotencyKey(),
-                          pickupAt: pickupMode === "later" ? pickupAtFrom(pickupClock) : null,
+                          pickupAt,
                           offerSar: offerPolicy.offerSar,
                           offerMode: offerPolicy.offerMode,
                         });

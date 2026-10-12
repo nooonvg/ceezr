@@ -172,6 +172,8 @@ export function createDriverOfferRoutes(deps: DriverOfferRouteDependencies): Hon
         // `WR-05` — معنى المبلغِ كما كتبَه الراكب (`null` ⇒ لم يُقرَأ أو طلبٌ أقدمُ من السياسة).
         offer_mode: offer.offerTerms?.mode ?? null,
         offer_sar: offer.offerTerms?.offerSar ?? null,
+        // `WR-06`: وقتُ الحضورِ على بطاقةِ التطبيقِ كما على رسالةِ البوت.
+        pickup_at: offer.offerTerms?.pickupAt ?? null,
       })),
     });
   });
@@ -209,6 +211,7 @@ export function createDriverOfferRoutes(deps: DriverOfferRouteDependencies): Hon
       // `WR-05` — معنى المبلغِ كما كتبَه الراكب (`null` ⇒ لم يُقرَأ أو طلبٌ أقدمُ من السياسة).
       offer_mode: detail.offerTerms?.mode ?? null,
       offer_sar: detail.offerTerms?.offerSar ?? null,
+      pickup_at: detail.offerTerms?.pickupAt ?? null,
     });
   });
 

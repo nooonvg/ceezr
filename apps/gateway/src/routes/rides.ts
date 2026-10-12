@@ -187,6 +187,8 @@ const STATUS_BY_ERROR: Readonly<Record<RequestRidePublicErrorCode, 400 | 401 | 4
   OFFER_AMOUNT_REQUIRED: 400,
   OFFER_AMOUNT_INVALID: 400,
   OFFER_AMOUNT_UNEXPECTED: 400,
+  // `WR-06` — وقتُ حضورٍ لا يُقرأ أو خارجَ نافذتِه.
+  PICKUP_AT_INVALID: 400,
   // `LOC-TRUST-01` — عطبُ طلبٍ يُصلِحُه المُنادي.
   PLACE_INVALID: 400,
   PLACE_LINK_UNSUPPORTED: 400,

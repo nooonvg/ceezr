@@ -65,6 +65,8 @@ export interface ApiDriverOfferCard {
   /** `WR-05` — سياسةُ المبلغِ ومبلغُه كما كتبَهما الراكب؛ تغيبُ من بوّابةٍ أقدم. */
   readonly offer_mode?: "fixed" | "suggested" | "open" | null;
   readonly offer_sar?: number | null;
+  /** `WR-06` — وقتُ الحضورِ ISO، و`null` = الآن. غائبٌ في بوّابةٍ أقدم. */
+  readonly pickup_at?: string | null;
 }
 
 export interface DriverOffersResponse {
@@ -114,6 +116,8 @@ export interface DriverOfferDetailResponse {
   /** `WR-05` — سياسةُ المبلغِ ومبلغُه كما كتبَهما الراكب؛ تغيبُ من بوّابةٍ أقدم. */
   readonly offer_mode?: "fixed" | "suggested" | "open" | null;
   readonly offer_sar?: number | null;
+  /** `WR-06` — وقتُ الحضورِ ISO، و`null` = الآن. غائبٌ في بوّابةٍ أقدم. */
+  readonly pickup_at?: string | null;
 }
 
 export interface AcceptDriverOfferResponse {

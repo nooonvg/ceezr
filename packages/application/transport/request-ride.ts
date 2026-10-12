@@ -83,6 +83,11 @@ export type RequestRidePublicErrorCode =
   | "PARCEL_DESCRIPTION_INVALID"
   /** `WR-05` — سياسةُ المبلغِ تُرفَضُ برمزِها ولا تتحوّلُ صامتةً (`offer-policy.ts`). */
   | OfferPolicyRefusal
+  /**
+   * `WR-06` — وقتُ حضورٍ لا يُقرأ أو خارجَ نافذتِه (قبلَ 10 دقائقَ أو بعدَ 14 يومًا). كانَ يسقطُ
+   * `null` في القاعدةِ فيصيرُ الطلبُ «الآن» بلا علمِ الراكب.
+   */
+  | "PICKUP_AT_INVALID"
   /** `LOC-TRUST-01` — مكانٌ معطوبُ الشكل، أو رابطٌ لا يُقبَل، أو ملاحظةُ مكانٍ طويلة، أو قراءةُ جهازٍ لا تُوثَق. */
   | PlaceMetaRefusal
   | "ACCOUNT_NOT_FOUND"
@@ -119,6 +124,29 @@ export function readPickupAt(value: unknown): Date | null {
   if (typeof value !== "string" || value.trim() === "") return null;
   const at = new Date(value);
   return Number.isNaN(at.getTime()) ? null : at;
+}
+
+/** نافذةُ وقتِ الحضورِ نفسُها التي تطبّقُها `request_ride` في القاعدة (`20261003020000`). */
+export const PICKUP_AT_PAST_TOLERANCE_MS = 10 * 60 * 1000;
+export const PICKUP_AT_MAX_AHEAD_MS = 14 * 24 * 60 * 60 * 1000;
+
+/**
+ * `WR-06` — الحكمُ على وقتِ الحضورِ قبلَ الكتابة: الفراغُ «الآن»، والمكتوبُ إمّا وقتٌ صالحٌ في
+ * النافذةِ وإمّا رفضٌ برمزِه. لا يتحوّلُ وقتٌ طلبَه الراكبُ إلى «الآن» صامتًا.
+ */
+export function judgePickupAt(
+  value: unknown,
+  now: Date,
+): { readonly at: Date | null } | { readonly refusal: "PICKUP_AT_INVALID" } {
+  if (value === undefined || value === null) return { at: null };
+  if (typeof value === "string" && value.trim() === "") return { at: null };
+  const at = readPickupAt(value);
+  if (at === null) return { refusal: "PICKUP_AT_INVALID" };
+  const delta = at.getTime() - now.getTime();
+  if (delta < -PICKUP_AT_PAST_TOLERANCE_MS || delta > PICKUP_AT_MAX_AHEAD_MS) {
+    return { refusal: "PICKUP_AT_INVALID" };
+  }
+  return { at };
 }
 
 /**
@@ -199,6 +227,9 @@ export async function requestRide(
   const offerPolicy = readOfferPolicy({ offerMode: body.offerMode, offerSar: body.offerSar });
   if ("refusal" in offerPolicy) return err(offerPolicy.refusal);
 
+  const pickupAt = judgePickupAt(body.pickupAt, deps.now());
+  if ("refusal" in pickupAt) return err(pickupAt.refusal);
+
   const created = await deps.rides.create({
     telegramUserId: session.value.telegramUserId,
     idempotencyKey: key.key,
@@ -208,7 +239,7 @@ export async function requestRide(
     notes: rideNotes,
     pickupLabel: readPlaceLabel(body.pickupLabel),
     dropoffLabel: readPlaceLabel(body.destinationLabel),
-    pickupAt: readPickupAt(body.pickupAt),
+    pickupAt: pickupAt.at,
     offerSar: offerPolicy.policy.offerSar,
     offerMode: offerPolicy.policy.offerMode,
     pickupPlace: pickupPlace.meta,

@@ -102,6 +102,11 @@ export interface DriverOfferCard {
 export interface DriverOfferTerms {
   readonly mode: "fixed" | "suggested" | "open" | null;
   readonly offerSar: number | null;
+  /**
+   * `WR-06` — وقتُ حضورِ السائقِ كما طلبَه الراكب (ISO)، و`null` = الآن. كانَ يظهرُ في رسالةِ
+   * البوتِ وبطاقةِ القروبِ ويغيبُ عن بطاقةِ التطبيق، فيقبلُ السائقُ موعدًا لاحقًا كأنّه الآن.
+   */
+  readonly pickupAt?: string | null;
 }
 
 /**

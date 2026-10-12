@@ -53,6 +53,7 @@ import {
   isRetryableOffersError,
   offerLineText,
   offersErrorKey,
+  pickupAtText,
   toOfferDetail,
 } from "./offers-view.ts";
 
@@ -350,6 +351,7 @@ export function OfferDetailScreen({
 
       <UiCard title={t("driver.offers.detail.section.places")}>
         {/* `WR-05` — معنى المبلغِ قبلَ القبول. */}
+        <p className="dof__offer-terms">{pickupAtText(t, detail.pickupAt)}</p>
         {detail.offerTerms === null ? null : (
           <p className="dof__offer-terms">{offerLineText(t, detail.offerTerms)}</p>
         )}

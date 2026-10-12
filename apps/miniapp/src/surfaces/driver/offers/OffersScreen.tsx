@@ -70,6 +70,7 @@ import {
   type OfferCardModel,
   offerLineText,
   offersErrorKey,
+  pickupAtText,
   toOffersBoard,
 } from "./offers-view.ts";
 
@@ -453,6 +454,7 @@ export function OffersScreen({
                 </div>
                 <UiTimer {...timer} />
                 {/* `WR-05` — معنى المبلغِ قبلَ القبول: محدَّدٌ أو مقترَحٌ أو بلا سعر. */}
+                <p className="dof__offer-terms">{pickupAtText(t, card.pickupAt)}</p>
                 {card.offerTerms === null ? null : (
                   <p className="dof__offer-terms">{offerLineText(t, card.offerTerms)}</p>
                 )}

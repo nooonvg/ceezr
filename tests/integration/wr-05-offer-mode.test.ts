@@ -152,7 +152,23 @@ describeIf("WR-05 — سياسةُ المبلغِ في القاعدة", () => {
       select rider_offer_mode, rider_offer_sar from orders where id = ${orderId}`;
     expect(row).toEqual({ rider_offer_mode: "fixed", rider_offer_sar: 40 });
     const extras = (await readOrderPlaceExtras(sql, [orderId])).get(orderId);
-    expect(extras?.offerTerms).toEqual({ mode: "fixed", offerSar: 40 });
+    // `WR-06`: وقتُ الحضورِ يُقرأُ مع السياسة — `null` «الآن».
+    expect(extras?.offerTerms).toEqual({ mode: "fixed", offerSar: 40, pickupAt: null });
+  });
+
+  it("WR-06: وقتُ الحضورِ المكتوبُ يصلُ إلى قارئِ بطاقةِ السائقِ كما هو", async () => {
+    const pickupAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    pickupAt.setUTCSeconds(0, 0);
+    const result = await createRideRequestCommand(sql).create({
+      ...base("wr06-pickup"),
+      offerSar: null,
+      offerMode: "open",
+      pickupAt,
+    });
+    if (!result.ok || !result.value.accepted) throw new Error("لم يُنشَأ الطلب");
+    const orderId = result.value.ride.orderId;
+    const extras = (await readOrderPlaceExtras(sql, [orderId])).get(orderId);
+    expect(extras?.offerTerms.pickupAt).toBe(pickupAt.toISOString());
   });
 
   it("مسارٌ بلا سياسةٍ (البوت) يُكتَبُ «بلا سعر» لا مبلغاً مُختلَقاً", async () => {
