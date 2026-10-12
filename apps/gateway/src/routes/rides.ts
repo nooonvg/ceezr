@@ -94,6 +94,12 @@ import {
   requestRide,
 } from "../../../../packages/application/transport/request-ride.ts";
 import {
+  decideRideCandidate,
+  type RideCandidateDeps,
+  type RideCandidateErrorCode,
+  readRideCandidate,
+} from "../../../../packages/application/transport/ride-candidate.ts";
+import {
   type ReadRideShareDeps,
   type RideSharePublicErrorCode,
   readRideShare,
@@ -146,6 +152,8 @@ export interface RidesRouteDependencies {
    * يبقى الإيقافُ عاملاً — **زرُّ «أوقِفْ» أحقُّ بالبقاءِ من زرِّ «شارِكْ»**.
    */
   readonly shareStop?: StopRideShareDeps;
+  /** `WR-09` — المرشَّحُ وقرارُ الراكب؛ غيابُه ⇒ `503` للمسارَين. */
+  readonly candidate?: RideCandidateDeps;
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
 }
 
@@ -239,6 +247,27 @@ function shareRejected(c: Context, error: RideSharePublicErrorCode) {
 }
 
 /** ترويسةُ المفتاحِ — تُقرأُ بالاسمِ المُعرَّفِ لا بأيِّ مرادفٍ. */
+export const RIDE_CANDIDATE_MAX_BYTES = 1024;
+
+const STATUS_BY_CANDIDATE_ERROR: Readonly<
+  Record<RideCandidateErrorCode, 400 | 401 | 404 | 409 | 410 | 503>
+> = {
+  SESSION_REQUIRED: 401,
+  SESSION_INVALID: 401,
+  SESSION_EXPIRED: 401,
+  SESSION_NOT_AVAILABLE: 503,
+  MALFORMED: 400,
+  ORDER_NOT_FOUND: 404,
+  ORDER_NOT_SEARCHING: 409,
+  CANDIDATE_CHANGED: 409,
+  CANDIDATE_EXPIRED: 410,
+  RIDE_STORE_NOT_AVAILABLE: 503,
+};
+
+function candidateRejected(c: Context, error: RideCandidateErrorCode) {
+  return c.json({ ok: false, error }, STATUS_BY_CANDIDATE_ERROR[error]);
+}
+
 export const IDEMPOTENCY_HEADER = "idempotency-key";
 
 export function createRidesRoutes(deps: RidesRouteDependencies): Hono {
@@ -287,6 +316,72 @@ export function createRidesRoutes(deps: RidesRouteDependencies): Hono {
       orderId: verdict.ride.orderId,
       createdAt: new Date(verdict.ride.createdAtMs).toISOString(),
       reused: verdict.ride.reused,
+    });
+  });
+
+  /**
+   * `WR-09` — السائقُ الذي قبِلَ والراكبُ لم يقرّر. `candidate: null` ⇐ لا مرشَّحَ حيٌّ
+   * (لم يقبلْ أحدٌ، أو فاتَ الموعدُ، أو أُسنِدَ الطلب). والباقي بساعةِ الخادم.
+   */
+  app.get("/v1/rides/:id/candidate", async (c) => {
+    if (deps.candidate === undefined) return candidateRejected(c, "RIDE_STORE_NOT_AVAILABLE");
+    const result = await readRideCandidate(deps.candidate, {
+      accessToken: bearerTokenFrom(c.req.header("authorization")),
+      orderId: c.req.param("id"),
+    });
+    if (!result.ok) return candidateRejected(c, result.error);
+    const { candidate } = result.value;
+    return c.json({
+      ok: true,
+      order_status: result.value.orderStatus,
+      server_time: result.value.serverTime,
+      candidate:
+        candidate === null
+          ? null
+          : {
+              driver_id: candidate.driverId,
+              driver_name: candidate.driverName,
+              plate: candidate.plate,
+              vehicle: candidate.vehicle,
+              rating_average: candidate.ratingAverage,
+              rating_count: candidate.ratingCount,
+              distance_km: candidate.distanceKm,
+              expires_at: candidate.expiresAt,
+              seconds_left: candidate.secondsLeft,
+            },
+    });
+  });
+
+  /** `WR-09` — قرارُ الراكب: `{ driverId, decision: "accept" | "reject" }`. */
+  app.post("/v1/rides/:id/candidate", async (c) => {
+    if (deps.candidate === undefined) return candidateRejected(c, "RIDE_STORE_NOT_AVAILABLE");
+    const raw = await readBounded(c.req.raw.body, RIDE_CANDIDATE_MAX_BYTES);
+    if (raw === null) return c.json({ ok: false, error: "PAYLOAD_TOO_LARGE" }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return c.json({ ok: false, error: "INVALID_JSON" }, 400);
+    }
+    const result = await decideRideCandidate(deps.candidate, {
+      accessToken: bearerTokenFrom(c.req.header("authorization")),
+      orderId: c.req.param("id"),
+      body,
+    });
+    if (!result.ok) {
+      deps.log?.("rides.candidate_refused", { error: result.error });
+      return candidateRejected(c, result.error);
+    }
+    deps.log?.("rides.candidate_decided", {
+      order_id: c.req.param("id"),
+      decision: result.value.decision,
+      duplicate: result.value.duplicate,
+    });
+    return c.json({
+      ok: true,
+      decision: result.value.decision,
+      duplicate: result.value.duplicate,
+      matched_at: result.value.matchedAt,
     });
   });
 

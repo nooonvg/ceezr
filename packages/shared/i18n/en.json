@@ -517,5 +517,14 @@
   "group.unsub_notes_line": "📝 Notes: {notes}",
   "negotiation.driver_awaiting_selection": "⏳ Your offer is in front of the rider and they haven't chosen yet. The chat opens as soon as they choose you.",
   "negotiation.rider_awaiting_selection": "👆 Choose the driver first from the card (“✅ Choose driver”) to open the chat, or move to the next driver.",
-  "common.currency_SAR": "SAR"
+  "common.currency_SAR": "SAR",
+  "driver.candidate_waiting": "⏳ Your acceptance was sent to the customer, who has {seconds} seconds to choose you. We will tell you the decision here.",
+  "driver.offer_held": "The customer is reviewing another driver right now. Your offer stays open until it expires.",
+  "driver.candidate_accepted": "✅ The customer chose you for order {order}. Head to the pickup point now.",
+  "driver.candidate_declined": "The customer did not choose you for order {order}; it went back to other drivers. Thanks for responding.",
+  "driver.candidate_expired": "The customer's decision time for order {order} ran out; it went back to other drivers.",
+  "driver.candidate_cancelled": "The customer cancelled order {order} before choosing. No need to head there.",
+  "tracking.rider_candidate": "🚗 A driver accepted your order {order}\nDriver: {driver}\n⭐ Rating: {rating}\n🚙 Vehicle: {vehicle}\n🔢 Plate: {plate}\nYou have {seconds} seconds to choose or decline — open the order.",
+  "tracking.rider_candidate_unrated": "New",
+  "miniapp.driver_job_button": "📱 Open the trip in Wasla"
 }

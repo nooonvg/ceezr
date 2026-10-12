@@ -2490,6 +2490,22 @@ async function handleOfferDecision(
   const claim = await deps.dispatch.claimRide(orderId, driver.id);
   if (!claim.ok) return technicalFailure(sender, state);
 
+  if (claim.value.claimed && claim.value.pendingRider === true) {
+    /**
+     * `WR-09` — الطلبُ محجوزٌ لهذا السائقِ والراكبُ يقرّر. لا إخطارَ «قبِلَ سائقٌ»
+     * (إشعارُ المرشَّحِ أودعَته القاعدةُ في معاملةِ الحجز)، ولا زرَّ بدءٍ قبلَ الإسناد.
+     * والمآلُ يصلُه رسالةً من صندوقِ الصادر (`driver_candidate_notice`).
+     */
+    return [
+      reply(
+        sender,
+        tr("driver.candidate_waiting", {
+          seconds: secondsUntil(claim.value.candidateExpiresAt ?? null, deps.clock.now()),
+        }),
+      ),
+    ];
+  }
+
   if (claim.value.claimed) {
     /**
      * `BUG-008` — إعادةُ تسليمٍ لنقرةِ الفائزِ نفسِه نجاحٌ **بلا أثرٍ ثانٍ**:
@@ -2528,8 +2544,20 @@ async function handleOfferDecision(
   }
 
   const key =
-    claim.value.reason === "offer_expired" ? "driver.offer_expired" : "driver.offer_taken";
+    claim.value.reason === "offer_expired"
+      ? "driver.offer_expired"
+      : claim.value.reason === "ORDER_HELD"
+        ? "driver.offer_held"
+        : "driver.offer_taken";
   return [reply(sender, tr(key))];
+}
+
+/** ثوانٍ صحيحةٌ حتى الموعد، بحدٍّ أدنى صفر. موعدٌ مجهولٌ ⇒ صفر (النصُّ لا يكذبُ بمهلة). */
+function secondsUntil(iso: string | null, now: Date): number {
+  if (iso === null) return 0;
+  const at = Date.parse(iso);
+  if (Number.isNaN(at)) return 0;
+  return Math.max(0, Math.ceil((at - now.getTime()) / 1000));
 }
 
 /**

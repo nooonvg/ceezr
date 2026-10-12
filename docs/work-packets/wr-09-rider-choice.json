@@ -1,0 +1,45 @@
+{
+  "id": "wr-09-rider-choice",
+  "goal": "قبول السائق يحجز مرشّحًا بانتظار قرار الراكب خلال مهلة يحكمها الخادم (15 ثانية بعد التفعيل)، وقبول الراكب إسناد ذرّي، ورفضه أو فوات المهلة يستبعد السائق ويُبقي البحث، مع إشعار الراكب بزر وإشعار السائق بالمآل.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0266-rider-chooses-driver.md",
+    "docs/adr/0265-rider-trip-notice-outbox.md"
+  ],
+  "implementation": [
+    "supabase/migrations/20261012140000_wr_09_rider_choice.sql",
+    "supabase/migrations/20261012140100_wr_09_rider_choice_validate.sql",
+    "supabase/migrations/20261012140200_wr_09_candidate_index.sql",
+    "packages/application/transport/ride-candidate.ts",
+    "packages/infrastructure/transport/ride-candidate-store.ts",
+    "packages/application/dispatch/deliver-candidate-notices.ts",
+    "packages/application/dispatch/deliver-rider-trip-notice.ts",
+    "packages/infrastructure/notification/rider-trip-facts.ts",
+    "packages/infrastructure/dispatch/dispatch-adapters.ts",
+    "packages/application/bots/driver-dialog.ts",
+    "packages/application/driver/driver-offers.ts",
+    "apps/gateway/src/routes/rides.ts",
+    "apps/gateway/src/routes/driver-offers.ts",
+    "apps/workers/src/container.ts",
+    "apps/miniapp/src/surfaces/rider/search/RideCandidateCard.tsx",
+    "apps/miniapp/src/surfaces/rider/search/SearchScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/active/ActiveRideScreen.tsx",
+    "apps/miniapp/src/surfaces/driver/offers/OfferDetailScreen.tsx"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md", "docs/adr/0266-rider-chooses-driver.md"],
+  "decision": "المرشّح أعمدة على orders والطلب يبقى searching؛ المهلة إعداد لكل مدينة مبذور بصفر (السلوك القديم حرفًا) ويُرفع إلى 15 في الإنتاج بعد النشر تغييرَ إعداد لا هجرة. الإشعاران في صندوق الصادر: rider_trip_notice بحدث CANDIDATE (يُطوى إن فات المرشح) وdriver_candidate_notice بالمآل.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/wr-09-rider-choice.test.ts",
+    "bun test tests/unit/wr-09-candidate-notices.test.tsx tests/unit/embedded-worker.test.ts tests/unit/check-traffic-priority-guard.test.ts"
+  ],
+  "evidence": "محليًا على PostGIS بسلسلة الهجرات كاملة: 10/10 تكامل (حجز، ORDER_HELD، رؤية المالك وحجب الغريب، قبول ذرّي، رفض واستبعاد، فوات كسول، شوط التحرير والإلغاء، استيلاء بعد الفوات، التقاط إشعار السائق، والنافذة صفر = القديم)، و14/14 وحدات.",
+  "constraints": [
+    "لا تغيير لبيانات الإنتاج",
+    "لا سعر ولا عمولة ولا بوابة دفع",
+    "لا استقصاء دوري في Mini App (ADR 0035 §4)",
+    "لا ادعاء ظهور الإشعار على الهاتف"
+  ],
+  "limitations": "مسار قبول الراكب لا يسجّل مقياس القبول. إلغاء الراكب أثناء الانتظار يُحرَّر بشوط العامل (≈5 ثوانٍ) بمآل CANCELLED. اختبار تيليجرام الفعلي بحسابين حقيقيين لم يُجرَ (WR-26)."
+}

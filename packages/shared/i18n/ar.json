@@ -517,5 +517,14 @@
   "group.unsub_notes_line": "📝 ملاحظات: {notes}",
   "negotiation.driver_awaiting_selection": "⏳ عرضك أمام العميل الآن ولم يختر بعد. ستُفتح المحادثة فور اختيارك.",
   "negotiation.rider_awaiting_selection": "👆 اختر السائق أولاً من البطاقة («✅ اختيار السائق») لتُفتح المحادثة معه، أو انتقل إلى السائق التالي.",
-  "common.currency_SAR": "ريال"
+  "common.currency_SAR": "ريال",
+  "driver.candidate_waiting": "⏳ أُرسل قبولك إلى العميل، وأمامه {seconds} ثانية ليختارك. سنخبرك بقراره هنا.",
+  "driver.offer_held": "العميل يراجع سائقاً آخر الآن. يبقى عرضك مفتوحاً حتى انتهاء مهلته.",
+  "driver.candidate_accepted": "✅ اختارك العميل للطلب {order}. توجّه إلى موقع الالتقاط الآن.",
+  "driver.candidate_declined": "لم يختَرك العميل للطلب {order}، وأُعيد الطلب لسائقين آخرين. شكراً لتجاوبك.",
+  "driver.candidate_expired": "انتهت مهلة قرار العميل للطلب {order} دون اختيار، وأُعيد الطلب لسائقين آخرين.",
+  "driver.candidate_cancelled": "ألغى العميل الطلب {order} قبل أن يختار. لا داعي للتوجّه إليه.",
+  "tracking.rider_candidate": "🚗 قبِل سائق طلبك {order}\nالسائق: {driver}\n⭐ التقييم: {rating}\n🚙 المركبة: {vehicle}\n🔢 اللوحة: {plate}\nأمامك {seconds} ثانية لتختاره أو ترفضه — افتح الطلب.",
+  "tracking.rider_candidate_unrated": "جديد",
+  "miniapp.driver_job_button": "📱 افتح الرحلة في وَصْلة"
 }

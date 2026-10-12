@@ -7,12 +7,14 @@
  * ملاحظات مستقبلية: القفل الموزَّع يُبنى هنا ويُسلَّم للمشغّل، فيحمي كل مهمّة مسجَّلة.
  */
 
+import { startRideKeyboard } from "../../../packages/application/bots/rating-dialog.ts";
 import type { BroadcastPublisher } from "../../../packages/application/broadcast/ports.ts";
 import type { OfferPublisher } from "../../../packages/application/dispatch/broadcast-offers.ts";
 import {
   type CancellationMessenger,
   createOrderCancelledHandler,
 } from "../../../packages/application/dispatch/deliver-cancellation-notification.ts";
+import { createDriverCandidateNoticeHandler } from "../../../packages/application/dispatch/deliver-candidate-notices.ts";
 import {
   createLostItemReportHandler,
   type LostItemMessenger,
@@ -87,7 +89,10 @@ import {
 import { createNotificationOutboxPort } from "../../../packages/infrastructure/notification/notification-outbox-adapters.ts";
 import { createOutboundResilience } from "../../../packages/infrastructure/notification/outbound-resilience.ts";
 import { withOutboundResilience } from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
-import { createRiderTripFactsReader } from "../../../packages/infrastructure/notification/rider-trip-facts.ts";
+import {
+  createRiderCandidateFactsReader,
+  createRiderTripFactsReader,
+} from "../../../packages/infrastructure/notification/rider-trip-facts.ts";
 import {
   asIdentifyingSender,
   asOutboundSender,
@@ -215,12 +220,15 @@ export const JOB_INTERVALS = {
    */
   shipMoveEvents: 15,
   /**
-   * كلّ ثلاثين ثانية: إشعارُ العرضِ يُكتَبُ ذرّيًّا في معاملةِ open_offer_round نفسِها،
-   * ثمّ يُرسَلُ من هذا العامل. أسرعُ من مهلةِ العرضِ (45 ثانية افتراضاً) لئلّا يتأخّرَ
-   * وصولُ الإشعارِ حتى انتهاءِ مهلته؛ وأبطأُ من البثّ (10 ثوانٍ) لأنّ دفعتهُ فردٌ لا جمهورٌ.
+   * كلّ خمسِ ثوانٍ (كانت ثلاثين حتى `WR-09`): إشعارُ العرضِ يُكتَبُ ذرّيًّا في معاملةِ
+   * open_offer_round نفسِها ثمّ يُرسَلُ من هذا العامل. وإشعارُ المرشَّحِ للراكبِ له نافذةُ
+   * قرارٍ قصيرةٌ (15 ثانية)، فشوطٌ كلَّ ثلاثين كان يُوصِلُه بعدَ فواتِها. والشوطُ الفارغُ
+   * نداءُ مطالبةٍ واحدٌ يعودُ `delivery: null`.
    * فشلُ تيليجرام يُعيدُ الصفَّ pending بموعدٍ جديد بلا تكرارِ أثرٍ (BUG-004).
    */
-  deliverNotifications: 30,
+  deliverNotifications: 5,
+  /** `WR-09` — تحريرُ المرشَّحِ الفائتِ وإخطارُ سائقِه. والانتهاءُ يُحكَمُ كسولاً في القاعدةِ أيضاً. */
+  expireOrderCandidates: 5,
   /**
    * كلّ عشر ثوانٍ: البثُّ محدودٌ بحجم دفعةٍ من إعداد المدينة (٢٥ افتراضاً)، فهذا
    * سقفٌ نظريّ حوالي ١٥٠ رسالة في الدقيقة للمدينة — تحت حدّ تلغرام بفارقٍ مريح،
@@ -736,10 +744,25 @@ export function buildWorkerContainer(
    */
   const riderTripNoticeHandler = createRiderTripNoticeHandler({
     facts: createRiderTripFactsReader(sql),
+    // `WR-09` — حدثُ `CANDIDATE`: يُطوى إن فاتَ المرشَّحُ قبلَ الإرسال.
+    candidates: createRiderCandidateFactsReader(sql),
     sender: asIdentifyingSender(withTrafficPriority(riderTelegram, "rider_trip_notice")),
     miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
     log: (event, meta) =>
       event === "rider_trip_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
+  });
+  /**
+   * `WR-09` (ADR 0266) — مآلُ قبولِ السائقِ بعدَ قرارِ الراكبِ، ببوتِ السائق. وفي سطحِ
+   * البوتِ القديمِ يحملُ «اختارَك» زرَّ «بدء الرحلة» كما كانَ تأكيدُ القبولِ يحمله.
+   */
+  const driverCandidateNoticeHandler = createDriverCandidateNoticeHandler({
+    sender: asIdentifyingSender(withTrafficPriority(telegram, "driver_candidate_notice")),
+    miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
+    startKeyboard: startRideKeyboard,
+    log: (event, meta) =>
+      event === "driver_candidate_notice.final_failure"
+        ? log.error(event, meta)
+        : log.info(event, meta),
   });
   const notificationHandlers = {
     offer: createOfferNotificationHandler(offerPublisher),
@@ -767,6 +790,7 @@ export function buildWorkerContainer(
     safety_resolution_closed: createSafetyResolutionClosedHandler(safetyResolutionMessenger),
     safety_resolution_blocked: createSafetyResolutionClosedHandler(safetyResolutionMessenger),
     rider_trip_notice: riderTripNoticeHandler,
+    driver_candidate_notice: driverCandidateNoticeHandler,
   };
 
   /**
@@ -1257,6 +1281,19 @@ export function buildWorkerContainer(
                       ? "deferred=0"
                       : `deferred=${report.value.deferred.length} (${deferred})`,
                   ].join(" ");
+                },
+              },
+              {
+                // `WR-09` (ADR 0266) — ما فاتَ موعدُه من المرشَّحين يُحرَّرُ (عرضُه `rejected`
+                // فيُستبعَدُ من الجولاتِ التالية) ويُخطَرُ سائقُه، وما أُلغيَ طلبُه كذلك.
+                name: "expire-order-candidates",
+                everySeconds: JOB_INTERVALS.expireOrderCandidates,
+                runOnStart: true,
+                run: async () => {
+                  const rows = await sql<{ result: Record<string, unknown> }[]>`
+                    select expire_order_candidates(50) as result`;
+                  const result = rows[0]?.result ?? {};
+                  return `expired=${String(result.expired ?? 0)} cancelled=${String(result.cancelled ?? 0)}`;
                 },
               },
               {

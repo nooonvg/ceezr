@@ -51,6 +51,7 @@ export const NOTIFICATION_KINDS = [
   "safety_resolution_closed",
   "safety_resolution_blocked",
   "rider_trip_notice",
+  "driver_candidate_notice",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -88,6 +89,7 @@ export const SEEDED_NOTIFICATION_CHANNELS: Readonly<Record<NotificationKind, Not
     safety_resolution_closed: "critical",
     safety_resolution_blocked: "critical",
     rider_trip_notice: "critical",
+    driver_candidate_notice: "critical",
   };
 
 /**

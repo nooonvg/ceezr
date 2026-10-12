@@ -115,6 +115,10 @@ export interface AcceptDriverOfferResponse {
   readonly ok: true;
   readonly order_id: string;
   readonly matched_at: string | null;
+  /** `WR-09` — `true` ⇒ الطلبُ محجوزٌ لكَ والراكبُ يقرّر؛ تغيبُ من بوّابةٍ أقدم. */
+  readonly pending_rider?: boolean;
+  /** الباقي من مهلةِ قرارِ الراكبِ بساعةِ الخادمِ لحظةَ الردّ. */
+  readonly seconds_left?: number | null;
 }
 
 export interface RejectDriverOfferResponse {

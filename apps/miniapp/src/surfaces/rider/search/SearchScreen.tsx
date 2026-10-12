@@ -79,6 +79,7 @@ import { RideJourney } from "../active/RideJourney.tsx";
 import { journeyFromSearchStatus } from "../active/ride-journey.ts";
 import type { PlaceWire } from "../destination/destination-view.ts";
 import { SosEntry } from "../sos/SosEntry.tsx";
+import { RideCandidateCard } from "./RideCandidateCard.tsx";
 import { requestByService as requestViaApi } from "./request-by-service.ts";
 import { cancelRide as cancelViaApi, readRideSearch as readViaApi } from "./ride-api.ts";
 import type {
@@ -238,6 +239,8 @@ export function SearchScreen({
   const [busy, setBusy] = useState(false);
   /** تُمنَعُ قراءةٌ ثانيةٌ ما لم تنتهِ الأولى: ضغطتانِ سريعتانِ ليستا سؤالَينِ. */
   const [reading, setReading] = useState(false);
+  /** `WR-09` — كلُّ «تحديث» يُعيدُ قراءةَ بطاقةِ المرشَّحِ أيضاً. */
+  const [candidateToken, setCandidateToken] = useState(0);
   const mounted = useRef(true);
   /** ردٌّ متأخِّرٌ لسؤالٍ قديمٍ **يُطرَحُ** ولا يُعرَضُ (عينُ حكمِ `SR-03`/`SR-04`). */
   const issued = useRef(0);
@@ -313,6 +316,7 @@ export function SearchScreen({
   const refresh = useCallback(
     async (orderId: string) => {
       setReading(true);
+      setCandidateToken((n) => n + 1);
       try {
         const response = await read(orderId);
         if (!mounted.current) return;
@@ -541,6 +545,16 @@ export function SearchScreen({
           الرقمُ لقطةٌ لا بثٌّ، فيُقالُ ذلكَ نصّاً ويُعطى بابُ سؤالٍ. وزرٌّ ظاهرٌ
           ما دامَ البحثُ جارياً أصدقُ من قراءةٍ خفيّةٍ لا يعرفُ الراكبُ وقتَها.
         */}
+        {/* `WR-09` (ADR 0266): سائقٌ قبِلَ ⇒ الراكبُ يختارُه أو يرفضُه في مهلةٍ يحكمُها الخادم. */}
+        {(view === null || view.status === "searching") && (
+          <RideCandidateCard
+            orderId={state.orderId}
+            language={language}
+            refreshToken={candidateToken}
+            onDecided={() => void refresh(state.orderId)}
+          />
+        )}
+
         {(view === null || view.status === "searching") && (
           <div className="rs__snapshot" role="status">
             <p className="sys__hint">{t("rider.search.snapshot")}</p>

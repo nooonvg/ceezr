@@ -70,6 +70,7 @@ const KNOWN_ERRORS: ReadonlySet<string> = new Set([
   "OFFER_ALREADY_ANSWERED",
   "OFFER_EXPIRED",
   "OFFER_TAKEN",
+  "ORDER_HELD",
   "CITY_MISMATCH",
   "CLAIM_REFUSED",
 ]);

@@ -109,6 +109,7 @@ import { PostgresDriverSupportStore } from "../../../packages/infrastructure/sup
 import { PostgresRiderSupportStore } from "../../../packages/infrastructure/support/rider-support-store.ts";
 import { createEtaBandStore } from "../../../packages/infrastructure/tracking/eta-band-store.ts";
 import { createActiveRideReader } from "../../../packages/infrastructure/transport/active-ride-store.ts";
+import { createRideCandidateStore } from "../../../packages/infrastructure/transport/ride-candidate-store.ts";
 import {
   createRideDetailReader,
   createRideHistoryReader,
@@ -890,6 +891,15 @@ const rides =
             sessionRevocationStore,
           ),
           search: createRideSearchReader(container.sql),
+          now: () => new Date(),
+        },
+        // `WR-09` — المرشَّحُ وقرارُ الراكب؛ الحكمُ في القاعدة.
+        candidate: {
+          sessions: createRevocableSessionReader(
+            createMiniAppSessionReader(config.miniappSessionSecret),
+            sessionRevocationStore,
+          ),
+          store: createRideCandidateStore(container.sql),
           now: () => new Date(),
         },
         // الرحلةُ النشطةُ (`F2-06`) **تملكُ مزوِّدَ التوجيهِ** خلافاً لأخواتِها:

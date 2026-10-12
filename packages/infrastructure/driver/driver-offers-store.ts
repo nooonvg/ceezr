@@ -57,6 +57,7 @@ const REJECTIONS: readonly DriverOfferStoreRejection[] = [
   "OFFER_NOT_FOUND",
   "ORDER_NOT_CLAIMABLE",
   "OFFER_NOT_VALID",
+  "ORDER_HELD",
   "CITY_MISMATCH",
   "CLAIM_REFUSED",
 ];
@@ -359,6 +360,9 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
       // لحظةُ المطابقةِ من القاعدةِ — وغيابُها **يُقالُ عَدَماً** ولا يُستبدَلُ
       // بساعةِ العمليّةِ: ختمٌ من ساعتَينِ مختلفتَينِ في سجلٍّ واحدٍ كذبٌ لطيفٌ.
       matchedAt: readInstant(payload.matched_at),
+      // `WR-09` — حالُ الانتظارِ كما أعادَته القاعدة؛ غيابُه إسنادٌ فوريٌّ.
+      pendingRider: payload.pending_rider === true,
+      expiresAt: readInstant(payload.expires_at),
     });
   }
 }

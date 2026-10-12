@@ -161,6 +161,10 @@ export interface DriverOfferDetail {
 export interface DriverOfferClaim {
   readonly orderId: string;
   readonly matchedAt: string | null;
+  /** `WR-09` — القبولُ حجزَ الطلبَ والراكبُ يقرّر؛ لا إسنادَ بعد. */
+  readonly pendingRider?: boolean;
+  /** موعدُ قرارِ الراكبِ (ISO) حينَ `pendingRider`. */
+  readonly expiresAt?: string | null;
 }
 
 /**

@@ -47,7 +47,13 @@ export function instrumentDispatchRpc(
        * `claimed=true` لأنّه نجاحٌ — وعدُّه قبولاً ثانياً يُفسِدُ مقياساً
        * تجاريّاً: قبولاتٌ أكثرُ من الإسناداتِ الواقعةِ فعلاً.
        */
-      if (result.ok && result.value.claimed && !result.value.duplicate) {
+      // `WR-09` — حجزُ مرشَّحٍ ينتظرُ الراكبَ ليسَ إسناداً بعد، فلا يُعَدُّ قبولاً.
+      if (
+        result.ok &&
+        result.value.claimed &&
+        !result.value.duplicate &&
+        result.value.pendingRider !== true
+      ) {
         metrics.recordDispatchOfferAccepted();
       }
       return result;

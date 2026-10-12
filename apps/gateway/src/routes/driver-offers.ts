@@ -72,6 +72,7 @@ const STATUS_BY_ERROR: Readonly<
   OFFER_ALREADY_ANSWERED: 409,
   OFFER_EXPIRED: 409,
   OFFER_TAKEN: 409,
+  ORDER_HELD: 409,
   CITY_MISMATCH: 409,
   CLAIM_REFUSED: 409,
 };
@@ -230,6 +231,9 @@ export function createDriverOfferRoutes(deps: DriverOfferRouteDependencies): Hon
       ok: true,
       order_id: result.value.orderId,
       matched_at: result.value.matchedAt,
+      // `WR-09` — `true` ⇒ الطلبُ محجوزٌ والراكبُ يقرّر؛ والباقي بساعةِ الخادم.
+      pending_rider: result.value.pendingRider === true,
+      seconds_left: result.value.pendingRider === true ? (result.value.secondsLeft ?? 0) : null,
     });
   });
 

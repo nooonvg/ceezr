@@ -436,6 +436,9 @@ export function createDispatchRpc(sql: Sql): DispatchRpcPort {
           driverName: readText(raw.driver_name),
           driverPlate: readText(raw.driver_plate),
           driverVehicle: readText(raw.driver_vehicle),
+          // `WR-09` — مغلَّفٌ بلا الحقلِ (قاعدةٌ أقدم) إسنادٌ فوريٌّ كما كان.
+          pendingRider: raw.pending_rider === true,
+          candidateExpiresAt: readText(raw.expires_at),
         };
       }),
   };
@@ -483,6 +486,12 @@ export function createPendingOfferRepository(sql: Sql): PendingOfferRepository {
             from order_offers
            where city_id = ${cityId}
              and status = 'pending'
+             -- WR-09: عرضُ مرشَّحٍ حيٍّ لا تنتهي مهلتُه والراكبُ يقرّر؛ موعدُه للقاعدة.
+             and not exists (
+               select 1 from orders o
+                where o.candidate_offer_id = order_offers.id
+                  and o.candidate_expires_at > now()
+             )
            order by created_at
         `;
         return rows.map((row) => ({
@@ -545,6 +554,8 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
            where o.city_id = ${cityId}::uuid
              and o.status = 'searching'
              and o.assigned_driver_id is null
+             -- WR-09: لا جولةَ جديدةَ والراكبُ يقرّرُ في مرشَّحٍ حيّ.
+             and (o.candidate_expires_at is null or o.candidate_expires_at <= now())
            order by o.created_at asc
            limit ${limit}
         `;
