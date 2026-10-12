@@ -1001,7 +1001,7 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     coupledDeploy: true,
     owner: "منفّذ المستودع",
     criticalPath: "دورةُ الرحلةِ والإسناد",
-    documentedIn: "docs/adr/0265-rider-trip-notice-outbox.md",
+    documentedIn: null,
   },
   {
     migration: "20261012120000_wr_15_rider_trip_notice_outbox.sql",
@@ -1012,7 +1012,7 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     coupledDeploy: true,
     owner: "منفّذ المستودع",
     criticalPath: "دورةُ الرحلةِ والإسناد",
-    documentedIn: "docs/adr/0265-rider-trip-notice-outbox.md",
+    documentedIn: null,
   },
   {
     migration: "20260918030000_f12_07_lost_item_mechanism.sql",

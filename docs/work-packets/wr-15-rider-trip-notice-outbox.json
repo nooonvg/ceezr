@@ -25,6 +25,7 @@
     "supabase/migrations/20261012120100_wr_15_rider_trip_notice_validate.sql",
     "tests/integration/notification-outbox-claim-undeliverable-guard.test.ts",
     "tests/integration/wr-15-rider-trip-notice-outbox.test.ts",
+    "tests/unit/check-traffic-priority-guard.test.ts",
     "tests/unit/rider-trip-notice.test.ts",
     "tests/unit/skip-audit.test.ts"
   ],
