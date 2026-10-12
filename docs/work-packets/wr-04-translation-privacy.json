@@ -8,6 +8,7 @@
   "implementation": [
     "apps/gateway/src/index.ts",
     "apps/gateway/src/routes/order-chat.ts",
+    "apps/miniapp/src/styles/global.css",
     "apps/miniapp/src/surfaces/chat/OrderChat.tsx",
     "apps/miniapp/src/surfaces/chat/order-chat-client.ts",
     "apps/miniapp/src/surfaces/chat/order-chat.test.tsx",
