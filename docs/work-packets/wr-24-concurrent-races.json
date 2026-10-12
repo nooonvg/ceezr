@@ -9,7 +9,8 @@
     "packages/shared/i18n/en.json",
     "packages/shared/i18n/ur.json",
     "tests/integration/wr-24-concurrent-races.test.ts",
-    "tests/unit/telegram-fuzz-escaping.test.ts"
+    "tests/unit/telegram-fuzz-escaping.test.ts",
+    "scripts/lib/skip-registry.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
