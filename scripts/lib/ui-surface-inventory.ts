@@ -38,6 +38,8 @@ export const SURFACE_INVENTORY: readonly SurfaceGroup[] = [
       "privacy/PrivacyScreen.tsx",
       "quote/QuoteScreen.tsx",
       "search/SearchScreen.tsx",
+      // WR-09 (ADR 0266): بطاقةُ المرشَّحِ — داخلَ البحثِ والرحلةِ النشطة.
+      "search/RideCandidateCard.tsx",
       // UI-3 / PR 5 (ADR 0238): لوحاتُ [B] على عقودِها القائمة — داخلَ R12/R13/R15.
       "settings/EmergencyContactPanel.tsx",
       "settings/NotificationPrefsPanel.tsx",

@@ -1239,6 +1239,24 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
   },
 
   {
+    method: "GET",
+    path: "/v1/rides/:id/candidate",
+    file: "apps/gateway/src/routes/rides.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/rides/:id/candidate",
+    file: "apps/gateway/src/routes/rides.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
     method: "POST",
     path: "/v1/rides/:id/cancel",
     file: "apps/gateway/src/routes/rides.ts",
@@ -1506,8 +1524,10 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
  * 131 → 132 في 2026-10-09 (PRD-105 · ADR 0257): `POST /v1/onboarding/driver` — مُصادَقٌ بجلسةٍ كأخيه `/rider`.
  * 132 → 135 في 2026-10-12 (WR-04 · ADR 0263): مساراتُ محادثةِ الطلبِ الثلاثةُ — مُصادَقةٌ بجلسةٍ،
  *   والطرفُ يحكمُه الخادمُ.
+ * 135 → 137 في 2026-10-12 (WR-09 · ADR 0266): `GET`/`POST /v1/rides/:id/candidate` — مُصادَقانِ
+ *   بجلسةٍ، والطلبُ مقيَّدٌ بصاحبِه في القاعدة.
  */
-export const ROUTE_POLICY_COUNT = 135;
+export const ROUTE_POLICY_COUNT = 137;
 export const LIMITED_ROUTE_COUNT = 10;
 export const EXEMPT_ROUTE_COUNT = 3;
 

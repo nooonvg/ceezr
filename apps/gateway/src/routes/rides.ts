@@ -249,9 +249,7 @@ function shareRejected(c: Context, error: RideSharePublicErrorCode) {
 /** ترويسةُ المفتاحِ — تُقرأُ بالاسمِ المُعرَّفِ لا بأيِّ مرادفٍ. */
 export const RIDE_CANDIDATE_MAX_BYTES = 1024;
 
-const STATUS_BY_CANDIDATE_ERROR: Readonly<
-  Record<RideCandidateErrorCode, 400 | 401 | 404 | 409 | 410 | 503>
-> = {
+const CANDIDATE_STATUS: Record<RideCandidateErrorCode, 400 | 401 | 404 | 409 | 410 | 503> = {
   SESSION_REQUIRED: 401,
   SESSION_INVALID: 401,
   SESSION_EXPIRED: 401,
@@ -265,7 +263,7 @@ const STATUS_BY_CANDIDATE_ERROR: Readonly<
 };
 
 function candidateRejected(c: Context, error: RideCandidateErrorCode) {
-  return c.json({ ok: false, error }, STATUS_BY_CANDIDATE_ERROR[error]);
+  return c.json({ ok: false, error }, CANDIDATE_STATUS[error]);
 }
 
 export const IDEMPOTENCY_HEADER = "idempotency-key";
@@ -372,8 +370,8 @@ export function createRidesRoutes(deps: RidesRouteDependencies): Hono {
       deps.log?.("rides.candidate_refused", { error: result.error });
       return candidateRejected(c, result.error);
     }
+    // بلا معرّفِ الطلب: الحدثُ نفسُه مسجَّلٌ في القاعدةِ بهويّةِ صاحبِه (`order_events`).
     deps.log?.("rides.candidate_decided", {
-      order_id: c.req.param("id"),
       decision: result.value.decision,
       duplicate: result.value.duplicate,
     });

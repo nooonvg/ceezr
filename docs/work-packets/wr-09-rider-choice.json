@@ -8,6 +8,7 @@
   ],
   "implementation": [
     "apps/gateway/src/index.ts",
+    "apps/gateway/src/rate-limit/policy.ts",
     "apps/gateway/src/routes/driver-offers.ts",
     "apps/gateway/src/routes/rides.ts",
     "apps/miniapp/src/styles/global.css",
@@ -45,6 +46,7 @@
     "packages/shared/i18n/ur.json",
     "scripts/lib/rollback-registry.ts",
     "scripts/lib/skip-registry.ts",
+    "scripts/lib/ui-surface-inventory.ts",
     "supabase/migrations/20261012140000_wr_09_rider_choice.sql",
     "supabase/migrations/20261012140100_wr_09_rider_choice_validate.sql",
     "supabase/migrations/20261012140200_wr_09_candidate_index.sql",
