@@ -145,7 +145,7 @@ begin
        -- السائقُ في رحلةٍ قائمةٍ يبثُّ موقعَه بقواعدِ الرحلة؛ لا تذكيرَ يقطعُه.
        and not exists (
          select 1 from orders o
-          where o.assigned_driver_id = d.id and o.status in ('matched', 'in_progress')
+          where o.assigned_driver_id = d.id and is_driver_engaged_order_status(o.status)
        )
        and not exists (
          select 1 from notification_outbox n
