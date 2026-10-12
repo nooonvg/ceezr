@@ -946,6 +946,7 @@
   "rider.notifications.kind.order_cancelled": "سفر منسوخ ہوا",
   "rider.notifications.kind.safety_incident": "حفاظتی الرٹ",
   "rider.notifications.kind.safety_resolution_blocked": "حفاظتی رپورٹ کے بعد اکاؤنٹ بلاک ہوا",
+  "rider.notifications.kind.rider_trip_notice": "آپ کے سفر کی تازہ کاری",
   "rider.notifications.kind.safety_resolution_closed": "حفاظتی رپورٹ بند ہو گئی",
   "rider.notifications.kind.subscription_notice": "سبسکرپشن نوٹس",
   "rider.notifications.kind.unknown": "نامعلوم قسم: {kind}",

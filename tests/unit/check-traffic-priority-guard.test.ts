@@ -32,6 +32,7 @@ function fixtureMigrations(): SqlMigration[] {
     ["negotiation_turn_opened", 1],
     ["negotiation_turn_closed", 1],
     ["negotiation_agreed", 1],
+    ["rider_trip_notice", 1],
     ["offer", 2],
     ["wider_circle_opened", 2],
     ["no_driver_found", 3],

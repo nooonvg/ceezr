@@ -577,6 +577,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-15-rider-trip-notice-outbox.test.ts",
+    suites: ["WR-15 — إشعاراتُ الطورِ في صندوقِ الصادرِ الموحَّد"],
+    skipped: 5,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في `WR-15` أنَّ **إشعارَ طورِ الرحلةِ صفٌّ واحدٌ لكلِّ طلبٍ وطورٍ** بمفتاحِ منعِ التكرارِ على الفهرسِ الفريدِ `(kind, dedup_key)`، وأنَّ `claim_notification_delivery()` تقرأُ محادثةَ الراكبِ ولغتَه حيّتينِ وتحفظُ ترتيبَ الطلبِ، وأنَّ الراكبَ بلا محادثةٍ `undeliverable`. وهذه أحكامُ فهارسَ ودوالَّ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012120000 و20261012120100). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-05-offer-mode.test.ts",
     suites: ["WR-05 — سياسةُ المبلغِ في القاعدة"],
     skipped: 5,

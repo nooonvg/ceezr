@@ -24,6 +24,7 @@ import {
   type NegotiationMessenger,
 } from "../../../packages/application/dispatch/deliver-negotiation-notification.ts";
 import { createOfferNotificationHandler } from "../../../packages/application/dispatch/deliver-offer-notification.ts";
+import { createRiderTripNoticeHandler } from "../../../packages/application/dispatch/deliver-rider-trip-notice.ts";
 import {
   createNoDriverFoundHandler,
   createWiderCircleOpenedHandler,
@@ -86,6 +87,7 @@ import {
 import { createNotificationOutboxPort } from "../../../packages/infrastructure/notification/notification-outbox-adapters.ts";
 import { createOutboundResilience } from "../../../packages/infrastructure/notification/outbound-resilience.ts";
 import { withOutboundResilience } from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
+import { createRiderTripFactsReader } from "../../../packages/infrastructure/notification/rider-trip-facts.ts";
 import {
   asIdentifyingSender,
   asOutboundSender,
@@ -727,6 +729,18 @@ export function buildWorkerContainer(
     createTelegramLostItemMessenger(
       asIdentifyingSender(withTrafficPriority(telegram, "lost_item_report")),
     );
+  /**
+   * `WR-15` (ADR 0265) — إشعارُ طورِ الرحلةِ للراكبِ ببوتِ الراكبِ. والزرُّ يبنيه
+   * المعالجُ نفسُه (`riderTripKeyboard`)، فلا يُضافُ زرُّ دخولٍ ثانٍ إلّا إن غابَ.
+   * والفشلُ النهائيُّ وحدَه يُسجَّلُ خطأً؛ وما قبلَه إعادةٌ متوقَّعة.
+   */
+  const riderTripNoticeHandler = createRiderTripNoticeHandler({
+    facts: createRiderTripFactsReader(sql),
+    sender: asIdentifyingSender(withTrafficPriority(riderTelegram, "rider_trip_notice")),
+    miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
+    log: (event, meta) =>
+      event === "rider_trip_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
+  });
   const notificationHandlers = {
     offer: createOfferNotificationHandler(offerPublisher),
     dispute_resolution: createDisputeResolutionHandler({
@@ -752,6 +766,7 @@ export function buildWorkerContainer(
     lost_item_report: createLostItemReportHandler(lostItemMessenger),
     safety_resolution_closed: createSafetyResolutionClosedHandler(safetyResolutionMessenger),
     safety_resolution_blocked: createSafetyResolutionClosedHandler(safetyResolutionMessenger),
+    rider_trip_notice: riderTripNoticeHandler,
   };
 
   /**

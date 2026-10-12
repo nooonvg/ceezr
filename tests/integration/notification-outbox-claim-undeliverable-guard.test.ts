@@ -163,7 +163,8 @@ describeIf("حرسُ العنوانِ الغائبِ في claim_notification_del
       'negotiation_turn_opened', 'negotiation_turn_closed', 'negotiation_agreed',
       'wider_circle_opened', 'no_driver_found', 'order_cancelled',
       'lost_item_report',
-      'safety_resolution_closed', 'safety_resolution_blocked'
+      'safety_resolution_closed', 'safety_resolution_blocked',
+      'rider_trip_notice'
     )`;
   }
 

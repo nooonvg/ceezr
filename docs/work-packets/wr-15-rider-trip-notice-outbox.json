@@ -1,0 +1,51 @@
+{
+  "id": "wr-15-rider-trip-notice-outbox",
+  "goal": "نقل إشعارات أطوار الرحلة الأربعة للراكب (قبول، وصول، بدء، إكمال) من الإرسال المباشر إلى صندوق الصادر الموحَّد بمفتاح منع تكرار، وإعادة، وفشل نهائي مسجّل، وسجل يفرّق قبول Telegram API عن الظهور على الهاتف.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0265-rider-trip-notice-outbox.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/admin/message-gallery.ts",
+    "apps/gateway/src/container.ts",
+    "apps/miniapp/src/surfaces/rider/notifications/notifications-view.ts",
+    "apps/workers/src/container.ts",
+    "packages/application/dispatch/deliver-rider-trip-notice.ts",
+    "packages/application/driver/rider-trip-notice.ts",
+    "packages/infrastructure/db/schema-contract.ts",
+    "packages/infrastructure/notification/rider-trip-notice-outbox.ts",
+    "packages/shared/config/notification-kinds.ts",
+    "packages/shared/config/traffic-priority.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "scripts/lib/rollback-registry.ts",
+    "scripts/lib/skip-registry.ts",
+    "supabase/migrations/20261012120000_wr_15_rider_trip_notice_outbox.sql",
+    "supabase/migrations/20261012120100_wr_15_rider_trip_notice_validate.sql",
+    "tests/integration/notification-outbox-claim-undeliverable-guard.test.ts",
+    "tests/integration/wr-15-rider-trip-notice-outbox.test.ts",
+    "tests/unit/check-traffic-priority-guard.test.ts",
+    "tests/unit/rider-trip-notice.test.ts",
+    "tests/unit/skip-audit.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/adr/0265-rider-trip-notice-outbox.md",
+    "docs/evidence/production/WR-05-deploy-20261012-20e0b66d.md"
+  ],
+  "decision": "نوع `rider_trip_notice` في `notification_outbox` لا صندوق ثانٍ؛ إيداع بـ`enqueue_rider_trip_notice` على الفهرس الفريد `(kind, dedup_key)`؛ التقاط في `claim_notification_delivery()` بترتيب الطلب؛ معالج في العامل ببوت الراكب.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/wr-15-rider-trip-notice-outbox.test.ts",
+    "bun test tests/unit/rider-trip-notice.test.ts"
+  ],
+  "evidence": "محليًا: تكامل 5/5، ووحدات 11/11، واختبارات الصندوق والتقاطه وأولويته والسائق 83/83 على PostGIS.",
+  "constraints": [
+    "لا ادعاء وصول إلى الهاتف من `delivered`",
+    "لا معرّف تيليجرام ولا نص في السجل",
+    "لا تغيير في نص الإشعار ولا زرّه"
+  ],
+  "limitations": "قبول السائق من رسالة البوت ما زال يرسل مباشرة. إشعار المرشح بانتظار الراكب يتبع WR-09."
+}

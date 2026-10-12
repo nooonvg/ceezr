@@ -946,6 +946,7 @@
   "rider.notifications.kind.order_cancelled": "Ride cancelled",
   "rider.notifications.kind.safety_incident": "Safety alert",
   "rider.notifications.kind.safety_resolution_blocked": "Account blocked after safety report",
+  "rider.notifications.kind.rider_trip_notice": "Trip update",
   "rider.notifications.kind.safety_resolution_closed": "Safety report closed",
   "rider.notifications.kind.subscription_notice": "Subscription notice",
   "rider.notifications.kind.unknown": "Unknown kind: {kind}",

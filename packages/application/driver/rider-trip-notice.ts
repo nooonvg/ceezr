@@ -1,27 +1,27 @@
 /**
  * الغرض: إخطارُ الراكبِ على بوتِه حينَ يُغيِّرُ السائقُ طَورَ الرحلةِ من التطبيقِ
- *   المصغَّرِ — قبِلَ، وصلَ، بدأَ، أنهى (`RIDE-NOTICE-01`).
- * الحالة: منفَّذٌ فعليّاً — 2026-10-03.
+ *   المصغَّرِ — قبِلَ، وصلَ، بدأَ، أنهى (`RIDE-NOTICE-01` ثمَّ `WR-15`).
+ * الحالة: منفَّذٌ فعليّاً — 2026-10-03، ونُقلَ إلى صندوقِ الصادرِ 2026-10-12 (ADR 0265).
  * ينتمي إلى: packages/application/driver
- * يُستخدم من: `driver-offers.ts` (القبولُ) و`driver-job.ts` (الوصولُ/البدءُ/الإنهاءُ).
+ * يُستخدم من: `driver-offers.ts` (القبولُ) و`driver-job.ts` (الوصولُ/البدءُ/الإنهاءُ)،
+ *   والعاملُ (`apps/workers`) لنصِّ الرسالةِ وزرِّها.
  *
- * ## لِمَ هذا الملفُّ
+ * ## لِمَ صندوقُ الصادرِ
  *
- * اختبارُ رحلةٍ حيّةٍ في المدينةِ (2026-10-03) أثبتَ أنَّ مسارَ السائقِ في التطبيقِ
- * المصغَّرِ يكتبُ الطَّورَ في القاعدةِ **ولا يُخبرُ الراكبَ بشيءٍ**: لا صفَّ في
- * صندوقِ الصادرِ ولا رسالةَ بوتٍ. فراكبٌ أغلقَ التطبيقَ لا يعلمُ أنَّ سائقاً قبِلَ
- * ولا أنَّه ينتظرُه عندَ البابِ. ومسارُ البوتِ يُخطِرُ عندَ القبولِ وحدَه.
+ * كانَ الإخطارُ يُرسَلُ من مسارِ طلبِ السائقِ مباشرةً، فسقوطُ تيليجرام أو انقطاعُ
+ * العمليّةِ يُفقِدُه بلا أثرٍ في القاعدة. صارَ المسارُ **يُودِعُ** صفّاً واحداً لكلِّ
+ * طلبٍ وطورٍ (`enqueue_rider_trip_notice`، بمفتاحِ منعِ تكرارٍ)، والعاملُ يُرسلُ
+ * ويُعيدُ المحاولةَ ويُعلِنُ الفشلَ النهائيَّ (`dead`).
  *
- * ## لِمَ لا يُلقي ولا يُعيدُ شيئاً
+ * ## لِمَ لا يُلقي
  *
- * الطَّورُ وقعَ في القاعدةِ قبلَ هذه المكالمةِ. فعطلُ إخطارٍ يُرى للسائقِ «فشلاً»
- * يجعلُه يضغطُ ثانيةً على طَورٍ قد خُتِمَ. فالفشلُ يُبتلَعُ هنا كما في
- * `notifyRiderOfAcceptance` بحوارِ البوتِ — نفسُ الجسرِ `CounterpartNotifier`.
+ * الطَّورُ وقعَ في القاعدةِ قبلَ هذه المكالمةِ. فعطلُ إيداعٍ يُرى للسائقِ «فشلاً»
+ * يجعلُه يضغطُ ثانيةً على طَورٍ قد خُتِمَ. فالفشلُ يُسجَّلُ (`rider_trip_notice.enqueue_failed`)
+ * ولا يُعادُ للسائق.
  */
 
 import { t } from "../../shared/i18n/index.ts";
 import { miniAppUrl } from "../../shared/miniapp-link/index.ts";
-import type { CounterpartNotifier } from "../bots/rating-dialog.ts";
 import type { Keyboard } from "../bots/types.ts";
 
 export type RiderTripEvent = "MATCHED" | "ARRIVED" | "STARTED" | "COMPLETED";
@@ -39,16 +39,13 @@ export interface RiderTripFactsReader {
   read(orderId: string): Promise<RiderTripFacts | null>;
 }
 
+/** إيداعُ إشعارِ طورٍ في صندوقِ الصادرِ. `null` ⇐ لا طلبَ بهذا المعرّف. */
+export interface RiderTripNoticeOutbox {
+  enqueue(orderId: string, event: RiderTripEvent): Promise<{ readonly created: boolean } | null>;
+}
+
 export interface RiderTripNoticeDeps {
-  readonly facts: RiderTripFactsReader;
-  readonly counterpart: CounterpartNotifier;
-  /** أصلُ التطبيقِ — `null` يُرسِلُ النصَّ بلا زرٍّ. */
-  readonly miniAppUrl: string | null;
-  /**
-   * `WR-15` (§15): ما لا يصلُ الراكبَ يُسجَّلُ حدثاً لا يُبتلَعُ صامتاً — حقائقُ غائبةٌ
-   * (`rider_trip_notice.facts_missing`) أو قراءةٌ/إرسالٌ أخفقَ (`rider_trip_notice.failed`).
-   * بالطَّورِ ومعرّفِ الطلبِ وحدَهما، لا معرّفَ تيليجرام ولا نصّ.
-   */
+  readonly outbox: RiderTripNoticeOutbox;
   readonly log?: (event: string, meta: Record<string, unknown>) => void;
 }
 
@@ -89,7 +86,7 @@ export function riderTripText(
   }
 }
 
-function rideButton(
+export function riderTripKeyboard(
   base: string | null,
   orderId: string,
   language: string,
@@ -116,21 +113,15 @@ export async function noticeRiderOfTrip(
 ): Promise<void> {
   if (deps === undefined) return;
   try {
-    const facts = await deps.facts.read(orderId);
-    if (facts === null) {
-      deps.log?.("rider_trip_notice.facts_missing", { event, order_id: orderId });
+    const queued = await deps.outbox.enqueue(orderId, event);
+    if (queued === null) {
+      deps.log?.("rider_trip_notice.order_missing", { event, order_id: orderId });
       return;
     }
-    const text = riderTripText(event, orderId, facts);
-    // بعدَ الإنهاءِ لا رحلةَ تُتابَعُ — فالزرُّ يفتحُ ملخّصَها لا شاشةَ تتبُّعٍ انتهى محلُّها.
-    const screen = event === "COMPLETED" ? "summary" : "ride";
-    const keyboard = rideButton(deps.miniAppUrl, orderId, facts.language, screen);
-    // §15: «أنشأنا الإشعار» — وقبولُ Telegram يُسجِّلُه الجسرُ (`counterpart.notify_sent`).
-    deps.log?.("rider_trip_notice.created", { event, order_id: orderId });
-    await deps.counterpart.notify(facts.riderTelegramId, text, keyboard);
+    if (queued.created) deps.log?.("rider_trip_notice.created", { event, order_id: orderId });
+    else deps.log?.("rider_trip_notice.deduplicated", { event, order_id: orderId });
   } catch (thrown) {
-    // لا يُرفَعُ: الطَّورُ محفوظٌ في القاعدةِ، والراكبُ يراه في التطبيقِ. لكنَّه يُسجَّل (`WR-15`).
-    deps.log?.("rider_trip_notice.failed", {
+    deps.log?.("rider_trip_notice.enqueue_failed", {
       event,
       order_id: orderId,
       error: thrown instanceof Error ? thrown.name : "unknown",
