@@ -1005,6 +1005,10 @@ async function handleNegotiationDecision(
   if (action === "agree") {
     const settled = await settleNegotiation({ negotiationId }, negotiation.rotation);
     if (!settled.ok) return technicalFailure(sender, state);
+    // `WR-24`: مرشَّحٌ مشتركٌ ينتظرُ قرارَ الراكبِ يحجزُ الطلب — والدورةُ باقيةٌ، فالزرُّ يعملُ بعدَ القرار.
+    if (!settled.value.settled && settled.value.reason === "ORDER_HELD") {
+      return [reply(sender, tr("negotiation.order_held"))];
+    }
     if (!settled.value.settled) return [reply(sender, tr("negotiation.rider_turn_closed"))];
     return [];
   }

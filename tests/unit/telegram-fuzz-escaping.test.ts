@@ -569,6 +569,17 @@ describe("UI-5 · أزرار التفاوض — الأحداث المتكررة 
     expect(replies[0]?.text).toBe(translate("ar", "negotiation.rider_turn_closed"));
   });
 
+  it("«تم الاتفاق» ومرشَّحٌ مشتركٌ ينتظرُ قرارَ الراكب (WR-24): يُقال السبب لا «أُغلق الدور»", async () => {
+    const deps = negotiationDeps({ settle: { settled: false, reason: "ORDER_HELD" } });
+    const replies = await handleRiderUpdate(
+      callbackUpdate(senderFor("ar"), `unsub:agree:${NEGOTIATION_ID}`),
+      deps,
+    );
+    expect(replies).toHaveLength(1);
+    expect(replies[0]?.text).toBe(translate("ar", "negotiation.order_held"));
+    expect(replies[0]?.text).not.toBe(translate("ar", "negotiation.rider_turn_closed"));
+  });
+
   it("«السائق التالي» على بطاقة بالية: لا تدوير — بطاقة بالية", async () => {
     const deps = negotiationDeps({ advanceAt: { advanced: false, reason: "STALE_CARD" } }, CARD);
     const replies = await handleRiderUpdate(
