@@ -7,6 +7,10 @@
 
 import type { PickupReminderStateReader } from "../../application/dispatch/deliver-candidate-notices.ts";
 import type {
+  SearchExpiryOutcome,
+  SearchingOrderExpirer,
+} from "../../application/dispatch/expire-searching-orders.ts";
+import type {
   ScheduledOrderReleaser,
   ScheduledReleaseOutcome,
 } from "../../application/dispatch/release-scheduled-orders.ts";
@@ -14,10 +18,10 @@ import type { CityId, OrderId } from "../../shared/kernel/index.ts";
 import { guard, type Sql } from "../db/client.ts";
 
 function idsOf(value: unknown, field: string): readonly OrderId[] {
-  if (!Array.isArray(value)) throw new Error(`release_due_scheduled_orders.${field}: not an array`);
+  if (!Array.isArray(value)) throw new Error(`scheduled-orders.${field}: not an array`);
   return value.map((entry) => {
     if (typeof entry !== "string" || entry === "") {
-      throw new Error(`release_due_scheduled_orders.${field}: invalid id`);
+      throw new Error(`scheduled-orders.${field}: invalid id`);
     }
     return entry as OrderId;
   });
@@ -36,6 +40,26 @@ export function createScheduledOrderReleaser(sql: Sql): ScheduledOrderReleaser {
         return {
           released: idsOf(result.released, "released"),
           missed: idsOf(result.missed, "missed"),
+        };
+      }),
+  };
+}
+
+/** `WR-22` (ADR 0276) — انتهاءُ البحث؛ الحكمُ في `expire_stale_searching_orders`. */
+export function createSearchingOrderExpirer(sql: Sql): SearchingOrderExpirer {
+  return {
+    expireStale: (cityId: CityId, limit: number) =>
+      guard("orders.expireSearching", async (): Promise<SearchExpiryOutcome> => {
+        const rows = await sql<{ result: Record<string, unknown> | null }[]>`
+          select expire_stale_searching_orders(${cityId}::uuid, ${limit}::integer) as result`;
+        const result = rows[0]?.result;
+        if (result === null || result === undefined || result.ok !== true) {
+          throw new Error(`expire_stale_searching_orders: ${String(result?.error ?? "no result")}`);
+        }
+        return {
+          disabled: result.disabled === true,
+          expired: idsOf(result.expired, "expired"),
+          held: Number(result.held ?? 0),
         };
       }),
   };

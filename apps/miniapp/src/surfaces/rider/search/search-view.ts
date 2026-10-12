@@ -50,6 +50,14 @@ const PHASE_KEYS: Readonly<Record<string, string>> = {
   closed: "rider.search.phase.closed",
 };
 
+/**
+ * `WR-22` (ADR 0276) — انتهى الطلبُ دونَ رحلة (`failed` بانتهاءِ البحث، أو `cancelled`): لا شيءَ
+ * يُنتظَرُ في هذه الشاشة، فيُعطى الراكبُ بابَ الرجوعِ ليطلبَ من جديد بدلَ شاشةٍ بلا مخرج.
+ */
+export function searchEndedWithoutRide(status: string): boolean {
+  return status === "failed" || status === "cancelled";
+}
+
 export function searchPhaseKey(phase: string): string {
   return PHASE_KEYS[phase] ?? "rider.search.phase.unknown";
 }

@@ -300,6 +300,7 @@ export async function buildMessageGallery(options: GalleryOptions): Promise<Mess
     SCHEDULE_REMINDER: "تذكير الراكب بموعده المجدول",
     SEARCH_STARTED: "بدء البحث عن سائق للطلب المجدول",
     SCHEDULE_MISSED: "إلغاء مجدول فات موعده",
+    SEARCH_EXPIRED: "انتهاء مدة البحث بلا سائق",
   };
   const galleryFacts = {
     ...tripFacts,
@@ -315,6 +316,7 @@ export async function buildMessageGallery(options: GalleryOptions): Promise<Mess
     "SCHEDULE_REMINDER",
     "SEARCH_STARTED",
     "SCHEDULE_MISSED",
+    "SEARCH_EXPIRED",
   ] as const) {
     await rec.raw.sendMessage(
       PRIVATE_CHAT,

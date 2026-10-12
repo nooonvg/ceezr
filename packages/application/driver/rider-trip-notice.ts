@@ -37,7 +37,9 @@ export type RiderTripEvent =
   /** `WR-06` — أُطلِقَ المجدولُ: بدأَ البحثُ عن سائق. */
   | "SEARCH_STARTED"
   /** `WR-06` — فاتَ موعدُ المجدولِ قبلَ إطلاقِه (تعطّلُ النظام) فأُلغي. */
-  | "SCHEDULE_MISSED";
+  | "SCHEDULE_MISSED"
+  /** `WR-22` (ADR 0276) — انتهت مدّةُ البحثِ بلا سائقٍ فأُنهيَ الطلبُ `failed`. */
+  | "SEARCH_EXPIRED";
 
 /** `WR-06` — الأحداثُ التي لا تُرسَلُ إلّا والطلبُ في حالتِها؛ وإلّا فقدَ الخبرُ معناه. */
 export const RIDER_TRIP_EVENT_REQUIRES_STATUS: Readonly<
@@ -46,6 +48,7 @@ export const RIDER_TRIP_EVENT_REQUIRES_STATUS: Readonly<
   SCHEDULED: ["scheduled"],
   SCHEDULE_REMINDER: ["scheduled"],
   SEARCH_STARTED: ["searching"],
+  SEARCH_EXPIRED: ["failed"],
 };
 
 /** ما يلزمُ لمخاطبةِ الراكبِ — يُقرأُ حيّاً من القاعدةِ لحظةَ الإخطارِ. */
@@ -115,6 +118,8 @@ export function riderTripText(
       return tr("tracking.rider_search_started", timeParams);
     case "SCHEDULE_MISSED":
       return tr("tracking.rider_schedule_missed", timeParams);
+    case "SEARCH_EXPIRED":
+      return tr("tracking.rider_search_expired", timeParams);
     case "MATCHED":
       return tr("tracking.rider_matched", params);
     case "ARRIVED":

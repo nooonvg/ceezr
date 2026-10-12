@@ -100,6 +100,7 @@ import {
   rideErrorKey,
   rideRefusalKey,
   rideStatusKey,
+  searchEndedWithoutRide,
   searchPhaseKey,
   searchRefusalKey,
 } from "./search-view.ts";
@@ -641,6 +642,16 @@ export function SearchScreen({
               {t("rider.search.activeRide.follow")}
             </button>
           )}
+
+        {/*
+          `WR-22` — انتهى البحثُ دونَ رحلة: بابُ الرجوعِ ليطلبَ من جديد. ولا يُرسَمُ إن لم يُمرَّرِ
+          البابُ — زرٌّ بلا مسارٍ لا يُرسَم.
+        */}
+        {onBack !== undefined && view !== null && searchEndedWithoutRide(view.status) && (
+          <button type="button" className="sys__action" onClick={() => onBack()}>
+            {t("rider.search.back")}
+          </button>
+        )}
 
         {/* الرايةُ من القاعدةِ وحدَها: لا زرَّ إلغاءٍ بعدَ الإسنادِ. */}
         {view?.cancellableWithoutPenalty === true && (

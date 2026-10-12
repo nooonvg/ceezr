@@ -87,6 +87,7 @@ export const CONTRACT_FUNCTIONS: readonly string[] = [
   "escalate_order",
   "expire_due_subscriptions",
   "expire_order_candidates",
+  "expire_stale_searching_orders",
   "expire_tracking_tokens",
   "export_my_data",
   "finish_broadcast_delivery",

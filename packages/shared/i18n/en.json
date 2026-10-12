@@ -545,6 +545,7 @@
   "tracking.rider_schedule_reminder": "⏰ Reminder about your scheduled order {order}.\nPickup time: {time}\nDriver search starts: {search_time}\nIf you no longer need it, cancel it from \"My order\".",
   "tracking.rider_search_started": "🔎 It is time for your scheduled order {order} (pickup: {time}). We are searching for a driver now and will tell you as soon as one accepts.",
   "tracking.rider_schedule_missed": "⚠️ Sorry: we could not start the driver search for your scheduled order {order} before its time ({time}) because of a temporary fault on our side, so the order was cancelled and no driver will be sent. You can create a new order now.",
+  "tracking.rider_search_expired": "⌛ The driver search for your order {order} has ended without any driver accepting it, so the order was closed and no driver will be sent. You can create a new order whenever you like.",
   "driver.pickup_reminder": "⏰ Reminder: your pickup time for order {order} is {time}. Please head to the customer on time.",
   "common.tomorrow_at": "tomorrow {time}",
   "common.date_at": "{date} {time}"

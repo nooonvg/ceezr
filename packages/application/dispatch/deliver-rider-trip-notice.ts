@@ -43,6 +43,7 @@ const EVENTS: readonly RiderTripEvent[] = [
   "SCHEDULE_REMINDER",
   "SEARCH_STARTED",
   "SCHEDULE_MISSED",
+  "SEARCH_EXPIRED",
 ];
 
 export interface RiderTripNoticeSender {
