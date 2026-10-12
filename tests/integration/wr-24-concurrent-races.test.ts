@@ -293,21 +293,18 @@ describeIf("WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقي
       const state = await settled(orderId);
       expectCoherent(state);
       const offer = state.offers[0];
-      const row = (
-        await sql<{ expires_at: Date; responded_at: Date | null }[]>`
-          select expires_at, responded_at from order_offers where id = ${offers.get(a) as string}::uuid`
-      )[0];
       if (claim.ok === true) {
         expect(state.status).toBe("matched");
         expect(offer?.status).toBe("accepted");
-        const matched = (
-          await sql<
-            { matched_at: Date }[]
-          >`select matched_at from orders where id = ${orderId}::uuid`
+        // المقارنةُ في القاعدةِ بدقّةِ الميكروثانية: `Date` يقطعُ إلى الملّيثانية فيتساوى
+        // موعدانِ مختلفان (`claim_ride` يشترطُ `expires_at > v_now` ويكتبُ `matched_at = v_now`).
+        const before = (
+          await sql<{ before: boolean }[]>`
+            select o.matched_at < f.expires_at as before
+              from orders o join order_offers f on f.order_id = o.id
+             where o.id = ${orderId}::uuid and f.id = ${offers.get(a) as string}::uuid`
         )[0];
-        expect((matched as { matched_at: Date }).matched_at.getTime()).toBeLessThan(
-          (row as { expires_at: Date }).expires_at.getTime(),
-        );
+        expect(before?.before).toBe(true);
       } else {
         expect(state.status).toBe("searching");
         expect(["expired", "pending"]).toContain(offer?.status as string);
