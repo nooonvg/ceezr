@@ -64,7 +64,7 @@ export const ORDER_TERMS_TIME_ZONE = "Asia/Riyadh";
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
 /** «1:30 م» — الساعةُ والدقائقُ بتوقيتِ الرياضِ ولاحقةُ ص/م من القاموسِ. */
-export function formatPickupClock(at: Date, tr: Translate): string {
+export function formatPickupClock(at: Date | number, tr: Translate): string {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: ORDER_TERMS_TIME_ZONE,
     hour: "numeric",

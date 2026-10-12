@@ -37,6 +37,7 @@ interface ExtrasRow {
   readonly dropoff_lng: number | null;
   readonly rider_offer_mode: string | null;
   readonly rider_offer_sar: number | null;
+  readonly pickup_at: Date | string | null;
 }
 
 function num(value: unknown): number | null {
@@ -46,6 +47,12 @@ function num(value: unknown): number | null {
 
 function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+function instant(value: Date | string | null): string | null {
+  if (value === null) return null;
+  const at = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(at.getTime()) ? null : at.toISOString();
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -66,7 +73,7 @@ export async function readOrderPlaceExtras(
              (o.dropoff is not null) as has_dropoff,
              o.dropoff_link, o.dropoff_notes,
              st_y(o.dropoff::geometry) as dropoff_lat, st_x(o.dropoff::geometry) as dropoff_lng,
-             o.rider_offer_mode, o.rider_offer_sar
+             o.rider_offer_mode, o.rider_offer_sar, o.pickup_at
         from orders o
        where o.id = any(${sql.array(ids)}::uuid[])`;
   } catch {
@@ -91,6 +98,7 @@ export async function readOrderPlaceExtras(
       offerTerms: {
         mode: isOfferMode(row.rider_offer_mode) ? row.rider_offer_mode : null,
         offerSar: num(row.rider_offer_sar),
+        pickupAt: instant(row.pickup_at),
       },
     });
   }

@@ -36,6 +36,7 @@
  *      ترتيبٍ في العميلِ تُنزِلُ أوشكَها انتهاءً إلى أسفلِ القائمةِ.
  */
 
+import { formatPickupClock } from "../../../../../../packages/shared/order-terms/index.ts";
 import "../../../../../../packages/shared/i18n/miniapp/ar-parts/rider-quote.ts";
 import {
   countdownParts,
@@ -196,6 +197,8 @@ export interface OfferCardModel {
   readonly dropoffNotes: string | null;
   /** `WR-05` */
   readonly offerTerms: OfferLine | null;
+  /** `WR-06` — وقتُ الحضورِ ISO، و`null` = الآن. */
+  readonly pickupAt: string | null;
 }
 
 export function toOfferCard(card: ApiDriverOfferCard): OfferCardModel {
@@ -213,6 +216,7 @@ export function toOfferCard(card: ApiDriverOfferCard): OfferCardModel {
     pickupNotes: card.pickup_notes ?? null,
     dropoffNotes: card.dropoff_notes ?? null,
     offerTerms: offerLine(card.offer_mode, card.offer_sar),
+    pickupAt: card.pickup_at ?? null,
   };
 }
 
@@ -301,6 +305,8 @@ export interface OfferDetailModel {
   readonly dropoffOpenUrl: string | null;
   /** `WR-05` */
   readonly offerTerms: OfferLine | null;
+  /** `WR-06` */
+  readonly pickupAt: string | null;
 }
 
 export function toOfferDetail(response: DriverOfferDetailResponse): OfferDetailModel {
@@ -329,7 +335,23 @@ export function toOfferDetail(response: DriverOfferDetailResponse): OfferDetailM
     dropoffLink: response.dropoff?.link ?? null,
     dropoffOpenUrl: response.dropoff?.open_url ?? null,
     offerTerms: offerLine(response.offer_mode, response.offer_sar),
+    pickupAt: response.pickup_at ?? null,
   };
+}
+
+/**
+ * `WR-06` — سطرُ وقتِ الحضور: «الآن» أو «الساعة بتوقيتِ الرياض» بالدالّةِ نفسِها التي تكتبُ رسالةَ
+ * البوت (`formatPickupClock`)، فلا يرى السائقُ في التطبيقِ غيرَ ما يراه في تيليجرام.
+ */
+export function pickupAtText(t: (key: string) => string, pickupAt: string | null): string {
+  if (pickupAt === null) return t("driver.offers.pickupAt.now");
+  // `Date.parse` لا ساعةَ الجهاز: اللحظةُ من الخادمِ، والدالّةُ تُقاسُ في اختبار.
+  const at = Date.parse(pickupAt);
+  if (Number.isNaN(at)) return t("driver.offers.pickupAt.now");
+  const clock = formatPickupClock(at, (key) =>
+    t(key === "common.time_am" ? "driver.offers.pickupAt.am" : "driver.offers.pickupAt.pm"),
+  );
+  return t("driver.offers.pickupAt.at").replace("{time}", clock);
 }
 
 /**

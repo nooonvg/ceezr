@@ -67,6 +67,8 @@ const STATUS_BY_ERROR: Readonly<Record<DeliveryCreateErrorCode, 400 | 401 | 403 
   OFFER_AMOUNT_REQUIRED: 400,
   OFFER_AMOUNT_INVALID: 400,
   OFFER_AMOUNT_UNEXPECTED: 400,
+  // `WR-06` — وقتُ حضورٍ لا يُقرأ أو خارجَ نافذتِه.
+  PICKUP_AT_INVALID: 400,
   DROPOFF_REQUIRED: 400,
 };
 

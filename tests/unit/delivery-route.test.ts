@@ -92,7 +92,8 @@ describe("POST /v1/deliveries", () => {
       ...deps,
       request: {
         sessions: fakeSessions(),
-        now: () => new Date(),
+        // `WR-06`: ساعةٌ ثابتةٌ قبلَ الموعدِ — الوقتُ الماضي يُرفَضُ الآنَ ولا يسقطُ صامتًا.
+        now: () => new Date("2026-10-03T09:00:00.000Z"),
         rides: {
           create: async (input: Record<string, unknown>) => {
             seen.push(input);

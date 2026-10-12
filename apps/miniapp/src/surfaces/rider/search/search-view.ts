@@ -168,6 +168,20 @@ const ERROR_KEYS: Readonly<Record<string, string>> = {
   ACCOUNT_NOT_FOUND: "rider.search.error.account",
   RIDER_NOT_REGISTERED: "rider.search.error.notRegistered",
   RIDE_STORE_NOT_AVAILABLE: "rider.search.error.unavailable",
+  /**
+   * `WR-06` — رفضٌ يُصلِحُه الراكبُ يُقالُ بسببِه. كانت هذه الرموزُ تسقطُ إلى «الخدمة غير متاحة»
+   * فيظنُّ الراكبُ عطلًا وهوَ مبلغٌ أو وصفٌ أو مكانٌ أو وقتٌ يُصحَّح.
+   */
+  OFFER_MODE_INVALID: "rider.search.error.offerInvalid",
+  OFFER_AMOUNT_REQUIRED: "rider.search.error.offerRequired",
+  OFFER_AMOUNT_INVALID: "rider.search.error.offerInvalid",
+  OFFER_AMOUNT_UNEXPECTED: "rider.search.error.offerInvalid",
+  PARCEL_DESCRIPTION_INVALID: "rider.search.error.parcelInvalid",
+  PLACE_INVALID: "rider.search.error.placeInvalid",
+  PLACE_LINK_UNSUPPORTED: "rider.search.error.placeLink",
+  PLACE_NOTES_TOO_LONG: "rider.search.error.placeNotes",
+  PLACE_POINT_UNRELIABLE: "rider.search.error.placePoint",
+  PICKUP_AT_INVALID: "rider.search.error.pickupAt",
 };
 
 export function rideErrorKey(code: string): string {
