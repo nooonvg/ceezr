@@ -726,6 +726,92 @@ describe("قبول ورفض العرض", () => {
     expect(replies[0]?.text).toBe(ar("driver.offer_rejected"));
   });
 
+  /**
+   * `WR-08` — مآلُ العرضِ يُكتَبُ على بطاقتِه نفسِها فتزولُ أزرارُ «قبول/رفض» القديمة،
+   * ولا تبقى البطاقةُ كأنَّها عرضٌ متاح.
+   */
+  describe("WR-08 — مآلُ العرضِ على بطاقتِه", () => {
+    const onCard = (data: string): IncomingUpdate => ({
+      kind: "callback",
+      from: SENDER,
+      updateId: 1,
+      data,
+      messageId: "m-55",
+    });
+    const lost = (reason: string) => ({
+      claimRide: async () =>
+        ok({
+          claimed: false,
+          duplicate: false,
+          reason,
+          cityId: null,
+          rider: null,
+          driverName: null,
+          driverPlate: null,
+          driverVehicle: null,
+        }),
+    });
+
+    it("الرفضُ يعدّلُ البطاقةَ بلا أزرار", async () => {
+      const replies = await handleDriverUpdate(
+        onCard("offer:reject:offer-77"),
+        build({ drivers: driverDirectory(verifiedDriver()), offers: offerDecisionPort() }),
+      );
+      expect(replies).toHaveLength(1);
+      expect(replies[0]?.text).toBe(ar("driver.offer_rejected"));
+      expect(replies[0]?.editMessageId).toBe("m-55");
+      expect(replies[0]?.keyboard ?? null).toBeNull();
+    });
+
+    it("الانتهاءُ والسبقُ والحجزُ تُكتَبُ على البطاقةِ نفسِها", async () => {
+      for (const [reason, key] of [
+        ["offer_expired", "driver.offer_expired"],
+        ["already_claimed", "driver.offer_taken"],
+        ["ORDER_HELD", "driver.offer_held"],
+      ] as const) {
+        const replies = await handleDriverUpdate(
+          onCard("offer:accept:order-77"),
+          build({ drivers: driverDirectory(verifiedDriver()), dispatch: lost(reason) }),
+        );
+        expect(replies[0]?.text).toBe(ar(key));
+        expect(replies[0]?.editMessageId).toBe("m-55");
+        expect(replies[0]?.keyboard ?? null).toBeNull();
+      }
+    });
+
+    it("القبولُ الناجحُ يبدّلُ البطاقةَ بتأكيدِه", async () => {
+      const replies = await handleDriverUpdate(
+        onCard("offer:accept:order-77"),
+        build({
+          drivers: driverDirectory(verifiedDriver()),
+          dispatch: {
+            claimRide: async () =>
+              ok({
+                claimed: true,
+                duplicate: false,
+                reason: null,
+                cityId: null,
+                rider: null,
+                driverName: null,
+                driverPlate: null,
+                driverVehicle: null,
+              }),
+          },
+        }),
+      );
+      expect(replies[0]?.text).toBe(ar("driver.offer_accepted"));
+      expect(replies[0]?.editMessageId).toBe("m-55");
+    });
+
+    it("بلا معرّفِ رسالةٍ يبقى الردُّ رسالةً جديدةً كما كان", async () => {
+      const replies = await handleDriverUpdate(
+        callback("offer:reject:offer-77"),
+        build({ drivers: driverDirectory(verifiedDriver()), offers: offerDecisionPort() }),
+      );
+      expect(replies[0]?.editMessageId).toBeUndefined();
+    });
+  });
+
   it("زرّ بلا معرّف طلب يُرفض بلا استدعاء أي دالة", async () => {
     const replies = await handleDriverUpdate(
       callback("offer:accept:"),

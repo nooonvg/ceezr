@@ -2084,7 +2084,7 @@ async function handleCallback(
         ? skipPreferredArea(sender, state, deps)
         : [reply(sender, tr("common.unknown_command"))];
     case "offer":
-      return handleOfferDecision(rest, sender, state, deps);
+      return handleOfferDecision(rest, sender, state, deps, messageId);
     case "unsub":
       return handleUnsubscribedClaim(rest, sender, state, deps, messageId);
     case "ride": {
@@ -2463,8 +2463,17 @@ async function handleOfferDecision(
   sender: Sender,
   state: DialogState,
   deps: DriverBotDependencies,
+  messageId?: string,
 ): Promise<readonly BotReply[]> {
   const tr = t(languageOf(state));
+  /**
+   * `WR-08` — مآلُ العرضِ يُكتَبُ **على بطاقتِه نفسِها** متى عُرِفَ معرّفُها: رفضٌ أو
+   * انتهاءٌ أو سبقٌ أو حجزٌ أو انتظارُ الراكبِ أو قبولٌ. فتزولُ أزرارُ «قبول/رفض»
+   * القديمةُ ولا تبقى البطاقةُ كأنَّها عرضٌ متاح. وإن تعذّرَ التعديلُ (رسالةٌ قديمة)
+   * أرسلَ البوتُ الردَّ رسالةً جديدةً كما كان.
+   */
+  const onCard = (r: BotReply): BotReply =>
+    messageId === undefined ? r : { ...r, editMessageId: messageId };
   const [action, idRaw] = parts;
   if (idRaw === undefined || idRaw === "") {
     return [reply(sender, tr("common.unknown_command"))];
@@ -2485,7 +2494,7 @@ async function handleOfferDecision(
     const offerId = idRaw as OfferId;
     const rejected = await deps.offers.reject(offerId, driver.id);
     if (!rejected.ok) return technicalFailure(sender, state);
-    return [reply(sender, tr("driver.offer_rejected"))];
+    return [onCard(reply(sender, tr("driver.offer_rejected")))];
   }
 
   if (action !== "accept") return [reply(sender, tr("common.unknown_command"))];
@@ -2504,11 +2513,13 @@ async function handleOfferDecision(
      * والمآلُ يصلُه رسالةً من صندوقِ الصادر (`driver_candidate_notice`).
      */
     return [
-      reply(
-        sender,
-        tr("driver.candidate_waiting", {
-          seconds: secondsUntil(claim.value.candidateExpiresAt ?? null, deps.clock.now()),
-        }),
+      onCard(
+        reply(
+          sender,
+          tr("driver.candidate_waiting", {
+            seconds: secondsUntil(claim.value.candidateExpiresAt ?? null, deps.clock.now()),
+          }),
+        ),
       ),
     ];
   }
@@ -2530,7 +2541,7 @@ async function handleOfferDecision(
     // زرّ البدء يخرج مع تأكيد القبول: السائق لا يحفظ معرّف الطلب ولا يُطلب منه كتابته
     const keyboard =
       deps.rating === undefined ? null : startRideKeyboard(String(orderId), languageOf(state));
-    const confirmation = reply(sender, tr("driver.offer_accepted"), keyboard);
+    const confirmation = onCard(reply(sender, tr("driver.offer_accepted"), keyboard));
     /**
      * المرحلة ١٢ — التأكيد يبقى، وتُلحق به البطاقة. ولماذا لا يُدمجان في رسالة؟
      * لأن زرّ «بدء الرحلة» مُعلَّقٌ على التأكيد، والدبّوس رسالةٌ منفصلة في تلغرام
@@ -2556,7 +2567,7 @@ async function handleOfferDecision(
       : claim.value.reason === "ORDER_HELD"
         ? "driver.offer_held"
         : "driver.offer_taken";
-  return [reply(sender, tr(key))];
+  return [onCard(reply(sender, tr(key)))];
 }
 
 /** ثوانٍ صحيحةٌ حتى الموعد، بحدٍّ أدنى صفر. موعدٌ مجهولٌ ⇒ صفر (النصُّ لا يكذبُ بمهلة). */
