@@ -1764,5 +1764,6 @@
   "rider.search.candidate.error.CANDIDATE_CHANGED": "دکھایا گیا ڈرائیور بدل گیا۔ نیا دیکھنے کے لیے تازہ کریں۔",
   "rider.search.candidate.error.ORDER_NOT_SEARCHING": "آرڈر اب تلاش کے مرحلے میں نہیں۔",
   "rider.search.candidate.error.UNKNOWN": "ابھی آپ کا انتخاب لاگو نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
-  "rider.notifications.kind.order_chat_message": "نیا چیٹ پیغام"
+  "rider.notifications.kind.order_chat_message": "نیا چیٹ پیغام",
+  "rider.notifications.kind.driver_location_reminder": "مقام اپڈیٹ کی یاد دہانی"
 }

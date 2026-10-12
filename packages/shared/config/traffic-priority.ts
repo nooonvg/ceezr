@@ -134,6 +134,9 @@ export const TRAFFIC_PRIORITY_RANK: Readonly<Record<TrafficPriorityClass, number
  *   مآلُ قبولِ السائقِ بعدَ قرارِ الراكب، والسائقُ ينتظرُه ليتحرّكَ أو ينصرف.
  * - `order_chat_message` ← **مرتفعٌ** (`WR-04`): رسالةٌ من الطرفِ الآخرِ في رحلةٍ
  *   قائمةٍ («أنا عند البوابة»)، مؤجَّلةٌ ومجمَّعةٌ في القاعدة، وتسبقُ أخبارَ النتيجة.
+ * - `driver_location_reminder` ← **تشغيليٌّ ذو قيمةٍ زمنيّة** (متوسّطٌ، `WR-12`): تذكيرُ
+ *   سائقٍ متوفّرٍ بتحديثِ موقعِه. ليسَ في تتابعٍ مع رحلةٍ قائمةٍ فيؤجَّلُ بأمانٍ عندَ الإشباع،
+ *   والمُطالِبُ يعيدُ فحصَ الحاجةِ لحظةَ الإرسال.
  */
 export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, TrafficPriorityClass>> =
   {
@@ -151,6 +154,7 @@ export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, Traff
     dispute_resolution: "medium",
     subscription_notice: "medium",
     lost_item_report: "medium",
+    driver_location_reminder: "medium",
     safety_resolution_closed: "medium",
     safety_resolution_blocked: "medium",
     broadcast_recipient: "low",

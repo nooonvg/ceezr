@@ -366,6 +366,20 @@ describe("التوافر", () => {
     ]);
   });
 
+  it("`WR-12` — زرُّ «اجعلني غير متوفر» في تذكيرِ الموقعِ يوقفُ التوافرَ بمسارِ /unavailable", async () => {
+    const available = driverDirectory(verifiedDriver({ isAvailable: true }));
+    const replies = await handleDriverUpdate(callback("avail:off"), build({ drivers: available }));
+    expect(replies[0]?.text).toBe(ar("driver.now_unavailable"));
+    expect(available.availabilityCalls).toEqual([
+      { driverId: "driver-1" as DriverId, isAvailable: false },
+    ]);
+    // ولا يُفتحُ بابٌ لتشغيلِ التوافرِ ببيانٍ مصنوع.
+    const forged = driverDirectory(verifiedDriver({ isAvailable: false }));
+    const on = await handleDriverUpdate(callback("avail:on"), build({ drivers: forged }));
+    expect(on[0]?.text).toBe(ar("common.unknown_command"));
+    expect(forged.availabilityCalls).toEqual([]);
+  });
+
   it("يطلب التسجيل من غير المسجَّل", async () => {
     const replies = await handleDriverUpdate(text("/available"), deps);
     expect(replies[0]?.text).toBe(ar("driver.must_register_first"));

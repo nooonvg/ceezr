@@ -528,5 +528,9 @@
   "tracking.rider_candidate_unrated": "New",
   "miniapp.driver_job_button": "📱 Open the trip in Wasla",
   "chat.new_message_from_driver": "💬 You have a new message from the driver on order {order}. Open the order to read and reply.",
-  "chat.new_message_from_rider": "💬 You have a new message from the customer on order {order}. Open the trip to read and reply."
+  "chat.new_message_from_rider": "💬 You have a new message from the customer on order {order}. Open the trip to read and reply.",
+  "driver.location_reminder": "📍 We haven't received your location for {minutes} minutes while you're available.\nTo keep receiving offers, update it: open Waslah and allow location, or send your location here (📎 → Location).\nWaslah can't read your location while it's closed. If you're no longer available, go unavailable.",
+  "driver.location_reminder_never": "📍 We haven't received any location from you while you're available.\nTo receive offers, update it: open Waslah and allow location, or send your location here (📎 → Location).\nIf you're not available, go unavailable.",
+  "driver.location_reminder_open": "📍 Update location in Waslah",
+  "driver.location_reminder_unavailable": "⏸ Make me unavailable"
 }

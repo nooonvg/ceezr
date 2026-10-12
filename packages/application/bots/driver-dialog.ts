@@ -2059,6 +2059,13 @@ async function handleCallback(
       }
       return handleCommand(command, sender, state, deps);
     }
+    // `WR-12` (ADR 0268) — زرُّ «اجعلني غير متوفر» في تذكيرِ تحديثِ الموقع. يمرُّ بمسارِ
+    // `/unavailable` نفسِه (الكتابةُ ثمَّ إغلاقُ جلسةِ التتبّع) لا بمسارٍ ثانٍ. وليس `cmd:`
+    // عن قصد: `cmd:/unavailable` في وضعِ Mini App يفتحُ التطبيقَ ولا يُنفِّذ.
+    case "avail":
+      return rest.join(":") === "off"
+        ? handleCommand("/unavailable", sender, state, deps)
+        : [reply(sender, tr("common.unknown_command"))];
     case "lang":
       return deps.language === undefined
         ? [reply(sender, tr("common.unknown_command"))]
