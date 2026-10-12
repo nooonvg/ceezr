@@ -1209,11 +1209,23 @@ export function buildWorkerContainer(
               baseUrl: coreEventsBaseUrl,
               bearerToken: coreEventsBearerToken,
             });
+      /**
+       * `WR-15` (2026-10-12) — الغيابُ **حالةٌ مقرَّرةٌ لا عطل**: تكاملُ CORE مؤجَّلٌ بتعليمةِ
+       * المالكِ `O-7` (ADR 0094 · ADR 0095)، فلا عنوانَ ولا رمزَ صحيحَين يُضبَطان اليوم، وجدولُ
+       * `move_event_outbox` في `deferred/` لا في القاعدة. كانَ يُسجَّلُ `error` عندَ كلِّ إقلاعٍ
+       * فيُغرِقُ قراءةَ السجلِّ بإنذارٍ لا يُصلِحُه أحد، ويُخفي الخطأَ الحقيقيَّ بجوارِه. فصارَ
+       * `info` باسمٍ يقولُ السبب. ويعودُ خطأً **إن ضُبِطَ أحدُ المتغيّرَين دونَ الآخر**: ذلك
+       * إعدادٌ ناقصٌ حقّاً.
+       */
       if (moveEventShipper === null) {
-        log.error("move_event_outbox.shipper_not_configured", {
+        const partial = (coreEventsBaseUrl === undefined) !== (coreEventsBearerToken === undefined);
+        const meta = {
           baseUrl: CORE_EVENT_TRANSPORT_ENV.baseUrl,
           bearerToken: CORE_EVENT_TRANSPORT_ENV.bearerToken,
-        });
+          decision: "O-7 · ADR 0094",
+        };
+        if (partial) log.error("move_event_outbox.shipper_partially_configured", meta);
+        else log.info("move_event_outbox.deferred", meta);
       }
 
       const global: JobDefinition[] = [
