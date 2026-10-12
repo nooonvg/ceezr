@@ -73,7 +73,11 @@ export function createChatMessageNoticeHandler(deps: ChatMessageNoticeDeps): Not
     }
     const meta = { order_id: orderId, recipient_role: role, delivery_id: delivery.deliveryId };
     const status = delivery.payload.order_status;
-    if (delivery.payload.read === true || typeof status !== "string" || !OPEN_STATUSES.has(status)) {
+    if (
+      delivery.payload.read === true ||
+      typeof status !== "string" ||
+      !OPEN_STATUSES.has(status)
+    ) {
       deps.log?.("order_chat_notice.not_required", {
         ...meta,
         read: delivery.payload.read === true,
