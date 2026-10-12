@@ -1,0 +1,34 @@
+{
+  "id": "wr-06-confirm-defaults",
+  "goal": "WR-06: المالك اعتمد القيم الافتراضية للجدولة كما هي (20/60/10/15)، فيُنزع وسم «مؤقت» عن الصفوف التي ما زالت بقيمتها الافتراضية فقط.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/roadmap/execution/WR-06-DECISION-OPTIONS.md",
+    "docs/adr/0273-scheduled-dispatch.md"
+  ],
+  "implementation": [
+    "supabase/migrations/20261013000400_wr_06_confirm_defaults.sql"
+  ],
+  "state": [
+    "docs/SYSTEM_STATE.md"
+  ],
+  "roadmap": [
+    "ROADMAP.md"
+  ],
+  "affected_docs": [
+    "docs/adr/0273-scheduled-dispatch.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "قرار المالك 2026-10-12: اعتماد 20/60/10/15 كما هي. هجرة بيانات تنزع is_provisional عن الصفوف التي ما زالت بالقيمة الافتراضية فقط، فلا تمس قيمة عدّلها مسؤول.",
+  "tests": [
+    "psql -f supabase/migrations/20261013000400_wr_06_confirm_defaults.sql (مرتين، مع صف معدَّل يبقى كما هو)"
+  ],
+  "evidence": "محليًا: 19 صفًا نُزع وسمها، والصف المعدَّل إلى 25 بقي مؤقتًا، والتكرار لا يغيّر شيئًا.",
+  "constraints": [
+    "لا تغيير قيمة",
+    "لا مسّ لصف عدّله مسؤول"
+  ],
+  "limitations": "لم تُطبَّق في الإنتاج بعد؛ تُطبَّق بعد نسخة verified. لا اختبار ميداني."
+}
