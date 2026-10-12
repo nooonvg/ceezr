@@ -1,0 +1,24 @@
+{
+  "id": "wr-25-realtime-client",
+  "goal": "§25 البند الأخير: إثبات أن عميل Mini App الحقيقي ينضم إلى غرفة محادثة الطلب ويتلقى الإشارة، لا اختبار يبث نيابة عنه. ومصفوفة §25 تربط كل بند بملفاته.",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "tests/integration/wr-25-chat-realtime-client.test.ts",
+    "scripts/lib/skip-registry.ts",
+    "tests/unit/skip-audit.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/roadmap/execution/WR-25-TEST-MATRIX.md",
+    "docs/roadmap/execution/WR-06-DECISION-OPTIONS.md",
+    "docs/roadmap/execution/WR-26-FIELD-TEST-PACK.md",
+    "docs/evidence/production/WR-17-WR-24-deploy-20261012.md"
+  ],
+  "decision": "لا تغيير في الشيفرة الإنتاجية. الاختبار يستعمل createChatChannel وcreateOffersSessionVerifier وcreateOrderChatStore وpostOrderChatMessage وproductionChatSocket كما هي، ويوصل onPosted بـpublish كما في apps/gateway/src/index.ts.",
+  "tests": ["TEST_DATABASE_URL=… bun test tests/integration/wr-25-chat-realtime-client.test.ts"],
+  "evidence": "محليًا على PostgreSQL 18 + PostGIS: 3/3 ثلاث مرات (انضمام الطرفين ورفض الغريب ووصول الإشارة للطرف الآخر وحده، والمكرر لا يبث، والعائد بعد انقطاع يسترجع ما فاته من القاعدة).",
+  "constraints": ["لا كتابة على الإنتاج", "لا هجرة", "لا تغيير في سلوك القناة"],
+  "limitations": "النقل polling كما في الإنتاج. لا يقيس الاتصال عبر إعادة كتابة /socket.io في miniapp المنشور ولا داخل تيليجرام على جهاز (WR-26)."
+}
