@@ -12,7 +12,7 @@ import { makeCoordinates } from "../../domain/geo/value-objects.ts";
 import { parseFullName } from "../../domain/identity/value-objects.ts";
 import type { SupportTicketView } from "../../domain/support/ticket-types.ts";
 import { DEFAULT_SESSION_POLICY } from "../../domain/tracking/session.ts";
-import { t } from "../../shared/i18n/index.ts";
+import { initialLanguageFromHint, t } from "../../shared/i18n/index.ts";
 import type { Clock, OrderId, ServiceType } from "../../shared/kernel/index.ts";
 import { requestDelivery } from "../delivery/request-delivery.ts";
 import { type BroadcastDependencies, broadcastOffers } from "../dispatch/broadcast-offers.ts";
@@ -238,7 +238,7 @@ function cityKeyboard(cities: readonly CityRef[]): Keyboard {
 async function loadState(deps: RiderBotDependencies, sender: Sender): Promise<SessionRead> {
   return readDialogSession(deps.sessions, sender.telegramUserId, {
     ...INITIAL_STATE,
-    language: sender.languageHint === "en" ? "en" : "ar",
+    language: initialLanguageFromHint(sender.languageHint),
   });
 }
 

@@ -887,6 +887,29 @@ describe("متانة الحوار", () => {
     expect(replies[1]?.text).toBe(translate("en", "driver.help"));
   });
 
+  // لغةُ البدايةِ تُقرأُ من الوسمِ الأوّلِ: كان `en` وحدَها، فصاحبُ تلغرامٍ أرديٍّ أو
+  // `en-GB` يبدأُ بالعربيّةِ ويُسجَّلُ بها (`register({ language })` يقرأُ الجلسة).
+  for (const [hint, expected] of [
+    ["ur", "ur"],
+    ["en-GB", "en"],
+    ["UR", "ur"],
+    ["fr", "ar"],
+    ["", "ar"],
+  ] as const) {
+    it(`وسمُ تلغرام «${hint}» يبدأُ الحوارَ بـ«${expected}» ويحفظُها في الجلسة`, async () => {
+      const update: IncomingUpdate = {
+        kind: "text",
+        from: { telegramUserId: "902", chatId: "902", languageHint: hint },
+        updateId: 1,
+        text: "/help",
+      };
+      const replies = await handleDriverUpdate(update, deps);
+      expect(replies[0]?.text).toBe(translate(expected, "driver.guide"));
+      const saved = await deps.sessions.load("902");
+      if (saved.ok && saved.value !== null) expect(saved.value.language).toBe(expected);
+    });
+  }
+
   it("يحفظ موقع السائق المسجَّل فعلاً", async () => {
     const drivers = driverDirectory(verifiedDriver({ hasLocation: false }));
     const replies = await handleDriverUpdate(

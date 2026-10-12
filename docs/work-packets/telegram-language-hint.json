@@ -1,0 +1,25 @@
+{
+  "id": "telegram-language-hint",
+  "goal": "لغة البداية في بوتي الراكب والسائق وبوابة الانضمام إلى المجموعات تُقرأ من الوسم الأول لـ language_code في تلغرام، وتُقبل كل لغة لها قاموس (ar/en/ur)، لا الإنجليزية وحدها.",
+  "canonical_source": ["docs/adr/0005-i18n-extracted-early.md"],
+  "implementation": [
+    "packages/shared/i18n/index.ts",
+    "packages/application/bots/rider-dialog.ts",
+    "packages/application/bots/driver-dialog.ts",
+    "packages/application/groups/group-join-gate.ts",
+    "tests/unit/translation.test.ts",
+    "tests/unit/driver-dialog.test.ts",
+    "tests/unit/rider-dialog.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [],
+  "no_other_affected_docs_reason": "سلوك اختيار اللغة يدويًا وحفظها في users.language_code لم يتغير. الذي تغيّر هو الافتراض الأولي قبل الاختيار، كما يصفه ADR 0005 وتعليق Sender.languageHint.",
+  "decision": "كان الحواران يكتبان `languageHint === \"en\" ? \"en\" : \"ar\"`. لذلك كان صاحب تلغرام بالأردية يبدأ بالعربية، وكذلك صاحب en-GB، ويُسجَّل بها لأن register يقرأ لغة الجلسة. هذا يخالف ADR 0005 الذي يذكر أن سائقي جدة ومكة يتحدثون العربية والأردية. وكانت بوابة الانضمام تمرر الوسم خامًا، فيقع en-GB على العربية. الحل دالة واحدة اسمها initialLanguageFromHint في القاموس المشترك.",
+  "tests": [
+    "bun test tests/unit/translation.test.ts tests/unit/driver-dialog.test.ts tests/unit/rider-dialog.test.ts tests/unit/group-join-gate.test.ts tests/unit/group-direct-join-gate.test.ts"
+  ],
+  "evidence": "اختبارات السائق الثلاثة (ur وen-GB وUR) واختبار الراكب (ur) تسقط على الشيفرة السابقة وتنجح بعد الإصلاح.",
+  "constraints": ["لا هجرة", "اختيار المستخدم الصريح يبقى هو الحاكم"],
+  "limitations": "لم يُختبر على تلغرام حقيقي بحساب بالأردية. يحتاج ذلك حساب اختبار ميداني."
+}

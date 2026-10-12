@@ -30,7 +30,7 @@
  */
 
 import { pseudonymise } from "../../infrastructure/observability/structured-log.ts";
-import { translate } from "../../shared/i18n/index.ts";
+import { initialLanguageFromHint, translate } from "../../shared/i18n/index.ts";
 import type { CityId, DriverId } from "../../shared/kernel/index.ts";
 import type { Result } from "../../shared/result/index.ts";
 import type { DriverDirectory } from "../bots/types.ts";
@@ -167,8 +167,15 @@ export async function handleDriverGroupJoinRequest(
       const link = await deps.gate.registrationLink();
       const text =
         link === null
-          ? translate(request.languageHint, "driver.join_gate_not_registered_no_link")
-          : translate(request.languageHint, "driver.join_gate_not_registered", { link });
+          ? translate(
+              initialLanguageFromHint(request.languageHint),
+              "driver.join_gate_not_registered_no_link",
+            )
+          : translate(
+              initialLanguageFromHint(request.languageHint),
+              "driver.join_gate_not_registered",
+              { link },
+            );
       messaged = await deps.gate.messageUser(request.userChatId, text);
     }
     log("group_join.unregistered_declined", {
@@ -282,9 +289,19 @@ export async function handleDriverGroupDirectJoin(
     const text =
       driver === null
         ? link === null
-          ? translate(join.languageHint, "driver.join_gate_not_registered_no_link")
-          : translate(join.languageHint, "driver.join_gate_not_registered", { link })
-        : translate(join.languageHint, "driver.join_gate_removed_not_eligible");
+          ? translate(
+              initialLanguageFromHint(join.languageHint),
+              "driver.join_gate_not_registered_no_link",
+            )
+          : translate(
+              initialLanguageFromHint(join.languageHint),
+              "driver.join_gate_not_registered",
+              { link },
+            )
+        : translate(
+            initialLanguageFromHint(join.languageHint),
+            "driver.join_gate_removed_not_eligible",
+          );
     messaged = await deps.gate.messageUser(telegramUserId, text);
   }
   const meta = { group: groupChatId, user: pseudonymise(telegramUserId), reason, messaged };

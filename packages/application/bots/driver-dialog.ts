@@ -36,7 +36,7 @@ import {
   type SubscriptionPlan,
 } from "../../domain/subscription/entity.ts";
 import type { RoutingProvider } from "../../maps/core/index.ts";
-import { t } from "../../shared/i18n/index.ts";
+import { initialLanguageFromHint, t } from "../../shared/i18n/index.ts";
 import type {
   CityId,
   Clock,
@@ -436,7 +436,7 @@ function preferredAreaLocationRequest(state: DialogState): Keyboard {
 async function loadState(deps: DriverBotDependencies, sender: Sender): Promise<SessionRead> {
   return readDialogSession(deps.sessions, sender.telegramUserId, {
     ...INITIAL_STATE,
-    language: sender.languageHint === "en" ? "en" : "ar",
+    language: initialLanguageFromHint(sender.languageHint),
   });
 }
 
