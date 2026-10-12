@@ -130,6 +130,16 @@ export interface QuoteScreenProps {
   /** مدخلُ الاستغاثةِ (`PD-020` · `ADR 0159`) — اختياريٌّ: يُرسَمُ إذا مُرِّرَ. */
   readonly onOpenSos?: () => void;
   /**
+   * `WR-16C` — الخدمةُ التي اختارَها الراكبُ في الرئيسية: تُعرَضُ بطاقتُها وحدَها، ونصوصُ مكانِ
+   * الالتقاطِ تتبعُها («الاستلام» للتوصيل). غائبةٌ ⇒ كلُّ البطاقاتِ كما كان.
+   */
+  readonly service?: "transport" | "delivery";
+  /**
+   * `WR-16C` — مكانُ الاستلامِ **مؤكَّدًا قبلَ الوجهة** (التوصيلُ يبدأُ بالاستلام): يُعتمَدُ
+   * التقاطًا بلا سؤالٍ ثانٍ، ويبقى قابلًا للتغيير. غائبٌ ⇒ يُسأَلُ عن الالتقاطِ أوّلًا كما كان.
+   */
+  readonly initialPickup?: ConfirmedDestination;
+  /**
    * `F2-05`: تُسلَّمُ النيّةُ ولا تُنشَأُ الرحلةُ ههنا. و`null` في الملاحظةِ يعني
    * «لا ملاحظةَ» لا «ملاحظةٌ فارغةٌ»، والمفتاحُ مُولَّدٌ لتلكَ النيّةِ وحدَها.
    */
@@ -209,6 +219,16 @@ async function screenFor(thrown: unknown): Promise<ScreenState | null> {
   return classifyFailure(failure, probe, online);
 }
 
+/** `WR-16C` — نصّا مكانِ الالتقاطِ بحسبِ الخدمة: الراكبُ «يُلتقَط»، والطلبُ «يُستلَم». */
+export function pickupTextFor(service: "transport" | "delivery" | undefined): {
+  readonly named: string;
+  readonly change: string;
+} {
+  return service === "delivery"
+    ? { named: "rider.pickup.delivery.named", change: "rider.pickup.delivery.change" }
+    : { named: "rider.pickup.named", change: "rider.pickup.change" };
+}
+
 export function QuoteScreen({
   destination,
   quote = quoteViaApi,
@@ -218,6 +238,8 @@ export function QuoteScreen({
   showTitle = true,
   onOpenSos,
   onRequest,
+  service,
+  initialPickup,
   initialLanguage = MINIAPP_DEFAULT_LANGUAGE,
 }: QuoteScreenProps) {
   const [language] = useState<MiniAppLanguage>(initialLanguage);
@@ -241,8 +263,11 @@ export function QuoteScreen({
    * بلا عرضٍ ولا تأكيد (PRD-008: نقطةٌ راكدةٌ قربَ معلَمٍ بعيد). الآنَ لا يُعتمَدُ مكانٌ بصمت:
    * الشاشةُ تبدأُ باختيارِه، ولا اقتباسَ قبلَه.
    */
-  const [manualPickup, setManualPickup] = useState<ConfirmedDestination | null>(null);
-  const [pickingPickup, setPickingPickup] = useState(true);
+  const [manualPickup, setManualPickup] = useState<ConfirmedDestination | null>(
+    initialPickup ?? null,
+  );
+  const [pickingPickup, setPickingPickup] = useState(initialPickup === undefined);
+  const pickupText = pickupTextFor(service);
   const mounted = useRef(true);
   /** ردٌّ متأخِّرٌ لسؤالٍ قديمٍ **يُطرَحُ** ولا يُعرَضُ (عينُ حكمِ `SR-03`). */
   const issued = useRef(0);
@@ -306,7 +331,7 @@ export function QuoteScreen({
   if (pickingPickup) {
     return (
       <DestinationScreen
-        purpose="pickup"
+        purpose={service === "delivery" ? "deliveryPickup" : "pickup"}
         initialLanguage={language}
         readDeviceLocation={readDeviceLocation}
         openSettings={openSettings}
@@ -417,7 +442,10 @@ export function QuoteScreen({
     const noteValue = "notes" in readNotes ? readNotes.notes : null;
     const distance = distanceLine(response.distance);
     const duration = durationLine(response.eta);
-    const cards = serviceCards(response.services);
+    // `WR-16C`: الخدمةُ المختارةُ في الرئيسيةِ لا يُسأَلُ عنها ثانيةً — بطاقتُها وحدَها.
+    const cards = serviceCards(response.services).filter(
+      (card) => service === undefined || card.service === service,
+    );
     return (
       <div className="qt__result">
         {cityLine({ ar: response.city.nameAr, en: response.city.nameEn })}
@@ -425,14 +453,14 @@ export function QuoteScreen({
           <p className="qt__pickup-line">
             {manualPickup === null
               ? t("rider.pickup.required")
-              : t("rider.pickup.named").replace("{label}", manualPickup.label)}
+              : t(pickupText.named).replace("{label}", manualPickup.label)}
           </p>
           <button
             type="button"
             className="qt__pickup-change"
             onClick={() => setPickingPickup(true)}
           >
-            {t("rider.pickup.change")}
+            {t(pickupText.change)}
           </button>
         </div>
 

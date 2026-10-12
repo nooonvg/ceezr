@@ -26,7 +26,7 @@ import type { ChosenDestination } from "./home/HomeScreen.tsx";
 import type { SearchScreenIntent } from "./search/SearchScreen.tsx";
 
 export type RiderRootTab = RootTabId<"rider">;
-export type RiderFlowScreen = "destination" | "quote";
+export type RiderFlowScreen = "destination" | "dropoff" | "quote";
 
 export interface RiderFlowState {
   readonly stack: ScreenStackState<RiderRootTab, RiderFlowScreen>;
@@ -34,6 +34,11 @@ export interface RiderFlowState {
   readonly chosen: ChosenDestination | null;
   /** ما صادقَته القاعدةُ في R4 — وحدَه يُقتبَسُ في R5. */
   readonly confirmed: ConfirmedDestination | null;
+  /**
+   * `WR-16C` — مكانُ **الاستلامِ** في التوصيل: يُؤكَّدُ أوّلًا (الخطوةُ الأولى بعدَ الرئيسية)، ثمَّ
+   * تُسأَلُ الوجهةُ في `dropoff`. في المشوارِ يبقى `null` والالتقاطُ يُسأَلُ في الاقتباسِ كما كان.
+   */
+  readonly pickup: ConfirmedDestination | null;
 }
 
 export type RiderFlowAction =
@@ -55,6 +60,7 @@ export function initialRiderFlow(tab: RiderRootTab = "home"): RiderFlowState {
     stack: initialScreenStack<RiderRootTab, RiderFlowScreen>(tab),
     chosen: null,
     confirmed: null,
+    pickup: null,
   };
 }
 
@@ -67,34 +73,54 @@ export function riderFlowReducer(state: RiderFlowState, action: RiderFlowAction)
         ...state,
         chosen: action.chosen,
         confirmed: null,
+        pickup: null,
         stack: screenStackReducer(state.stack, { type: "push", screen: "destination" }),
       };
-    case "confirm":
-      if (currentScreen(state.stack) !== "destination") return state;
+    case "confirm": {
+      const top = currentScreen(state.stack);
+      // `WR-16C`: في التوصيلِ أوّلُ تأكيدٍ هوَ **الاستلام**، فتُسأَلُ الوجهةُ بعدَه — لا نقاطَ معكوسة.
+      if (top === "destination" && state.chosen?.service === "delivery") {
+        return {
+          ...state,
+          pickup: action.confirmed,
+          confirmed: null,
+          stack: screenStackReducer(state.stack, { type: "push", screen: "dropoff" }),
+        };
+      }
+      if (top !== "destination" && top !== "dropoff") return state;
       return {
         ...state,
         confirmed: action.confirmed,
         stack: screenStackReducer(state.stack, { type: "push", screen: "quote" }),
       };
+    }
     case "back": {
       const top = currentScreen(state.stack);
       if (top === null) return state;
       const stack = screenStackReducer(state.stack, { type: "pop" });
       // الرجوعُ من الاقتباسِ يُسقِطُ الحكمَ ويُبقي الاختيارَ (فتُعادُ مصادقتُه)؛ ومن الوجهةِ يُسقِطُ الاختيار.
-      return top === "quote"
-        ? { ...state, stack, confirmed: null }
-        : { ...state, stack, chosen: null, confirmed: null };
+      if (top === "quote") return { ...state, stack, confirmed: null };
+      // من الوجهةِ إلى الاستلام: يُسقَطُ الاستلامُ فيُعادُ تأكيدُه، والاختيارُ باقٍ.
+      if (top === "dropoff") return { ...state, stack, pickup: null, confirmed: null };
+      return { ...state, stack, chosen: null, confirmed: null, pickup: null };
     }
     case "handoff":
     case "clear": {
       const stack = screenStackReducer(state.stack, { type: "reset" });
-      if (stack === state.stack && state.chosen === null && state.confirmed === null) return state;
-      return { stack, chosen: null, confirmed: null };
+      if (
+        stack === state.stack &&
+        state.chosen === null &&
+        state.confirmed === null &&
+        state.pickup === null
+      ) {
+        return state;
+      }
+      return { stack, chosen: null, confirmed: null, pickup: null };
     }
     case "selectTab": {
       const stack = screenStackReducer(state.stack, { type: "selectTab", tab: action.tab });
       if (stack === state.stack) return state;
-      return { stack, chosen: null, confirmed: null };
+      return { stack, chosen: null, confirmed: null, pickup: null };
     }
   }
 }
@@ -118,12 +144,27 @@ export function riderLandingTab(landing: {
 export type RiderFlowView =
   | { readonly screen: "home" }
   | { readonly screen: "destination"; readonly chosen: ChosenDestination }
-  | { readonly screen: "quote"; readonly confirmed: ConfirmedDestination };
+  | { readonly screen: "dropoff"; readonly pickup: ConfirmedDestination }
+  | {
+      readonly screen: "quote";
+      readonly confirmed: ConfirmedDestination;
+      /** `WR-16C` — الخدمةُ المختارةُ في الرئيسية، ومكانُ الاستلامِ المؤكَّدُ في التوصيل. */
+      readonly service: ChosenDestination["service"] | null;
+      readonly pickup: ConfirmedDestination | null;
+    };
 
 export function riderFlowView(state: RiderFlowState): RiderFlowView {
   const top = currentScreen(state.stack);
   if (top === "quote" && state.confirmed !== null) {
-    return { screen: "quote", confirmed: state.confirmed };
+    return {
+      screen: "quote",
+      confirmed: state.confirmed,
+      service: state.chosen?.service ?? null,
+      pickup: state.pickup,
+    };
+  }
+  if (top === "dropoff" && state.pickup !== null) {
+    return { screen: "dropoff", pickup: state.pickup };
   }
   if (top === "destination" && state.chosen !== null) {
     return { screen: "destination", chosen: state.chosen };

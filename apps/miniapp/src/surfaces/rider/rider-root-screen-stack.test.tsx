@@ -90,7 +90,12 @@ describe("RiderRoot — تدفّقُ R3→R5 عبرَ المعالجاتِ ال�
     const h = harness();
     h.handlers.onDestinationChosen(PICKED);
     h.handlers.onConfirmed(CONFIRMED);
-    expect(h.view).toEqual({ screen: "quote", confirmed: CONFIRMED });
+    expect(h.view).toEqual({
+      screen: "quote",
+      confirmed: CONFIRMED,
+      service: PICKED.service,
+      pickup: null,
+    });
     expect(h.state.stack.stack.map((e) => e.screen)).toEqual(["destination", "quote"]);
     expect(h.state.stack.motion).toBe("forward");
   });
@@ -163,7 +168,7 @@ describe("RiderRoot — تدفّقُ R3→R5 عبرَ المعالجاتِ ال�
       type: "push",
       screen: "quote",
     });
-    expect(riderFlowView({ stack: pushed, chosen: null, confirmed: null })).toEqual({
+    expect(riderFlowView({ stack: pushed, chosen: null, confirmed: null, pickup: null })).toEqual({
       screen: "home",
     });
   });
@@ -183,7 +188,8 @@ describe("RiderRoot — عقدُ الربطِ بالمعالجاتِ (حارسُ
     expect(SOURCE).toContain("onDestinationChosen={flowHandlers.onDestinationChosen}");
     expect(SOURCE).toContain("onConfirmed={flowHandlers.onConfirmed}");
     expect(SOURCE).toContain("onRequest={flowHandlers.onRequest}");
-    expect(SOURCE.match(/onBack: flowHandlers\.onBack/g)).toHaveLength(2);
+    // `WR-16C`: ثلاثُ شاشاتِ تدفّقٍ برجوع — الوجهةُ (أو الاستلام)، ووجهةُ التوصيل، والاقتباس.
+    expect(SOURCE.match(/onBack: flowHandlers\.onBack/g)).toHaveLength(3);
     expect(SOURCE).toContain("riderFlowHandlers(dispatchFlow, setIntent)");
     // UI-3 / PR 5 (ADR 0238): الحالةُ الأولى على تبويبِ الهبوطِ لا على «الرئيسية» دائماً.
     expect(SOURCE).toMatch(
@@ -191,12 +197,13 @@ describe("RiderRoot — عقدُ الربطِ بالمعالجاتِ (حارسُ
     );
     expect(SOURCE).toContain('view.screen === "quote"');
     expect(SOURCE).toContain('view.screen === "destination"');
+    expect(SOURCE).toContain('view.screen === "dropoff"');
   });
 
   it("ScreenTransition يتلقّى مفتاحَ المكدّسِ وحركتَه في الشاشاتِ الثلاث", () => {
     expect(
       SOURCE.match(/<ScreenTransition screenKey=\{stackKey\} motion=\{stack\.motion\}>/g),
-    ).toHaveLength(3);
+    ).toHaveLength(4);
     const forward = renderToStaticMarkup(
       <ScreenTransition screenKey="s1" motion="forward">
         <p>destination</p>

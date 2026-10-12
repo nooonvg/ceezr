@@ -133,7 +133,30 @@ export interface DestinationScreenProps {
    * موقعُ جهازِه (رفضَ الإذنَ، أو سطحُ مكتبٍ، أو يطلبُ لغيرِه). البحثُ والمصادقةُ
    * بحدِّ منطقةِ الخدمةِ واحدانِ؛ يتغيّرُ العنوانُ وزرُّ التأكيدِ وحدَهما.
    */
-  readonly purpose?: "destination" | "pickup";
+  readonly purpose?: DestinationPurpose;
+}
+
+/**
+ * `WR-16C` — ما تسألُ عنه الشاشة: وجهةُ المشوار، أو التقاطُ الراكب، أو **استلامُ** طلبِ التوصيل
+ * ثمَّ **تسليمُه**. البحثُ والمصادقةُ واحدة؛ يتغيّرُ العنوانُ وزرُّ التأكيدِ وحدَهما.
+ */
+export type DestinationPurpose = "destination" | "pickup" | "deliveryPickup" | "deliveryDropoff";
+
+const PURPOSE_TEXT = {
+  destination: { title: "rider.destination.title", confirm: "rider.destination.confirm" },
+  pickup: { title: "rider.pickup.title", confirm: "rider.pickup.confirm" },
+  deliveryPickup: {
+    title: "rider.delivery.pickup.title",
+    confirm: "rider.delivery.pickup.confirm",
+  },
+  deliveryDropoff: {
+    title: "rider.delivery.dropoff.title",
+    confirm: "rider.delivery.dropoff.confirm",
+  },
+} as const satisfies Record<DestinationPurpose, { title: string; confirm: string }>;
+
+export function purposeText(purpose: DestinationPurpose): { title: string; confirm: string } {
+  return PURPOSE_TEXT[purpose];
 }
 
 type SearchState =
@@ -406,7 +429,7 @@ export function DestinationScreen({
 
   const title = showTitle ? (
     <h1 id="rd-title" className="rd__title">
-      {t(purpose === "pickup" ? "rider.pickup.title" : "rider.destination.title")}
+      {t(purposeText(purpose).title)}
     </h1>
   ) : null;
   const sectionName = showTitle ? { "aria-labelledby": "rd-title" as const } : {};
@@ -660,7 +683,7 @@ export function DestinationScreen({
             });
           }}
         >
-          {t(purpose === "pickup" ? "rider.pickup.confirm" : "rider.destination.confirm")}
+          {t(purposeText(purpose).confirm)}
         </button>
       </div>
     );
