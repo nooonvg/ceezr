@@ -927,8 +927,9 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // زيادةٌ (`ح-8`): والآنَ 170 و 1530 بتذكيرِ تحديثِ الموقع (WR-12 · ADR 0268): أربعُ حالاتٍ في `wr-12-location-reminder.test.ts` — من يُذكَّر، والتكرارُ والسقف، والمهلةُ صفر، وقراءةُ المُطالِب.
     // زيادةٌ (`ح-8`): والآنَ 171 و 1533 بإغلاقِ بطاقةِ القروب (WR-10 · ADR 0270): ثلاثُ حالاتٍ في `wr-10-group-card-close.test.ts`.
     // زيادةٌ (`ح-8`): والآنَ 172 و 1539 بنقلِ مدينةِ السائقِ حسبَ موقعِه (WR-13 · ADR 0269): ستُّ حالاتٍ في `wr-13-driver-city-relocation.test.ts`.
-    expect(SKIP_REGISTRY).toHaveLength(172);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1539);
+    // زيادةٌ (`ح-8`): والآنَ 173 و 1546 بالإلغاءِ والحالاتِ النهائيّة (WR-22): سبعُ حالاتٍ في `wr-22-cancel-final-states.test.ts`.
+    expect(SKIP_REGISTRY).toHaveLength(173);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1546);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {

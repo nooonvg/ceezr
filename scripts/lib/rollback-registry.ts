@@ -1324,6 +1324,17 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     criticalPath: null,
     documentedIn: null,
   },
+  {
+    migration: "20261012190000_wr_22_cancel_releases_candidate.sql",
+    change: "revoke_function:cancel_order_by_rider(3)",
+    why: "الهجرةُ تُعيدُ تعريفَ `cancel_order_by_rider(uuid, uuid, text)` بـ`create or replace` **بالتوقيعِ نفسِه** لتحرّرَ مرشَّحَ «الراكبُ يختار» في معاملةِ الإلغاء (`WR-22`)، والسحبُ بعدَها إعادةُ قفلِ السطحِ كما كانَ — ممنوحةٌ لـ`service_role` وحدَها قبلُ وبعدُ، فلا تضييقَ فعليَّ. والمردُّ يزيدُ مفتاحًا (`candidate_released`) لا يقرؤه المُنادي القائم، فالشيفرةُ القديمةُ والجديدةُ تعملانِ معَ الصورتين. والعودةُ إعادةُ تطبيقِ النسخةِ من `20260906040000`: تعودُ الرسالةُ المكرَّرةُ للمرشَّحِ وحدَها، ولا يُفقَدُ صفّ.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    documentedIn: null,
+  },
 ];
 
 /**
