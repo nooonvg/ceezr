@@ -1166,19 +1166,25 @@ const orderChat =
             chatChannel?.publish(signal),
           log,
           // `WR-04` — ترجمةُ رسالةِ الطرفِ الآخرِ إلى لغةِ القارئ بمزوّدِ `TRANSLATION_PROVIDER`
-          // نفسِه. `none` ⇒ `translated: false` فيُعرَضُ الأصلُ وحدَه بلا خطأ.
-          translate: async (input: {
-            readonly text: string;
-            readonly from: string;
-            readonly to: string;
-          }) => {
-            if (!isSupportedLanguage(input.from) || !isSupportedLanguage(input.to)) return null;
-            const result = await translateMessage(
-              { text: input.text, pair: { from: input.from, to: input.to } },
-              container.translation,
-            );
-            return result.translated ? result.text : null;
-          },
+          // نفسِه. `none` ⇒ لا دالّةَ ترجمةٍ أصلًا، فيُعرَضُ الأصلُ وحدَه ولا إفصاحَ عن مزوّدٍ
+          // غيرِ موجود (ADR 0277).
+          ...(container.translation.provider === null
+            ? {}
+            : {
+                translate: async (input: {
+                  readonly text: string;
+                  readonly from: string;
+                  readonly to: string;
+                }) => {
+                  if (!isSupportedLanguage(input.from) || !isSupportedLanguage(input.to))
+                    return null;
+                  const result = await translateMessage(
+                    { text: input.text, pair: { from: input.from, to: input.to } },
+                    container.translation,
+                  );
+                  return result.translated ? result.text : null;
+                },
+              }),
         },
       };
 

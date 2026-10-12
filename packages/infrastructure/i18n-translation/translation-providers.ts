@@ -44,6 +44,14 @@ const defaultSleep = (ms: number): Promise<void> =>
 
 type ProviderResult = Promise<Result<TranslationSuccess, TranslationFailure>>;
 
+/** يحذفُ الروابطَ وسلاسلَ الاستعلامِ من نصِّ الخطأ — لا نصَّ محادثةٍ في السجلّ. */
+export function scrubDetail(detail: string): string {
+  return detail.replace(/https?:\/\/\S+/giu, "<url>").replace(/[?&]q=\S*/giu, "<query>");
+}
+
+/** حدُّ MyMemory المعلَنُ للنصِّ الواحد: 500 بايت UTF-8. ما فوقَه يُرَدُّ بلا نداء. */
+export const MYMEMORY_MAX_QUERY_BYTES = 500;
+
 /**
  * محاولة واحدة: نداء واحد بميزانية زمنية محدَّدة. لا تعرف شيئاً عن الإعادة.
  */
@@ -70,7 +78,9 @@ async function attemptJson(
     return ok((await response.json()) as unknown);
   } catch (error) {
     const isAbort = error instanceof Error && error.name === "AbortError";
-    const detail = error instanceof Error ? error.message : String(error);
+    // رسالةُ الخطأِ قد تحملُ الرابطَ كاملًا، وفي رابطِ MyMemory نصُّ المحادثةِ نفسُه (`q=`):
+    // يُحذَفُ قبلَ أن يصلَ السجلّ (ADR 0277).
+    const detail = scrubDetail(error instanceof Error ? error.message : String(error));
     return err(new TranslationFailure(isAbort ? "timeout" : "provider_unavailable", name, detail));
   } finally {
     clearTimeout(timeout);
@@ -280,6 +290,10 @@ export function createMyMemoryProvider(
   return {
     name,
     translate: async (request: TranslationRequest): ProviderResult => {
+      // المزوّدُ يردُّ «QUERY LENGTH LIMIT EXCEEDED» على ما فوقَ حدِّه — نداءٌ ضائعٌ من الحصّة.
+      if (new TextEncoder().encode(request.text).length > MYMEMORY_MAX_QUERY_BYTES) {
+        return err(new TranslationFailure("unsupported_pair", name, "query_too_long"));
+      }
       const params = new URLSearchParams({
         q: request.text,
         langpair: `${request.pair.from}|${request.pair.to}`,
@@ -301,7 +315,17 @@ export function createMyMemoryProvider(
         responseData?: { translatedText?: unknown };
       };
 
-      if (parsed.quotaFinished === true) {
+      // نفادُ الحصّةِ يأتي بثلاثِ صورٍ موثَّقة: الرايةُ، أو `responseStatus` 429، أو جملةُ
+      // «MYMEMORY WARNING» في حقلِ الترجمةِ نفسِه بحالةِ 200 — والأخيرةُ لو مرّت لعُرِضَت ترجمةً.
+      const warned =
+        typeof parsed.responseData?.translatedText === "string" &&
+        /^\s*MYMEMORY WARNING/i.test(parsed.responseData.translatedText);
+      if (
+        parsed.quotaFinished === true ||
+        parsed.responseStatus === 429 ||
+        parsed.responseStatus === "429" ||
+        warned
+      ) {
         return err(new TranslationFailure("rate_limited", name, "انتهت الحصّة اليومية"));
       }
       if (parsed.responseStatus !== 200 && parsed.responseStatus !== "200") {

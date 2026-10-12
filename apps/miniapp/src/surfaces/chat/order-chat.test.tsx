@@ -74,6 +74,7 @@ const LABEL_KEYS = [
   "translated",
   "showOriginal",
   "showTranslation",
+  "translationNotice",
 ] as const;
 
 const labels = Object.fromEntries(
@@ -339,5 +340,48 @@ describe("WR-04 — رسالةُ الموقعِ والترجمةُ في العم
     const code = read("./OrderChat.tsx").replace(/\/\*[\s\S]*?\*\//g, "");
     expect(code).not.toMatch(/type="file"/);
     expect(code).not.toMatch(/getUserMedia|MediaRecorder/);
+  });
+});
+
+describe("WR-04 — الإفصاحُ عن الترجمةِ الخارجيّة (ADR 0277)", () => {
+  const base = {
+    ok: true as const,
+    order: { id: "o", service: "transport" as const, status: "matched", writable: true },
+    my_role: "rider" as const,
+    counterpart: { role: "driver" as const, first_name: null },
+    messages: [],
+    last_seq: 0,
+    my_last_read_seq: 0,
+    counterpart_last_read_seq: 0,
+    unread: 0,
+  };
+  it("الخادمُ يقولُ إنّ الترجمةَ فعّالة ⇒ اللقطةُ تحملُها؛ وغيابُ الحقلِ (خادمٌ أقدم) ⇒ لا إفصاح", () => {
+    expect(applyThread(null, { ...base, translation_active: true }).translationActive).toBe(true);
+    expect(applyThread(null, { ...base, translation_active: false }).translationActive).toBe(false);
+    expect(applyThread(null, base).translationActive).toBe(false);
+  });
+  it("الإفصاحُ مشروطٌ باللقطة، وموصولٌ في شاشتَي الراكبِ والسائق بلغاتِه الثلاث", () => {
+    const source = readFileSync(new URL("./OrderChat.tsx", import.meta.url), "utf8");
+    expect(source).toContain("snapshot?.translationActive === true ?");
+    expect(source).toContain("{labels.translationNotice}");
+    const rider = readFileSync(
+      new URL("../rider/active/ActiveRideScreen.tsx", import.meta.url),
+      "utf8",
+    );
+    const driver = readFileSync(new URL("../driver/job/JobScreen.tsx", import.meta.url), "utf8");
+    expect(rider).toContain('translationNotice: t("rider.active.chat.translationNotice")');
+    expect(driver).toContain('translationNotice: t("driver.job.chat.translationNotice")');
+    for (const language of ["ar", "en", "ur"]) {
+      const dict = JSON.parse(
+        readFileSync(
+          new URL(`../../../../../packages/shared/i18n/miniapp/${language}.json`, import.meta.url),
+          "utf8",
+        ),
+      ) as Record<string, string>;
+      expect(dict["rider.active.chat.translationNotice"]?.length ?? 0).toBeGreaterThan(20);
+      expect(dict["driver.job.chat.translationNotice"]).toBe(
+        dict["rider.active.chat.translationNotice"],
+      );
+    }
   });
 });

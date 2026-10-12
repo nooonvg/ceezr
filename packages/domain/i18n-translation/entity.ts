@@ -23,6 +23,8 @@ export type SkipReason =
   | "empty_text"
   | "too_long"
   | "no_translatable_content"
+  /** `WR-04` (ADR 0277) — النصُّ يحملُ رقمَ هاتفٍ أو بريدًا أو رابطًا: لا يُرسَلُ لمزوّدٍ خارجيّ. */
+  | "sensitive_content"
   | "disabled";
 
 export type TranslationDecision =
@@ -45,6 +47,33 @@ export function hasTranslatableContent(text: string): boolean {
   return /\p{L}/u.test(text);
 }
 
+/** الأرقامُ العربيّةُ الهنديّةُ والفارسيّةُ إلى لاتينيّة — الهاتفُ يُكتَبُ بأيٍّ منها. */
+function latinDigits(text: string): string {
+  return text.replace(/[\u0660-\u0669\u06F0-\u06F9]/gu, (ch) => {
+    const code = ch.codePointAt(0) ?? 0;
+    return String((code >= 0x06f0 ? code - 0x06f0 : code - 0x0660) % 10);
+  });
+}
+
+const EMAIL_PATTERN = /[^\s@]+@[^\s@]+\.[^\s@]{2,}/u;
+const LINK_PATTERN = /(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|sa|me|io|ly|gl)\b/iu;
+/** سبعةُ أرقامٍ فأكثرُ متّصلةٌ أو مفصولةٌ بمسافةٍ أو شرطةٍ أو نقطةٍ أو قوس: رقمُ هاتفٍ أو حساب. */
+const LONG_NUMBER_PATTERN = /\d(?:[\s\-.()]{0,2}\d){6,}/u;
+
+/**
+ * `WR-04` (ADR 0277) — تقليلُ البيانات: نصُّ المحادثةِ يُرسَلُ إلى خدمةِ ترجمةٍ عامّة، فما يحملُ
+ * رقمَ هاتفٍ أو بريدًا أو رابطًا يُعرَضُ بأصلِه ولا يُرسَل. الثمنُ رسالةٌ بلا ترجمة؛ والبديلُ
+ * رقمُ راكبٍ في سجلِّ طرفٍ ثالث.
+ */
+export function hasSensitiveContent(text: string): boolean {
+  const normalized = latinDigits(text);
+  return (
+    EMAIL_PATTERN.test(normalized) ||
+    LINK_PATTERN.test(normalized) ||
+    LONG_NUMBER_PATTERN.test(normalized)
+  );
+}
+
 export function decideTranslation(input: DecideTranslationInput): TranslationDecision {
   if (!input.enabled) return { kind: "skip", reason: "disabled" };
 
@@ -52,6 +81,7 @@ export function decideTranslation(input: DecideTranslationInput): TranslationDec
   if (text === "") return { kind: "skip", reason: "empty_text" };
   if (sameLanguage(input.pair)) return { kind: "skip", reason: "same_language" };
   if (!hasTranslatableContent(text)) return { kind: "skip", reason: "no_translatable_content" };
+  if (hasSensitiveContent(text)) return { kind: "skip", reason: "sensitive_content" };
 
   const limit = input.maxChars ?? TRANSLATION_MAX_CHARS;
   if (text.length > limit) return { kind: "skip", reason: "too_long" };

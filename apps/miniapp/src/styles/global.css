@@ -8875,6 +8875,12 @@ body {
   color: var(--tg-text-color);
 }
 
+/* WR-04 (ADR 0277) — الإفصاحُ عن الترجمةِ الخارجيّة: سطرٌ إعلاميٌّ بوزنٍ عاديٍّ ولونِ التلميح. */
+.ocht__privacy {
+  font-weight: 400;
+  color: var(--tg-hint-color);
+}
+
 .ocht__refresh {
   align-self: flex-start;
   padding: 0;

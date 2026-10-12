@@ -1836,6 +1836,7 @@
   "rider.active.chat.translated": "مترجمة آليًا",
   "rider.active.chat.showOriginal": "عرض النص الأصلي",
   "rider.active.chat.showTranslation": "عرض الترجمة",
+  "rider.active.chat.translationNotice": "تُترجَم الرسائل النصية آليًا عبر خدمة ترجمة خارجية. لا تُرسَل للترجمة الرسائل التي فيها رقم هاتف أو بريد أو رابط، ولا الموقع.",
   "driver.job.chat.shareLocation": "شارك موقعي",
   "driver.job.chat.locating": "جارٍ تحديد موقعك…",
   "driver.job.chat.locationPreview": "هذا موقعك الحالي. هل ترسله؟",
@@ -1847,5 +1848,6 @@
   "driver.job.chat.accuracy": "الدقة ± {value} م",
   "driver.job.chat.translated": "مترجمة آليًا",
   "driver.job.chat.showOriginal": "عرض النص الأصلي",
-  "driver.job.chat.showTranslation": "عرض الترجمة"
+  "driver.job.chat.showTranslation": "عرض الترجمة",
+  "driver.job.chat.translationNotice": "تُترجَم الرسائل النصية آليًا عبر خدمة ترجمة خارجية. لا تُرسَل للترجمة الرسائل التي فيها رقم هاتف أو بريد أو رابط، ولا الموقع."
 }
