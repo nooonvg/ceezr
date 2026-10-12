@@ -684,7 +684,7 @@ export default function RiderRoot({ language, onLanguageChanged, entry }: Langua
   // الوجهةُ المُصادَقةُ تُقتبَسُ: أوّلُ شاشةٍ بعدَ الحكمِ، ولا تُركَّبُ إلّا بعدَه.
   const view = riderFlowView(flow);
   if (view.screen === "quote") {
-    const { confirmed } = view;
+    const { confirmed, service, pickup } = view;
     return (
       <ScreenFrame
         mode="flow"
@@ -704,6 +704,8 @@ export default function RiderRoot({ language, onLanguageChanged, entry }: Langua
               showTitle={false}
               onOpenSos={onOpenSos}
               onRequest={flowHandlers.onRequest}
+              {...(service === null ? {} : { service })}
+              {...(pickup === null ? {} : { initialPickup: pickup })}
             />
           </Deferred>
         </ScreenTransition>
@@ -713,17 +715,42 @@ export default function RiderRoot({ language, onLanguageChanged, entry }: Langua
 
   // الوجهةُ المختارةُ تُصادَقُ قبلَ أيِّ خطوةٍ تاليةٍ: لا شاشةَ بعدَها تقبلُ
   // إحداثيّةً لم تحكمْ عليها القاعدةُ (القاعدة 0.5).
-  if (view.screen === "destination") {
-    const { chosen } = view;
+  // `WR-16C`: التوصيلُ بعدَ تأكيدِ الاستلامِ يسألُ «إلى أين نوصله؟» بالشاشةِ نفسِها.
+  if (view.screen === "dropoff") {
     return (
       <ScreenFrame
         mode="flow"
-        title={t("rider.frame.destination")}
+        title={t("rider.frame.deliveryDropoff")}
         back={{ label: t("rider.frame.back"), onBack: flowHandlers.onBack }}
       >
         <ScreenTransition screenKey={stackKey} motion={stack.motion}>
           <Deferred>
             <DestinationScreen
+              purpose="deliveryDropoff"
+              initialLanguage={language}
+              showTitle={false}
+              onOpenSos={onOpenSos}
+              onConfirmed={flowHandlers.onConfirmed}
+            />
+          </Deferred>
+        </ScreenTransition>
+      </ScreenFrame>
+    );
+  }
+
+  if (view.screen === "destination") {
+    const { chosen } = view;
+    const deliveryFirst = chosen.service === "delivery";
+    return (
+      <ScreenFrame
+        mode="flow"
+        title={t(deliveryFirst ? "rider.frame.deliveryPickup" : "rider.frame.destination")}
+        back={{ label: t("rider.frame.back"), onBack: flowHandlers.onBack }}
+      >
+        <ScreenTransition screenKey={stackKey} motion={stack.motion}>
+          <Deferred>
+            <DestinationScreen
+              purpose={deliveryFirst ? "deliveryPickup" : "destination"}
               initialQuery={chosen.lat === null || chosen.lng === null ? chosen.label : ""}
               {...(chosen.lat === null || chosen.lng === null
                 ? {}

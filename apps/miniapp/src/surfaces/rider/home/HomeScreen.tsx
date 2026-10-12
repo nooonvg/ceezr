@@ -96,6 +96,28 @@ import {
   fetchSavedPlaces,
 } from "./places-api.ts";
 
+/**
+ * `WR-16C` — الحقلُ الأوّلُ يتبعُ الخدمة: المشوارُ يسألُ «إلى أين؟»، والتوصيلُ يسألُ أوّلًا «من أين
+ * نستلم الطلب؟» ثمَّ تُسأَلُ الوجهةُ في الخطوةِ التالية (`rider-flow.ts`).
+ */
+export function homeFieldText(service: HomeService): {
+  readonly prompt: string;
+  readonly placeholder: string;
+  readonly hint: string;
+} {
+  return service === "delivery"
+    ? {
+        prompt: "rider.home.delivery.prompt",
+        placeholder: "rider.home.delivery.placeholder",
+        hint: "rider.home.delivery.hint",
+      }
+    : {
+        prompt: "rider.home.destination.prompt",
+        placeholder: "rider.home.destination.placeholder",
+        hint: "rider.home.map.unavailable",
+      };
+}
+
 export interface ChosenDestination {
   readonly label: string;
   readonly lat: number | null;
@@ -332,7 +354,11 @@ export function HomeScreen({
           type="button"
           className={`rh__service${name === service ? " rh__service--on" : ""}`}
           aria-pressed={name === service}
-          onClick={() => setService(name)}
+          onClick={() => {
+            // `WR-16C`: نصٌّ كُتِبَ وجهةً لا يصيرُ مكانَ استلامٍ بتبديلِ الخدمة — يُفرَّغُ الحقل.
+            if (name !== service) setTyped("");
+            setService(name);
+          }}
         >
           <Glyph name={name === "transport" ? "car" : "parcel"} className="rh__service-icon" />
           <span>{t(serviceKey(name))}</span>
@@ -454,7 +480,7 @@ export function HomeScreen({
         {services}
         {mapProvider === "none" ? null : <div className="rh__map" data-provider={mapProvider} />}
         <label className="rh__field" htmlFor="rh-destination">
-          <span className="rh__field-label">{t("rider.home.destination.prompt")}</span>
+          <span className="rh__field-label">{t(homeFieldText(service).prompt)}</span>
           <span className="rh__input-wrap">
             <Glyph name="pin" className="rh__input-icon" />
             <input
@@ -463,7 +489,7 @@ export function HomeScreen({
               type="text"
               enterKeyHint="search"
               autoComplete="off"
-              placeholder={t("rider.home.destination.placeholder")}
+              placeholder={t(homeFieldText(service).placeholder)}
               value={typed}
               onChange={(event) => setTyped(event.target.value)}
               onKeyDown={(event) => {
@@ -475,7 +501,7 @@ export function HomeScreen({
           </span>
         </label>
         {mapProvider === "none" ? (
-          <p className="sys__hint">{t("rider.home.map.unavailable")}</p>
+          <p className="sys__hint">{t(homeFieldText(service).hint)}</p>
         ) : null}
         <button
           type="button"

@@ -1,0 +1,27 @@
+{
+  "id": "wr-16c-service-aware-fields",
+  "goal": "تبديل الخدمة يغيّر السؤال والحقول والخطوات (§16-ج، §17): المشوار «إلى أين؟» ثم الالتقاط، والتوصيل «من أين نستلم الطلب؟» ثم «إلى أين نوصله؟»، بلا نقاط معكوسة ولا سؤال ثانٍ عن الخدمة.",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "apps/miniapp/src/surfaces/rider/RiderRoot.tsx",
+    "apps/miniapp/src/surfaces/rider/destination/DestinationScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/home/HomeScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/quote/QuoteScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/rider-flow.ts",
+    "apps/miniapp/src/surfaces/rider/rider-root-screen-stack.test.tsx",
+    "apps/miniapp/src/surfaces/rider/wr-16c-service-fields.test.tsx",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/unit/sos-entry-surfaces.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "شاشة المكان نفسها (DestinationScreen) بغرضين جديدين deliveryPickup/deliveryDropoff، وشاشة تدفّق dropoff في rider-flow. والاستلام المؤكَّد يمرّ إلى QuoteScreen بـinitialPickup فيصير origin، والوجهة destination، كما يتوقع الخادم. لا تغيير في الخادم ولا العقد.",
+  "tests": ["cd apps/miniapp && bun test src/surfaces/rider"],
+  "evidence": "محليًا: 150/150 في سطح الراكب، ومنها wr-16c-service-fields 10/10، وtypecheck وlint وحواجز المستودع. لم يُنشر.",
+  "constraints": ["لا تغيير في الخادم", "لا شاشة تسعير مستقلة جديدة", "لا خريطة مدّعاة"],
+  "limitations": "عناوين «أماكن محفوظة» و«آخر وجهاتك» في الرئيسية باقية، والمختار منها في التوصيل يصير مكان الاستلام.",
+  "status": "open"
+}
