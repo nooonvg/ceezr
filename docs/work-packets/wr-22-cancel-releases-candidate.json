@@ -1,0 +1,26 @@
+{
+  "id": "wr-22-cancel-releases-candidate",
+  "goal": "إلغاء الراكب أثناء انتظار قراره في مرشَّح (WR-09) يحرّر المرشَّح في المعاملة نفسها ويُخطره مرة واحدة، وقياس الحالات النهائية (§22) على قاعدة حقيقية.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0266-rider-chooses-driver.md"
+  ],
+  "implementation": [
+    "supabase/migrations/20261012190000_wr_22_cancel_releases_candidate.sql",
+    "tests/integration/wr-22-cancel-final-states.test.ts",
+    "scripts/lib/skip-registry.ts",
+    "scripts/lib/rollback-registry.ts",
+    "tests/unit/skip-audit.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "الصورة السابقة لـcancel_order_by_rider حرفًا مع استثناء المرشَّح من order_cancelled واستدعاء release_order_candidate(CANCELLED) بعد تحويل الطلب. لا تغيير في سياسة الإلغاء.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/wr-22-cancel-final-states.test.ts tests/integration/wr-09-rider-choice.test.ts tests/integration/order-cancellation.test.ts tests/integration/notification-outbox-cancellation.test.ts"
+  ],
+  "evidence": "31/31 على قاعدة محلية من main. واختبار المرشَّح يسقط على الصورة السابقة. وmd5 الإنتاج للدالة يطابق الصورة السابقة (83bc47b5…).",
+  "constraints": ["لا تغيير في سياسة من يلغي ومتى", "لا نوع إشعار جديد"],
+  "limitations": "إلغاء الإدارة وانتهاء البحث يبقيان على شوط expire_order_candidates.",
+  "status": "open"
+}
