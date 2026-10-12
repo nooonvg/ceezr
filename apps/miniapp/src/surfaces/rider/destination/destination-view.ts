@@ -367,3 +367,24 @@ const FIX_REASON_KEYS: Readonly<Record<DeviceFixReason, string>> = {
 export function fixReasonKey(reason: DeviceFixReason): string {
   return FIX_REASON_KEYS[reason];
 }
+
+/**
+ * `WR-16D` — موضعُ اختصارِ «استخدم موقعي الحالي»: قبلَ النتائجِ ما دامَ البحثُ فارغًا، وبعدَها
+ * حينَ يكتبُ الراكبُ اسمًا، فلا يبدو أوّلَ نتيجةٍ لبحثِ «الحرم» ولا بديلًا عنه.
+ */
+export function locateShortcutPlacement(typed: string): "beforeResults" | "afterResults" {
+  return isSearchable(typed) ? "afterResults" : "beforeResults";
+}
+
+/**
+ * `WR-16D` — الموقعُ الحاليُّ لا يمحو مكانًا مختارًا بالاسمِ إلّا بموافقة: إن كانَ المقبولُ اسمًا
+ * اختارَه الراكبُ (اقتراحٌ أو مكانٌ محفوظ) سُئلَ قبلَ الاستبدال، وإلّا قُرئَ الموقعُ مباشرة.
+ */
+export function locateIntent(
+  accepted: { readonly presetLabel: string | null } | null,
+): { readonly kind: "read" } | { readonly kind: "confirmReplace"; readonly label: string } {
+  if (accepted === null || accepted.presetLabel === null || accepted.presetLabel.trim() === "") {
+    return { kind: "read" };
+  }
+  return { kind: "confirmReplace", label: accepted.presetLabel };
+}

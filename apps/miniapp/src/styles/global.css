@@ -763,6 +763,14 @@ a.sys__action {
   font: inherit;
 }
 
+/* `WR-16D` — اختصارُ الموقعِ الحاليّ كتلةٌ منفصلةٌ عن نتائجِ البحث، وسؤالُ الاستبدالِ داخلَها. */
+.rd__locate-shortcut {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-block-start: 0.25rem;
+}
+
 .rd__locate {
   display: inline-flex;
   align-items: center;

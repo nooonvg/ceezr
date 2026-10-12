@@ -71,6 +71,8 @@ import {
   isSearchable,
   labelFor,
   landmarkPhrase,
+  locateIntent,
+  locateShortcutPlacement,
   locationRefusalKey,
   offersLocationSettings,
   pointSourceKey,
@@ -250,6 +252,8 @@ export function DestinationScreen({
   /** الرابطُ الأصليُّ كما لصقَه الراكب — يبقى معَ أيِّ نقطةٍ تُختارُ بعدَه. */
   const [link, setLink] = useState<ParsedPlaceLink | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
+  /** `WR-16D` — اسمُ المكانِ المختارِ الذي يُسألُ الراكبُ قبلَ استبدالِه بموقعِه الحالي. */
+  const [replaceAsk, setReplaceAsk] = useState<string | null>(null);
   const mounted = useRef(true);
   /** ترتيبُ النداءاتِ: ردٌّ متأخِّرٌ لاستفهامٍ قديمٍ **يُطرَحُ** ولا يُعرَضُ. */
   const issued = useRef(0);
@@ -304,6 +308,7 @@ export function DestinationScreen({
     async (presetLabel: string | null, lat: number, lng: number, origin: PointOrigin) => {
       setPick({ kind: "resolving" });
       setAcknowledged(false);
+      setReplaceAsk(null);
       // الاسمُ لا يُستنتَجُ من النقطة: اقتراحٌ يملأُ الاسمَ باسمِه، ونقطةٌ بلا اسمٍ تُفرِّغُ
       // اسماً ملأَه اقتراحٌ سابق — فلا يبقى «قباء» على قراءةِ جهازٍ في مكانٍ آخر.
       if (presetLabel !== null) {
@@ -689,6 +694,51 @@ export function DestinationScreen({
     );
   };
 
+  /**
+   * `WR-16D` — «استخدم موقعي الحالي» اختصارٌ اختياريٌّ منفصل: لا يُفعَّلُ وحدَه، ولا يمحو مكانًا
+   * اختارَه الراكبُ بالاسمِ دونَ سؤال، ويقعُ بعدَ نتائجِ البحثِ حينَ يُكتَبُ اسم.
+   */
+  const askOrLocate = () => {
+    const intent = locateIntent(pick.kind === "accepted" ? pick : null);
+    if (intent.kind === "confirmReplace") {
+      setReplaceAsk(intent.label);
+      return;
+    }
+    setReplaceAsk(null);
+    void pickMyLocation();
+  };
+  const locateShortcut =
+    replaceAsk === null ? (
+      <div className="rd__locate-shortcut">
+        {isSearchable(typed) ? (
+          <p className="sys__hint">{t("rider.destination.location.orInstead")}</p>
+        ) : null}
+        <button type="button" className="rd__locate" onClick={askOrLocate}>
+          <Glyph name="navigate" className="rd__locate-icon" />
+          {t("rider.destination.location.action")}
+        </button>
+      </div>
+    ) : (
+      <div className="rd__locate-shortcut" role="alert">
+        <p className="sys__body">
+          {t("rider.destination.location.replaceAsk").replace("{label}", replaceAsk)}
+        </p>
+        <button
+          type="button"
+          className="rd__locate"
+          onClick={() => {
+            setReplaceAsk(null);
+            void pickMyLocation();
+          }}
+        >
+          {t("rider.destination.location.replaceYes")}
+        </button>
+        <button type="button" className="rd__back" onClick={() => setReplaceAsk(null)}>
+          {t("rider.destination.location.replaceKeep").replace("{label}", replaceAsk)}
+        </button>
+      </div>
+    );
+
   /** الاسمُ والملاحظاتُ والرابطُ — لكلٍّ من الالتقاطِ والوجهة (`ADR 0247`). */
   const placeFields = (
     <div className="rd__place">
@@ -783,14 +833,12 @@ export function DestinationScreen({
         />
       </label>
 
-      <button type="button" className="rd__locate" onClick={() => void pickMyLocation()}>
-        <Glyph name="navigate" className="rd__locate-icon" />
-        {t("rider.destination.location.action")}
-      </button>
+      {locateShortcutPlacement(typed) === "beforeResults" ? locateShortcut : null}
 
       {/* `UX-V2`: الاقتراحاتُ تلي حقلَ البحثِ مباشرةً (اللوحة 01 · R2). ثمّ الاسمُ والرابطُ
           والملاحظاتُ قبلَ بطاقةِ النقطة: زرُّ الاعتمادِ آخرُ ما يُرى لا أوّلُه. */}
       {results()}
+      {locateShortcutPlacement(typed) === "afterResults" ? locateShortcut : null}
       {placeFields}
       {verdict()}
 
