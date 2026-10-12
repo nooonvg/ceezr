@@ -27,6 +27,8 @@ export interface ChatLocation {
   readonly lng: number;
   readonly accuracyM: number | null;
   readonly label: string | null;
+  /** رابطُ فتحِ النقطةِ في الخرائطِ كما بناه الخادم — لا يُركَّبُ هنا (`F1-10`). */
+  readonly mapsUrl?: string | null;
 }
 
 /** ترجمةُ رسالةِ الطرفِ الآخرِ إلى لغةِ القارئ — والأصلُ في `body`. */
@@ -95,6 +97,7 @@ interface WireMessage {
     readonly lng: number;
     readonly accuracy_m: number | null;
     readonly label: string | null;
+    readonly maps_url?: string | null;
   } | null;
   readonly translation?: ChatTranslation | null;
 }
@@ -132,6 +135,10 @@ export function fromWireMessage(m: WireMessage): ChatMessage {
           lng,
           accuracyM: finite(m.location?.accuracy_m),
           label: typeof m.location?.label === "string" ? m.location.label : null,
+          mapsUrl:
+            typeof m.location?.maps_url === "string" && m.location.maps_url.startsWith("https://")
+              ? m.location.maps_url
+              : null,
         }
       : null;
   const translation =
@@ -154,13 +161,6 @@ export function fromWireMessage(m: WireMessage): ChatMessage {
     location,
     translation,
   };
-}
-
-/** رابطُ فتحِ النقطةِ في تطبيقِ الخرائط — https فقط (`openExternalLink` يرفضُ سواه). */
-export function mapsUrlOf(location: Pick<ChatLocation, "lat" | "lng">): string {
-  const lat = location.lat.toFixed(6);
-  const lng = location.lng.toFixed(6);
-  return `https://www.google.com/maps/search/?api=1&query=${lat}%2C${lng}`;
 }
 
 export interface ChatApi {

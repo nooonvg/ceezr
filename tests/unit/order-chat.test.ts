@@ -397,7 +397,14 @@ describe("WR-04 — ترجمةُ محادثةِ Mini App", () => {
     ...thread,
     myLanguage: "ar",
     counterpart: { role: "driver", firstName: "Imran", language: "ur" },
-    messages: [message, theirs("t1", "میں دروازے پر ہوں"), theirs("t2", "21.4,39.1", "location")],
+    messages: [
+      message,
+      theirs("t1", "میں دروازے پر ہوں"),
+      {
+        ...theirs("t2", "21.4,39.1", "location"),
+        location: { lat: 21.4, lng: 39.1, accuracyM: null, label: null },
+      },
+    ],
   };
 
   it("رسالةُ الطرفِ الآخرِ النصّيّةُ تُترجَمُ إلى لغةِ القارئ ويبقى الأصل", async () => {
@@ -501,6 +508,11 @@ describe("WR-04 — ترجمةُ محادثةِ Mini App", () => {
     expect(t1?.body).toBe("میں دروازے پر ہوں");
     expect(t1?.translation).toEqual({ text: "أنا عند الباب", from: "ur", to: "ar" });
     expect(body.messages.find((m) => m.id === "m1")?.kind).toBe("text");
+    // رابطُ الخرائطِ يبنيه الخادمُ للموقعِ وحدَه؛ والمصغَّرُ لا يُركِّبُ عنوانًا.
+    const t2 = body.messages.find((m) => m.id === "t2") as {
+      location: { maps_url: string } | null;
+    };
+    expect(t2.location?.maps_url).toBe("https://maps.google.com/?q=21.4,39.1");
   });
 });
 

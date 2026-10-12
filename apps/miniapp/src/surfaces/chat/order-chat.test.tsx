@@ -19,7 +19,6 @@ import {
   type ChatMessage,
   chatFailureOf,
   fromWireMessage,
-  mapsUrlOf,
   mergeMessages,
   settlePending,
 } from "./order-chat-client.ts";
@@ -263,7 +262,13 @@ describe("WR-04 — رسالةُ الموقعِ والترجمةُ في العم
       location: { lat: 24.4672, lng: 39.6111, accuracy_m: 12.5, label: null },
     });
     expect(m.kind).toBe("location");
-    expect(m.location).toEqual({ lat: 24.4672, lng: 39.6111, accuracyM: 12.5, label: null });
+    expect(m.location).toEqual({
+      lat: 24.4672,
+      lng: 39.6111,
+      accuracyM: 12.5,
+      label: null,
+      mapsUrl: null,
+    });
   });
 
   it("موقعٌ بلا إحداثيّاتٍ صالحةٍ يُعرَضُ نصًّا لا بطاقةً فارغة", () => {
@@ -293,10 +298,20 @@ describe("WR-04 — رسالةُ الموقعِ والترجمةُ في العم
     ).toBeNull();
   });
 
-  it("رابطُ الخرائطِ https بإحداثيّاتٍ مُقيَّدةِ الدقّة", () => {
-    const url = mapsUrlOf({ lat: 24.46720001, lng: 39.6111 });
-    expect(url.startsWith("https://")).toBe(true);
-    expect(url).toContain("24.467200%2C39.611100");
+  it("رابطُ الخرائطِ يُقرأُ من الخادمِ وحدَه، وغيرُ https يُسقَط", () => {
+    const loc = { lat: 24.4672, lng: 39.6111, accuracy_m: null, label: null };
+    const served = fromWireMessage({
+      ...base,
+      kind: "location",
+      location: { ...loc, maps_url: "https://maps.google.com/?q=24.4672,39.6111" },
+    });
+    expect(served.location?.mapsUrl).toBe("https://maps.google.com/?q=24.4672,39.6111");
+    const unsafe = fromWireMessage({
+      ...base,
+      kind: "location",
+      location: { ...loc, maps_url: "javascript:alert(1)" },
+    });
+    expect(unsafe.location?.mapsUrl).toBeNull();
   });
 
   it("زرُّ مشاركةِ الموقعِ ظاهرٌ ومعطَّلٌ قبلَ أوّلِ قراءة، ولا يُطلَبُ الموقعُ عندَ العرض", () => {

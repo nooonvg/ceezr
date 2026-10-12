@@ -22,7 +22,6 @@ import {
   type ChatSnapshot,
   chatFailureOf,
   fromWireMessage,
-  mapsUrlOf,
   mergeMessages,
   newClientMessageId,
   type PendingMessage,
@@ -328,13 +327,18 @@ export function OrderChat({
           {labels.accuracy.replace("{meters}", String(Math.round(location.accuracyM)))}
         </span>
       ) : null}
-      <button
-        type="button"
-        className="ocht__loc-open"
-        onClick={() => void openLink(mapsUrlOf(location))}
-      >
-        {labels.openInMaps}
-      </button>
+      {typeof location.mapsUrl === "string" ? (
+        <button
+          type="button"
+          className="ocht__loc-open"
+          onClick={() => {
+            const url = location.mapsUrl;
+            if (typeof url === "string") void openLink(url);
+          }}
+        >
+          {labels.openInMaps}
+        </button>
+      ) : null}
     </span>
   );
 

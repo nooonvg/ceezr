@@ -20,6 +20,7 @@ import {
   postOrderChatMessage,
   readOrderChat,
 } from "../../../../packages/application/messaging/order-chat.ts";
+import { navigationUrlFor } from "./place-links.ts";
 import { readBounded } from "./telegram-webhook.ts";
 
 export interface OrderChatRouteDependencies {
@@ -77,6 +78,11 @@ export function wireMessage(message: OrderChatMessage) {
             lng: message.location.lng,
             accuracy_m: message.location.accuracyM,
             label: message.location.label,
+            // الرابطُ يُبنى في الخادمِ وحدَه (`F1-10`/`TG-005`): المصغَّرُ يفتحُ ما أُعطِيَ ولا يُركِّبُ عنوانًا.
+            maps_url: navigationUrlFor({
+              latitude: message.location.lat,
+              longitude: message.location.lng,
+            }),
           },
     translation:
       message.translation === undefined || message.translation === null
