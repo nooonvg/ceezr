@@ -23,6 +23,7 @@
     "packages/shared/i18n/ur.json",
     "supabase/migrations/20261013000800_wr_22_search_expiry.sql",
     "tests/integration/wr-22-search-expiry.test.ts",
+    "tests/unit/embedded-worker.test.ts",
     "tests/unit/wr-22-search-expiry.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
