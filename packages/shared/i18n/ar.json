@@ -526,5 +526,7 @@
   "driver.candidate_cancelled": "ألغى العميل الطلب {order} قبل أن يختار. لا داعي للتوجّه إليه.",
   "tracking.rider_candidate": "🚗 قبِل سائق طلبك {order}\nالسائق: {driver}\n⭐ التقييم: {rating}\n🚙 المركبة: {vehicle}\n🔢 اللوحة: {plate}\nأمامك {seconds} ثانية لتختاره أو ترفضه — افتح الطلب.",
   "tracking.rider_candidate_unrated": "جديد",
-  "miniapp.driver_job_button": "📱 افتح الرحلة في وَصْلة"
+  "miniapp.driver_job_button": "📱 افتح الرحلة في وَصْلة",
+  "chat.new_message_from_driver": "💬 لديك رسالة جديدة من السائق في الطلب {order}. افتح الطلب لقراءتها والرد.",
+  "chat.new_message_from_rider": "💬 لديك رسالة جديدة من العميل في الطلب {order}. افتح الرحلة لقراءتها والرد."
 }

@@ -15,6 +15,7 @@ import {
   createOrderCancelledHandler,
 } from "../../../packages/application/dispatch/deliver-cancellation-notification.ts";
 import { createDriverCandidateNoticeHandler } from "../../../packages/application/dispatch/deliver-candidate-notices.ts";
+import { createChatMessageNoticeHandler } from "../../../packages/application/dispatch/deliver-chat-message-notice.ts";
 import {
   createLostItemReportHandler,
   type LostItemMessenger,
@@ -764,6 +765,17 @@ export function buildWorkerContainer(
         ? log.error(event, meta)
         : log.info(event, meta),
   });
+  /**
+   * `WR-04` (ADR 0267) — تنبيهُ رسالةِ المحادثةِ الجديدة: ببوتِ المستقبِل، بلا نصِّ الرسالة،
+   * ويُطوى إن قرأَها المستقبِلُ داخلَ Mini App قبلَ موعدِه أو انتهت الرحلة.
+   */
+  const chatMessageNoticeHandler = createChatMessageNoticeHandler({
+    riderSender: asIdentifyingSender(withTrafficPriority(riderTelegram, "order_chat_message")),
+    driverSender: asIdentifyingSender(withTrafficPriority(telegram, "order_chat_message")),
+    miniAppUrl: config.botSurfaceMode === "miniapp" ? config.miniAppUrl : null,
+    log: (event, meta) =>
+      event === "order_chat_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
+  });
   const notificationHandlers = {
     offer: createOfferNotificationHandler(offerPublisher),
     dispute_resolution: createDisputeResolutionHandler({
@@ -791,6 +803,7 @@ export function buildWorkerContainer(
     safety_resolution_blocked: createSafetyResolutionClosedHandler(safetyResolutionMessenger),
     rider_trip_notice: riderTripNoticeHandler,
     driver_candidate_notice: driverCandidateNoticeHandler,
+    order_chat_message: chatMessageNoticeHandler,
   };
 
   /**

@@ -526,5 +526,7 @@
   "driver.candidate_cancelled": "گاہک نے انتخاب سے پہلے آرڈر {order} منسوخ کر دیا۔ وہاں جانے کی ضرورت نہیں۔",
   "tracking.rider_candidate": "🚗 ایک ڈرائیور نے آپ کا آرڈر {order} قبول کیا\nڈرائیور: {driver}\n⭐ ریٹنگ: {rating}\n🚙 گاڑی: {vehicle}\n🔢 نمبر پلیٹ: {plate}\nمنتخب یا مسترد کرنے کے لیے آپ کے پاس {seconds} سیکنڈ ہیں — آرڈر کھولیں۔",
   "tracking.rider_candidate_unrated": "نیا",
-  "miniapp.driver_job_button": "📱 وَصْلة میں سفر کھولیں"
+  "miniapp.driver_job_button": "📱 وَصْلة میں سفر کھولیں",
+  "chat.new_message_from_driver": "💬 آرڈر {order} پر ڈرائیور کی طرف سے آپ کے لیے نیا پیغام ہے۔ پڑھنے اور جواب دینے کے لیے آرڈر کھولیں۔",
+  "chat.new_message_from_rider": "💬 آرڈر {order} پر گاہک کی طرف سے آپ کے لیے نیا پیغام ہے۔ پڑھنے اور جواب دینے کے لیے سفر کھولیں۔"
 }

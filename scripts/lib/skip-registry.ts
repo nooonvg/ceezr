@@ -577,6 +577,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-04-chat-message-notice.test.ts",
+    suites: ["WR-04 — تنبيهُ رسالةِ المحادثةِ الجديدةِ للطرفِ الآخر (ADR 0267)"],
+    skipped: 6,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في تنبيهِ رسالةِ المحادثةِ أنَّ `post_order_message` يودعُ صفّاً **مؤجَّلاً ومجمَّعاً** للطرفِ الآخرِ وحدَه بلا نصِّ الرسالة، وأنَّ المكرَّرةَ لا تُنبِّه، وأنَّ التهدئةَ تُحترَم، وأنَّ المُطالِبَ يقرأُ محادثةَ المستقبِلِ وهل قرأ. وهذه أحكامُ دوالَّ وقيودٍ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012150000 و20261012150100). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-09-rider-choice.test.ts",
     suites: ["WR-09 — الراكبُ يختارُ السائقَ خلالَ مهلةٍ يحكمُها الخادم"],
     skipped: 10,
