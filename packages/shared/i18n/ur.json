@@ -130,6 +130,8 @@
   "group.escalation_reason_unsubscribed_cycles_exhausted": "غیر سبسکرائبڈ گروپ کے راؤنڈ بغیر اتفاق کے ختم ہو گئے",
   "group.unsub_accept_button": "✅ قبول",
   "group.unsub_card": "{marker} دستیاب درخواست — راؤنڈ {cycle}\n\n{marker} سروس: {service}\n📍 تخمینی علاقہ: {area}\n{details}\n\nپہلے تین جو «قبول» دبائیں گے، ترتیب سے باری پائیں گے۔",
+  "group.unsub_card_assigned": "✅ یہ درخواست ایک ڈرائیور کو دے دی گئی ہے اور اب دستیاب نہیں۔",
+  "group.unsub_card_closed": "⛔ یہ کارڈ ختم ہو گیا ہے؛ درخواست اب اس کے ذریعے دستیاب نہیں۔",
   "group.unsub_no_notes": "کوئی نہیں",
   "language.changed": "✅ ہو گیا — اب آپ کی زبان {language} ہے۔",
   "language.choose": "🌐 اپنی زبان منتخب کریں — بوٹ کے تمام پیغامات اسی میں آئیں گے، اور دوسرے فریق کے پیغامات اسی میں ترجمہ ہوں گے۔",

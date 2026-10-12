@@ -130,6 +130,8 @@
   "group.escalation_reason_unsubscribed_cycles_exhausted": "Unsubscribed-group cycles exhausted with no agreement",
   "group.unsub_accept_button": "✅ Accept",
   "group.unsub_card": "{marker} Available request — cycle {cycle}\n\n{marker} Service: {service}\n📍 Approximate area: {area}\n{details}\n\nThe first three to tap “Accept” get their turn in order.",
+  "group.unsub_card_assigned": "✅ This request has been assigned to a driver and is no longer available.",
+  "group.unsub_card_closed": "⛔ This card has ended; the request is no longer available through it.",
   "group.unsub_no_notes": "None",
   "language.changed": "✅ Done — your language is now {language}.",
   "language.choose": "🌐 Pick your language — every bot message will come in it, and the other party's messages will be translated into it.",

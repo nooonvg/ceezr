@@ -9,6 +9,10 @@
  */
 
 import {
+  type CloseStaleGroupCardsDependencies,
+  closeStaleGroupCards,
+} from "../../../../packages/application/dispatch/close-stale-group-cards.ts";
+import {
   type EscalateUnmatchedOrderDependencies,
   escalateUnmatchedOrder,
 } from "../../../../packages/application/dispatch/escalate-unmatched-order.ts";
@@ -32,6 +36,8 @@ export interface RotateUnsubscribedDependencies {
   readonly republish: RepublishDependencies;
   readonly escalate: EscalateUnmatchedOrderDependencies;
   readonly clock: Clock;
+  /** `WR-10` — إغلاقُ بطاقاتِ الدوراتِ المنتهية. اختياريٌّ: غيابُه يُبقي السلوكَ السابق. */
+  readonly groupCards?: CloseStaleGroupCardsDependencies;
   /** يسجّل ما تعذّر بلا إسقاط بقية الدورات — دورة واحدة معطوبة لا تُعطّل المدينة. */
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
 }
@@ -43,6 +49,8 @@ export interface RotateUnsubscribedReport {
   readonly republished: readonly OrderId[];
   readonly escalated: readonly OrderId[];
   readonly waiting: number;
+  /** `WR-10` — بطاقاتٌ أُغلِقَت في هذا المرور. */
+  readonly cardsClosed: number;
   /** أخطاء غير قاتلة حدثت أثناء المرور: تُعاد لتُسجَّل، ولا تُخفى. */
   readonly failures: readonly string[];
 }
@@ -136,9 +144,23 @@ export async function rotateUnsubscribedNegotiations(
     else failures.push(`escalate:${decision.orderId}:${raised.value.reason ?? "UNKNOWN"}`);
   }
 
+  /**
+   * `WR-10` — بعدَ القراراتِ لا قبلَها: دورةٌ أُغلِقَت في هذا المرورِ تُغلَقُ بطاقتُها فيه.
+   * وعطلُ القراءةِ لا يُسقطُ المرور: يُسجَّلُ إخفاقًا ويُمضى.
+   */
+  let cardsClosed = 0;
+  if (deps.groupCards !== undefined) {
+    const cards = await closeStaleGroupCards(cityId, deps.groupCards);
+    if (cards.ok) {
+      cardsClosed = cards.value.closed;
+      if (cards.value.failed > 0) failures.push(`group_cards:${cards.value.failed}`);
+    } else failures.push(`group_cards:${cards.error.code}`);
+  }
+
   return ok({
     cityId,
     examined: pending.value.length,
+    cardsClosed,
     advanced,
     republished,
     escalated,

@@ -130,6 +130,8 @@
   "group.escalation_reason_unsubscribed_cycles_exhausted": "نفدت دورات قروب غير المشتركين بلا اتفاق",
   "group.unsub_accept_button": "✅ قبول",
   "group.unsub_card": "{marker} طلب متاح — الدورة {cycle}\n\n{marker} الخدمة: {service}\n📍 المنطقة التقريبية: {area}\n{details}\n\nأول ثلاثة يضغطون «قبول» يدخلون الدور بالترتيب.",
+  "group.unsub_card_assigned": "✅ أُسنِد هذا الطلب إلى سائق، ولم يعد متاحًا.",
+  "group.unsub_card_closed": "⛔ انتهت هذه البطاقة، ولم يعد الطلب متاحًا من خلالها.",
   "group.unsub_no_notes": "لا توجد",
   "language.changed": "✅ تم — لغتك الآن {language}.",
   "language.choose": "🌐 اختر لغتك — كل رسائل البوت ستصلك بها، ورسائل الطرف الآخر ستُترجَم إليها.",

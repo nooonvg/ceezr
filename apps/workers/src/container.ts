@@ -70,6 +70,7 @@ import {
   createPendingOfferRepository,
   createSearchingOrderFinder,
 } from "../../../packages/infrastructure/dispatch/dispatch-adapters.ts";
+import { createStaleGroupCardPort } from "../../../packages/infrastructure/dispatch/negotiation-adapters.ts";
 import { createNegotiationWiring } from "../../../packages/infrastructure/dispatch/negotiation-wiring.ts";
 import { createUnmatchedOrderFinder } from "../../../packages/infrastructure/dispatch/unmatched-adapters.ts";
 import { createDocumentExpiryRpcPort } from "../../../packages/infrastructure/driver/document-expiry-rpc.ts";
@@ -158,6 +159,7 @@ import {
   ARCHIVE_PART_ROWS,
   LOCATION_HOT_DAYS,
 } from "../../../packages/shared/config/retention-policy.ts";
+import { translate } from "../../../packages/shared/i18n/index.ts";
 import { type CityId, systemClock } from "../../../packages/shared/kernel/index.ts";
 import { err, ok } from "../../../packages/shared/result/index.ts";
 import { type BackupConfig, createPgDumper, runDatabaseBackup } from "./jobs/backup-database.ts";
@@ -869,6 +871,25 @@ export function buildWorkerContainer(
     riderOut,
     identifyingDriver: overrides.identifyingDriver ?? asIdentifyingSender(telegram),
   });
+  /**
+   * `WR-10` — إغلاقُ بطاقاتِ القروبِ المنتهيةِ ببوتِ السائقِ الذي نشرَها، بلا لوحةٍ
+   * (`markup` غائبٌ ⇒ تُزالُ الأزرار). ولغةُ القروبِ العربيّةُ كالبطاقةِ نفسِها.
+   */
+  const editGroupMessage = telegram.editMessageText;
+  const groupCards =
+    editGroupMessage === undefined
+      ? undefined
+      : {
+          cards: createStaleGroupCardPort(sql),
+          edit: (chatId: string, messageId: string, text: string) =>
+            editGroupMessage(chatId, messageId, text, undefined),
+          text: (outcome: "assigned" | "closed") =>
+            translate(
+              "ar",
+              outcome === "assigned" ? "group.unsub_card_assigned" : "group.unsub_card_closed",
+            ),
+          log: (event: string, meta: Record<string, unknown>) => log.info(event, meta),
+        };
 
   /**
    * المدن تُقرأ عند بناء القائمة لا في كل شوط: تفعيل مدينة جديدة حدثٌ نادر
@@ -1074,10 +1095,11 @@ export function buildWorkerContainer(
                   escalate: negotiation.escalate,
                   clock: systemClock,
                   log: (message, meta) => log.info(message, meta),
+                  ...(groupCards === undefined ? {} : { groupCards }),
                 });
                 if (!report.ok) throw new Error(JSON.stringify(report.error));
                 const value = report.value;
-                return `advanced=${value.advanced.length} republished=${value.republished.length} escalated=${value.escalated.length} failures=${value.failures.length}`;
+                return `advanced=${value.advanced.length} republished=${value.republished.length} escalated=${value.escalated.length} cardsClosed=${value.cardsClosed} failures=${value.failures.length}`;
               },
             },
             {

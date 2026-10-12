@@ -348,7 +348,7 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     expect(details.get(`cleanup-stale:${cityId}`)).toBe("deactivated=0 staleMinutes=180");
     expect(details.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=0 warned=0 failed=0");
     expect(details.get(`rotate-negotiations:${cityId}`)).toBe(
-      "advanced=0 republished=0 escalated=0 failures=0",
+      "advanced=0 republished=0 escalated=0 cardsClosed=0 failures=0",
     );
   });
 });
