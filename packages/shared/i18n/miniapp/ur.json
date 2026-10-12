@@ -1089,7 +1089,7 @@
   "rider.search.snapshot": "یہ آخری مرتبہ پڑھنے کے وقت کی حالت ہے — یہ خود بخود تازہ نہیں ہوتی، جب چاہیں دوبارہ پوچھیں۔",
   "rider.search.status.cancelled": "سفر منسوخ کر دیا گیا",
   "rider.search.status.completed": "سفر مکمل ہو گیا",
-  "rider.search.status.failed": "سفر مکمل نہیں ہو سکا",
+  "rider.search.status.failed": "تلاش ڈرائیور کے بغیر ختم ہو گئی",
   "rider.search.status.in_progress": "سفر جاری ہے",
   "rider.search.status.matched": "ایک ڈرائیور نے آپ کا سفر قبول کر لیا",
   "rider.search.status.searching": "ڈرائیور تلاش کیا جا رہا ہے",

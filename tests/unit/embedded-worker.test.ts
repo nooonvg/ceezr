@@ -173,13 +173,16 @@ describe("العامل المدمج داخل عملية البوابة", () => {
       // يعني سائقاً انتقلَ إلى مدينةٍ ولا تصلُه طلباتُها. والرقمُ السابقُ يبقى مذكوراً أعلاهُ (`ح-8`).
       // ثمَّ ثلاثٌ وعشرون بإضافةِ إطلاقِ المجدولِ لكلِّ مدينةٍ وتذكيراتِه (`WR-06` · `ADR 0273`):
       // وغيابُ الأوّلِ يعني طلباتٍ مجدولةً لا يُبحَثُ لها عن سائقٍ أبدًا.
-      expect(handle.jobCount).toBe(23);
+      // ثمَّ أربعٌ وعشرون بإضافةِ انتهاءِ البحثِ لكلِّ مدينة (`WR-22` · `ADR 0276`): وغيابُها
+      // يعني طلبًا يبحثُ إلى الأبدِ بعدَ أن استنفدَ كلَّ مسار. والرقمُ السابقُ يبقى مذكوراً أعلاهُ.
+      expect(handle.jobCount).toBe(24);
 
       const started = lines.find((line) => line.startsWith("embedded_worker.started"));
       expect(started).toBeDefined();
       for (const name of [
         `expire-offers:${CITY_ID}`,
         `redispatch-searching:${CITY_ID}`,
+        `expire-searching:${CITY_ID}`,
         `sweep-unmatched:${CITY_ID}`,
         `rotate-negotiations:${CITY_ID}`,
         `cleanup-stale:${CITY_ID}`,

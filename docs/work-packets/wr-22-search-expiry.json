@@ -1,0 +1,50 @@
+{
+  "id": "wr-22-search-expiry",
+  "goal": "WR-22: إنهاء الطلب الذي استنفد البحث بلا سائق إلى حالة نهائية متسقة (failed / search_expired) مع أثر وإشعار واحد، آمنًا مع التزامن وإعادة التشغيل، دون اختيار مدة تجارية.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0276-search-expiry.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/admin/message-gallery.ts",
+    "apps/miniapp/src/surfaces/rider/search/SearchScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/search/search-view.ts",
+    "apps/workers/src/container.ts",
+    "packages/application/dispatch/deliver-rider-trip-notice.ts",
+    "packages/application/dispatch/expire-searching-orders.ts",
+    "packages/application/driver/rider-trip-notice.ts",
+    "packages/infrastructure/db/schema-contract.ts",
+    "packages/infrastructure/dispatch/scheduled-orders-adapters.ts",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "packages/shared/i18n/ur.json",
+    "scripts/lib/skip-registry.ts",
+    "supabase/migrations/20261013000800_wr_22_search_expiry.sql",
+    "tests/integration/wr-22-search-expiry.test.ts",
+    "tests/unit/embedded-worker.test.ts",
+    "tests/unit/skip-audit.test.ts",
+    "tests/unit/wr-22-search-expiry.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0276-search-expiry.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0276: الآلية مقبولة، والمدة searching_expire_after_minutes مبذورة 0 (معطلة) حتى يقرر المالك.",
+  "tests": [
+    "tests/integration/wr-22-search-expiry.test.ts",
+    "tests/unit/wr-22-search-expiry.test.ts"
+  ],
+  "constraints": [
+    "لا مدة تجارية مختارة",
+    "لا مساس بطلب مسند أو ملغى أو له عرض أو مرشح أو دورة قروب",
+    "إشعار واحد"
+  ],
+  "limitations": "بطاقة التصعيد في قروب الإسناد لا تُحرَّر عند الانتهاء. ولا اختبار على تيليجرام فعلي."
+}

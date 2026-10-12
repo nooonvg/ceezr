@@ -1089,7 +1089,7 @@
   "rider.search.snapshot": "This is a snapshot from the last read — it does not update on its own, so ask whenever you like.",
   "rider.search.status.cancelled": "The ride was cancelled",
   "rider.search.status.completed": "The ride is finished",
-  "rider.search.status.failed": "The ride could not be completed",
+  "rider.search.status.failed": "The search ended without a driver",
   "rider.search.status.in_progress": "The ride is under way",
   "rider.search.status.matched": "A driver accepted your ride",
   "rider.search.status.searching": "Searching for a driver",

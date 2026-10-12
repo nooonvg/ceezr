@@ -1089,7 +1089,7 @@
   "rider.search.snapshot": "هذا الرقم لقطة وقت آخر قراءة — لا يحدّث وحده، فاسأل حين تشاء.",
   "rider.search.status.cancelled": "ألغيت الرحلة",
   "rider.search.status.completed": "انتهت الرحلة",
-  "rider.search.status.failed": "تعذّر إتمام الرحلة",
+  "rider.search.status.failed": "انتهى البحث دون سائق",
   "rider.search.status.in_progress": "الرحلة جارية",
   "rider.search.status.matched": "قبل سائق رحلتك",
   "rider.search.status.searching": "يبحث عن سائق",

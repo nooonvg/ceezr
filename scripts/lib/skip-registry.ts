@@ -737,6 +737,24 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-22-search-expiry.test.ts",
+    suites: [
+      "WR-22 — انتهاءُ البحث: السياسة",
+      "WR-22 — انتهاءُ البحث: ما في يدِ مسارٍ آخر",
+      "WR-22 — انتهاءُ البحث: التزامنُ والفشل",
+    ],
+    skipped: 16,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في `WR-22` (ADR 0276) أنَّ الطلبَ الذي استنفدَ البحثَ يُنهى `failed` مرّةً واحدةً بأثرٍ وإشعارٍ واحد، وأنَّ عاملَين متزامنَين والقبولَ والإلغاءَ وارتدادَ المعاملةِ لا يُكرّرونَه ولا يُفسدونَه. وهذه أحكامُ أقفالِ صفوفٍ (`skip locked`) ودوالَّ وصندوقِ صادرٍ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261013000800). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-22-cancel-final-states.test.ts",
     suites: ["WR-22 — الإلغاءُ والحالاتُ النهائيّة"],
     skipped: 7,

@@ -36,6 +36,7 @@ import {
   createWiderCircleOpenedHandler,
   type UnmatchedRiderMessenger,
 } from "../../../packages/application/dispatch/deliver-unmatched-notification.ts";
+import { expireSearchingOrders } from "../../../packages/application/dispatch/expire-searching-orders.ts";
 import { releaseScheduledOrders } from "../../../packages/application/dispatch/release-scheduled-orders.ts";
 import { createDisputeResolutionHandler } from "../../../packages/application/dispute/deliver-dispute-resolution.ts";
 import type { DocumentExpiryWarningSender } from "../../../packages/application/driver/warn-expiring-documents.ts";
@@ -79,6 +80,7 @@ import { createDeadOfferCardPort } from "../../../packages/infrastructure/dispat
 import {
   createPickupReminderStateReader,
   createScheduledOrderReleaser,
+  createSearchingOrderExpirer,
   enqueueScheduledReminders,
 } from "../../../packages/infrastructure/dispatch/scheduled-orders-adapters.ts";
 import { createUnmatchedOrderFinder } from "../../../packages/infrastructure/dispatch/unmatched-adapters.ts";
@@ -217,6 +219,12 @@ export const JOB_INTERVALS = {
    * توقّفُه يعني طلباتٍ لا يُبحَثُ لها عن سائقٍ أبدًا.
    */
   releaseScheduled: 15,
+  /**
+   * `WR-22` (ADR 0276) — انتهاءُ البحث. المدّةُ بالدقائق، فشوطٌ في الدقيقةِ يكفي: الطلبُ يُنهى
+   * بعدَ مدّتِه بأقلَّ من دقيقة. وليسَ حرجًا (لا نبضةَ في `/ready`): توقّفُه يُبقي الطلبَ يبحثُ
+   * كما كانَ قبلَه، لا يُفسدُ شيئًا.
+   */
+  expireSearching: 60,
   /** `WR-06` — تذكيراتُ المجدول (الراكبُ قبلَ موعدِه، والسائقُ المُسنَدُ قبلَ الحضور). */
   enqueueScheduledReminders: 60,
   recomputeRatings: 3600,
@@ -889,6 +897,7 @@ export function buildWorkerContainer(
    * يظهر إلّا كشكوى «العرض الثاني يذهب لسائقٍ أبعد» ولا يفسّره أحد.
    */
   const scheduledReleaser = createScheduledOrderReleaser(sql);
+  const searchingExpirer = createSearchingOrderExpirer(sql);
   const redispatchBroadcast = {
     orders: createOrderRepository(sql),
     offers: createOfferRepository(sql),
@@ -1127,6 +1136,27 @@ export function buildWorkerContainer(
                 if (!report.ok) throw new Error(JSON.stringify(report.error));
                 const value = report.value;
                 return `released=${value.released.length} missed=${value.missed.length} rebroadcast=${value.broadcast?.rebroadcast.length ?? 0} deferred=${value.broadcastFailed}`;
+              },
+            },
+            {
+              /**
+               * `WR-22` (ADR 0276) — ما تجاوزَ مدّةَ البحثِ بلا سائقٍ يُنهى `failed` ويُعلَمُ الراكبُ
+               * مرّةً واحدة. `runOnStart`: عاملٌ عادَ بعدَ تعطّلٍ يُدرِكُ ما فاتَه أوّلًا.
+               */
+              name: `expire-searching:${cityId}`,
+              everySeconds: JOB_INTERVALS.expireSearching,
+              runOnStart: true,
+              run: async () => {
+                const report = await expireSearchingOrders(cityId, {
+                  expirer: searchingExpirer,
+                  limit: REDISPATCH_LIMIT,
+                  log: (message, meta) => log.info(message, meta),
+                });
+                if (!report.ok) throw new Error(JSON.stringify(report.error));
+                const value = report.value;
+                return value.disabled
+                  ? "disabled"
+                  : `expired=${value.expired.length} held=${value.held}`;
               },
             },
             {

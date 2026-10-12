@@ -545,6 +545,7 @@
   "tracking.rider_schedule_reminder": "⏰ تذكير بطلبك المجدول {order}.\nموعد الحضور: {time}\nبدء البحث عن سائق: {search_time}\nإن لم تعد بحاجة إليه فألغِه من «طلبي».",
   "tracking.rider_search_started": "🔎 حان وقت طلبك المجدول {order} (الحضور: {time}). بدأنا البحث عن سائق الآن، وسنُعلمك فور قبول أحدهم.",
   "tracking.rider_schedule_missed": "⚠️ نعتذر: تعذّر بدء البحث عن سائق لطلبك المجدول {order} قبل موعده ({time}) بسبب عطل مؤقت لدينا، فأُلغي الطلب ولن يُرسل إليه سائق. يمكنك إنشاء طلب جديد الآن.",
+  "tracking.rider_search_expired": "⌛ انتهت مدة البحث عن سائق لطلبك {order} دون أن يقبله أحد، فأُغلق الطلب ولن يُرسل إليه سائق. يمكنك إنشاء طلب جديد متى شئت.",
   "driver.pickup_reminder": "⏰ تذكير: موعد حضورك للطلب {order} هو {time}. توجّه إلى الراكب في الوقت.",
   "common.tomorrow_at": "غدًا {time}",
   "common.date_at": "{date} {time}"
