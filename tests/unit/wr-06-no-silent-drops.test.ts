@@ -104,7 +104,7 @@ describe("WR-06 — وقتُ الحضورِ لا يصيرُ «الآن» صام�
     const at = new Date(NOW.getTime() + 2 * 60 * MIN).toISOString();
     const accepted = await call(at);
     expect(accepted.result.ok).toBe(true);
-    expect((accepted.seen[0]?.pickupAt as Date).toISOString()).toBe(at);
+    expect(String((accepted.seen[0]?.pickupAt as Date | undefined)?.toISOString())).toBe(at);
 
     const now = await call(undefined);
     expect(now.seen[0]?.pickupAt).toBeNull();
