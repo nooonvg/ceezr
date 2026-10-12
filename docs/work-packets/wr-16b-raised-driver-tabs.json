@@ -8,12 +8,14 @@
   "implementation": [
     "apps/miniapp/src/shell/ScreenFrame.tsx",
     "apps/miniapp/src/styles/global.css",
-    "apps/miniapp/src/shell/wr-16b-raised-driver-tabs.test.tsx",
-    "docs/evidence/ui/WR-16B-raised-driver-tabs-20261012.png"
+    "apps/miniapp/src/shell/wr-16b-raised-driver-tabs.test.tsx"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
-  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "affected_docs": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/evidence/ui/WR-16B-raised-driver-tabs-20261012.png"
+  ],
   "decision": "صنف معدِّل للسائق وحده في جدول أصناف معلن، والالتصاق على حاوي منطقة الفعل عبر :has لأن الحاوي بارتفاع الشريط فلا يتحرك sticky عليه.",
   "tests": ["bun test apps/miniapp/src/shell", "bun scripts/check-css-class-coverage.ts"],
   "evidence": "لقطة Chromium بلا رأس (500px) بحاشية آمنة 0 و48px ومحتوى قصير وطويل: الشريط فوق الحاشية بمسافة ثابتة وظاهر أثناء التمرير، وشريط الراكب لم يتغير.",
