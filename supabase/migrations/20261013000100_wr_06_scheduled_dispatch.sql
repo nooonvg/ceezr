@@ -292,12 +292,12 @@ revoke all on function cancel_order_by_rider(uuid, uuid, text) from public, anon
 grant execute on function cancel_order_by_rider(uuid, uuid, text) to service_role;
 
 -- ٥) محوُ الحساب: المجدولُ طلبٌ قائمٌ يحجبُ المحوَ كالبحث (التغييرُ الوحيد).
-CREATE OR REPLACE FUNCTION public.erase_my_account(p_telegram_id bigint)
+create or replace function erase_my_account(p_telegram_id bigint)
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
  SET search_path TO 'public'
-AS $function$
+AS $fn$
 declare
   v_user            users;
   v_rider_id        uuid;
@@ -674,7 +674,7 @@ begin
 
   return jsonb_build_object('ok', true, 'reason', 'ERASED', 'erased_at', now(), 'receipt', v_receipt);
 end;
-$function$;
+$fn$;
 
 -- ٦) حالةُ البحثِ للراكب: ثلاثةُ حقولٍ جديدة، والمجدولُ يُلغى بلا عقوبة.
 CREATE OR REPLACE FUNCTION public.ride_search_state(p_telegram_id bigint, p_order_id uuid)

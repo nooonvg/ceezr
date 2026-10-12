@@ -60,7 +60,9 @@
     "tests/unit/ride-request-store.test.ts",
     "tests/unit/embedded-worker.test.ts",
     "tests/unit/skip-audit.test.ts",
-    "apps/miniapp/src/surfaces/rider/search/ScheduledRideCard.test.tsx"
+    "apps/miniapp/src/surfaces/rider/search/ScheduledRideCard.test.tsx",
+    "tests/integration/wr-05-offer-mode.test.ts",
+    "scripts/lib/ui-surface-inventory.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
