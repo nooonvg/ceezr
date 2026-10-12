@@ -65,7 +65,7 @@ export function DriverRideSummaryScreen({
   if (error !== null) {
     return (
       <section dir={directionFor(language)} aria-labelledby="dsm-err">
-        <StateHeading id="dsm-err">{t("common.error")}</StateHeading>
+        <StateHeading id="dsm-err">{t("driver.summary.loadFailed")}</StateHeading>
         <button
           type="button"
           className="dsm__submit"
@@ -83,7 +83,7 @@ export function DriverRideSummaryScreen({
   if (summary === null) {
     return (
       <section dir={directionFor(language)} aria-labelledby="dsm-load" aria-busy="true">
-        <StateHeading id="dsm-load">{t("common.loading")}</StateHeading>
+        <StateHeading id="dsm-load">{t("driver.summary.loading")}</StateHeading>
       </section>
     );
   }
@@ -194,7 +194,7 @@ export function DriverRideSummaryScreen({
             onClick={handleSubmit}
             disabled={stars === 0 || submitting}
           >
-            {submitting ? t("common.submitting") : t("driver.summary.submitRating")}
+            {submitting ? t("driver.summary.submitting") : t("driver.summary.submitRating")}
           </button>
         </div>
       )}

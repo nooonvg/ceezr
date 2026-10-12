@@ -1497,6 +1497,9 @@
   "driver.offers.timer.leftAtRender": "دکھاتے وقت باقی: {value}",
   "driver.documents.step.position": "مرحلہ {current} از {total}",
   "driver.summary.retry": "دوبارہ کوشش کریں",
+  "driver.summary.loadFailed": "سفر کا خلاصہ لوڈ نہیں ہو سکا۔",
+  "driver.summary.loading": "سفر کا خلاصہ لوڈ ہو رہا ہے…",
+  "driver.summary.submitting": "ریٹنگ بھیجی جا رہی ہے…",
   "driver.account.work.label": "کام کی پروفائل",
   "driver.account.work.documents": "میری دستاویزات",
   "driver.account.work.vehicle": "میری گاڑی",
@@ -1807,5 +1810,8 @@
   "rider.search.candidate.error.UNKNOWN": "ابھی آپ کا انتخاب لاگو نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
   "rider.notifications.kind.order_chat_message": "نیا چیٹ پیغام",
   "rider.notifications.kind.driver_location_reminder": "مقام اپڈیٹ کی یاد دہانی",
-  "rider.notifications.kind.driver_city_notice": "ڈرائیور کے شہر کی تبدیلی"
+  "rider.notifications.kind.driver_city_notice": "ڈرائیور کے شہر کی تبدیلی",
+  "admin.root.brand": "وَصْلہ",
+  "admin.root.title": "نگرانی کے اوزار ایڈمن کنسول میں ہیں",
+  "admin.root.body": "آرڈرز، ڈرائیورز اور رپورٹس ایڈمن کنسول سے سنبھالے جاتے ہیں، اس ایپ سے نہیں۔"
 }

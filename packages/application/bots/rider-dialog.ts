@@ -252,6 +252,20 @@ function technicalFailure(sender: Sender, state: DialogState): readonly BotReply
   return [reply(sender, t(state.language)("common.error_try_again"))];
 }
 
+/**
+ * رفضُ طلبٍ جديدٍ لأنَّ للراكبِ طلبًا قائمًا. كانَ المفتاحُ `rider.already_searching` غائبًا عن
+ * القواميسِ الثلاثةِ فيظهرُ للراكبِ **حرفًا خامًا**؛ والنصُّ يسمّي زرَّي المتابعةِ والإلغاءِ
+ * بمفاتيحِهما لا بنصٍّ مكتوبٍ، ولا يطبعُ معرّفَ الطلبِ الخامَ (UUID لا يفيدُ الراكب).
+ */
+function alreadyActiveText(
+  tr: (key: string, params?: Record<string, string | number>) => string,
+): string {
+  return tr("rider.already_searching", {
+    status_button: tr("menu.rider.status"),
+    cancel_button: tr("menu.rider.cancel"),
+  });
+}
+
 export async function handleRiderUpdate(
   update: IncomingUpdate,
   deps: RiderBotDependencies,
@@ -1568,7 +1582,7 @@ async function handleParcel(
       return [reply(sender, tr(key))];
     }
     if (requested.error.code === "ACTIVE_DELIVERY_EXISTS") {
-      return [reply(sender, tr("rider.already_searching", { orderId: requested.error.orderId }))];
+      return [reply(sender, alreadyActiveText(tr))];
     }
     return technicalFailure(sender, state);
   }
@@ -1642,12 +1656,7 @@ async function createOrderAndMatch(
   // الرفضُ مقيسٌ لا عطبٌ — لكنَّ البوتَ يُبلِّغُهُ بصدقٍ.
   if (!created.value.accepted) {
     if (created.value.refusal === "ACTIVE_RIDE_EXISTS" && created.value.activeRide !== null) {
-      return [
-        reply(
-          sender,
-          tr("rider.already_searching", { orderId: created.value.activeRide?.orderId ?? "" }),
-        ),
-      ];
+      return [reply(sender, alreadyActiveText(tr))];
     }
     return technicalFailure(sender, state);
   }

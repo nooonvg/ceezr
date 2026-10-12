@@ -1497,6 +1497,9 @@
   "driver.offers.timer.leftAtRender": "متبقٍّ عند العرض: {value}",
   "driver.documents.step.position": "الخطوة {current} من {total}",
   "driver.summary.retry": "أعد المحاولة",
+  "driver.summary.loadFailed": "تعذّر تحميل ملخّص الرحلة.",
+  "driver.summary.loading": "جارٍ تحميل ملخّص الرحلة…",
+  "driver.summary.submitting": "يرسل التقييم…",
   "driver.account.work.label": "ملف العمل",
   "driver.account.work.documents": "وثائقي",
   "driver.account.work.vehicle": "مركبتي",
@@ -1807,5 +1810,8 @@
   "rider.search.candidate.error.UNKNOWN": "تعذّر تنفيذ اختيارك الآن. حاول مرة أخرى.",
   "rider.notifications.kind.order_chat_message": "رسالة محادثة جديدة",
   "rider.notifications.kind.driver_location_reminder": "تذكير تحديث الموقع",
-  "rider.notifications.kind.driver_city_notice": "تغيّر مدينة السائق"
+  "rider.notifications.kind.driver_city_notice": "تغيّر مدينة السائق",
+  "admin.root.brand": "وَصْلة",
+  "admin.root.title": "أدوات الإشراف في لوحة الإدارة",
+  "admin.root.body": "تُدار الطلبات والسائقون والبلاغات من لوحة الإدارة، لا من هذا التطبيق."
 }

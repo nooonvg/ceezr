@@ -1294,3 +1294,67 @@ describe("بطاقة السمعة — /rating (الراكب)", () => {
     expect(replies[0]?.text).toBe(ar("common.unknown_command"));
   });
 });
+
+describe("طلبٌ جديدٌ وللراكبِ طلبٌ قائم (جرد الترجمات 2026-10-12)", () => {
+  const REGISTERED = {
+    id: "rider-9" as RiderId,
+    cityId: JEDDAH.id,
+    telegramUserId: "500",
+    fullName: "سالم",
+  };
+
+  function refusingDeps(): RiderBotDependencies {
+    const refusing = rideRequestCommand(ORDER_ID);
+    return build({
+      riders: riderDirectory(REGISTERED),
+      rides: {
+        ...refusing,
+        create: async () =>
+          ok({
+            accepted: false as const,
+            refusal: "ACTIVE_RIDE_EXISTS" as const,
+            activeRide: { orderId: "existing-order", status: "searching" as const },
+          }),
+      },
+    });
+  }
+
+  const expected = () =>
+    ar("rider.already_searching", {
+      status_button: ar("menu.rider.status"),
+      cancel_button: ar("menu.rider.cancel"),
+    });
+
+  it("الرحلةُ: يُقالُ النصُّ بزرَّي المتابعةِ والإلغاءِ لا المفتاحُ الخامُ ولا معرّفُ الطلب", async () => {
+    const d = refusingDeps();
+    await handleRiderUpdate(text("/ride"), d);
+    await handleRiderUpdate(location(PICKUP), d);
+    const refused = await handleRiderUpdate(location(DROPOFF), d);
+    const said = refused[0]?.text ?? "";
+    expect(said).toBe(expected());
+    expect(said).not.toContain("rider.already_searching");
+    expect(said).not.toContain("existing-order");
+    expect(said).toContain(ar("menu.rider.status"));
+    expect(said).toContain(ar("menu.rider.cancel"));
+  });
+
+  it("التوصيلُ: الرفضُ نفسُه بالنصِّ نفسِه", async () => {
+    const d = refusingDeps();
+    await handleRiderUpdate(text("/delivery"), d);
+    await handleRiderUpdate(location(PICKUP), d);
+    await handleRiderUpdate(location(DROPOFF), d);
+    const refused = await handleRiderUpdate(text("/skip"), d);
+    expect(refused[0]?.text).toBe(expected());
+  });
+
+  it("الإنجليزيّةُ والأرديّةُ لهما نصٌّ لا المفتاحُ", () => {
+    for (const lang of ["en", "ur"]) {
+      const said = translate(lang, "rider.already_searching", {
+        status_button: translate(lang, "menu.rider.status"),
+        cancel_button: translate(lang, "menu.rider.cancel"),
+      });
+      expect(said).not.toContain("rider.already_searching");
+      expect(said).not.toContain("{");
+    }
+  });
+});
