@@ -172,7 +172,7 @@ describe("WR-09 — إشعارُ المآلِ للسائق", () => {
 
   test("ACCEPTED في السطحِ القديمِ ⇒ لوحةُ «بدء الرحلة» المحقونة", async () => {
     const rec = recorder();
-    const start: Keyboard = { kind: "inline", rows: [[{ label: "ابدأ", callbackData: "x" }]] };
+    const start: Keyboard = { kind: "inline", rows: [[{ label: "ابدأ", data: "x" }]] };
     const handler = createDriverCandidateNoticeHandler({
       sender: rec.sender,
       miniAppUrl: null,
