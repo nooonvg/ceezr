@@ -54,12 +54,8 @@
     "tests/unit/skip-audit.test.ts",
     "tests/unit/wr-09-candidate-notices.test.tsx"
   ],
-  "state": [
-    "docs/SYSTEM_STATE.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
   "affected_docs": [
     "docs/adr/0266-rider-chooses-driver.md",
     "docs/evidence/production/WR-24-deploy-20261012-3c7e22c4.md",
