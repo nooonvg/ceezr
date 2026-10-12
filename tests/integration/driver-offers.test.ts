@@ -447,8 +447,18 @@ describeIf("القبولُ — كاتبٌ واحدٌ، وجوابٌ منقّىً
     const orderId = await seedOrder();
     const offerId = await seedOffer(orderId, driverId);
     const payload = await accept(DRIVER_TELEGRAM_ID, offerId);
-    expect(Object.keys(payload).sort()).toEqual(["matched_at", "ok", "order_id"]);
-    const text = JSON.stringify(payload);
+    // `WR-09` (ADR 0266): مفتاحا المرشّح زائدان لا ناقصان، والمهلة صفرٌ ⇒ لا حجزَ.
+    expect(Object.keys(payload).sort()).toEqual([
+      "expires_at",
+      "matched_at",
+      "ok",
+      "order_id",
+      "pending_rider",
+    ]);
+    expect(payload.pending_rider).toBe(false);
+    expect(payload.expires_at).toBeNull();
+    // اسمُ الرايةِ `pending_rider` ليسَ هويّةً؛ يُفحَصُ ما سواه.
+    const text = JSON.stringify(payload).replace('"pending_rider"', '"pending_choice"');
     for (const token of ["telegram_id", "language_code", "full_name", "phone", "rider"]) {
       expect(text).not.toContain(token);
     }

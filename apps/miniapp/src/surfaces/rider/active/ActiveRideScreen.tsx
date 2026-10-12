@@ -97,6 +97,7 @@ import { TRUTH_AGE_UNKNOWN_KEY, TRUTH_SOURCE_KEYS, truthAge } from "../../../sys
 import { Glyph } from "../../../system/ui/icons.tsx";
 import { vehicleTypeText } from "../../../system/vehicle-type.ts";
 import { OrderChat } from "../../chat/OrderChat.tsx";
+import { RideCandidateCard } from "../search/RideCandidateCard.tsx";
 import { cancelRide as cancelViaApi } from "../search/ride-api.ts";
 import type { CancelRideResponse } from "../search/ride-contract.ts";
 import { cancelRefusalKey, newIdempotencyKey } from "../search/search-view.ts";
@@ -226,6 +227,8 @@ export function ActiveRideScreen({
   const issued = useRef(0);
   /** مفتاحُ الإلغاءِ — يُولَّدُ مرّةً، فإعادةُ الإلغاءِ ليسَت إلغاءً ثانياً. */
   const cancelKey = useRef(newIdempotencyKey());
+  /** `WR-09` — كلُّ «تحديث» يُعيدُ قراءةَ بطاقةِ المرشَّحِ أيضاً. */
+  const [candidateToken, setCandidateToken] = useState(0);
   const t = miniAppTranslator(language);
 
   useEffect(() => {
@@ -246,6 +249,7 @@ export function ActiveRideScreen({
       if (readingRef.current) return;
       readingRef.current = true;
       setReading(true);
+      setCandidateToken((n) => n + 1);
       const ticket = ++issued.current;
       try {
         const response = await read(id);
@@ -443,6 +447,15 @@ export function ActiveRideScreen({
 
     return (
       <div className="ar__live">
+        {/* `WR-09` (ADR 0266): زرُّ إشعارِ «سائقٌ قبِلَ» يفتحُ هذه الشاشةَ والطلبُ ما زالَ يبحث. */}
+        {view.status === "searching" && (
+          <RideCandidateCard
+            orderId={orderId}
+            language={language}
+            refreshToken={candidateToken}
+            onDecided={() => void refresh(orderId)}
+          />
+        )}
         <div className="ar__hero">
           <p className="ar__status">{t(rideStatusKey(view.status))}</p>
           {/* R7 · §11 PR 4: شريطُ الحقيقةِ (طورُ الخادمِ بنغمتِه) وسكّةُ المراحل — من القراءةِ وحدَها. */}

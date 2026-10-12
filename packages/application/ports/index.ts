@@ -124,6 +124,13 @@ export interface ClaimRideResult {
   readonly driverName: string | null;
   readonly driverPlate: string | null;
   readonly driverVehicle: string | null;
+  /**
+   * `WR-09` — القبولُ حجزَ الطلبَ مرشَّحاً ينتظرُ قرارَ الراكب، ولم يُسنِدْه بعد.
+   * غيابُه (`undefined`) يُقرأُ إسناداً فوريّاً كما كان قبلَ البند.
+   */
+  readonly pendingRider?: boolean;
+  /** موعدُ قرارِ الراكبِ من ساعةِ القاعدة (ISO)، حينَ `pendingRider`. */
+  readonly candidateExpiresAt?: string | null;
 }
 
 /** إسناد العرض ذرّياً — يقابل الدالة claim_ride في القاعدة. */

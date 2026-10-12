@@ -11,6 +11,10 @@
  */
 
 import type {
+  RiderCandidateFacts,
+  RiderCandidateFactsReader,
+} from "../../application/dispatch/deliver-candidate-notices.ts";
+import type {
   RiderTripFacts,
   RiderTripFactsReader,
 } from "../../application/driver/rider-trip-notice.ts";
@@ -51,6 +55,65 @@ export function createRiderTripFactsReader(sql: Sql): RiderTripFactsReader {
         driverName: row.driver_name,
         plate: row.plate,
         vehicle: row.vehicle,
+      };
+    },
+  };
+}
+
+/**
+ * `WR-09` — حقائقُ إشعارِ المرشَّحِ لحظةَ الإرسال: هل ما زالَ هذا العرضُ مرشَّحاً حيّاً،
+ * ومن السائقُ وتقييمُه، وكم بقيَ بساعةِ القاعدة.
+ */
+export function createRiderCandidateFactsReader(sql: Sql): RiderCandidateFactsReader {
+  return {
+    read: async (orderId: string, offerId: string): Promise<RiderCandidateFacts | null> => {
+      if (!UUID.test(orderId) || !UUID.test(offerId)) return null;
+      const rows = await sql<
+        {
+          rider_telegram_id: string | null;
+          rider_language: string | null;
+          live: boolean;
+          driver_name: string | null;
+          plate: string | null;
+          vehicle: string | null;
+          rating_average: string | number | null;
+          rating_count: number | null;
+          seconds_left: number | null;
+        }[]
+      >`
+        select ru.telegram_id::text as rider_telegram_id,
+               ru.language_code     as rider_language,
+               (o.status = 'searching'
+                 and o.candidate_offer_id = ${offerId}::uuid
+                 and o.candidate_expires_at > now()) as live,
+               du.full_name         as driver_name,
+               d.plate_number       as plate,
+               d.vehicle_type::text as vehicle,
+               d.rating_average,
+               d.rating_count,
+               greatest(0, ceil(extract(epoch from o.candidate_expires_at - now())))::integer
+                 as seconds_left
+          from orders o
+          join riders r       on r.id = o.rider_id
+          join users ru       on ru.id = r.user_id
+          join order_offers oo on oo.id = ${offerId}::uuid and oo.order_id = o.id
+          join drivers d      on d.id = oo.driver_id
+          join users du       on du.id = d.user_id
+         where o.id = ${orderId}::uuid
+           and ru.erased_at is null`;
+      const row = rows[0];
+      if (row === undefined || row.rider_telegram_id === null) return null;
+      const rating = row.rating_average === null ? null : Number(row.rating_average);
+      return {
+        riderTelegramId: String(row.rider_telegram_id),
+        language: row.rider_language ?? "ar",
+        live: row.live === true,
+        driverName: row.driver_name,
+        plate: row.plate,
+        vehicle: row.vehicle,
+        ratingAverage: rating !== null && Number.isFinite(rating) ? rating : null,
+        ratingCount: row.rating_count ?? 0,
+        secondsLeft: row.seconds_left ?? 0,
       };
     },
   };

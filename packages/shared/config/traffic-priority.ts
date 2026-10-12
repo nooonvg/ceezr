@@ -130,6 +130,8 @@ export const TRAFFIC_PRIORITY_RANK: Readonly<Record<TrafficPriorityClass, number
  *   وليسَ في تتابعٍ سببيٍّ مع دورةِ الرحلةِ فيؤجَّلُ بأمانٍ عندَ الإشباعِ.
  * - `rider_trip_notice` ← **حالةُ رحلةٍ نشطةٍ** (حرجٌ، `WR-15`): قبولُ السائقِ
  *   أو وصولُه أو بدءُ الرحلةِ أو إكمالُها، والراكبُ ينتظرُها الآن.
+ * - `driver_candidate_notice` ← **مطالبةُ إسنادٍ لها مؤقّتٌ يجري** (حرجٌ، `WR-09`):
+ *   مآلُ قبولِ السائقِ بعدَ قرارِ الراكب، والسائقُ ينتظرُه ليتحرّكَ أو ينصرف.
  */
 export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, TrafficPriorityClass>> =
   {
@@ -139,6 +141,7 @@ export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, Traff
     negotiation_turn_closed: "critical",
     negotiation_agreed: "critical",
     rider_trip_notice: "critical",
+    driver_candidate_notice: "critical",
     offer: "high",
     wider_circle_opened: "high",
     no_driver_found: "medium",

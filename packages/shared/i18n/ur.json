@@ -517,5 +517,14 @@
   "group.unsub_notes_line": "📝 نوٹس: {notes}",
   "negotiation.driver_awaiting_selection": "⏳ آپ کی پیشکش گاہک کے سامنے ہے اور انہوں نے ابھی انتخاب نہیں کیا۔ آپ کو منتخب کرتے ہی بات چیت کھل جائے گی۔",
   "negotiation.rider_awaiting_selection": "👆 بات چیت کھولنے کے لیے پہلے کارڈ سے ڈرائیور منتخب کریں («✅ ڈرائیور منتخب کریں»)، یا اگلے ڈرائیور پر جائیں۔",
-  "common.currency_SAR": "ریال"
+  "common.currency_SAR": "ریال",
+  "driver.candidate_waiting": "⏳ آپ کی قبولیت گاہک کو بھیج دی گئی، اس کے پاس آپ کو منتخب کرنے کے لیے {seconds} سیکنڈ ہیں۔ فیصلہ یہیں بتایا جائے گا۔",
+  "driver.offer_held": "گاہک اس وقت کسی اور ڈرائیور کو دیکھ رہا ہے۔ آپ کی پیشکش اپنی مدت ختم ہونے تک کھلی ہے۔",
+  "driver.candidate_accepted": "✅ گاہک نے آرڈر {order} کے لیے آپ کو منتخب کیا۔ ابھی پک اپ مقام کی طرف روانہ ہوں۔",
+  "driver.candidate_declined": "گاہک نے آرڈر {order} کے لیے آپ کو منتخب نہیں کیا؛ آرڈر دوسرے ڈرائیوروں کو واپس گیا۔ شکریہ۔",
+  "driver.candidate_expired": "آرڈر {order} پر گاہک کے فیصلے کا وقت ختم ہو گیا؛ آرڈر دوسرے ڈرائیوروں کو واپس گیا۔",
+  "driver.candidate_cancelled": "گاہک نے انتخاب سے پہلے آرڈر {order} منسوخ کر دیا۔ وہاں جانے کی ضرورت نہیں۔",
+  "tracking.rider_candidate": "🚗 ایک ڈرائیور نے آپ کا آرڈر {order} قبول کیا\nڈرائیور: {driver}\n⭐ ریٹنگ: {rating}\n🚙 گاڑی: {vehicle}\n🔢 نمبر پلیٹ: {plate}\nمنتخب یا مسترد کرنے کے لیے آپ کے پاس {seconds} سیکنڈ ہیں — آرڈر کھولیں۔",
+  "tracking.rider_candidate_unrated": "نیا",
+  "miniapp.driver_job_button": "📱 وَصْلة میں سفر کھولیں"
 }

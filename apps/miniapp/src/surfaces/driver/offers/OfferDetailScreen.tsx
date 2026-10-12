@@ -99,6 +99,15 @@ type ClaimState =
   | { readonly kind: "idle" }
   | { readonly kind: "busy" }
   | { readonly kind: "won"; readonly orderId: string }
+  /** `WR-09` — قبِلتَ والراكبُ يقرّر؛ الباقي بساعةِ الخادمِ لحظةَ القبول. */
+  | {
+      readonly kind: "pending";
+      readonly orderId: string;
+      readonly secondsAtAccept: number;
+      readonly acceptedAtMs: number;
+      readonly note: string | null;
+    }
+  | { readonly kind: "declined" }
   | { readonly kind: "lost"; readonly key: string }
   | { readonly kind: "failed"; readonly key: string };
 
@@ -113,6 +122,7 @@ function codeOf(thrown: unknown): string {
 /** رفضُ القاعدةِ ينقسمُ قسمَينِ: **سبقٌ متوقَّعٌ** وعطلٌ يُقالُ عطلاً. */
 const EXPECTED_REFUSALS: ReadonlySet<string> = new Set([
   "OFFER_TAKEN",
+  "ORDER_HELD",
   "OFFER_EXPIRED",
   "OFFER_ALREADY_ANSWERED",
   "OFFER_NOT_FOUND",
@@ -188,6 +198,19 @@ export function OfferDetailScreen({
     setClaim({ kind: "busy" });
     try {
       const result = await accept(offerId);
+      if (result.pending_rider === true) {
+        const at = now();
+        const left = result.seconds_left;
+        const seconds = typeof left === "number" && Number.isFinite(left) ? Math.max(0, left) : 0;
+        setClaim({
+          kind: "pending",
+          orderId: result.order_id,
+          secondsAtAccept: seconds,
+          acceptedAtMs: at,
+          note: null,
+        });
+        return;
+      }
       setClaim({ kind: "won", orderId: result.order_id });
       onAccepted?.(result.order_id);
     } catch (thrown) {
@@ -199,7 +222,33 @@ export function OfferDetailScreen({
           : { kind: "failed", key: offersErrorKey(code) },
       );
     }
-  }, [accept, offerId, onAccepted]);
+  }, [accept, now, offerId, onAccepted]);
+
+  /**
+   * `WR-09` — «تحديث القرار»: قراءةُ العرضِ ثانيةً بطلبِ السائق (لا استقصاء، `ADR 0035` §٤).
+   * `accepted` ⇒ اختارَكَ الراكب؛ `rejected` ⇒ لم يخترْك أو فاتَت المهلة؛ وإلّا فما زالَ يقرّر.
+   * والإشعارُ في تيليجرام يصلُ بالمآلِ أيضاً، فهذا بابٌ ثانٍ لا وحيد.
+   */
+  const refreshDecision = useCallback(async () => {
+    if (claim.kind !== "pending") return;
+    const pending = claim;
+    setClaim({ ...pending, note: null });
+    try {
+      const detail = await readDetail(offerId);
+      if (detail.offer_status === "accepted") {
+        setClaim({ kind: "won", orderId: detail.order_id });
+        onAccepted?.(detail.order_id);
+        return;
+      }
+      if (detail.offer_status !== "pending") {
+        setClaim({ kind: "declined" });
+        return;
+      }
+      setClaim({ ...pending, note: "driver.offers.candidate.stillWaiting" });
+    } catch (thrown) {
+      setClaim({ ...pending, note: offersErrorKey(codeOf(thrown)) });
+    }
+  }, [claim, offerId, onAccepted, readDetail]);
 
   const handleReject = useCallback(async () => {
     setClaim({ kind: "busy" });
@@ -363,7 +412,10 @@ export function OfferDetailScreen({
       </UiCard>
 
       <div className="dof__actions">
-        {acceptable && claim.kind !== "won" ? (
+        {acceptable &&
+        claim.kind !== "won" &&
+        claim.kind !== "pending" &&
+        claim.kind !== "declined" ? (
           <button
             type="button"
             className="dof__accept"
@@ -373,7 +425,7 @@ export function OfferDetailScreen({
             {t("driver.offers.accept")}
           </button>
         ) : null}
-        {claim.kind === "won" ? null : (
+        {claim.kind === "won" || claim.kind === "pending" || claim.kind === "declined" ? null : (
           <button
             type="button"
             className="dof__reject"
@@ -391,6 +443,31 @@ export function OfferDetailScreen({
         </p>
       )}
 
+      {claim.kind === "pending" ? (
+        <div className="dof__pending" role="status">
+          <p className="dof__pending-text">{t("driver.offers.candidate.waiting")}</p>
+          <UiTimer
+            {...offerTimerProps({
+              secondsRemaining: Math.max(
+                0,
+                Math.ceil(claim.secondsAtAccept - (now() - claim.acceptedAtMs) / 1000),
+              ),
+              secondsLeftAtRead: claim.secondsAtAccept,
+              t,
+            })}
+            label={t("driver.offers.candidate.timerLabel")}
+          />
+          <button type="button" className="dof__retry" onClick={() => void refreshDecision()}>
+            {t("driver.offers.candidate.refresh")}
+          </button>
+          {claim.note === null ? null : <p className="dof__pending-note">{t(claim.note)}</p>}
+        </div>
+      ) : null}
+      {claim.kind === "declined" ? (
+        <p className="dof__lost" role="status">
+          {t("driver.offers.candidate.declined")}
+        </p>
+      ) : null}
       {claim.kind === "won" ? (
         <p className="dof__won" role="status">
           {t("driver.offers.claimed")} · {claim.orderId}

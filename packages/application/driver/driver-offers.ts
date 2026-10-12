@@ -68,6 +68,7 @@ export const DRIVER_OFFER_PUBLIC_ERROR_CODES = [
   "OFFER_ALREADY_ANSWERED",
   "OFFER_EXPIRED",
   "OFFER_TAKEN",
+  "ORDER_HELD",
   "CITY_MISMATCH",
   "CLAIM_REFUSED",
 ] as const;
@@ -152,6 +153,8 @@ function publicCodeFrom(error: DriverOfferStoreError): DriverOfferRejection {
       return rejection("OFFER_TAKEN");
     case "OFFER_NOT_VALID":
       return rejection("OFFER_EXPIRED");
+    case "ORDER_HELD":
+      return rejection("ORDER_HELD");
     case "CITY_MISMATCH":
       return rejection("CITY_MISMATCH");
     case "CLAIM_REFUSED":
@@ -189,7 +192,7 @@ export async function readDriverOfferDetail(
 export async function acceptDriverOffer(
   deps: DriverOfferDeps,
   input: { readonly accessToken: string | undefined; readonly offerId: unknown },
-): Promise<Result<DriverOfferClaim, DriverOfferRejection>> {
+): Promise<Result<DriverOfferClaim & { readonly secondsLeft?: number }, DriverOfferRejection>> {
   const session = await openSession(deps, input.accessToken);
   if (!session.ok) return err(session.error);
 
@@ -198,8 +201,21 @@ export async function acceptDriverOffer(
 
   const claimed = await deps.store.accept({ telegramUserId: session.value, offerId });
   if (!claimed.ok) return err(publicCodeFrom(claimed.error));
-  await noticeRiderOfTrip(deps.riderNotice, claimed.value.orderId, "MATCHED");
-  return ok(claimed.value);
+  // `WR-09` — الحجزُ ليسَ إسناداً: إشعارُ المرشَّحِ أودعَته القاعدةُ في معاملتِه.
+  if (claimed.value.pendingRider !== true) {
+    await noticeRiderOfTrip(deps.riderNotice, claimed.value.orderId, "MATCHED");
+    return ok(claimed.value);
+  }
+  // الباقي يُحسَبُ ههنا بساعةِ الخادمِ ولا تُنشَرُ لحظةُ الانتهاءِ للعميل
+  // (`check-driver-offers-contract`: موعدٌ مطلقٌ يُقارَنُ بساعةِ الجهازِ فينحرف).
+  const deadline =
+    claimed.value.expiresAt === undefined || claimed.value.expiresAt === null
+      ? Number.NaN
+      : Date.parse(claimed.value.expiresAt);
+  const secondsLeft = Number.isFinite(deadline)
+    ? Math.max(0, Math.ceil((deadline - deps.now().getTime()) / 1000))
+    : 0;
+  return ok({ ...claimed.value, secondsLeft });
 }
 
 /**

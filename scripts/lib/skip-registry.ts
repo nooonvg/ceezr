@@ -577,6 +577,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-09-rider-choice.test.ts",
+    suites: ["WR-09 — الراكبُ يختارُ السائقَ خلالَ مهلةٍ يحكمُها الخادم"],
+    skipped: 10,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في `WR-09` أنَّ **قبولَ السائقِ يحجزُ مرشَّحاً لا يُسنِد**، وأنَّ موعدَ قرارِ الراكبِ من ساعةِ القاعدة، وأنَّ قبولَ الراكبِ إسنادٌ ذرّيٌّ ورفضَه أو فواتَ المهلةِ يستبعدُ السائقَ ويُبقي البحث، وأنَّ النقرةَ المتأخّرةَ لا تُصيبُ مرشَّحاً آخر. وهذه أحكامُ أقفالِ صفوفٍ ودوالَّ في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012140000 و20261012140100). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-15-rider-trip-notice-outbox.test.ts",
     suites: ["WR-15 — إشعاراتُ الطورِ في صندوقِ الصادرِ الموحَّد"],
     skipped: 5,

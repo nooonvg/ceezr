@@ -28,6 +28,10 @@ import {
   riderTripText,
 } from "../driver/rider-trip-notice.ts";
 import type { NotificationHandler } from "../notification/deliver-notification.ts";
+import {
+  deliverRiderCandidateNotice,
+  type RiderCandidateFactsReader,
+} from "./deliver-candidate-notices.ts";
 
 const EVENTS: readonly RiderTripEvent[] = ["MATCHED", "ARRIVED", "STARTED", "COMPLETED"];
 
@@ -40,6 +44,8 @@ export interface RiderTripNoticeHandlerDeps {
   readonly facts: RiderTripFactsReader;
   readonly sender: RiderTripNoticeSender;
   readonly miniAppUrl: string | null;
+  /** `WR-09` — قارئُ المرشَّحِ لحدثِ `CANDIDATE`؛ غيابُه ⇒ الحدثُ حمولةٌ غيرُ مفهومة. */
+  readonly candidates?: RiderCandidateFactsReader;
   readonly log?: (event: string, meta: Record<string, unknown>) => void;
 }
 
@@ -51,6 +57,14 @@ export function createRiderTripNoticeHandler(
   deps: RiderTripNoticeHandlerDeps,
 ): NotificationHandler {
   return async (delivery) => {
+    if (delivery.payload.event === "CANDIDATE" && deps.candidates !== undefined) {
+      return deliverRiderCandidateNotice(delivery, {
+        candidates: deps.candidates,
+        sender: deps.sender,
+        miniAppUrl: deps.miniAppUrl,
+        ...(deps.log === undefined ? {} : { log: deps.log }),
+      });
+    }
     const orderId = delivery.payload.order_id;
     const event = readEvent(delivery.payload.event);
     if (typeof orderId !== "string" || orderId === "" || event === null) {

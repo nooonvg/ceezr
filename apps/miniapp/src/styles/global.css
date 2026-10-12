@@ -8971,3 +8971,91 @@ body {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* `WR-09` (ADR 0266) — بطاقةُ «سائقٌ قبِلَ طلبَك» للراكب، وانتظارُ السائقِ قرارَه.
+   الحقائقُ شبكةٌ منطقيّةُ الاتّجاه (RTL/LTR بلا قلب)، والزرّانِ بعرضِ البطاقةِ للّمس. */
+.rs__candidate {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rs__candidate-body,
+.dof__pending-text {
+  margin: 0;
+  font-size: var(--ui-size-label);
+  line-height: 1.6;
+  color: var(--tg-text-color);
+}
+
+.rs__candidate-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.rs__candidate-facts dt {
+  color: var(--ui-mute);
+  font-size: var(--ui-size-label);
+}
+
+.rs__candidate-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--tg-text-color);
+}
+
+.rs__candidate-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rs__candidate-actions > button {
+  min-height: 44px;
+  width: 100%;
+}
+
+.rs__candidate-accept {
+  font-weight: 600;
+}
+
+.rs__candidate-reject {
+  border: 1px solid var(--w-line);
+  border-radius: var(--r-lg);
+  background: var(--w-surface);
+  color: var(--tg-text-color);
+  font: inherit;
+}
+
+.rs__candidate-done,
+.dof__pending-note {
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border-inline-start: 3px solid var(--ui-ok);
+  border-radius: var(--r-sm);
+  background: var(--w-ok-soft);
+  font-size: var(--ui-size-label);
+  color: var(--tg-text-color);
+}
+
+.rs__candidate-error {
+  margin: 0;
+  padding: 0.625rem 0.875rem;
+  border-inline-start: 3px solid var(--ui-bad);
+  border-radius: var(--r-sm);
+  background: var(--w-bad-soft);
+  font-size: var(--ui-size-label);
+  color: var(--tg-text-color);
+}
+
+.dof__pending {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--w-line);
+  border-radius: var(--r-lg);
+  background: var(--w-surface-2);
+}
