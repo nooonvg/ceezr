@@ -1768,5 +1768,6 @@
   "rider.search.candidate.error.ORDER_NOT_SEARCHING": "The order is no longer searching.",
   "rider.search.candidate.error.UNKNOWN": "Couldn't apply your choice right now. Try again.",
   "rider.notifications.kind.order_chat_message": "New chat message",
-  "rider.notifications.kind.driver_location_reminder": "Location update reminder"
+  "rider.notifications.kind.driver_location_reminder": "Location update reminder",
+  "rider.notifications.kind.driver_city_notice": "Driver city update"
 }

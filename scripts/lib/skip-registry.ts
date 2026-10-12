@@ -618,6 +618,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     runsIn: "اختبارات التكامل على قاعدة حقيقية",
     whyNotRun: null,
   },
+  {
+    file: "tests/integration/wr-13-driver-city-relocation.test.ts",
+    suites: ["WR-13 — مدينةُ السائقِ تتبعُ موقعَه الحديث (ADR 0269)"],
+    skipped: 6,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في نقلِ مدينةِ السائقِ أنَّ `relocate_drivers_by_location` ينقلُ بموقعٍ حديثٍ موثوقٍ وحدَه عبرَ `update_driver_city`، ويصونُ الرحلةَ القائمة، ويُخطِرُ الخارجَ من التغطيةِ مرّةً لكلِّ نوبة، وأنَّ المُطالِبَ يقرأُ محادثةَ السائق. وهذه أحكامُ PostGIS ودوالَّ لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261012170000 و20261012170100). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
 
   {
     file: "tests/integration/wr-09-rider-choice.test.ts",

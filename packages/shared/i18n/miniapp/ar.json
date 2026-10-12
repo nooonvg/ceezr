@@ -1768,5 +1768,6 @@
   "rider.search.candidate.error.ORDER_NOT_SEARCHING": "لم يعد الطلب في مرحلة البحث.",
   "rider.search.candidate.error.UNKNOWN": "تعذّر تنفيذ اختيارك الآن. حاول مرة أخرى.",
   "rider.notifications.kind.order_chat_message": "رسالة محادثة جديدة",
-  "rider.notifications.kind.driver_location_reminder": "تذكير تحديث الموقع"
+  "rider.notifications.kind.driver_location_reminder": "تذكير تحديث الموقع",
+  "rider.notifications.kind.driver_city_notice": "تغيّر مدينة السائق"
 }

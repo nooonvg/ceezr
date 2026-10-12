@@ -54,6 +54,7 @@ export const NOTIFICATION_KINDS = [
   "driver_candidate_notice",
   "order_chat_message",
   "driver_location_reminder",
+  "driver_city_notice",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
@@ -94,6 +95,7 @@ export const SEEDED_NOTIFICATION_CHANNELS: Readonly<Record<NotificationKind, Not
     driver_candidate_notice: "critical",
     order_chat_message: "critical",
     driver_location_reminder: "critical",
+    driver_city_notice: "critical",
   };
 
 /**

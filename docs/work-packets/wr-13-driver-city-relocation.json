@@ -1,0 +1,50 @@
+{
+  "id": "wr-13-driver-city-relocation",
+  "goal": "تحديث مدينة السائق تلقائيًا حسب آخر موقع حديث موثوق ضمن حدود المدن المفعّلة، دون كسر رحلة قائمة ودون العمل في مدينة غير مفعّلة.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0269-driver-city-follows-location.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/surfaces/rider/notifications/notifications-view.ts",
+    "apps/workers/src/container.ts",
+    "packages/application/dispatch/deliver-driver-city-notice.ts",
+    "packages/infrastructure/db/schema-contract.ts",
+    "packages/shared/config/notification-kinds.ts",
+    "packages/shared/config/traffic-priority.ts",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "packages/shared/i18n/ur.json",
+    "scripts/lib/rollback-registry.ts",
+    "scripts/lib/skip-registry.ts",
+    "supabase/migrations/20261012170000_wr_13_driver_city_relocation.sql",
+    "supabase/migrations/20261012170100_wr_13_driver_city_relocation_validate.sql",
+    "tests/integration/wr-13-driver-city-relocation.test.ts",
+    "tests/unit/check-traffic-priority-guard.test.ts",
+    "tests/unit/embedded-worker.test.ts",
+    "tests/unit/skip-audit.test.ts",
+    "tests/unit/wr-13-driver-city-notice.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0269-driver-city-follows-location.md",
+    "docs/roadmap/execution/STATUS.md"
+  ],
+  "decision": "relocate_drivers_by_location من شوط كل 60 ثانية: موقع حديث (120 ثانية) وموثوق (ليس ALERT، ودقته ضمن 300 متر) خارج حد مدينة السائق وداخل حد مدينة مفعّلة أخرى ⇒ update_driver_city نفسه، ثم driver_availability.city_id، ثم إخطار driver_city_notice. والخارج من التغطية لا يُنقل ويُخطَر مرة في كل نوبة.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/wr-13-driver-city-relocation.test.ts",
+    "bun test tests/unit/wr-13-driver-city-notice.test.ts tests/unit/embedded-worker.test.ts"
+  ],
+  "evidence": "محليًا على PostGIS بسلسلة الهجرات كاملة: 6/6 تكامل (نقل بين مدينتين مفعّلتين مع السجل والإخطار، رفض الموقع القديم وALERT والضبابي، صون الرحلة القائمة، إخطار الخارج مرة واحدة، المهلة صفر، قراءة المُطالِب)، و5/5 وحدات للمعالج.",
+  "constraints": [
+    "لا نقل بموقع قديم أو غير موثوق",
+    "لا كسر لرحلة قائمة",
+    "لا عمل في مدينة غير مفعّلة",
+    "لا تغيير لسياسة تجارية: الاشتراك مربوط بالسائق"
+  ],
+  "limitations": "النقل يقع خلال نحو دقيقة. ونقطة موقع واحدة مخزّنة مؤقتًا في المدينة القديمة قد تسقط لحظة النقل. وظهور الإخطار على الهاتف لا يقيسه النظام (WR-26)."
+}
