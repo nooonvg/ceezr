@@ -1,0 +1,23 @@
+{
+  "id": "wr-16d-typed-place-kept",
+  "goal": "اسم المكان المكتوب مثل «الحرم» لا يُستبدل بالموقع الحالي (§16-د): «استخدم موقعي الحالي» اختصار اختياري منفصل بعد النتائج، ولا يمحو مكانًا مختارًا بالاسم دون موافقة.",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/surfaces/rider/destination/DestinationScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/destination/destination-view.ts",
+    "apps/miniapp/src/surfaces/rider/destination/wr-16d-typed-place.test.tsx",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "الموضع بحكم دالة نقية (فارغ ⇒ قبل النتائج، مكتوب ⇒ بعدها)، والاستبدال يُسأل عنه حين يكون المقبول اسمًا اختاره الراكب. النقطة بلا اسم تُستبدل مباشرة لأنها ليست اختيارًا مكتوبًا. لا تغيير في الخادم.",
+  "tests": ["cd apps/miniapp && bun test src/surfaces/rider/destination"],
+  "evidence": "محليًا: wr-16d-typed-place 6/6، وسطح الراكب 146/146. لم يُنشر.",
+  "constraints": ["لا قراءة موقع تلقائية", "لا خريطة مدّعاة", "لا تغيير في الخادم"],
+  "limitations": "لا اختبار تفاعل DOM في المستودع؛ الضغط والسؤال مختبران عبر الدوال النقية ومصدر الشاشة.",
+  "status": "open"
+}
