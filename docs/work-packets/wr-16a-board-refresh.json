@@ -1,0 +1,23 @@
+{
+  "id": "wr-16a-board-refresh",
+  "goal": "زر «حدّث اللوح» مفيد فقط بجلب فعلي من الخادم مع حالة تحميل وفشل حقيقية، وحالة انقطاع الاتصال مسمّاة لا مدموجة في عبارة مبهمة (§16-أ).",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/surfaces/driver/offers/OffersScreen.tsx",
+    "apps/miniapp/src/surfaces/driver/offers/offers-view.ts",
+    "apps/miniapp/src/surfaces/driver/offers/wr-16a-board-refresh.test.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "التحديث اليدوي يتبع نمط التحديث الآني القائم (لا يمسح اللوح عند الفشل) مع سطر نتيجة. وانقطاع الاتصال يُعرف من اسم الخطأ ApiNetworkError الذي يرميه عميل الـAPI. لا تغيير في الخادم ولا العقد.",
+  "tests": ["cd apps/miniapp && bun test src/surfaces/driver"],
+  "evidence": "محليًا: wr-16a-board-refresh 6/6، وسطح السائق 88/88. لم يُنشر.",
+  "constraints": ["لا نجاح محلي بلا جلب", "لا تغيير في الخادم"],
+  "limitations": "لا اختبار تفاعل DOM؛ الزر مختبر عبر الدوال النقية ومصدر الشاشة.",
+  "status": "open"
+}

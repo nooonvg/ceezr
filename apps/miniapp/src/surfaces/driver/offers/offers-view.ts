@@ -76,7 +76,14 @@ const KNOWN_ERRORS: ReadonlySet<string> = new Set([
   "CLAIM_REFUSED",
 ]);
 
+/**
+ * `WR-16A` — رمزُ العميلِ وحدَه: لم يصل ردٌّ من الخادم، فهو انقطاعُ اتصالٍ لا عطلُ لوح. ليسَ في
+ * `KNOWN_ERRORS` لأنَّ تلك قائمةُ الخادمِ حرفًا (`check-driver-offers-contract`).
+ */
+export const OFFERS_NETWORK_UNREACHABLE = "NETWORK_UNREACHABLE";
+
 export function offersErrorKey(code: string): string {
+  if (code === OFFERS_NETWORK_UNREACHABLE) return "driver.offers.network.unreachable";
   return KNOWN_ERRORS.has(code) ? `driver.offers.error.${code}` : "driver.offers.error.UNKNOWN";
 }
 
@@ -90,8 +97,54 @@ export function isRetryableOffersError(code: string): boolean {
     code === "OFFER_STORE_NOT_AVAILABLE" ||
     code === "AVAILABILITY_NOT_AVAILABLE" ||
     code === "SESSION_NOT_AVAILABLE" ||
+    code === OFFERS_NETWORK_UNREACHABLE ||
     code === "UNKNOWN"
   );
+}
+
+/**
+ * `WR-16A` — رمزُ العطبِ من المرميّ: خطأُ الشبكةِ (`ApiNetworkError`، بلا رمز) يُسمّى
+ * `NETWORK_UNREACHABLE` فيُقالُ «لا اتصال» لا «تعثّر الطلب».
+ */
+export function offersCodeOf(thrown: unknown): string {
+  if (thrown !== null && typeof thrown === "object" && "code" in thrown) {
+    const code = (thrown as { code?: unknown }).code;
+    if (typeof code === "string") return code;
+  }
+  if (thrown instanceof Error && thrown.name === "ApiNetworkError") {
+    return OFFERS_NETWORK_UNREACHABLE;
+  }
+  return "UNKNOWN";
+}
+
+/** `WR-16A` — حالُ زرِّ «حدّث اللوح»: جلبٌ فعليٌّ من الخادمِ له تحميلٌ وفشلٌ ونجاح. */
+export type BoardRefreshState =
+  | { readonly kind: "idle" }
+  | { readonly kind: "busy" }
+  | { readonly kind: "done" }
+  | { readonly kind: "failed"; readonly code: string };
+
+/**
+ * `WR-16A` — السطرُ تحتَ زرِّ التحديث. الفشلُ لا يمسحُ اللوحَ المعروض، ويُقالُ إنّه قد يكونُ
+ * قديمًا؛ وانقطاعُ الاتصالِ يُقالُ بنصِّه. وتحديثٌ آنيٌّ فشلَ (`stale`) يُقالُ ولا يُكتَم.
+ */
+export function boardRefreshNotice(
+  refresh: BoardRefreshState,
+  stale: boolean,
+): { readonly key: string; readonly role: "status" | "alert" } | null {
+  if (refresh.kind === "busy") return { key: "driver.offers.refresh.busy", role: "status" };
+  if (refresh.kind === "failed") {
+    return {
+      key:
+        refresh.code === OFFERS_NETWORK_UNREACHABLE
+          ? "driver.offers.refresh.offline"
+          : "driver.offers.refresh.failed",
+      role: "alert",
+    };
+  }
+  if (stale) return { key: "driver.offers.refresh.stale", role: "alert" };
+  if (refresh.kind === "done") return { key: "driver.offers.refresh.done", role: "status" };
+  return null;
 }
 
 /**
