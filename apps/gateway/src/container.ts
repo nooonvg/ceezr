@@ -923,6 +923,21 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    */
   const offerDecisions = createOfferDecisionPort(sql);
 
+  /**
+   * `WR-15` (ADR 0265) — منفذُ إيداعِ إخطاراتِ الطورِ للراكب، واحدٌ لكلِّ المسارات:
+   * Mini App وأزرارُ بوتِ السائق. المفتاحُ `rider_trip:<order>:<event>` يمنعُ التكرار.
+   */
+  const riderTripNoticeDeps: RiderTripNoticeDeps = {
+    outbox: createRiderTripNoticeOutbox(sql),
+    log,
+  };
+  /**
+   * أزرارُ بوتِ السائقِ تسلكُ صندوقَ الصادرِ في سطحِ `miniapp` (الإنتاج): إخطارُه يحملُ زرَّ
+   * فتحِ الرحلةِ في Mini App، فيُغني عن رابطِ التتبّعِ الذي كانَ يُلحَقُ بالرسالةِ المباشرة.
+   * وفي سطحِ `bot` القديمِ لا Mini App يُفتَح، فيبقى المسارُ المباشرُ برابطِه كما كان.
+   */
+  const botNoticeViaOutbox = config.botSurfaceMode === "miniapp";
+
   const driverDeps: DriverBotDependencies = {
     gpsPolicy,
     sessions: driverSessions,
@@ -1019,6 +1034,8 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
       ...(routing === null ? {} : { routing }),
       // الجسر إلى بوت العميل: من أنهى الرحلة سائقٌ، ومن يُبلَّغ بها عميلٌ على بوت آخر
       counterpart: counterpartNotifier(riderSender, log, "rider"),
+      // `WR-15` — إخطارا البدءِ والإكمالِ للراكبِ عبرَ صندوقِ الصادرِ، كمسارِ Mini App.
+      ...(botNoticeViaOutbox ? { riderNotice: riderTripNoticeDeps } : {}),
       // إنهاء الرحلة يُغلق الجلسة ويُوقف بثّ الموقع عن العميل — المرحلة ٦.
       tracking: liveTracking,
     },
@@ -1028,6 +1045,8 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
      * مسارٌ موازٍ ثان. و`links` يُسقَط حين يغيب `TRACKING_TOKEN_BASE_URL`: الإخطار
      * يُرسل بلا رابط ولا يُوعَد بما لا يُمكن.
      */
+    // `WR-15` — قبولُ رسالةِ البوتِ يودعُ الإخطارَ في صندوقِ الصادرِ، فيحلُّ محلَّ `acceptNotice`.
+    ...(botNoticeViaOutbox ? { riderNotice: riderTripNoticeDeps } : {}),
     acceptNotice: {
       counterpart: counterpartNotifier(riderSender, log, "rider"),
       ...(config.botSurfaceMode === "miniapp" ? { miniAppUrl: config.miniAppUrl } : {}),
@@ -1154,7 +1173,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     safety: { trigger: safety.trigger },
     driverOffers: { drivers, decisions: offerDecisions },
     // `WR-15` (ADR 0265) — الإيداعُ في صندوقِ الصادرِ لا الإرسالُ: العاملُ يُرسلُ ويُعيد.
-    riderTripNotice: { outbox: createRiderTripNoticeOutbox(sql), log },
+    riderTripNotice: riderTripNoticeDeps,
     driverLocation: {
       drivers,
       ingest: {

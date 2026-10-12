@@ -11,6 +11,7 @@ import { parseStars, starsBar } from "../../domain/reputation/index.ts";
 import type { RoutingProvider } from "../../maps/core/index.ts";
 import { t } from "../../shared/i18n/index.ts";
 import type { OrderId } from "../../shared/kernel/index.ts";
+import { noticeRiderOfTrip, type RiderTripNoticeDeps } from "../driver/rider-trip-notice.ts";
 import type { RatingPort, RideLifecyclePort } from "../reputation/index.ts";
 import { completeRide, startRide, submitRating } from "../reputation/index.ts";
 import type { DriverTripCardReader } from "../tracking/driver-trip-card.ts";
@@ -43,6 +44,13 @@ export interface RatingDialogDependencies {
   readonly ratings: RatingPort;
   /** غيابه يعني أن الطرف المقابل لا يُبلَّغ، لا أن يُبلَّغ على البوت الخطأ. */
   readonly counterpart?: CounterpartNotifier;
+  /**
+   * `WR-15` (ADR 0265) — إخطارا البدءِ والإكمالِ للراكبِ صفّانِ في صندوقِ الصادرِ بمفتاحِ
+   * `rider_trip:<order>:STARTED|COMPLETED` نفسِه الذي يودعُه مسارُ Mini App. حين يُعطى
+   * يحلُّ محلَّ رسالتَي `rating.started_rider` و`rating.completed_rider` المباشرتين.
+   * وطلبُ التقييمِ بالنجومِ يبقى عبرَ `counterpart`: سؤالٌ تفاعليٌّ لا إخطارُ طور.
+   */
+  readonly riderNotice?: RiderTripNoticeDeps;
   /**
    * المرحلة ٦ — إغلاق جلسة التتبّع وإيقاف البثّ عن العميل عند نهاية الرحلة.
    *
@@ -133,7 +141,9 @@ export async function handleStartRide(
   // العميل يقف في الشارع ولا يعلم أن سائقه انطلق ما لم يُبلَّغ. النمط نفسه المستعمل
   // في الإنهاء: بوته هو، لغته هو، وفشل التبليغ لا يُبطل بدءاً وقع فعلاً في القاعدة.
   const summary = result.value.summary;
-  if (deps.counterpart !== undefined && summary !== null) {
+  if (deps.riderNotice !== undefined) {
+    await noticeRiderOfTrip(deps.riderNotice, String(orderId), "STARTED");
+  } else if (deps.counterpart !== undefined && summary !== null) {
     const riderLang = summary.rider.languageCode;
     await deps.counterpart.notify(
       summary.rider.telegramId,
@@ -205,16 +215,21 @@ export async function handleCompleteRide(
   const short = shortOrderId(String(summary.orderId));
 
   // العميل يُبلَّغ عبر بوته هو، بلغته هو. فشل تبليغه لا يُبطل رحلة اكتملت فعلاً في القاعدة.
+  if (deps.riderNotice !== undefined) {
+    await noticeRiderOfTrip(deps.riderNotice, String(summary.orderId), "COMPLETED");
+  }
   if (deps.counterpart !== undefined) {
-    await deps.counterpart.notify(
-      summary.rider.telegramId,
-      t(riderLang)("rating.completed_rider", {
-        order: short,
-        duration: duration(riderLang),
-        driver: summary.driver.fullName,
-      }),
-      null,
-    );
+    if (deps.riderNotice === undefined) {
+      await deps.counterpart.notify(
+        summary.rider.telegramId,
+        t(riderLang)("rating.completed_rider", {
+          order: short,
+          duration: duration(riderLang),
+          driver: summary.driver.fullName,
+        }),
+        null,
+      );
+    }
     await deps.counterpart.notify(
       summary.rider.telegramId,
       t(riderLang)("rating.ask_rating_driver", { driver: summary.driver.fullName }),

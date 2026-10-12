@@ -56,6 +56,7 @@ import {
   type RelayDependencies,
   relayNegotiationMessage,
 } from "../dispatch/relay-negotiation-message.ts";
+import { noticeRiderOfTrip, type RiderTripNoticeDeps } from "../driver/rider-trip-notice.ts";
 import type {
   DriverFinanceOverviewDeps,
   FinanceObjectionView,
@@ -342,6 +343,13 @@ export interface DriverBotDependencies {
      */
     readonly miniAppUrl?: string | null;
   };
+  /**
+   * `WR-15` (ADR 0265) — إخطارُ القبولِ صفٌّ في صندوقِ الصادرِ لا إرسالٌ مباشر: نفسُ
+   * مفتاحِ منعِ التكرارِ `rider_trip:<order>:MATCHED` الذي يودعُه قبولُ Mini App،
+   * فلا يصلُ الراكبَ إخطاران لقبولٍ واحدٍ من مسارين، والعاملُ يُعيدُ ويُعلِنُ الفشلَ
+   * النهائيّ. حين يُعطى **يحلُّ محلَّ** `acceptNotice` (الإرسالَ المباشر) ولا يُضافُ إليه.
+   */
+  readonly riderNotice?: RiderTripNoticeDeps;
   /** SOS: فتح من السائق وقرارات قروب الإسناد من بوت السائق الذي نشر البطاقة. */
   readonly safety?: {
     readonly trigger: TriggerSosDeps;
@@ -2489,7 +2497,10 @@ async function handleOfferDecision(
      * طلبَك» كذبٌ ثانٍ في الاتّجاهِ المعاكس. والردُّ للسائقِ هو نفسُ ردِّ
      * النجاحِ الأوّلِ — فالتسليمُ المكرَّرُ لا يُميَّزُ عن الأصلِ في ما يراه.
      */
-    if (!claim.value.duplicate) {
+    if (deps.riderNotice !== undefined) {
+      // `WR-15`: الإيداعُ بمفتاحِ منعِ التكرارِ يكفي للمكرَّرِ أيضاً — ولا يُلقي.
+      await noticeRiderOfTrip(deps.riderNotice, String(orderId), "MATCHED");
+    } else if (!claim.value.duplicate) {
       // الراكب يُخطَر قبل بناء ردّ السائق، والفشل مبتلَعٌ داخل الدالّة فلا يمسّ إسناداً وقع.
       await notifyRiderOfAcceptance(orderId, claim.value, deps);
     }

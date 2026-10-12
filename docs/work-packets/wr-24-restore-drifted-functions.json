@@ -1,0 +1,35 @@
+{
+  "id": "wr-24-restore-drifted-functions",
+  "goal": "إعادة ثلاث دوال انحرفت في الإنتاج إلى صورة الأساس (claim_ride وstart_trial وactivate_subscription) إلى آخر صورة معتمدة، ونقل إخطارات القبول والبدء والإكمال من أزرار بوت السائق إلى صندوق الصادر، وإنزال سجل ناقل CORE المؤجَّل من خطأ إلى معلومة.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0265-rider-trip-notice-outbox.md",
+    "docs/evidence/production/WR-24-function-drift-20261012.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/container.ts",
+    "apps/workers/src/container.ts",
+    "packages/application/bots/driver-dialog.ts",
+    "packages/application/bots/rating-dialog.ts",
+    "supabase/migrations/20261012130000_wr_24_restore_drifted_functions.sql",
+    "tests/unit/wr-15-bot-trip-notice-outbox.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/evidence/production/WR-24-function-drift-20261012.md"
+  ],
+  "decision": "الأجسام منسوخة حرفًا عن آخر هجرة عرّفت كل دالة؛ لا منطق جديد. أزرار بوت السائق تودع rider_trip_notice بالمفتاح نفسه الذي يودعه Mini App في سطح miniapp، ويبقى المسار المباشر برابط التتبع في سطح legacy.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration (الملفات التي تمس claim_ride وstart_trial وactivate_subscription)",
+    "bun test tests/unit/wr-15-bot-trip-notice-outbox.test.ts tests/unit/driver-accept-notice.test.ts tests/unit/reputation.test.ts"
+  ],
+  "evidence": "محليًا: md5 الدوال الثلاث بعد الهجرة = قبلها على قاعدة السلسلة الكاملة؛ 27 ملف تكامل 284/284 على PostGIS، ووحدات 51/51.",
+  "constraints": [
+    "لا تغيير لبيانات الإنتاج",
+    "لا ادعاء ظهور الإشعار على الهاتف",
+    "لا قيم مخترعة لـ CORE_EVENTS_*"
+  ],
+  "limitations": "سبب الانحراف غير مسجَّل. إشعار المرشح بانتظار الراكب يتبع WR-09."
+}
