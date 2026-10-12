@@ -7513,6 +7513,31 @@ body {
   background: var(--tg-bottom-bar-bg-color);
 }
 
+/*
+ * `WR-16B` — شريطُ السائقِ مرفوعٌ: يطفو بمسافةِ `0.75rem` فوقَ المنطقةِ الآمنةِ السفلى (حدُّ
+ * الجهازِ وشريطُ Android/Telegram) ولا تقعُ أزرارُ النظامِ فوقَه. `inset-block-end` يحفظُ المسافةَ
+ * أثناءَ التمرير، و`margin-block-end` يحفظُها في آخرِ المحتوى، فلا يُغطّي محتوًى ولا يُغطّى.
+ */
+.app-frame__action:has(> .app-frame__tabs--raised) {
+  position: sticky;
+  inset-block-end: calc(0.75rem + var(--safe-bottom));
+  z-index: 5;
+  margin-block-end: calc(0.75rem + var(--safe-bottom));
+}
+
+/*
+ * الالتصاقُ على الحاوي لا على الشريط: حاوي `app-frame__action` بارتفاعِ الشريطِ نفسِه، فكانَ
+ * `sticky` على الشريطِ لا يتحرّكُ ويبقى الشريطُ آخرَ المحتوى الطويل.
+ */
+.app-frame__tabs--raised {
+  position: static;
+  margin-inline: 0;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--w-line);
+  border-radius: var(--r-lg);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--tg-text-color) 12%, transparent);
+}
+
 .app-frame__tab {
   flex: 1;
   min-inline-size: 0;

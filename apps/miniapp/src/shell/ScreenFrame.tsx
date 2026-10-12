@@ -101,6 +101,24 @@ export interface RootTabBarProps<R extends RootRole> {
 }
 
 /**
+ * `WR-16B` — شريطُ السائقِ مرفوعٌ قليلًا فوقَ حدِّ الشاشةِ وأزرارِ النظام (الصورة 03 في أمرِ
+ * 2026-10-12): يطفو بمسافةٍ ثابتةٍ فوقَ `--safe-bottom` بدلَ أن يلتصقَ بالحافّةِ وتقعَ أزرارُ
+ * Android فوقَ حشوتِه. والراكبُ على شريطِه القائمِ إلى أن يُطلَبَ له مثلُه.
+ */
+const ROOT_TAB_BAR_SURFACES = [
+  { surface: "rider", modifier: "" },
+  { surface: "driver", modifier: "app-frame__tabs--raised" },
+] as const satisfies readonly { readonly surface: RootRole; readonly modifier: string }[];
+
+function rootTabBarModifier(surface: RootRole): string {
+  return ROOT_TAB_BAR_SURFACES.find((x) => x.surface === surface)?.modifier ?? "";
+}
+
+export function rootTabBarClass(surface: RootRole): string {
+  return `app-frame__tabs ${rootTabBarModifier(surface)}`.trimEnd();
+}
+
+/**
  * معلمُ تنقّلٍ (`<nav>`) لا `tablist`: كلُّ تبويبٍ ينقلُ إلى شاشةِ جذرٍ لا يُبدِّلُ
  * لوحةً داخلَ الصفحة، فالنشطُ `aria-current="page"`. الترتيبُ ترتيبُ §6 والاتجاهُ
  * يقلبُه CSS (flex)، فلا نسخةَ RTL. وسمٌ ناقصٌ = لا شريطَ (لا تبويبَ بنصٍّ مخترَع).
@@ -114,8 +132,9 @@ export function RootTabBar<R extends RootRole>({
 }: RootTabBarProps<R>) {
   if (label.trim() === "" || missingTabLabels(surface, labels).length > 0) return null;
   const ids = ROOT_TABS[surface] as readonly RootTabId<R>[];
+  const bar = { modifier: rootTabBarModifier(surface) };
   return (
-    <nav className="app-frame__tabs" aria-label={label}>
+    <nav className={`app-frame__tabs ${bar.modifier}`.trimEnd()} aria-label={label}>
       {ids.map((id) => {
         const on = id === active;
         const state = ROOT_TAB_STATES.find((x) => x.on === on) ?? ROOT_TAB_STATES[0];

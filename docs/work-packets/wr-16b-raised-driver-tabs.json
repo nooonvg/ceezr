@@ -1,0 +1,23 @@
+{
+  "id": "wr-16b-raised-driver-tabs",
+  "goal": "رفع شريط تنقل السائق قليلًا فوق المنطقة الآمنة السفلى وأزرار Android/Telegram كما في الصورة 03 (§16-ب)، مع بقائه ظاهرًا أثناء التمرير وتمييز التبويب الحالي.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/UI_UX_CANONICAL_DIRECTIVE.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/shell/ScreenFrame.tsx",
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/shell/wr-16b-raised-driver-tabs.test.tsx",
+    "docs/evidence/ui/WR-16B-raised-driver-tabs-20261012.png"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "صنف معدِّل للسائق وحده في جدول أصناف معلن، والالتصاق على حاوي منطقة الفعل عبر :has لأن الحاوي بارتفاع الشريط فلا يتحرك sticky عليه.",
+  "tests": ["bun test apps/miniapp/src/shell", "bun scripts/check-css-class-coverage.ts"],
+  "evidence": "لقطة Chromium بلا رأس (500px) بحاشية آمنة 0 و48px ومحتوى قصير وطويل: الشريط فوق الحاشية بمسافة ثابتة وظاهر أثناء التمرير، وشريط الراكب لم يتغير.",
+  "constraints": ["لا تغيير في شريط الراكب", "لا تبويب جديد", "خصائص منطقية لـRTL"],
+  "limitations": "اللقطة ليست جهازًا حقيقيًا؛ المسافة على Android/iOS داخل تيليجرام لم تُقس.",
+  "status": "open"
+}
