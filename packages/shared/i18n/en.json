@@ -534,5 +534,7 @@
   "driver.location_reminder": "📍 We haven't received your location for {minutes} minutes while you're available.\nTo keep receiving offers, update it: open Waslah and allow location, or send your location here (📎 → Location).\nWaslah can't read your location while it's closed. If you're no longer available, go unavailable.",
   "driver.location_reminder_never": "📍 We haven't received any location from you while you're available.\nTo receive offers, update it: open Waslah and allow location, or send your location here (📎 → Location).\nIf you're not available, go unavailable.",
   "driver.location_reminder_open": "📍 Update location in Waslah",
-  "driver.location_reminder_unavailable": "⏸ Make me unavailable"
+  "driver.location_reminder_unavailable": "⏸ Make me unavailable",
+  "driver.city_auto_changed": "📍 Based on your current location, your Waslah city is now {city}.\nYou'll receive {city} requests from now on. Your subscription hasn't changed.",
+  "driver.city_outside_coverage": "📍 Your current location is outside the cities where Waslah operates, so you won't receive requests until you're back in one.\nIf you're not working now, go unavailable."
 }

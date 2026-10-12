@@ -1048,6 +1048,28 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     criticalPath: "دورةُ الرحلةِ والإسناد",
     documentedIn: null,
   },
+  {
+    migration: "20261012170000_wr_13_driver_city_relocation.sql",
+    change: "revoke_function:notification_kind_priority(1)",
+    why: "الهجرةُ `20261012170000` (`WR-13`) تُعيدُ تعريفَ `notification_kind_priority(text)` **بالتوقيعِ والمردِّ نفسِهما** لتُضيفَ رتبةَ `driver_city_notice` (=3). وبقيةُ الفروعِ منسوخةٌ حرفاً عن `20261012160000`. والسحبُ إعادةُ قفلٍ كما كانَ. **ولا كسرَ لنسخةٍ سابقةٍ**: المجهولُ يُرجِعُ 1.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: true,
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    documentedIn: null,
+  },
+  {
+    migration: "20261012170000_wr_13_driver_city_relocation.sql",
+    change: "revoke_function:claim_notification_delivery(0)",
+    why: "الهجرةُ `20261012170000` (`WR-13`) تُعيدُ تعريفَ `claim_notification_delivery()` **بالتوقيعِ ومفاتيحِ المردِّ نفسِها** لتُضيفَ `driver_city_notice` إلى فرعِ محادثةِ السائقِ ولغتِه. وبقيةُ الدالّةِ منسوخةٌ حرفاً عن `20261012160000`. **ولا كسرَ لنسخةٍ سابقةٍ**: صفوفُ النوعِ الجديدِ لا تلتقطُها الصورةُ السابقةُ فتبقى `pending`.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: true,
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    documentedIn: null,
+  },
 
   {
     migration: "20261012140000_wr_09_rider_choice.sql",

@@ -16,6 +16,7 @@ import {
 } from "../../../packages/application/dispatch/deliver-cancellation-notification.ts";
 import { createDriverCandidateNoticeHandler } from "../../../packages/application/dispatch/deliver-candidate-notices.ts";
 import { createChatMessageNoticeHandler } from "../../../packages/application/dispatch/deliver-chat-message-notice.ts";
+import { createDriverCityNoticeHandler } from "../../../packages/application/dispatch/deliver-driver-city-notice.ts";
 import { createLocationReminderHandler } from "../../../packages/application/dispatch/deliver-location-reminder.ts";
 import {
   createLostItemReportHandler,
@@ -238,6 +239,11 @@ export const JOB_INTERVALS = {
    * والإيداعُ مفتاحُه دلوُ الزمنِ فتكرارُ الشوطِ لا يُكرِّرُ التذكير.
    */
   enqueueLocationReminders: 60,
+  /**
+   * `WR-13` — كلَّ دقيقة: نقلُ مدينةِ السائقِ يكفيه تأخّرُ دقيقة، والموقعُ المقبولُ للنقلِ
+   * حديثٌ بدقيقتين (`driver_city_relocation_max_age_seconds`).
+   */
+  relocateDriversByLocation: 60,
   /**
    * كلّ عشر ثوانٍ: البثُّ محدودٌ بحجم دفعةٍ من إعداد المدينة (٢٥ افتراضاً)، فهذا
    * سقفٌ نظريّ حوالي ١٥٠ رسالة في الدقيقة للمدينة — تحت حدّ تلغرام بفارقٍ مريح،
@@ -796,6 +802,14 @@ export function buildWorkerContainer(
         ? log.error(event, meta)
         : log.info(event, meta),
   });
+  /**
+   * `WR-13` (ADR 0269) — إخطارُ السائقِ بانتقالِ مدينتِه حسبَ موقعِه، أو بخروجِه من التغطية.
+   */
+  const driverCityNoticeHandler = createDriverCityNoticeHandler({
+    sender: asIdentifyingSender(withTrafficPriority(telegram, "driver_city_notice")),
+    log: (event, meta) =>
+      event === "driver_city_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
+  });
   const notificationHandlers = {
     offer: createOfferNotificationHandler(offerPublisher, (event, meta) =>
       event === "offer_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
@@ -827,6 +841,7 @@ export function buildWorkerContainer(
     driver_candidate_notice: driverCandidateNoticeHandler,
     order_chat_message: chatMessageNoticeHandler,
     driver_location_reminder: locationReminderHandler,
+    driver_city_notice: driverCityNoticeHandler,
   };
 
   /**
@@ -1350,6 +1365,19 @@ export function buildWorkerContainer(
                     select expire_order_candidates(50) as result`;
                   const result = rows[0]?.result ?? {};
                   return `expired=${String(result.expired ?? 0)} cancelled=${String(result.cancelled ?? 0)}`;
+                },
+              },
+              {
+                // `WR-13` (ADR 0269) — مَن موقعُه الحديثُ الموثوقُ خارجَ حدِّ مدينتِه يُنقَلُ إلى المدينةِ
+                // المفعّلةِ التي تغطّيه بـ`update_driver_city` نفسِه، أو يُخطَرُ أنَّه خارجَ التغطية.
+                name: "relocate-drivers-by-location",
+                everySeconds: JOB_INTERVALS.relocateDriversByLocation,
+                runOnStart: false,
+                run: async () => {
+                  const rows = await sql<{ result: Record<string, unknown> }[]>`
+                    select relocate_drivers_by_location(100) as result`;
+                  const r = rows[0]?.result ?? {};
+                  return `moved=${String(r.moved ?? 0)} outside=${String(r.outside ?? 0)} held=${String(r.held ?? 0)}`;
                 },
               },
               {

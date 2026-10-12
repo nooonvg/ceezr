@@ -137,6 +137,8 @@ export const TRAFFIC_PRIORITY_RANK: Readonly<Record<TrafficPriorityClass, number
  * - `driver_location_reminder` ← **تشغيليٌّ ذو قيمةٍ زمنيّة** (متوسّطٌ، `WR-12`): تذكيرُ
  *   سائقٍ متوفّرٍ بتحديثِ موقعِه. ليسَ في تتابعٍ مع رحلةٍ قائمةٍ فيؤجَّلُ بأمانٍ عندَ الإشباع،
  *   والمُطالِبُ يعيدُ فحصَ الحاجةِ لحظةَ الإرسال.
+ * - `driver_city_notice` ← **تشغيليٌّ** (متوسّطٌ، `WR-13`): إخطارُ السائقِ بانتقالِ مدينتِه
+ *   حسبَ موقعِه أو بخروجِه من التغطية. خبرٌ لا مطالبةٌ ذاتُ مؤقّت.
  */
 export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, TrafficPriorityClass>> =
   {
@@ -155,6 +157,7 @@ export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, Traff
     subscription_notice: "medium",
     lost_item_report: "medium",
     driver_location_reminder: "medium",
+    driver_city_notice: "medium",
     safety_resolution_closed: "medium",
     safety_resolution_blocked: "medium",
     broadcast_recipient: "low",
