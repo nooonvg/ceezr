@@ -570,7 +570,7 @@ export async function healthSignals(sql: Sql, stallAfterSeconds: number): Promis
           and negotiate_deadline < now())::int as stale_negotiations,
       (select count(*) from orders
         where status = 'searching'
-          and created_at < now() - make_interval(secs => ${stallAfterSeconds}::float8))::int
+          and coalesce(searching_since, created_at) < now() - make_interval(secs => ${stallAfterSeconds}::float8))::int
         as stalled_orders,
       (select count(*) from cities where is_active = false)::int as inactive_cities,
       (select count(*) from driver_availability da
@@ -1106,6 +1106,8 @@ export async function listLiveOrders(
       pickup_label: string | null;
       dropoff_label: string | null;
       created_at: string;
+      searching_since: string | null;
+      pickup_at: string | null;
       matched_at: string | null;
       started_at: string | null;
       broadcast_round: number;
@@ -1118,7 +1120,7 @@ export async function listLiveOrders(
            ru.full_name as rider_name, ru.telegram_id::text as rider_telegram_id,
            du.full_name as driver_name,
            o.pickup_label, o.dropoff_label,
-           o.created_at, o.matched_at, o.started_at, o.broadcast_round,
+           o.created_at, o.searching_since, o.pickup_at, o.matched_at, o.started_at, o.broadcast_round,
            (select count(*) from order_offers off
              where off.order_id = o.id and off.status = 'pending' and off.expires_at > now())::int
              as pending_offers,
@@ -1131,7 +1133,8 @@ export async function listLiveOrders(
     join users ru on ru.id = r.user_id
     left join drivers d on d.id = o.assigned_driver_id
     left join users du on du.id = d.user_id
-    where o.status in ('searching', 'matched', 'in_progress')
+    -- WR-06: المجدولُ يظهرُ للمشغّلِ حيًّا (ينتظرُ موعدَ إطلاقِه) لا مختفيًا.
+    where o.status in ('scheduled', 'searching', 'matched', 'in_progress')
       ${cityId === null ? sql`` : sql`and o.city_id = ${cityId}::uuid`}
     order by o.created_at asc
   `;
@@ -1147,6 +1150,8 @@ export async function listLiveOrders(
     pickupLabel: row.pickup_label,
     dropoffLabel: row.dropoff_label,
     createdAt: String(row.created_at),
+    searchingSince: row.searching_since === null ? null : String(row.searching_since),
+    pickupAt: row.pickup_at === null ? null : String(row.pickup_at),
     matchedAt: row.matched_at === null ? null : String(row.matched_at),
     startedAt: row.started_at === null ? null : String(row.started_at),
     broadcastRound: row.broadcast_round,

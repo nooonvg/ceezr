@@ -53,6 +53,7 @@ export function isDriverOfferStatus(value: unknown): value is DriverOfferStatus 
 
 /** حالاتُ الطلبِ — تُنقَلُ كما هيَ لتقولَ الشاشةُ «سُبِقتَ» لا «عطبٌ». */
 export const DRIVER_ORDER_STATUSES = [
+  "scheduled",
   "searching",
   "matched",
   "in_progress",

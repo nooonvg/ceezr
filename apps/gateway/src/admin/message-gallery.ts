@@ -296,11 +296,29 @@ export async function buildMessageGallery(options: GalleryOptions): Promise<Mess
     ARRIVED: "وصول السائق",
     STARTED: "بدء الرحلة",
     COMPLETED: "انتهاء الرحلة",
+    SCHEDULED: "تأكيد الطلب المجدول",
+    SCHEDULE_REMINDER: "تذكير الراكب بموعده المجدول",
+    SEARCH_STARTED: "بدء البحث عن سائق للطلب المجدول",
+    SCHEDULE_MISSED: "إلغاء مجدول فات موعده",
   };
-  for (const event of ["MATCHED", "ARRIVED", "STARTED", "COMPLETED"] as const) {
+  const galleryFacts = {
+    ...tripFacts,
+    pickupAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+    dispatchAt: new Date(Date.now() + 100 * 60 * 1000),
+  };
+  for (const event of [
+    "MATCHED",
+    "ARRIVED",
+    "STARTED",
+    "COMPLETED",
+    "SCHEDULED",
+    "SCHEDULE_REMINDER",
+    "SEARCH_STARTED",
+    "SCHEDULE_MISSED",
+  ] as const) {
     await rec.raw.sendMessage(
       PRIVATE_CHAT,
-      riderTripText(event, FAKE.order, tripFacts),
+      riderTripText(event, FAKE.order, galleryFacts),
       toTelegramMarkup(
         riderTripKeyboard(
           options.miniAppUrl,
@@ -315,7 +333,10 @@ export async function buildMessageGallery(options: GalleryOptions): Promise<Mess
         audience: "rider",
         bot: "rider",
         title: tripTitles[event],
-        when: "حين يغيّر السائق حالة الرحلة من التطبيق",
+        when:
+          event.startsWith("SCHEDULE") || event === "SEARCH_STARTED"
+            ? "طلبٌ مجدول (WR-06): عند الحجز، وقبل الموعد، وعند بدء البحث، أو إن فات الموعد"
+            : "حين يغيّر السائق حالة الرحلة من التطبيق",
         source: "packages/application/dispatch/deliver-rider-trip-notice.ts",
       },
       `rider-trip-${event.toLowerCase()}`,

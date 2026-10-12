@@ -932,8 +932,9 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // زيادةٌ (`ح-8`): والآنَ 176 و 1561 بالسباقاتِ المتزامنة (WR-24): تسعُ حالاتٍ في `wr-24-concurrent-races.test.ts`.
     // زيادةٌ (`ح-8`): والآنَ 177 و 1567 باختيارِ السائقينَ بالقربِ والتقييم (WR-23): ستُّ حالاتٍ في `wr-23-driver-selection.test.ts`.
     // زيادةٌ (`ح-8`): والآنَ 178 و 1570 بعميلِ المحادثةِ الحقيقيّ (WR-25): ثلاثُ حالاتٍ في `wr-25-chat-realtime-client.test.ts`.
-    expect(SKIP_REGISTRY).toHaveLength(178);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1570);
+    // ثمّ 179 و 1588 بالجدولةِ الحقيقيّة (WR-06 ج): ثماني عشرةَ حالةً في `wr-06-scheduled-dispatch.test.ts`.
+    expect(SKIP_REGISTRY).toHaveLength(179);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1588);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {

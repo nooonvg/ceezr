@@ -77,8 +77,48 @@ describe("createRideRequestCommand — قراءةُ حكمِ الإنشاءِ", 
     if (!result.ok) return;
     expect(result.value).toEqual({
       accepted: true,
-      ride: { orderId: ORDER_ID, createdAtMs: Date.parse(CREATED_AT), reused: false },
+      // `WR-06`: دالّةٌ لا تُعيدُ الحالةَ (أقدم) تُقرأُ «بحث»، والموعدانِ `null` صريحًا.
+      ride: {
+        orderId: ORDER_ID,
+        createdAtMs: Date.parse(CREATED_AT),
+        reused: false,
+        status: "searching",
+        pickupAtMs: null,
+        dispatchAtMs: null,
+      },
     });
+  });
+
+  it("`WR-06` — المجدولُ يُقرأُ بحالتِه وموعدَيه، وحالةٌ مجهولةٌ عطبُ عقدٍ لا نجاح", async () => {
+    const pickup = "2027-03-01T15:00:00.000Z";
+    const dispatch = "2027-03-01T14:40:00.000Z";
+    const { sql } = fakeSql({
+      ok: true,
+      reused: false,
+      order_id: ORDER_ID,
+      created_at: CREATED_AT,
+      status: "scheduled",
+      pickup_at: pickup,
+      dispatch_at: dispatch,
+    });
+    const result = await createRideRequestCommand(sql).create(COMMAND_INPUT);
+    expect(result.ok && result.value.accepted ? result.value.ride : null).toEqual({
+      orderId: ORDER_ID,
+      createdAtMs: Date.parse(CREATED_AT),
+      reused: false,
+      status: "scheduled",
+      pickupAtMs: Date.parse(pickup),
+      dispatchAtMs: Date.parse(dispatch),
+    });
+    const bad = fakeSql({
+      ok: true,
+      reused: false,
+      order_id: ORDER_ID,
+      created_at: CREATED_AT,
+      status: "parked",
+    });
+    const refused = await createRideRequestCommand(bad.sql).create(COMMAND_INPUT);
+    expect(refused.ok).toBe(false);
   });
 
   it("`reused: true` لا يُبدَّلُ ولا يُطمَسُ: الضغطةُ الثانيةُ يجبُ أن تُعرَفَ", async () => {
@@ -250,6 +290,10 @@ describe("createRideSearchReader — قراءةُ حالةِ البحثِ", () =
         widerCircleOpened: false,
         escalated: false,
         cancellableWithoutPenalty: true,
+        // `WR-06`: بلا `search_started_at` (دالّةٌ أقدم) يبدأُ العدّادُ من الإنشاء.
+        searchStartedAtMs: Date.parse(CREATED_AT),
+        pickupAtMs: null,
+        dispatchAtMs: null,
       },
     });
     expect(calls[0]?.text).toContain("ride_search_state");

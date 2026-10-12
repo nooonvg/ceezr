@@ -31,6 +31,10 @@ export interface LiveOrderRow {
   readonly pickupLabel: string | null;
   readonly dropoffLabel: string | null;
   readonly createdAt: string;
+  /** `WR-06` — بدءُ البحثِ إن بدأَ بعدَ الإنشاء (إطلاقُ مجدول)؛ التعثّرُ يُقاسُ منه. */
+  readonly searchingSince?: string | null;
+  /** `WR-06` — موعدُ الحضورِ إن طُلِبَ لاحقًا. */
+  readonly pickupAt?: string | null;
   readonly matchedAt: string | null;
   readonly startedAt: string | null;
   readonly broadcastRound: number;
@@ -54,12 +58,14 @@ export interface LiveOrdersData {
 }
 
 const STATUS_LABEL: Readonly<Record<string, string>> = {
+  scheduled: "مجدول",
   searching: "يبحث عن سائق",
   matched: "مُسنَد",
   in_progress: "جارٍ",
 };
 
 const STATUS_TONE: Readonly<Record<string, BadgeTone>> = {
+  scheduled: "muted",
   searching: "warn",
   matched: "ok",
   in_progress: "ok",
@@ -86,7 +92,8 @@ export function renderLiveOrdersPage(data: LiveOrdersData): string {
   const stalled = data.rows.filter(
     (r) =>
       r.status === "searching" &&
-      (data.now.getTime() - new Date(r.createdAt).getTime()) / MS_PER_SECOND > data.stallSeconds,
+      (data.now.getTime() - new Date(r.searchingSince ?? r.createdAt).getTime()) / MS_PER_SECOND >
+        data.stallSeconds,
   ).length;
 
   const cards = [
@@ -100,7 +107,9 @@ export function renderLiveOrdersPage(data: LiveOrdersData): string {
   ].join("");
 
   const rows = data.rows.map((row) => {
-    const ageSeconds = (data.now.getTime() - new Date(row.createdAt).getTime()) / MS_PER_SECOND;
+    const ageSeconds =
+      (data.now.getTime() - new Date(row.searchingSince ?? row.createdAt).getTime()) /
+      MS_PER_SECOND;
     const isStalled = row.status === "searching" && ageSeconds > data.stallSeconds;
     return [
       `<span class="mono">${escapeHtml(shortId(row.orderId))}</span>`,
@@ -109,7 +118,10 @@ export function renderLiveOrdersPage(data: LiveOrdersData): string {
       badge(STATUS_LABEL[row.status] ?? row.status, STATUS_TONE[row.status] ?? "muted") +
         (row.negotiationStage === null
           ? ""
-          : ` ${badge(escapeHtml(row.negotiationStage), "warn")}`),
+          : ` ${badge(escapeHtml(row.negotiationStage), "warn")}`) +
+        (row.status === "scheduled" && row.pickupAt
+          ? `<div class="card-hint">الحضور: ${escapeHtml(formatDateTime(new Date(row.pickupAt)))}</div>`
+          : ""),
       `<div>${escapeHtml(row.riderName ?? "بلا اسم")}</div>
        <div class="card-hint mono">${escapeHtml(row.riderTelegramId)}</div>
        <form class="inline" method="post" data-confirm="قطعُ كلِّ روابطِ تتبّعِ هذا الطلب؟ من يحملُ رابطاً منها يفقدُ الوصولَ إليه." action="/admin/live-orders/${escapeHtml(row.orderId)}/revoke-tracking">

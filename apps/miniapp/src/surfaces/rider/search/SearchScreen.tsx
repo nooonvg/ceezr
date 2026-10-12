@@ -88,6 +88,7 @@ import type {
   RiderOfferMode,
   RideSearchResponse,
 } from "./ride-contract.ts";
+import { ScheduledDetails } from "./ScheduledRideCard.tsx";
 import {
   cancelRefusalKey,
   elapsedSecondsFor,
@@ -185,6 +186,8 @@ type SearchState =
       readonly reused: boolean;
       readonly view: Found | null;
       readonly measuredAtMs: number;
+      /** `WR-06` — ردُّ الإنشاءِ قالَ «مجدول»: يُعرَضُ موعدُه قبلَ أوّلِ قراءة. */
+      readonly scheduled?: { readonly pickupAt: string | null; readonly dispatchAt: string | null };
     }
   | { readonly kind: "read_refused"; readonly refusal: string }
   | { readonly kind: "cancel_refused"; readonly refusal: string; readonly orderId: string }
@@ -293,6 +296,14 @@ export function SearchScreen({
         reused: response.reused,
         view: null,
         measuredAtMs: now(),
+        ...(response.status === "scheduled"
+          ? {
+              scheduled: {
+                pickupAt: response.pickupAt ?? null,
+                dispatchAt: response.dispatchAt ?? null,
+              },
+            }
+          : {}),
       });
     } catch (thrown) {
       const screen = await screenFor(thrown);
@@ -500,6 +511,51 @@ export function SearchScreen({
     const { view } = state;
     /** الساعةُ تُقرأُ **لحظةَ الرسمِ**: لا حالةَ تدقُّ، ولا رقمَ يتحرّكُ وحدَه. */
     const drawnAtMs = now();
+
+    // `WR-06` — المجدولُ لا يبحثُ بعد: لا عدّادَ انتظارٍ ولا «بُلِّغَ سائقون»، بل موعدُه ولحظةُ
+    // بدءِ البحثِ وبابُ الإلغاء. والحالةُ من القراءةِ إن وُجِدَت، وإلّا من ردِّ الإنشاء.
+    const scheduledNow =
+      view === null ? state.scheduled !== undefined : view.status === "scheduled";
+    if (scheduledNow) {
+      return (
+        <div className="rs__live">
+          {state.reused && <p className="rs__reused">{t("rider.search.reused")}</p>}
+          <div className="rs__hero">
+            <span className="rs__pulse" aria-hidden="true">
+              <Glyph name="recent" />
+            </span>
+            <p className="rs__status">{t("rider.search.status.scheduled")}</p>
+          </div>
+          <ScheduledDetails
+            language={language}
+            pickupAt={view?.pickupAt ?? state.scheduled?.pickupAt ?? null}
+            dispatchAt={view?.dispatchAt ?? state.scheduled?.dispatchAt ?? null}
+            nowMs={drawnAtMs}
+          />
+          <div className="rs__snapshot" role="status">
+            <button
+              type="button"
+              className="sys__action rs__refresh"
+              disabled={reading}
+              onClick={() => void refresh(state.orderId)}
+            >
+              <Glyph name="refresh" className="ar__refresh-icon" />
+              {t(reading ? "rider.search.refreshing" : "rider.search.refresh")}
+            </button>
+          </div>
+          {view?.cancellableWithoutPenalty === true && (
+            <button
+              type="button"
+              className="rs__cancel"
+              disabled={busy}
+              onClick={() => void askCancel(state.orderId)}
+            >
+              {t(busy ? "rider.search.cancelling" : "rider.search.cancel")}
+            </button>
+          )}
+        </div>
+      );
+    }
     const seconds =
       view === null
         ? elapsedSecondsFromBirth(state.createdAtMs, drawnAtMs)

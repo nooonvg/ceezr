@@ -12,8 +12,10 @@
  * رسالةٌ تطلبُ قراراً لم يَعُدْ ممكناً كذبٌ. فيُعلَنُ الصفُّ `undeliverable` بسببِ
  * `TELEGRAM_DELIVERY_NOT_REQUIRED` لا فشلاً. ولا يُسجَّلُ معرّفُ تيليجرام ولا النصّ.
  */
+
 import { t } from "../../shared/i18n/index.ts";
 import { miniAppUrl } from "../../shared/miniapp-link/index.ts";
+import { formatPickupMoment } from "../../shared/order-terms/index.ts";
 import { ok } from "../../shared/result/index.ts";
 import type { Keyboard } from "../bots/types.ts";
 import { riderTripKeyboard } from "../driver/rider-trip-notice.ts";
@@ -171,12 +173,19 @@ export async function deliverRiderCandidateNotice(
   );
 }
 
-export type DriverCandidateOutcome = "ACCEPTED" | "DECLINED" | "EXPIRED" | "CANCELLED";
+export type DriverCandidateOutcome =
+  | "ACCEPTED"
+  | "DECLINED"
+  | "EXPIRED"
+  | "CANCELLED"
+  /** `WR-06` — تذكيرُ السائقِ المُسنَدِ إلى طلبٍ مجدولٍ بموعدِ الحضور (لم يصلْ بعد). */
+  | "PICKUP_REMINDER";
 const OUTCOMES: readonly DriverCandidateOutcome[] = [
   "ACCEPTED",
   "DECLINED",
   "EXPIRED",
   "CANCELLED",
+  "PICKUP_REMINDER",
 ];
 
 const OUTCOME_KEYS: Readonly<Record<DriverCandidateOutcome, string>> = {
@@ -184,14 +193,28 @@ const OUTCOME_KEYS: Readonly<Record<DriverCandidateOutcome, string>> = {
   DECLINED: "driver.candidate_declined",
   EXPIRED: "driver.candidate_expired",
   CANCELLED: "driver.candidate_cancelled",
+  PICKUP_REMINDER: "driver.pickup_reminder",
 };
 
 export function driverCandidateText(
   outcomeName: DriverCandidateOutcome,
   orderId: string,
   language: string,
+  pickupAt: Date | null = null,
 ): string {
-  return t(language)(OUTCOME_KEYS[outcomeName], { order: shortOrder(orderId) });
+  const tr = t(language);
+  return tr(OUTCOME_KEYS[outcomeName], {
+    order: shortOrder(orderId),
+    time:
+      pickupAt === null
+        ? tr("tracking.unknown_value")
+        : formatPickupMoment(pickupAt, Date.now(), tr),
+  });
+}
+
+/** `WR-06` — حالةُ الطلبِ وهل وصلَ السائقُ، لحظةَ الإرسال: تذكيرٌ بطلبٍ أُلغيَ لا يُرسَل. */
+export interface PickupReminderStateReader {
+  read(orderId: string, driverId: string): Promise<{ readonly stillDue: boolean } | null>;
 }
 
 export interface DriverCandidateNoticeDeps {
@@ -199,6 +222,8 @@ export interface DriverCandidateNoticeDeps {
   readonly miniAppUrl: string | null;
   /** لوحةُ «بدء الرحلة» في سطحِ البوتِ القديم (لا Mini App). */
   readonly startKeyboard?: (orderId: string, language: string) => Keyboard;
+  /** `WR-06` — غيابُه ⇒ يُرسَلُ التذكيرُ بلا فحصٍ (اختبارٌ أو تركيبٌ أقدم). */
+  readonly pickupReminderState?: PickupReminderStateReader;
   readonly log?: (event: string, meta: Record<string, unknown>) => void;
 }
 
@@ -247,8 +272,31 @@ export function createDriverCandidateNoticeHandler(
       typeof delivery.payload.language === "string" && delivery.payload.language !== ""
         ? delivery.payload.language
         : "ar";
-    const text = driverCandidateText(name, orderId, language);
-    const keyboard = name === "ACCEPTED" ? driverKeyboard(deps, orderId, language) : null;
+    let pickupAt: Date | null = null;
+    if (name === "PICKUP_REMINDER") {
+      const driverId = delivery.payload.driver_id;
+      if (deps.pickupReminderState !== undefined && typeof driverId === "string") {
+        const state = await deps.pickupReminderState.read(orderId, driverId);
+        if (state === null || !state.stillDue) {
+          deps.log?.("driver_candidate_notice.not_required", meta);
+          return ok({
+            abandon: false,
+            messageId: null,
+            failure: null,
+            undeliverable: true,
+            undeliverableReason: "TELEGRAM_DELIVERY_NOT_REQUIRED",
+          });
+        }
+      }
+      const raw = delivery.payload.pickup_at;
+      const parsed = typeof raw === "string" ? new Date(raw) : null;
+      pickupAt = parsed !== null && !Number.isNaN(parsed.getTime()) ? parsed : null;
+    }
+    const text = driverCandidateText(name, orderId, language, pickupAt);
+    const keyboard =
+      name === "ACCEPTED" || name === "PICKUP_REMINDER"
+        ? driverKeyboard(deps, orderId, language)
+        : null;
     deps.log?.("driver_candidate_notice.attempted", { ...meta, attempt: delivery.attempts });
     return outcome(
       "driver_candidate_notice",

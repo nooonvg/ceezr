@@ -117,6 +117,10 @@ interface RidePayload {
   readonly wider_circle_opened?: unknown;
   readonly escalated?: unknown;
   readonly cancellable_without_penalty?: unknown;
+  /** `WR-06` — بدءُ البحثِ الفعليّ وموعدا المجدول. */
+  readonly search_started_at?: unknown;
+  readonly pickup_at?: unknown;
+  readonly dispatch_at?: unknown;
 }
 
 interface RideRow {
@@ -201,7 +205,18 @@ export function createRideRequestCommand(sql: Sql): RideRequestCommand {
       if (orderId === null || createdAtMs === null || typeof result.reused !== "boolean") {
         return err(failed("STORE_ERROR"));
       }
-      const ride: CreatedRide = { orderId, createdAtMs, reused: result.reused };
+      // `WR-06` — الحالةُ وموعدا المجدول. غيابُ الحالةِ (دالّةٌ أقدم) يُقرأُ «بحث»، وحالةٌ
+      // مجهولةٌ عطبُ عقدٍ لا نجاح.
+      const status = result.status === undefined ? "searching" : result.status;
+      if (!isRideStatus(status)) return err(failed("STORE_ERROR"));
+      const ride: CreatedRide = {
+        orderId,
+        createdAtMs,
+        reused: result.reused,
+        status,
+        pickupAtMs: readInstantMs(result.pickup_at),
+        dispatchAtMs: readInstantMs(result.dispatch_at),
+      };
       return ok({ accepted: true, ride });
     },
   };
@@ -311,6 +326,9 @@ export function createRideSearchReader(sql: Sql): RideSearchReader {
         widerCircleOpened,
         escalated,
         cancellableWithoutPenalty: result.cancellable_without_penalty,
+        searchStartedAtMs: readInstantMs(result.search_started_at) ?? createdAtMs,
+        pickupAtMs: readInstantMs(result.pickup_at),
+        dispatchAtMs: readInstantMs(result.dispatch_at),
       };
       return ok({ found: true, state });
     },

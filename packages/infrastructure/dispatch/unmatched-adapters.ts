@@ -39,14 +39,15 @@ export function createUnmatchedOrderFinder(sql: Sql): UnmatchedOrderFinder {
                  u.language_code as language_code,
                  o.broadcast_round as broadcast_round,
                  exists (select 1 from order_offers f where f.order_id = o.id) as has_any_offer,
-                 extract(epoch from (now() - o.created_at))::bigint as waiting_seconds
+                 extract(epoch from (now() - coalesce(o.searching_since, o.created_at)))::bigint as waiting_seconds
             from orders o
             join riders r on r.id = o.rider_id
             join users  u on u.id = r.user_id
            where o.city_id = ${cityId}::uuid
              and o.status = 'searching'
              and o.assigned_driver_id is null
-             and o.created_at < now() - make_interval(secs => ${olderThanSeconds})
+             -- WR-06: عمرُ البحثِ من بدئه — مجدولٌ أُطلِقَ للتوّ لا يُصعَّدُ لأنّه أُنشئَ أمس.
+             and coalesce(o.searching_since, o.created_at) < now() - make_interval(secs => ${olderThanSeconds})
              -- "بلا عرض حيّ" لا "بلا أي عرض": الشرط الثاني كان يحجب عن التصعيد
              -- طلباً استنفد دوراته وله عرضٌ منتهٍ: لا يُبَّث ثانياً ولا يُصعَّد — يتيمٌ دائم.
              -- ومن لمّا يزل في مسار الدورات يُستبعد في المجال بـroundsExhausted

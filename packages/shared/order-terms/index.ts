@@ -78,6 +78,32 @@ export function formatPickupClock(at: Date | number, tr: Translate): string {
   return `${hour}:${minute} ${suffix}`;
 }
 
+/** يومُ اللحظةِ بتوقيتِ الرياض «YYYY-MM-DD» — للمقارنةِ لا للعرض. */
+function riyadhDay(at: Date | number): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: ORDER_TERMS_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
+/**
+ * `WR-06` — الموعدُ بيومِه: «1:30 م» لليوم، و«غدًا 1:30 م»، و«15/10 1:30 م» لما بعدَه.
+ * المجدولُ قد يبعدُ أيّامًا (حتّى 14)، والساعةُ وحدَها تُقرأُ «اليوم» خطأً.
+ */
+export function formatPickupMoment(at: Date | number, now: Date | number, tr: Translate): string {
+  const clock = formatPickupClock(at, tr);
+  const day = riyadhDay(at);
+  if (day === riyadhDay(now)) return clock;
+  const nowMs = typeof now === "number" ? now : now.getTime();
+  if (day === riyadhDay(nowMs + 24 * 60 * 60 * 1000)) {
+    return tr("common.tomorrow_at", { time: clock });
+  }
+  const [, month, date] = day.split("-");
+  return tr("common.date_at", { date: `${Number(date)}/${Number(month)}`, time: clock });
+}
+
 /** «المدفوع» ثمَّ الوقتُ (ثمَّ الطردُ في التوصيلِ) — بترتيبِ عيّنةِ المالكِ. */
 export function orderTermsLines(
   tr: Translate,

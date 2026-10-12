@@ -26,6 +26,15 @@ interface FactsRow {
   readonly driver_name: string | null;
   readonly plate: string | null;
   readonly vehicle: string | null;
+  readonly status: string | null;
+  readonly pickup_at: Date | string | null;
+  readonly dispatch_at: Date | string | null;
+}
+
+function instant(value: Date | string | null): Date | null {
+  if (value === null) return null;
+  const at = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(at.getTime()) ? null : at;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,7 +48,10 @@ export function createRiderTripFactsReader(sql: Sql): RiderTripFactsReader {
                ru.language_code     as rider_language,
                du.full_name         as driver_name,
                d.plate_number       as plate,
-               d.vehicle_type::text as vehicle
+               d.vehicle_type::text as vehicle,
+               o.status::text       as status,
+               o.pickup_at,
+               o.dispatch_at
           from orders o
           join riders r      on r.id = o.rider_id
           join users ru      on ru.id = r.user_id
@@ -55,6 +67,9 @@ export function createRiderTripFactsReader(sql: Sql): RiderTripFactsReader {
         driverName: row.driver_name,
         plate: row.plate,
         vehicle: row.vehicle,
+        status: row.status,
+        pickupAt: instant(row.pickup_at),
+        dispatchAt: instant(row.dispatch_at),
       };
     },
   };

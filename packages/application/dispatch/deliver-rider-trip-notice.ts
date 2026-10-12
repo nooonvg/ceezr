@@ -22,6 +22,7 @@
 import { ok } from "../../shared/result/index.ts";
 import type { Keyboard } from "../bots/types.ts";
 import {
+  RIDER_TRIP_EVENT_REQUIRES_STATUS,
   type RiderTripEvent,
   type RiderTripFactsReader,
   riderTripKeyboard,
@@ -33,7 +34,16 @@ import {
   type RiderCandidateFactsReader,
 } from "./deliver-candidate-notices.ts";
 
-const EVENTS: readonly RiderTripEvent[] = ["MATCHED", "ARRIVED", "STARTED", "COMPLETED"];
+const EVENTS: readonly RiderTripEvent[] = [
+  "MATCHED",
+  "ARRIVED",
+  "STARTED",
+  "COMPLETED",
+  "SCHEDULED",
+  "SCHEDULE_REMINDER",
+  "SEARCH_STARTED",
+  "SCHEDULE_MISSED",
+];
 
 export interface RiderTripNoticeSender {
   /** معرّفُ الرسالةِ التي قبِلَها Telegram API، أو null إن رفضها. */
@@ -85,6 +95,18 @@ export function createRiderTripNoticeHandler(
         failure: null,
         undeliverable: true,
         undeliverableReason: "TELEGRAM_DELIVERY_UNAVAILABLE",
+      });
+    }
+    // `WR-06` — خبرٌ فاتَ معناه (تذكيرٌ بمجدولٍ أُلغي، «بدأَ البحث» وقد أُسنِد) لا يُرسَل.
+    const required = RIDER_TRIP_EVENT_REQUIRES_STATUS[event];
+    if (required !== undefined && !required.includes(facts.status ?? "")) {
+      deps.log?.("rider_trip_notice.not_required", { ...meta, status: facts.status ?? null });
+      return ok({
+        abandon: false,
+        messageId: null,
+        failure: null,
+        undeliverable: true,
+        undeliverableReason: "TELEGRAM_DELIVERY_NOT_REQUIRED",
       });
     }
     const language =

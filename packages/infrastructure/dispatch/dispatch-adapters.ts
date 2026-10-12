@@ -282,6 +282,7 @@ export function createOfferRepository(sql: Sql): OfferRepository {
 
 /** حالاتُ الطلبِ كما يعرفُها المجالُ — لتُقرأ من نصِّ المغلَّفِ بلا ثقةٍ عمياء. */
 const ORDER_STATUSES: readonly Order["status"][] = [
+  "scheduled",
   "searching",
   "matched",
   "in_progress",
@@ -562,7 +563,7 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
         const rows = await sql<{ id: string; city_id: string; waiting_seconds: string | number }[]>`
           select o.id      as id,
                  o.city_id as city_id,
-                 extract(epoch from (now() - o.created_at))::bigint as waiting_seconds
+                 extract(epoch from (now() - coalesce(o.searching_since, o.created_at)))::bigint as waiting_seconds
             from orders o
            where o.city_id = ${cityId}::uuid
              and o.status = 'searching'

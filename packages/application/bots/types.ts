@@ -602,6 +602,13 @@ export interface ActiveOrderSummary {
   readonly dropoffLabel: string | null;
   readonly createdAt: Date;
   /**
+   * `WR-06` — موعدُ الحضورِ ولحظةُ إطلاقِ المجدولِ إلى البحث، ولحظةُ بدءِ البحثِ إن بدأَ
+   * بعدَ الإنشاء. اختياريّةٌ: مساراتٌ واختباراتٌ تبني النوعَ بيدها.
+   */
+  readonly pickupAt?: Date | null;
+  readonly dispatchAt?: Date | null;
+  readonly searchingSince?: Date | null;
+  /**
    * يُقرأ في نفس استعلام الطلب لا باستعلام لاحق: قراءتان منفصلتان قد تريان
    * لحظتين مختلفتين، فيُعرض «مُسنَد» بلا سائق أو سائقٌ لطلب أُلغي بينهما.
    * `null` تعني «لا سائق بعد» وهي الحال الطبيعية في `searching`.

@@ -270,6 +270,11 @@ function candidateRejected(c: Context, error: RideCandidateErrorCode) {
 
 export const IDEMPOTENCY_HEADER = "idempotency-key";
 
+/** `WR-06` — لحظةٌ اختياريّةٌ إلى ISO؛ الغيابُ `null` صريحًا لا حقلٌ محذوف. */
+function isoOrNull(ms: number | null | undefined): string | null {
+  return ms === null || ms === undefined ? null : new Date(ms).toISOString();
+}
+
 export function createRidesRoutes(deps: RidesRouteDependencies): Hono {
   const app = new Hono();
 
@@ -316,6 +321,10 @@ export function createRidesRoutes(deps: RidesRouteDependencies): Hono {
       orderId: verdict.ride.orderId,
       createdAt: new Date(verdict.ride.createdAtMs).toISOString(),
       reused: verdict.ride.reused,
+      // `WR-06` — المجدولُ يُعلَنُ للعميلِ بحالتِه وموعدَيه: «يبدأُ البحثُ في …» لا «نبحثُ الآن».
+      status: verdict.ride.status ?? "searching",
+      pickupAt: isoOrNull(verdict.ride.pickupAtMs),
+      dispatchAt: isoOrNull(verdict.ride.dispatchAtMs),
     });
   });
 
@@ -416,6 +425,9 @@ export function createRidesRoutes(deps: RidesRouteDependencies): Hono {
       notifiedDriverCount: state.notifiedDriverCount,
       elapsedSeconds,
       cancellableWithoutPenalty: state.cancellableWithoutPenalty,
+      // `WR-06` — موعدا المجدول (والبحثُ يبدأُ في `dispatchAt`)؛ `null` لما ليسَ مجدولًا.
+      pickupAt: isoOrNull(state.pickupAtMs),
+      dispatchAt: isoOrNull(state.dispatchAtMs),
     });
   });
 

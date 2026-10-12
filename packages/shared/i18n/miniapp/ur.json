@@ -1480,7 +1480,7 @@
   "rider.quote.pickup.label": "ڈرائیور کی آمد کا وقت",
   "rider.quote.pickup.now": "ابھی",
   "rider.quote.pickup.later": "مقررہ وقت پر",
-  "rider.quote.pickup.laterHint": "ہم ابھی ڈرائیور تلاش کرنا شروع کرتے ہیں، اور ڈرائیور قبول کرنے سے پہلے آنے کا وقت دیکھتا ہے۔",
+  "rider.quote.pickup.laterHint": "اگر وقت دور ہو تو ہم آپ کا آرڈر شیڈول رکھتے ہیں اور اس سے کچھ پہلے ہی ڈرائیور کی تلاش شروع کرتے ہیں؛ اگر قریب ہو تو ابھی تلاش شروع کرتے ہیں۔ ڈرائیور قبول کرنے سے پہلے پک اپ کا وقت دیکھتا ہے۔",
   "rider.quote.pickup.timeRequired": "آنے کا وقت منتخب کریں، یا «ابھی» منتخب کریں۔",
   "rider.quote.offer.label": "رقم ریال میں",
   "rider.quote.offer.placeholder": "مثلاً 40",
@@ -1813,5 +1813,15 @@
   "rider.notifications.kind.driver_city_notice": "ڈرائیور کے شہر کی تبدیلی",
   "admin.root.brand": "وَصْلہ",
   "admin.root.title": "نگرانی کے اوزار ایڈمن کنسول میں ہیں",
-  "admin.root.body": "آرڈرز، ڈرائیورز اور رپورٹس ایڈمن کنسول سے سنبھالے جاتے ہیں، اس ایپ سے نہیں۔"
+  "admin.root.body": "آرڈرز، ڈرائیورز اور رپورٹس ایڈمن کنسول سے سنبھالے جاتے ہیں، اس ایپ سے نہیں۔",
+  "rider.search.status.scheduled": "آپ کا آرڈر شیڈول ہے",
+  "rider.history.status.scheduled": "شیڈول",
+  "rider.search.phase.scheduled": "تلاش شروع ہونے کے وقت سے پہلے آپ کا آرڈر کسی ڈرائیور کو نہیں بھیجا جائے گا۔ تلاش شروع ہونے اور ڈرائیور کے قبول کرنے پر ہم آپ کو ٹیلی گرام میں بتائیں گے، اور اس سے پہلے آپ اسے بغیر کسی اثر کے منسوخ کر سکتے ہیں۔",
+  "rider.search.scheduled.pickupAt": "پک اپ کا وقت: {time}",
+  "rider.search.scheduled.searchAt": "ڈرائیور کی تلاش شروع: {time}",
+  "rider.search.scheduled.am": "صبح",
+  "rider.search.scheduled.pm": "شام",
+  "rider.search.scheduled.tomorrow": "کل {time}",
+  "rider.search.scheduled.date": "{date} {time}",
+  "rider.search.scheduled.readFailed": "ابھی آپ کا شیڈول آرڈر لوڈ نہیں ہو سکا۔ تھوڑی دیر بعد ریفریش کریں۔"
 }

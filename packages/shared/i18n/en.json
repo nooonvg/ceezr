@@ -539,5 +539,13 @@
   "driver.location_reminder_open": "📍 Update location in WASLA",
   "driver.location_reminder_unavailable": "⏸ Make me unavailable",
   "driver.city_auto_changed": "📍 Based on your current location, your WASLA city is now {city}.\nYou'll receive {city} requests from now on. Your subscription hasn't changed.",
-  "driver.city_outside_coverage": "📍 Your current location is outside the cities where WASLA operates, so you won't receive requests until you're back in one.\nIf you're not working now, go unavailable."
+  "driver.city_outside_coverage": "📍 Your current location is outside the cities where WASLA operates, so you won't receive requests until you're back in one.\nIf you're not working now, go unavailable.",
+  "rider.status_scheduled": "🗓 Your order is scheduled; the driver search has not started yet.\nPickup time: {time}\nDriver search starts: {search_time}\nYou can cancel it before then at no cost.",
+  "tracking.rider_scheduled": "🗓 Your order {order} is scheduled.\nPickup time: {time}\nDriver search starts: {search_time}\nWe will let you know when the search starts and when a driver accepts. You can cancel it before then at no cost.",
+  "tracking.rider_schedule_reminder": "⏰ Reminder about your scheduled order {order}.\nPickup time: {time}\nDriver search starts: {search_time}\nIf you no longer need it, cancel it from \"My order\".",
+  "tracking.rider_search_started": "🔎 It is time for your scheduled order {order} (pickup: {time}). We are searching for a driver now and will tell you as soon as one accepts.",
+  "tracking.rider_schedule_missed": "⚠️ Sorry: we could not start the driver search for your scheduled order {order} before its time ({time}) because of a temporary fault on our side, so the order was cancelled and no driver will be sent. You can create a new order now.",
+  "driver.pickup_reminder": "⏰ Reminder: your pickup time for order {order} is {time}. Please head to the customer on time.",
+  "common.tomorrow_at": "tomorrow {time}",
+  "common.date_at": "{date} {time}"
 }

@@ -14,6 +14,7 @@ import type { SupportTicketView } from "../../domain/support/ticket-types.ts";
 import { DEFAULT_SESSION_POLICY } from "../../domain/tracking/session.ts";
 import { initialLanguageFromHint, t } from "../../shared/i18n/index.ts";
 import type { Clock, OrderId, ServiceType } from "../../shared/kernel/index.ts";
+import { formatPickupMoment } from "../../shared/order-terms/index.ts";
 import { requestDelivery } from "../delivery/request-delivery.ts";
 import { type BroadcastDependencies, broadcastOffers } from "../dispatch/broadcast-offers.ts";
 import {
@@ -488,7 +489,8 @@ const LONG_WAIT_MINUTES = 15;
 
 /** دقائق الانتظار من إنشاء الطلب، غير سالبة أبداً (ساعة قاعدة تسبق ساعتنا ثوانٍ). */
 function waitedMinutes(order: ActiveOrderSummary, now: Date): number {
-  const elapsed = now.getTime() - order.createdAt.getTime();
+  // `WR-06`: الانتظارُ من بدءِ البحثِ — مجدولٌ أُطلِقَ للتوّ لم ينتظرْ منذُ حجزِه.
+  const elapsed = now.getTime() - (order.searchingSince ?? order.createdAt).getTime();
   return elapsed <= 0 ? 0 : Math.floor(elapsed / 60_000);
 }
 
@@ -595,12 +597,22 @@ function describeOrderStatus(
   const tr = t(language);
   const lines: string[] = [tr("rider.status_heading"), describeActiveOrder(order, language)];
 
+  if (order.status === "scheduled") {
+    // `WR-06` — المجدولُ لا ينتظرُ سائقًا بعد: موعدُه ولحظةُ بدءِ البحث، بلا سطرِ انتظار.
+    lines.push(
+      tr("rider.status_scheduled", {
+        time: order.pickupAt ? formatPickupMoment(order.pickupAt, now, tr) : "—",
+        search_time: order.dispatchAt ? formatPickupMoment(order.dispatchAt, now, tr) : "—",
+      }),
+    );
+    return { text: lines.join("\n") };
+  }
   if (order.status === "matched") lines.push(tr("rider.status_matched"));
   else if (order.status === "in_progress") lines.push(tr("rider.status_in_progress"));
   else if (order.status === "searching") {
     // السطرُ يتغيّر مع دِلاء الانتظار: من يفتح «طلبي» ثلاث مرّات في دقيقةٍ يجب أن يرى
     // ثباتاً، ومن ينتظر عشرَ دقائق يجب أن يرى أنّ البحث ما زال يتحرّك لا أنّه معلّق.
-    const minutes = Math.floor((now.getTime() - order.createdAt.getTime()) / 60000);
+    const minutes = waitedMinutes(order, now);
     lines.push(
       waitingLine("riderStillSearching", `${order.orderId}:${waitBucket(minutes)}`, language),
     );

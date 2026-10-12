@@ -11,12 +11,8 @@ import { err, ok, type Result } from "../../shared/result/index.ts";
 import type { Coordinates } from "../geo/value-objects.ts";
 
 export type OrderStatus =
-  | "searching"
-  | "matched"
-  | "in_progress"
-  | "completed"
-  | "cancelled"
-  | "failed";
+  /** `WR-06` — موعدُ حضورٍ مستقبليٌّ لم يحِن إطلاقُه؛ لا بثَّ ولا سائق. */
+  "scheduled" | "searching" | "matched" | "in_progress" | "completed" | "cancelled" | "failed";
 
 export interface Order {
   readonly id: OrderId;
@@ -47,6 +43,7 @@ export type OrderError = IllegalTransitionError | MissingAssignedDriverError;
 
 /** الانتقالات المشروعة الوحيدة. أي انتقال خارج هذا الجدول مرفوض. */
 const ALLOWED_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
+  scheduled: ["searching", "cancelled"],
   searching: ["matched", "cancelled", "failed"],
   matched: ["in_progress", "cancelled", "searching"],
   in_progress: ["completed", "cancelled"],
