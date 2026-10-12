@@ -42,6 +42,8 @@
  *   والتباينُ والقارئُ غيرُ مقيسَينِ بعدُ (دَينٌ مُعلَنٌ).
  */
 
+import { withoutRiderOfferTerms } from "./rider-offer-terms.ts";
+
 /** مِلفّاتُ السطحِ المقروءةُ — مكتوبةً لا مُكتشَفةً، فزيادةُ مِلفٍّ تُزادُ ههنا. */
 export const SURFACE_FILES: readonly string[] = [
   "apps/miniapp/src/surfaces/rider/active/ActiveRideScreen.tsx",
@@ -218,7 +220,13 @@ export function moneyProblems(input: ActiveRideContractInput): readonly string[]
       if (!key.startsWith(KEY_PREFIX)) continue;
       problems.push(
         ...tokenProblems(`${language}:${key}`, key, MONEY_TOKENS, "مفتاحٌ يذكرُ مالاً"),
-        ...tokenProblems(`${language}:${key}`, value, MONEY_TOKENS, "نصٌّ يذكرُ مالاً"),
+        // `WR-05` — نصوصُ معنى مبلغِ الراكبِ وحدَها، بمفرداتِها وحدَها (ADR 0264).
+        ...tokenProblems(
+          `${language}:${key}`,
+          withoutRiderOfferTerms(key, value),
+          MONEY_TOKENS,
+          "نصٌّ يذكرُ مالاً",
+        ),
       );
     }
   }

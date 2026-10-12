@@ -13,12 +13,15 @@
  *
  * **الحالة:** منفّذ فعلياً. **ينتمي إلى:** infrastructure/transport.
  */
-import type { DriverPlaceExtras } from "../../domain/driver/driver-offers.ts";
+import type { DriverOfferTerms, DriverPlaceExtras } from "../../domain/driver/driver-offers.ts";
+import { isOfferMode } from "../../shared/order-terms/index.ts";
 import type { Sql } from "../db/client.ts";
 
 export interface OrderPlaceExtras {
   readonly pickup: DriverPlaceExtras;
   readonly dropoff: DriverPlaceExtras | null;
+  /** `WR-05` — سياسةُ المبلغ (`mode` `null` لطلبٍ أقدمَ منها). */
+  readonly offerTerms: DriverOfferTerms;
 }
 
 interface ExtrasRow {
@@ -32,6 +35,8 @@ interface ExtrasRow {
   readonly dropoff_notes: string | null;
   readonly dropoff_lat: number | null;
   readonly dropoff_lng: number | null;
+  readonly rider_offer_mode: string | null;
+  readonly rider_offer_sar: number | null;
 }
 
 function num(value: unknown): number | null {
@@ -60,7 +65,8 @@ export async function readOrderPlaceExtras(
              st_y(o.pickup::geometry) as pickup_lat, st_x(o.pickup::geometry) as pickup_lng,
              (o.dropoff is not null) as has_dropoff,
              o.dropoff_link, o.dropoff_notes,
-             st_y(o.dropoff::geometry) as dropoff_lat, st_x(o.dropoff::geometry) as dropoff_lng
+             st_y(o.dropoff::geometry) as dropoff_lat, st_x(o.dropoff::geometry) as dropoff_lng,
+             o.rider_offer_mode, o.rider_offer_sar
         from orders o
        where o.id = any(${sql.array(ids)}::uuid[])`;
   } catch {
@@ -82,6 +88,10 @@ export async function readOrderPlaceExtras(
             longitude: num(row.dropoff_lng),
           }
         : null,
+      offerTerms: {
+        mode: isOfferMode(row.rider_offer_mode) ? row.rider_offer_mode : null,
+        offerSar: num(row.rider_offer_sar),
+      },
     });
   }
   return found;

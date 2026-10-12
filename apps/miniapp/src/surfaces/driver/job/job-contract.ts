@@ -68,6 +68,9 @@ export interface ApiDriverActiveJob {
   readonly dropoff: ApiDriverJobPlace | null;
   readonly notes: string | null;
   readonly rider: ApiDriverJobRider;
+  /** `WR-05` — سياسةُ المبلغِ ومبلغُه كما كتبَهما الراكب؛ تغيبُ من بوّابةٍ أقدم. */
+  readonly offer_mode?: "fixed" | "suggested" | "open" | null;
+  readonly offer_sar?: number | null;
 }
 
 /** سببُ النبضةِ **كما قالَه الخادمُ** — ولا يُشتَقُّ من `status` في الشاشةِ. */

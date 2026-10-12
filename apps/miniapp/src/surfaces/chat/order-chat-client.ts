@@ -34,6 +34,9 @@ export interface ChatSnapshot {
   readonly service: "transport" | "delivery";
   readonly status: string;
   readonly writable: boolean;
+  /** `WR-05` — سياسةُ المبلغِ ومبلغُه؛ `null` ⇒ لا يُعرَضُ سطرُ السعر. */
+  readonly offerMode: "fixed" | "suggested" | "open" | null;
+  readonly offerSar: number | null;
   readonly myRole: ChatRole;
   readonly counterpartFirstName: string | null;
   readonly messages: readonly ChatMessage[];
@@ -67,6 +70,8 @@ interface WireThread {
     readonly service: "transport" | "delivery";
     readonly status: string;
     readonly writable: boolean;
+    readonly offer_mode?: "fixed" | "suggested" | "open" | null;
+    readonly offer_sar?: number | null;
   };
   readonly my_role: ChatRole;
   readonly counterpart: { readonly role: ChatRole; readonly first_name: string | null };
@@ -147,6 +152,8 @@ export function applyThread(previous: ChatSnapshot | null, wire: WireThread): Ch
     service: wire.order.service,
     status: wire.order.status,
     writable: wire.order.writable,
+    offerMode: wire.order.offer_mode ?? null,
+    offerSar: typeof wire.order.offer_sar === "number" ? wire.order.offer_sar : null,
     myRole: wire.my_role,
     counterpartFirstName: wire.counterpart.first_name,
     messages,

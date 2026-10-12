@@ -101,6 +101,9 @@ export function createOrderChatRoutes(deps: OrderChatRouteDependencies): Hono {
         service: thread.service,
         status: thread.status,
         writable: thread.writable,
+        // `WR-05` — معنى المبلغِ في رأسِ المحادثة.
+        offer_mode: thread.offerTerms?.mode ?? null,
+        offer_sar: thread.offerTerms?.offerSar ?? null,
       },
       my_role: thread.myRole,
       counterpart: { role: thread.counterpart.role, first_name: thread.counterpart.firstName },

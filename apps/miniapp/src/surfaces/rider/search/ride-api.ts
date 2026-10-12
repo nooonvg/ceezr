@@ -25,6 +25,7 @@ import type { PlaceWire } from "../destination/destination-view.ts";
 import type {
   CancelRideResponse,
   RequestRideResponse,
+  RiderOfferMode,
   RideSearchResponse,
 } from "./ride-contract.ts";
 
@@ -46,6 +47,8 @@ export interface RequestRideInput {
   readonly pickupAt?: string | null;
   /** `ORDER-OFFER-01` — مبلغُ الراكبِ بالريال؛ يُطوى غائباً. */
   readonly offerSar?: number | null;
+  /** `WR-05` — سياسةُ المبلغ: `fixed` · `suggested` · `open`. */
+  readonly offerMode?: RiderOfferMode;
   /** `LOC-TRUST-01` — مصدرُ النقطةِ ودقّتُها ووقتُها والرابطُ الأصليُّ والملاحظات. */
   readonly pickupPlace?: PlaceWire | null;
   readonly dropoffPlace?: PlaceWire | null;

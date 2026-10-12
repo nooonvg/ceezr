@@ -10,6 +10,7 @@
 
 import { approximateArea } from "../../domain/dispatch/negotiation.ts";
 import type { CityId, DriverId, OrderId, ServiceType } from "../../shared/kernel/index.ts";
+import type { OfferMode } from "../../shared/order-terms/index.ts";
 import { err, ok, type Result } from "../../shared/result/index.ts";
 import type { OrderRepository, PortFailureError } from "../ports/index.ts";
 
@@ -62,6 +63,8 @@ export interface UnsubscribedCard {
   readonly pickupAt?: Date | null;
   /** `ORDER-OFFER-01` — مبلغُ الراكبِ (null ⇒ قابلٌ للتفاوض). غائبٌ ⇒ لا سطرَ. */
   readonly offerSar?: number | null;
+  /** `WR-05` — سياسةُ المبلغ (`null` ⇒ طلبٌ أقدمُ منها). غائبٌ ⇒ النصُّ القديم. */
+  readonly offerMode?: OfferMode | null;
   /**
    * `GRP-CARD-01` — اسما المكانَين كما اختارَهما الراكبُ (معلمٌ أو مكانٌ مُسمّى، لا عنوانٌ دقيقٌ).
    * غائبٌ ⇒ تبقى المنطقةُ التقريبيّةُ وحدَها كما كانت.
@@ -84,6 +87,7 @@ export interface OrderNotesReader {
       {
         readonly pickupAt: Date | null;
         readonly offerSar?: number | null;
+        readonly offerMode?: OfferMode | null;
         readonly pickupLabel?: string | null;
         readonly dropoffLabel?: string | null;
       },
@@ -183,6 +187,7 @@ export async function publishToUnsubscribedGroup(
       : {
           pickupAt: terms.value.pickupAt,
           ...(terms.value.offerSar === undefined ? {} : { offerSar: terms.value.offerSar }),
+          ...(terms.value.offerMode === undefined ? {} : { offerMode: terms.value.offerMode }),
           ...(terms.value.pickupLabel === undefined
             ? {}
             : { pickupLabel: terms.value.pickupLabel }),

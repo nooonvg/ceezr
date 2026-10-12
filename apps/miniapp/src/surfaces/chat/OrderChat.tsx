@@ -44,6 +44,25 @@ export interface OrderChatLabels {
   readonly counterpart: string;
   readonly status: string;
   readonly refresh: string;
+  /** `WR-05` — «{amount}» يُستبدَلُ بالمبلغ. */
+  readonly offerFixed: string;
+  readonly offerSuggested: string;
+  readonly offerOpen: string;
+}
+
+/** `WR-05` — سطرُ السعرِ بمعناه، أو `null` لطلبٍ أقدمَ من السياسة. */
+export function chatOfferLine(
+  labels: Pick<OrderChatLabels, "offerFixed" | "offerSuggested" | "offerOpen">,
+  offerMode: "fixed" | "suggested" | "open" | null,
+  offerSar: number | null,
+): string | null {
+  if (offerMode === "open") return labels.offerOpen;
+  if (offerSar === null) return null;
+  if (offerMode === "fixed") return labels.offerFixed.replace("{amount}", String(offerSar));
+  if (offerMode === "suggested") {
+    return labels.offerSuggested.replace("{amount}", String(offerSar));
+  }
+  return null;
 }
 
 export interface OrderChatProps {
@@ -256,6 +275,12 @@ export function OrderChat({
               {labels.status}: {statusText}
             </span>
           </p>
+          {snapshot !== null &&
+          chatOfferLine(labels, snapshot.offerMode, snapshot.offerSar) !== null ? (
+            <p className="ocht__offer">
+              {chatOfferLine(labels, snapshot.offerMode, snapshot.offerSar)}
+            </p>
+          ) : null}
 
           {failure === "session" ? (
             <p className="ocht__notice" role="alert">

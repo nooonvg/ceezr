@@ -109,8 +109,13 @@ describe("createRideRequestCommand — قراءةُ حكمِ الإنشاءِ", 
       null,
       null,
       null,
-      // `ORDER-OFFER-01` — مبلغُ الراكبِ: غائبٌ ⇒ null («قابلٌ للتفاوض»).
+      // `ORDER-OFFER-01` — مبلغُ الراكبِ: غائبٌ ⇒ null.
       null,
+      // `LOC-TRUST-01` — المكانانِ غائبانِ ⇒ null.
+      null,
+      null,
+      // `WR-05` — مسارٌ بلا سياسةٍ (البوت) ⇒ «بلا سعر» لا مبلغٌ مُختلَق.
+      "open",
     ]);
   });
 

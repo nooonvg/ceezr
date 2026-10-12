@@ -15,6 +15,7 @@ import type {
   OrderChatStoreRejection,
   OrderChatThread,
 } from "../../application/messaging/order-chat.ts";
+import { isOfferMode, type OfferMode } from "../../shared/order-terms/index.ts";
 import { err, ok, type Result } from "../../shared/result/index.ts";
 import type { Sql } from "../db/client.ts";
 
@@ -136,6 +137,24 @@ export function readChatThread(payload: Payload): OrderChatThread | null {
   };
 }
 
+async function readChatOfferTerms(
+  sql: Sql,
+  orderId: string,
+): Promise<{ readonly mode: OfferMode | null; readonly offerSar: number | null }> {
+  try {
+    const rows = await sql<{ rider_offer_mode: string | null; rider_offer_sar: number | null }[]>`
+      select rider_offer_mode, rider_offer_sar from orders where id = ${orderId}::uuid`;
+    const row = rows[0];
+    return {
+      mode: isOfferMode(row?.rider_offer_mode) ? row.rider_offer_mode : null,
+      offerSar: typeof row?.rider_offer_sar === "number" ? row.rider_offer_sar : null,
+    };
+  } catch {
+    // معنى المبلغِ إخباريٌّ هنا: تعذُّرُ قراءتِه لا يحجبُ المحادثةَ نفسَها.
+    return { mode: null, offerSar: null };
+  }
+}
+
 async function call(
   sql: Sql,
   query: string,
@@ -165,7 +184,9 @@ export function createOrderChatStore(sql: Sql): OrderChatStore {
       if (!result.ok) return result;
       if (result.value.ok !== true) return err(rejectionFrom(result.value));
       const thread = readChatThread(result.value);
-      return thread === null ? err(malformed) : ok(thread);
+      if (thread === null) return err(malformed);
+      // `WR-05` — بعدَ حكمِ `list_order_messages` بأنَّ القارئَ طرفٌ، لا قبلَه.
+      return ok({ ...thread, offerTerms: await readChatOfferTerms(sql, thread.orderId) });
     },
 
     post: async (input) => {

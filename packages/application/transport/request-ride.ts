@@ -51,6 +51,7 @@ import { isServiceKind } from "../../domain/quote/service-offer.ts";
 import { readIdempotencyKey, readRideNotes } from "../../domain/transport/ride-request.ts";
 import { err, ok, type Result } from "../../shared/result/index.ts";
 import type { MiniAppSessionReader } from "../identity/ports.ts";
+import { type OfferPolicyRefusal, readOfferPolicy } from "./offer-policy.ts";
 import type {
   RideRequestCommand,
   RideRequestVerdict,
@@ -80,6 +81,8 @@ export type RequestRidePublicErrorCode =
    * (`/v1/rides` بـ`service=delivery` و`/v1/deliveries`)، فلا يفرضُه أحدُهما ويتجاوزُه الآخر.
    */
   | "PARCEL_DESCRIPTION_INVALID"
+  /** `WR-05` — سياسةُ المبلغِ تُرفَضُ برمزِها ولا تتحوّلُ صامتةً (`offer-policy.ts`). */
+  | OfferPolicyRefusal
   /** `LOC-TRUST-01` — مكانٌ معطوبُ الشكل، أو رابطٌ لا يُقبَل، أو ملاحظةُ مكانٍ طويلة، أو قراءةُ جهازٍ لا تُوثَق. */
   | PlaceMetaRefusal
   | "ACCOUNT_NOT_FOUND"
@@ -192,6 +195,10 @@ export async function requestRide(
   const dropoffPlace = readPlaceMeta(body.dropoffPlace, destination, nowMs);
   if ("refusal" in dropoffPlace) return err(dropoffPlace.refusal);
 
+  // `WR-05`: قاعدةٌ واحدةٌ للمسارين قبلَ أيِّ كتابة.
+  const offerPolicy = readOfferPolicy({ offerMode: body.offerMode, offerSar: body.offerSar });
+  if ("refusal" in offerPolicy) return err(offerPolicy.refusal);
+
   const created = await deps.rides.create({
     telegramUserId: session.value.telegramUserId,
     idempotencyKey: key.key,
@@ -202,7 +209,8 @@ export async function requestRide(
     pickupLabel: readPlaceLabel(body.pickupLabel),
     dropoffLabel: readPlaceLabel(body.destinationLabel),
     pickupAt: readPickupAt(body.pickupAt),
-    offerSar: readOfferSar(body.offerSar),
+    offerSar: offerPolicy.policy.offerSar,
+    offerMode: offerPolicy.policy.offerMode,
     pickupPlace: pickupPlace.meta,
     dropoffPlace: dropoffPlace.meta,
   });

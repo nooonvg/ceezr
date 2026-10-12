@@ -58,6 +58,7 @@
  */
 
 import { blankSqlComments } from "./blank-comments.ts";
+import { withoutRiderOfferTerms } from "./rider-offer-terms.ts";
 
 /** مِلفّاتُ سطحِ العروضِ في التطبيقِ المصغَّرِ — مكتوبةً لا مُكتشَفةً بنمطٍ. */
 export const SURFACE_FILES: readonly string[] = [
@@ -325,7 +326,8 @@ function sliceTexts(input: DriverOffersContractInput): Readonly<Record<string, s
   const offerValues = Object.entries(input.translations).map(([language, dictionary]) => {
     const values = Object.entries(dictionary)
       .filter(([key]) => key.startsWith(KEY_PREFIX))
-      .map(([, value]) => value)
+      // `WR-05` — نصوصُ معنى مبلغِ الراكبِ وحدَها، بمفرداتِها وحدَها (ADR 0264).
+      .map(([key, value]) => withoutRiderOfferTerms(key, value))
       .join(" ");
     return [`${TRANSLATION_FILES[language] ?? language}`, values] as const;
   });

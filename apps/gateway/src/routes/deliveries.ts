@@ -62,6 +62,11 @@ const STATUS_BY_ERROR: Readonly<Record<DeliveryCreateErrorCode, 400 | 401 | 403 
   RIDER_NOT_REGISTERED: 403,
   RIDE_STORE_NOT_AVAILABLE: 503,
   PARCEL_DESCRIPTION_INVALID: 400,
+  // `WR-05` — سياسةُ المبلغ: عطبُ طلبٍ يُصلِحُه الراكب.
+  OFFER_MODE_INVALID: 400,
+  OFFER_AMOUNT_REQUIRED: 400,
+  OFFER_AMOUNT_INVALID: 400,
+  OFFER_AMOUNT_UNEXPECTED: 400,
   DROPOFF_REQUIRED: 400,
 };
 
@@ -142,6 +147,7 @@ export function createDeliveryRoutes(deps: DeliveryRouteDependencies): Hono {
         destinationLabel: fields.destinationLabel,
         pickupAt: fields.pickupAt,
         offerSar: fields.offerSar,
+        offerMode: fields.offerMode,
         // `LOC-TRUST-01` — مكانا الطردِ بعقدِ النقلِ نفسِه (رابطٌ وملاحظاتٌ ومصدر).
         pickupPlace: fields.pickupPlace,
         dropoffPlace: fields.dropoffPlace,

@@ -166,20 +166,14 @@ export function createRideRequestCommand(sql: Sql): RideRequestCommand {
 
       let rows: RideRow[];
       try {
-        rows =
-          pickupPlace === null && dropoffPlace === null
-            ? // `RIDE-LABEL-01` · `ORDER-TERMS-01` · `ORDER-OFFER-01` — النداءُ القديمُ حرفاً.
-              await sql.unsafe<RideRow[]>(
-                "select request_ride_with_terms($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) as result",
-                params,
-              )
-            : // `LOC-TRUST-01` — الغلافُ ذو الأربعةَ عشرَ يحكمُ على المكانَين قبلَ الإنشاء.
-              // `::text::jsonb` لا `::jsonb`: النوعُ المستنبَطُ `jsonb` يجعلُ السائقَ يُرمِّزُ النصَّ
-              // ثانيةً فيصلُ كائنُ المكانِ «نصّاً» ويُرفَضُ (`scripts/lib/jsonb-binding.ts`).
-              await sql.unsafe<RideRow[]>(
-                "select request_ride_with_places($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::text::jsonb, $14::text::jsonb) as result",
-                [...params, pickupPlace, dropoffPlace],
-              );
+        // `WR-05` — غلافُ السياسةِ يحكمُ على المبلغِ ثمَّ يُفوِّضُ إلى `request_ride_with_places`
+        // (والمكانُ الغائبُ `null` مقبولٌ فيه) فيُكتَبُ الطلبُ وسياستُه في معاملةٍ واحدة.
+        // `::text::jsonb` لا `::jsonb`: النوعُ المستنبَطُ `jsonb` يجعلُ السائقَ يُرمِّزُ النصَّ
+        // ثانيةً فيصلُ كائنُ المكانِ «نصّاً» ويُرفَضُ (`scripts/lib/jsonb-binding.ts`).
+        rows = await sql.unsafe<RideRow[]>(
+          "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::text::jsonb, $14::text::jsonb, $15) as result",
+          [...params, pickupPlace, dropoffPlace, input.offerMode ?? "open"],
+        );
       } catch {
         return err(failed("STORE_ERROR"));
       }

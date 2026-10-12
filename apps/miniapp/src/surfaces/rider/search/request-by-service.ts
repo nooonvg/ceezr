@@ -23,7 +23,7 @@ import { apiFetch } from "../../../api/client.ts";
 import type { PlaceWire } from "../destination/destination-view.ts";
 import { type ApiFetchFn, type RequestDeliveryInput, requestDelivery } from "./delivery-api.ts";
 import { requestRide } from "./ride-api.ts";
-import type { RequestRideResponse } from "./ride-contract.ts";
+import type { RequestRideResponse, RiderOfferMode } from "./ride-contract.ts";
 
 /** مدخلُ الطلبِ الموحَّدُ — يُطابقُ شكلَ `SearchScreenProps.request`. */
 export interface ServiceRequestInput {
@@ -39,6 +39,8 @@ export interface ServiceRequestInput {
   readonly pickupAt?: string | null;
   /** `ORDER-OFFER-01` — يُطوى غائباً أو `null`. */
   readonly offerSar?: number | null;
+  /** `WR-05` — سياسةُ المبلغ: `fixed` · `suggested` · `open`. */
+  readonly offerMode?: RiderOfferMode;
   /** `LOC-TRUST-01` — مصدرُ النقطةِ ودقّتُها ووقتُها والرابطُ الأصليُّ والملاحظات. */
   readonly pickupPlace?: PlaceWire | null;
   readonly dropoffPlace?: PlaceWire | null;
@@ -69,6 +71,7 @@ export function requestByService(
       ...(input.destinationLabel ? { destinationLabel: input.destinationLabel } : {}),
       ...(input.pickupAt == null ? {} : { pickupAt: input.pickupAt }),
       ...(input.offerSar == null ? {} : { offerSar: input.offerSar }),
+      ...(input.offerMode === undefined ? {} : { offerMode: input.offerMode }),
       ...(input.pickupPlace == null ? {} : { pickupPlace: input.pickupPlace }),
       ...(input.dropoffPlace == null ? {} : { dropoffPlace: input.dropoffPlace }),
     };

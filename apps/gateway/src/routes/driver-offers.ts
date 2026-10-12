@@ -166,6 +166,9 @@ export function createDriverOfferRoutes(deps: DriverOfferRouteDependencies): Hon
           offer.dropoffExtras === undefined || offer.dropoffExtras === null
             ? null
             : openUrlFor(offer.dropoffExtras),
+        // `WR-05` — معنى المبلغِ كما كتبَه الراكب (`null` ⇒ لم يُقرَأ أو طلبٌ أقدمُ من السياسة).
+        offer_mode: offer.offerTerms?.mode ?? null,
+        offer_sar: offer.offerTerms?.offerSar ?? null,
       })),
     });
   });
@@ -200,6 +203,9 @@ export function createDriverOfferRoutes(deps: DriverOfferRouteDependencies): Hon
       rider_distance: detail.riderDistance,
       trip_distance: detail.tripDistance,
       notes: detail.notes,
+      // `WR-05` — معنى المبلغِ كما كتبَه الراكب (`null` ⇒ لم يُقرَأ أو طلبٌ أقدمُ من السياسة).
+      offer_mode: detail.offerTerms?.mode ?? null,
+      offer_sar: detail.offerTerms?.offerSar ?? null,
     });
   });
 

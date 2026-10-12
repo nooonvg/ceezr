@@ -96,9 +96,10 @@ import {
   distanceLine,
   durationLine,
   isRetryableQuoteError,
-  offerSarFrom,
+  offerPolicyFrom,
   parcelValidationError,
   pickupAtFrom,
+  type QuoteOfferMode,
   quoteErrorKey,
   quoteRefusalKey,
   refusalRemedy,
@@ -150,9 +151,23 @@ export interface QuoteScreenProps {
     readonly pickupAt?: string | null;
     /** `ORDER-OFFER-01` — ما يعرضُه الراكبُ بالريال؛ `null` ⇒ قابلٌ للتفاوض. */
     readonly offerSar?: number | null;
+    /** `WR-05` — سياسةُ المبلغ. */
+    readonly offerMode?: QuoteOfferMode;
   }) => void;
   readonly initialLanguage?: MiniAppLanguage;
 }
+
+/** `WR-05` — مفاتيحُ صريحةٌ (لا قوالبَ) كي يراها حارسُ تغطيةِ المفاتيح. */
+const OFFER_MODE_LABEL = {
+  fixed: "rider.quote.offerMode.fixed",
+  suggested: "rider.quote.offerMode.suggested",
+  open: "rider.quote.offerMode.open",
+} as const satisfies Record<QuoteOfferMode, string>;
+const OFFER_MODE_HINT = {
+  fixed: "rider.quote.offerMode.fixedHint",
+  suggested: "rider.quote.offerMode.suggestedHint",
+  open: "rider.quote.offerMode.openHint",
+} as const satisfies Record<QuoteOfferMode, string>;
 
 type QuoteState =
   /** `LOC-TRUST-01`: لا اقتباسَ ولا طلبَ قبلَ أن يُؤكِّدَ الراكبُ مكانَ الالتقاطِ صراحةً. */
@@ -215,7 +230,9 @@ export function QuoteScreen({
   const [pickupClock, setPickupClock] = useState("");
   /** `ORDER-OFFER-01` — «المبلغ الذي تدفعه»: نصٌّ خامٌّ، وفارغُه «قابلٌ للتفاوض». */
   const [offerText, setOfferText] = useState("");
-  const [offerError, setOfferError] = useState(false);
+  const [offerError, setOfferError] = useState<"required" | "invalid" | null>(null);
+  // `WR-05` — لا افتراضَ لمبلغٍ: البدءُ «بلا سعر» حتّى يختارَ الراكبُ غيرَه بنفسِه.
+  const [offerMode, setOfferMode] = useState<QuoteOfferMode>("open");
   /** خطأُ تحقُّقِ وصفِ الطردِ — يُعرَضُ عندَ الضغطِ على «اطلُبْ» للتوصيلِ. */
   const [parcelError, setParcelError] = useState<string | null>(null);
   /**
@@ -526,30 +543,63 @@ export function QuoteScreen({
             )}
           </fieldset>
 
-          {/* `ORDER-OFFER-01` — «المدفوع» على بطاقةِ السائقِ: ما يكتبُه الراكبُ أو «قابلٌ للتفاوض». */}
-          <label className="qt__notes-label" htmlFor="qt-offer">
-            {t("rider.quote.offer.label")}
-          </label>
-          <input
-            id="qt-offer"
-            className="qt__offer"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={6}
-            value={offerText}
-            placeholder={t("rider.quote.offer.placeholder")}
-            onChange={(event) => {
-              setOfferText(event.target.value);
-              if (offerError) setOfferError(false);
-            }}
-          />
-          {offerError && (
+          {/*
+           * `WR-05` — السعرُ داخلَ نموذجِ الطلبِ بثلاثِ حالاتٍ، لا شاشةً مستقلّة:
+           * محدَّدٌ (غيرُ قابلٍ للتفاوض) · مقترَحٌ (قابلٌ للتفاوض) · بلا سعرٍ (اتفاقٌ في المحادثة).
+           * والمنصّةُ لا تحسبُ ولا تقترحُ ولا تُحصّلُ (DEC-11 §١).
+           */}
+          <fieldset className="qt__pickup qt__offer-mode">
+            <legend className="qt__notes-label">{t("rider.quote.offerMode.title")}</legend>
+            {(["fixed", "suggested", "open"] as const).map((mode) => (
+              <label key={mode} className="qt__pickup-option">
+                <input
+                  type="radio"
+                  name="qt-offer-mode"
+                  value={mode}
+                  checked={offerMode === mode}
+                  onChange={() => {
+                    setOfferMode(mode);
+                    setOfferError(null);
+                  }}
+                />
+                {t(OFFER_MODE_LABEL[mode])}
+              </label>
+            ))}
+          </fieldset>
+          {offerMode !== "open" && (
+            <>
+              <label className="qt__notes-label" htmlFor="qt-offer">
+                {t("rider.quote.offer.label")}
+              </label>
+              <input
+                id="qt-offer"
+                className="qt__offer"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                aria-required="true"
+                aria-invalid={offerError !== null}
+                value={offerText}
+                placeholder={t("rider.quote.offer.placeholder")}
+                onChange={(event) => {
+                  setOfferText(event.target.value);
+                  if (offerError !== null) setOfferError(null);
+                }}
+              />
+              <p className="qt__notes-hint">{t("rider.quote.offer.hint")}</p>
+            </>
+          )}
+          {offerError !== null && (
             <p className="qt__notes-error" role="alert">
-              {t("rider.quote.offer.error")}
+              {t(
+                offerError === "required"
+                  ? "rider.quote.offerMode.required"
+                  : "rider.quote.offer.error",
+              )}
             </p>
           )}
-          <p className="qt__notes-hint">{t("rider.quote.offer.hint")}</p>
+          <p className="qt__notes-hint">{t(OFFER_MODE_HINT[offerMode])}</p>
         </section>
         {/*
          * ## طريقةُ الدفعِ **قبلَ** الطلبِ لا بعدَه — الخطوةُ ٩
@@ -566,8 +616,9 @@ export function QuoteScreen({
          *
          * **ولا يُخالِفُ `ADR 0039` §٤ بل يُنفِذُه**: المحجوبُ هناكَ **آليّةُ
          * أجرةٍ** — حقلٌ أو حسبةٌ أو عمولةٌ. وهذا نصٌّ يقولُ إنَّ الآليةَ
-         * **غيرُ موجودةٍ**، وهوَ ضدُّ بنائِها لا تمهيدٌ لها. ولا رقمَ ههنا ولا
-         * حقلَ عرضٍ ولا زرَّ دفعٍ.
+         * **غيرُ موجودةٍ**، وهوَ ضدُّ بنائِها لا تمهيدٌ لها. ولا زرَّ دفعٍ. والمبلغُ
+         * الذي قد يكتبُه الراكبُ فوقَه (`WR-05` · ADR 0264) عرضُه هوَ لا حسبةُ المنصّة،
+         * فالنصُّ الثالثُ يقولُ ذلك ولا ينفي وجودَ الحقل.
          */}
         <section className="qt__payment" aria-label={t("rider.quote.payment.title")}>
           <h2 className="qt__subtitle">{t("rider.quote.payment.title")}</h2>
@@ -614,12 +665,12 @@ export function QuoteScreen({
                           }
                         }
                         setParcelError(null);
-                        const offer = offerSarFrom(offerText);
-                        if (!offer.ok) {
-                          setOfferError(true);
+                        const offerPolicy = offerPolicyFrom(offerMode, offerText);
+                        if (!offerPolicy.ok) {
+                          setOfferError(offerPolicy.error);
                           return;
                         }
-                        setOfferError(false);
+                        setOfferError(null);
                         onRequest({
                           service: card.service,
                           originLat: origin.lat,
@@ -648,7 +699,8 @@ export function QuoteScreen({
                           // مفتاحٌ واحدٌ لهذه النيّةِ، ويُعادُ في كلِّ محاولةٍ (`ARCH-006`).
                           idempotencyKey: newIdempotencyKey(),
                           pickupAt: pickupMode === "later" ? pickupAtFrom(pickupClock) : null,
-                          offerSar: offer.value,
+                          offerSar: offerPolicy.offerSar,
+                          offerMode: offerPolicy.offerMode,
                         });
                       }}
                     >

@@ -20,6 +20,42 @@ export interface OrderTerms {
    * ⇒ لا سطرَ — مسارٌ لم يقرأ العمودَ بعدُ.
    */
   readonly offerSar?: number | null;
+  /**
+   * `WR-05` — سياسةُ المبلغِ التي اختارَها الراكب: `fixed` (محدَّدٌ غيرُ قابلٍ للتفاوض)،
+   * `suggested` (مقترَحٌ قابلٌ للتفاوض)، `open` (بلا مبلغ). `null`/غائبٌ ⇒ طلبٌ أقدمُ من
+   * السياسةِ فيُقرأُ المبلغُ بنصِّه القديم.
+   */
+  readonly offerMode?: OfferMode | null;
+}
+
+/** `WR-05` — الحالاتُ الثلاثُ لا رابعَ لها، ولا يُخلَطُ «محدَّدٌ» بـ«بلا مبلغ». */
+export const OFFER_MODES = ["fixed", "suggested", "open"] as const;
+export type OfferMode = (typeof OFFER_MODES)[number];
+
+export function isOfferMode(value: unknown): value is OfferMode {
+  return typeof value === "string" && (OFFER_MODES as readonly string[]).includes(value);
+}
+
+/**
+ * سطرُ المبلغِ ومعناه — واحدٌ للبوتِ والمجموعةِ (وMini App يقرأُ المفاتيحَ نفسَها
+ * بمعناها). لا يُوهِمُ بأنَّ المنصّةَ فرضَت المبلغَ أو تضمنُ تحصيلَه.
+ */
+export function offerTermLine(
+  tr: Translate,
+  offerMode: OfferMode | null | undefined,
+  offerSar: number | null,
+): string {
+  if (offerMode === "open") return tr("driver.offer_card_terms_open");
+  if (offerMode === "fixed" && offerSar !== null) {
+    return tr("driver.offer_card_terms_fixed", { amount: offerSar });
+  }
+  if (offerMode === "suggested" && offerSar !== null) {
+    return tr("driver.offer_card_terms_suggested", { amount: offerSar });
+  }
+  // طلبٌ أقدمُ من `WR-05`: النصُّ القديمُ كما كانَ حرفاً.
+  return offerSar === null
+    ? tr("driver.offer_card_paid_negotiable")
+    : tr("driver.offer_card_paid", { amount: offerSar });
 }
 
 /** المنطقةُ الزمنيّةُ لعرضِ الوقتِ: مدنُ الخدمةِ كلُّها في السعوديّةِ (UTC+3 بلا توقيتٍ صيفيٍّ). */
@@ -50,11 +86,7 @@ export function orderTermsLines(
 ): readonly string[] {
   const lines: string[] = [];
   if (terms.offerSar !== undefined) {
-    lines.push(
-      terms.offerSar === null
-        ? tr("driver.offer_card_paid_negotiable")
-        : tr("driver.offer_card_paid", { amount: terms.offerSar }),
-    );
+    lines.push(offerTermLine(tr, terms.offerMode, terms.offerSar));
   }
   lines.push(
     terms.pickupAt === null

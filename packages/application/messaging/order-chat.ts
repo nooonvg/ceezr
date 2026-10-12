@@ -69,6 +69,14 @@ export interface OrderChatThread {
   readonly myLastReadSeq: number;
   readonly counterpartLastReadSeq: number;
   readonly unread: number;
+  /**
+   * `WR-05` — سياسةُ المبلغِ ومبلغُه كما كتبَهما الراكب، تُقرأُ بعدَ أن حكمَت القاعدةُ بأنَّ
+   * القارئَ طرفٌ في الطلب. `mode` `null` ⇒ طلبٌ أقدمُ من السياسة.
+   */
+  readonly offerTerms?: {
+    readonly mode: "fixed" | "suggested" | "open" | null;
+    readonly offerSar: number | null;
+  };
 }
 
 export type OrderChatStoreRejection =

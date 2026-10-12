@@ -266,3 +266,23 @@ export function offerSarFrom(
   if (n < 1 || n > OFFER_MAX_SAR) return { ok: false };
   return { ok: true, value: n };
 }
+
+/**
+ * `WR-05` — سياسةُ المبلغِ بحالاتِها الثلاث، بالقاعدةِ نفسِها في البوّابة:
+ * `open` لا يحملُ مبلغاً، و`fixed`/`suggested` يلزمُهما مبلغٌ 1..10000 (والأرقامُ
+ * العربيّةُ مقبولة). ولا يتحوّلُ المعطوبُ صامتاً إلى «بلا مبلغ».
+ */
+export type QuoteOfferMode = "fixed" | "suggested" | "open";
+
+export function offerPolicyFrom(
+  mode: QuoteOfferMode,
+  raw: string,
+):
+  | { readonly ok: true; readonly offerMode: QuoteOfferMode; readonly offerSar: number | null }
+  | { readonly ok: false; readonly error: "required" | "invalid" } {
+  if (mode === "open") return { ok: true, offerMode: "open", offerSar: null };
+  const amount = offerSarFrom(raw);
+  if (!amount.ok) return { ok: false, error: "invalid" };
+  if (amount.value === null) return { ok: false, error: "required" };
+  return { ok: true, offerMode: mode, offerSar: amount.value };
+}

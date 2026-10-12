@@ -81,10 +81,10 @@ import type { PlaceWire } from "../destination/destination-view.ts";
 import { SosEntry } from "../sos/SosEntry.tsx";
 import { requestByService as requestViaApi } from "./request-by-service.ts";
 import { cancelRide as cancelViaApi, readRideSearch as readViaApi } from "./ride-api.ts";
-
 import type {
   CancelRideResponse,
   RequestRideResponse,
+  RiderOfferMode,
   RideSearchResponse,
 } from "./ride-contract.ts";
 import {
@@ -123,6 +123,8 @@ export interface SearchScreenIntent {
   readonly pickupAt?: string | null;
   /** `ORDER-OFFER-01` — ما يعرضُه الراكبُ بالريال؛ `null`/غائبٌ ⇒ قابلٌ للتفاوض. */
   readonly offerSar?: number | null;
+  /** `WR-05` — سياسةُ المبلغ: `fixed` · `suggested` · `open`. */
+  readonly offerMode?: RiderOfferMode;
 }
 
 export interface SearchScreenProps {
@@ -139,6 +141,7 @@ export interface SearchScreenProps {
     readonly destinationLabel?: string | null;
     readonly pickupAt?: string | null;
     readonly offerSar?: number | null;
+    readonly offerMode?: RiderOfferMode;
     readonly pickupPlace?: PlaceWire | null;
     readonly dropoffPlace?: PlaceWire | null;
   }) => Promise<RequestRideResponse>;
@@ -273,6 +276,7 @@ export function SearchScreen({
         dropoffPlace: intent.dropoffPlace ?? null,
         pickupAt: intent.pickupAt ?? null,
         offerSar: intent.offerSar ?? null,
+        ...(intent.offerMode === undefined ? {} : { offerMode: intent.offerMode }),
       });
       if (!mounted.current || ticket !== issued.current) return;
       if (!response.accepted) {
