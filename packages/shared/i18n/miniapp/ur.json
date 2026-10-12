@@ -1832,7 +1832,7 @@
   "rider.active.chat.locationFailed": "آپ کا مقام معلوم نہیں ہو سکا۔ مقام کی اجازت دیں اور دوبارہ کوشش کریں۔",
   "rider.active.chat.locationMessage": "بھیجا گیا مقام",
   "rider.active.chat.openInMaps": "نقشے میں کھولیں",
-  "rider.active.chat.accuracy": "درستگی ± {meters} میٹر",
+  "rider.active.chat.accuracy": "درستگی ± {value} میٹر",
   "rider.active.chat.translated": "مشینی ترجمہ",
   "rider.active.chat.showOriginal": "اصل متن دکھائیں",
   "rider.active.chat.showTranslation": "ترجمہ دکھائیں",
@@ -1844,7 +1844,7 @@
   "driver.job.chat.locationFailed": "آپ کا مقام معلوم نہیں ہو سکا۔ مقام کی اجازت دیں اور دوبارہ کوشش کریں۔",
   "driver.job.chat.locationMessage": "بھیجا گیا مقام",
   "driver.job.chat.openInMaps": "نقشے میں کھولیں",
-  "driver.job.chat.accuracy": "درستگی ± {meters} میٹر",
+  "driver.job.chat.accuracy": "درستگی ± {value} میٹر",
   "driver.job.chat.translated": "مشینی ترجمہ",
   "driver.job.chat.showOriginal": "اصل متن دکھائیں",
   "driver.job.chat.showTranslation": "ترجمہ دکھائیں"

@@ -1832,7 +1832,7 @@
   "rider.active.chat.locationFailed": "تعذّر تحديد موقعك. تأكد من السماح بالموقع ثم أعد المحاولة.",
   "rider.active.chat.locationMessage": "موقع مُرسَل",
   "rider.active.chat.openInMaps": "افتح في الخرائط",
-  "rider.active.chat.accuracy": "الدقة ± {meters} م",
+  "rider.active.chat.accuracy": "الدقة ± {value} م",
   "rider.active.chat.translated": "مترجمة آليًا",
   "rider.active.chat.showOriginal": "عرض النص الأصلي",
   "rider.active.chat.showTranslation": "عرض الترجمة",
@@ -1844,7 +1844,7 @@
   "driver.job.chat.locationFailed": "تعذّر تحديد موقعك. تأكد من السماح بالموقع ثم أعد المحاولة.",
   "driver.job.chat.locationMessage": "موقع مُرسَل",
   "driver.job.chat.openInMaps": "افتح في الخرائط",
-  "driver.job.chat.accuracy": "الدقة ± {meters} م",
+  "driver.job.chat.accuracy": "الدقة ± {value} م",
   "driver.job.chat.translated": "مترجمة آليًا",
   "driver.job.chat.showOriginal": "عرض النص الأصلي",
   "driver.job.chat.showTranslation": "عرض الترجمة"

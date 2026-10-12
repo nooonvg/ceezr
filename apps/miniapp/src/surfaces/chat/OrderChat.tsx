@@ -11,7 +11,7 @@
  */
 
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
-import { openExternalLink } from "../../tg/app.ts";
+import { openExternalLink } from "../../tg/index.ts";
 import { type DeviceFixResult, readFreshDeviceFix } from "../rider/destination/device-fix.ts";
 import {
   applyThread,
@@ -61,7 +61,7 @@ export interface OrderChatLabels {
   readonly locationFailed: string;
   readonly locationMessage: string;
   readonly openInMaps: string;
-  /** «{meters}» يُستبدَلُ بنصفِ قطرِ الدقّة. */
+  /** «{value}» يُستبدَلُ بدقّةِ القراءةِ بالمتر. */
   readonly accuracy: string;
   /** `WR-04` — الترجمة: النصُّ الأصليُّ يبقى متاحًا بنقرة. */
   readonly translated: string;
@@ -324,7 +324,7 @@ export function OrderChat({
       </span>
       {location.accuracyM !== null ? (
         <span className="ocht__loc-acc">
-          {labels.accuracy.replace("{meters}", String(Math.round(location.accuracyM)))}
+          {labels.accuracy.replace("{value}", String(Math.round(location.accuracyM)))}
         </span>
       ) : null}
       {typeof location.mapsUrl === "string" ? (

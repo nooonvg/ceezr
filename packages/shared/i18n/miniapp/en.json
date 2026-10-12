@@ -1832,7 +1832,7 @@
   "rider.active.chat.locationFailed": "Couldn't get your location. Allow location access, then try again.",
   "rider.active.chat.locationMessage": "Shared location",
   "rider.active.chat.openInMaps": "Open in maps",
-  "rider.active.chat.accuracy": "Accuracy ± {meters} m",
+  "rider.active.chat.accuracy": "Accuracy ± {value} m",
   "rider.active.chat.translated": "Machine-translated",
   "rider.active.chat.showOriginal": "Show original",
   "rider.active.chat.showTranslation": "Show translation",
@@ -1844,7 +1844,7 @@
   "driver.job.chat.locationFailed": "Couldn't get your location. Allow location access, then try again.",
   "driver.job.chat.locationMessage": "Shared location",
   "driver.job.chat.openInMaps": "Open in maps",
-  "driver.job.chat.accuracy": "Accuracy ± {meters} m",
+  "driver.job.chat.accuracy": "Accuracy ± {value} m",
   "driver.job.chat.translated": "Machine-translated",
   "driver.job.chat.showOriginal": "Show original",
   "driver.job.chat.showTranslation": "Show translation"
