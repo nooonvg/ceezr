@@ -1,18 +1,12 @@
 /**
  * الغرض: `WR-09` (ADR 0266) — إشعارا المرشَّح: للراكبِ «سائقٌ قبِلَ — اختَرْ خلالَ N ثانية»
  *   بزرِّ فتحِ الطلبِ ويُطوى إن فاتَ المرشَّح، وللسائقِ مآلُ قبولِه بنصٍّ لكلِّ مآلٍ وزرِّ
- *   «الرحلة» عندَ الاختيار. وبطاقةُ الراكبِ في التطبيقِ المصغَّرِ تُرسَمُ بحقائقِها.
+ *   «الرحلة» عندَ الاختيار. (بطاقةُ التطبيقِ المصغَّرِ في `RideCandidateCard.test.tsx`.)
  * الحالة: اختبار فعلي.
  * ينتمي إلى: tests/unit
  */
 
 import { describe, expect, test } from "bun:test";
-import { renderToStaticMarkup } from "react-dom/server";
-import {
-  candidateErrorKey,
-  candidateSecondsAtRender,
-  RideCandidateCard,
-} from "../../apps/miniapp/src/surfaces/rider/search/RideCandidateCard.tsx";
 import type { Keyboard } from "../../packages/application/bots/types.ts";
 import {
   createDriverCandidateNoticeHandler,
@@ -206,32 +200,5 @@ describe("WR-09 — إشعارُ المآلِ للسائق", () => {
     );
     expect(unknown.ok && unknown.value.abandon).toBe(true);
     expect(rec.sent).toHaveLength(1);
-  });
-});
-
-describe("WR-09 — بطاقةُ المرشَّحِ في التطبيقِ المصغَّر", () => {
-  test("الباقي لحظةَ الرسمِ من قراءةِ الخادمِ وفارقٍ محلّيّ، ولا يقلُّ عن صفر", () => {
-    expect(candidateSecondsAtRender(15, 0)).toBe(15);
-    expect(candidateSecondsAtRender(15, 4_200)).toBe(11);
-    expect(candidateSecondsAtRender(15, 60_000)).toBe(0);
-    expect(candidateSecondsAtRender(Number.NaN, 0)).toBe(0);
-  });
-
-  test("رموزُ القرارِ المعروفةُ لها نصوصُها، وما سواها «تعذّر»", () => {
-    expect(candidateErrorKey("CANDIDATE_EXPIRED")).toBe(
-      "rider.search.candidate.error.CANDIDATE_EXPIRED",
-    );
-    expect(candidateErrorKey("SOMETHING")).toBe("rider.search.candidate.error.UNKNOWN");
-  });
-
-  test("قبلَ القراءةِ لا تُرسَمُ بطاقةٌ (لا مرشَّحَ مُختلَق)", () => {
-    const html = renderToStaticMarkup(
-      <RideCandidateCard
-        orderId={ORDER}
-        language="ar"
-        read={async () => ({ ok: true, order_status: "searching", candidate: null })}
-      />,
-    );
-    expect(html).toBe("");
   });
 });

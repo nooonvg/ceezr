@@ -16,6 +16,7 @@
     "apps/miniapp/src/surfaces/driver/offers/offers-view.ts",
     "apps/miniapp/src/surfaces/rider/active/ActiveRideScreen.tsx",
     "apps/miniapp/src/surfaces/rider/notifications/notifications-view.ts",
+    "apps/miniapp/src/surfaces/rider/search/RideCandidateCard.test.tsx",
     "apps/miniapp/src/surfaces/rider/search/RideCandidateCard.tsx",
     "apps/miniapp/src/surfaces/rider/search/SearchScreen.tsx",
     "apps/miniapp/src/surfaces/rider/search/candidate-api.ts",
@@ -52,7 +53,7 @@
     "tests/unit/check-traffic-priority-guard.test.ts",
     "tests/unit/embedded-worker.test.ts",
     "tests/unit/skip-audit.test.ts",
-    "tests/unit/wr-09-candidate-notices.test.tsx"
+    "tests/unit/wr-09-candidate-notices.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
@@ -64,7 +65,7 @@
   "decision": "المرشّح أعمدة على orders والطلب يبقى searching؛ المهلة إعداد لكل مدينة مبذور بصفر (السلوك القديم حرفًا) ويُرفع إلى 15 في الإنتاج بعد النشر تغييرَ إعداد لا هجرة. الإشعاران في صندوق الصادر: rider_trip_notice بحدث CANDIDATE (يُطوى إن فات المرشح) وdriver_candidate_notice بالمآل.",
   "tests": [
     "TEST_DATABASE_URL=… bun test tests/integration/wr-09-rider-choice.test.ts",
-    "bun test tests/unit/wr-09-candidate-notices.test.tsx tests/unit/embedded-worker.test.ts tests/unit/check-traffic-priority-guard.test.ts"
+    "bun test tests/unit/wr-09-candidate-notices.test.ts apps/miniapp/src/surfaces/rider/search/RideCandidateCard.test.tsx tests/unit/embedded-worker.test.ts tests/unit/check-traffic-priority-guard.test.ts"
   ],
   "evidence": "محليًا على PostGIS بسلسلة الهجرات كاملة: 10/10 تكامل (حجز، ORDER_HELD، رؤية المالك وحجب الغريب، قبول ذرّي، رفض واستبعاد، فوات كسول، شوط التحرير والإلغاء، استيلاء بعد الفوات، التقاط إشعار السائق، والنافذة صفر = القديم)، و14/14 وحدات.",
   "constraints": [
