@@ -17,6 +17,7 @@
     "apps/miniapp/src/surfaces/driver/job/JobScreen.tsx",
     "apps/miniapp/src/surfaces/rider/active/ActiveRideScreen.tsx",
     "packages/application/messaging/order-chat.ts",
+    "packages/infrastructure/db/schema-contract.ts",
     "packages/infrastructure/messaging/order-chat-store.ts",
     "packages/shared/i18n/miniapp/ar.json",
     "packages/shared/i18n/miniapp/en.json",
