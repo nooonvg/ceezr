@@ -1,0 +1,25 @@
+{
+  "id": "wr-06-match-time-from-search",
+  "goal": "WR-06: زمن المطابقة في لوحة الإدارة ومقاييس التشغيل يُقاس من بدء البحث لا من إنشاء الطلب، فلا يُضخِّم الطلب المجدول المتوسط بأيام انتظاره المقصود.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0273-scheduled-dispatch.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/admin/queries.ts",
+    "packages/infrastructure/observability/database-gauges.ts",
+    "scripts/lib/rollback-registry.ts",
+    "supabase/migrations/20261013000700_wr_06_match_time_from_search.sql",
+    "tests/integration/admin-metric-snapshots.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md", "docs/SYSTEM_STATE.md", "ROADMAP.md"],
+  "decision": "ADR 0273 جعل مؤقتات التصعيد وإعادة البث تقيس من coalesce(searching_since, created_at)، وهذا يمد الأساس نفسه إلى لقطة الإدارة (refresh_admin_metric_snapshots) والعداد الحي (overviewCountersLive) ومقياسي p50/p90 للإسناد. الطلب الفوري بلا searching_since يُقاس كما كان.",
+  "tests": [
+    "bun test tests/integration/admin-metric-snapshots.test.ts (TEST_DATABASE_URL على PostGIS محلية)"
+  ],
+  "evidence": "محليًا: 10/10 بالهجرة الجديدة، والاختبار الجديد يفشل على الدالة القديمة (مجموع ≥ 172800 ثانية لطلب مُنشأ قبل يومين) ويمر على الجديدة. والدالة في الإنتاج تطابق 20260916140100 بـmd5(prosrc).",
+  "constraints": ["لا تغيير توقيت تجاري", "لا تغيير في الطلب الفوري"],
+  "limitations": "لا طلب مجدول مطابَق في الإنتاج بعد، فالأثر لم يُقس على بيانات حقيقية."
+}

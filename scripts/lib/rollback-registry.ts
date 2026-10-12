@@ -1412,6 +1412,17 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     criticalPath: null,
     documentedIn: null,
   },
+  {
+    migration: "20261013000700_wr_06_match_time_from_search.sql",
+    change: "revoke_function:refresh_admin_metric_snapshots(1)",
+    why: "الهجرةُ `20261013000700` (`WR-06`) تُعيدُ تعريفَ `refresh_admin_metric_snapshots(integer)` **بالتوقيعِ والمردِّ نفسِهما**، والتغييرُ سطرٌ واحد: زمنُ المطابقةِ من `coalesce(searching_since, created_at)` لا من `created_at`، فالطلبُ المجدولُ لا يُحسَبُ انتظارُه المقصودُ زمنَ مطابقة. والسحبُ إعادةُ قفلٍ كما كانَ: لـ`service_role` وحدَها. والعودةُ إعادةُ تطبيقِ النسخةِ من `20260916140100`.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    documentedIn: null,
+  },
 ];
 
 /**

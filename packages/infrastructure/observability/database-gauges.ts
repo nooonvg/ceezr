@@ -237,13 +237,13 @@ export function createDatabaseGaugeCollector(
                 and matched_at >= now() - make_interval(secs => ${ASSIGNMENT_WINDOW_SECONDS}))
               as matched_in_window,
             (select percentile_cont(0.5) within group (
-                order by extract(epoch from (matched_at - created_at)))::float8
+                order by extract(epoch from (matched_at - coalesce(searching_since, created_at))))::float8
                from orders
               where matched_at is not null
                 and matched_at >= now() - make_interval(secs => ${ASSIGNMENT_WINDOW_SECONDS}))
               as assignment_p50_seconds,
             (select percentile_cont(0.9) within group (
-                order by extract(epoch from (matched_at - created_at)))::float8
+                order by extract(epoch from (matched_at - coalesce(searching_since, created_at))))::float8
                from orders
               where matched_at is not null
                 and matched_at >= now() - make_interval(secs => ${ASSIGNMENT_WINDOW_SECONDS}))
