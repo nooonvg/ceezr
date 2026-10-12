@@ -1,0 +1,18 @@
+{
+  "id": "wr-08-offer-card-outcome",
+  "goal": "§8 مآل العرض يُكتب على بطاقته نفسها: الرفض والانتهاء وسبق سائق آخر والحجز وانتظار الراكب والقبول تعدّل رسالة العرض فتزول أزرار «قبول/رفض» القديمة ولا تبقى البطاقة كأنها عرض متاح.",
+  "canonical_source": ["docs/roadmap/execution/ORDER-20261012.md"],
+  "implementation": [
+    "packages/application/bots/driver-dialog.ts",
+    "tests/unit/driver-dialog.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md"],
+  "decision": "التعديل في مكان البطاقة عبر editMessageId القائم (كما في NEG-SELECT-01). وإن تعذّر التعديل (رسالة قديمة) أرسل البوت الرد رسالة جديدة كما كان. ولا تغيير في claim_ride ولا في رفض العرض على الخادم.",
+  "tests": ["bun test tests/unit/driver-dialog.test.ts"],
+  "evidence": "محليًا: 108/108 في driver-dialog.test.ts منها 4 لـWR-08، وlint وtypecheck ✓.",
+  "constraints": ["لا تفاصيل شخصية جديدة في البطاقة", "الرفض لا يلغي الطلب عن بقية السائقين"],
+  "limitations": "البطاقة التي ينتهي عرضها أو يُحسم لغيره دون أن يضغط السائق زرًا تبقى بأزرارها، والخادم يرفض القبول برسالة واضحة. وتعليمها دون نقرة يحتاج صفًّا صادرًا يعدّلها (لم يُنفّذ).",
+  "status": "open"
+}
