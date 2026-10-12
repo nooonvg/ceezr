@@ -57,10 +57,7 @@
 import "../../../../../../packages/shared/i18n/miniapp/ar-parts/rider-destination.ts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "../../../../../../packages/shared/i18n/miniapp/ar-parts/rider-quote.ts";
-import {
-  RIDE_NOTES_MAX_LENGTH,
-  readRideNotes,
-} from "../../../../../../packages/domain/transport/ride-request.ts";
+import { RIDE_NOTES_MAX_LENGTH } from "../../../../../../packages/domain/transport/ride-request.ts";
 import {
   directionFor,
   MINIAPP_DEFAULT_LANGUAGE,
@@ -96,15 +93,13 @@ import {
   distanceLine,
   durationLine,
   isRetryableQuoteError,
-  offerPolicyFrom,
-  parcelValidationError,
-  pickupAtFrom,
   type QuoteOfferMode,
   quoteErrorKey,
   quoteRefusalKey,
   refusalRemedy,
   serviceCards,
 } from "./quote-view.ts";
+import { judgeRequestForm, notesFieldFor } from "./request-form.ts";
 
 export interface QuoteScreenProps {
   /** الوجهةُ كما صادَقَتْها `SR-03` — تُمرَّرُ ولا يُعادُ البحثُ عنها. */
@@ -259,6 +254,9 @@ export function QuoteScreen({
   const [offerMode, setOfferMode] = useState<QuoteOfferMode>("open");
   /** خطأُ تحقُّقِ وصفِ الطردِ — يُعرَضُ عندَ الضغطِ على «اطلُبْ» للتوصيلِ. */
   const [parcelError, setParcelError] = useState<string | null>(null);
+  const [notesTooLong, setNotesTooLong] = useState(false);
+  /** `WR-17` — مدخلٌ بلا خدمةٍ مختارةٍ يسألُ عنها داخلَ النموذج، لا ببطاقاتٍ بأزرارِ طلب. */
+  const [pickedService, setPickedService] = useState<"transport" | "delivery" | null>(null);
   /**
    * `UI-PICKUP-01` · `LOC-TRUST-01`: مكانُ الالتقاطِ **كما أكّدَه الراكبُ** — بموقعِ جهازِه
    * أو اقتراحٍ أو رابطٍ أو إحداثيّات. وكانَ `null` يعني «موقعَ الجهازِ» يُقرأُ بصمتٍ ويُعتمَدُ
@@ -269,7 +267,6 @@ export function QuoteScreen({
     initialPickup ?? null,
   );
   const [pickingPickup, setPickingPickup] = useState(initialPickup === undefined);
-  const pickupText = pickupTextFor(service);
   const mounted = useRef(true);
   /** ردٌّ متأخِّرٌ لسؤالٍ قديمٍ **يُطرَحُ** ولا يُعرَضُ (عينُ حكمِ `SR-03`). */
   const issued = useRef(0);
@@ -439,327 +436,40 @@ export function QuoteScreen({
       );
     }
 
-    const { response, origin } = state;
-    const readNotes = readRideNotes(notes);
-    const noteValue = "notes" in readNotes ? readNotes.notes : null;
-    const distance = distanceLine(response.distance);
-    const duration = durationLine(response.eta);
-    // `WR-16C`: الخدمةُ المختارةُ في الرئيسيةِ لا يُسأَلُ عنها ثانيةً — بطاقتُها وحدَها.
-    const cards = serviceCards(response.services).filter(
-      (card) => service === undefined || card.service === service,
-    );
     return (
-      <div className="qt__result">
-        {cityLine({ ar: response.city.nameAr, en: response.city.nameEn })}
-        <div className="qt__pickup">
-          <p className="qt__pickup-line">
-            {manualPickup === null
-              ? t("rider.pickup.required")
-              : t(pickupText.named).replace("{label}", manualPickup.label)}
-          </p>
-          <button
-            type="button"
-            className="qt__pickup-change"
-            onClick={() => setPickingPickup(true)}
-          >
-            {t(pickupText.change)}
-          </button>
-        </div>
-
-        <section className="qt__measures" aria-label={t("rider.quote.measures")}>
-          {distance === null ? (
-            // وسمٌ مجهولٌ أو قيمةٌ لا تُقاسُ: يُقالُ ولا يُعرَضُ رقمٌ بلا وسمٍ.
-            <p className="qt__measure qt__measure--off">{t("rider.quote.distance.unavailable")}</p>
-          ) : (
-            <p className="qt__measure">
-              <span className="qt__value">
-                {t(distance.key).replace("{value}", String(distance.value))}
-              </span>
-              {/* الوسمُ يُعرَضُ دائماً مُلاصِقاً للقيمةِ (`ADR 0024`). */}
-              <span className="qt__tag">{t(distance.kindKey)}</span>
-            </p>
-          )}
-
-          {duration.kind === "ROUTED" ? (
-            <p className="qt__measure">
-              <span className="qt__value">
-                {t("rider.quote.durationMinutes").replace("{value}", String(duration.minutes))}
-              </span>
-            </p>
-          ) : (
-            <p className="qt__measure qt__measure--off">{t(duration.reasonKey)}</p>
-          )}
-        </section>
-
-        {/*
-         * ما كانَ ههنا قبلَ `F2-05`: سطرٌ يقولُ «طلبُ الرحلةِ لم يُبنَ بعدُ»
-         * (`rider.quote.next.notBuilt`) — وهوَ صدقُ تلكَ اللحظةِ، ومفتاحُه ونصُّه
-         * **باقيانِ في القواميسِ الثلاثةِ** (القاعدة ح-1) ولم يُحذَفا. وقد بُني
-         * الطلبُ، فلم يَعُدْ يُرسَمُ: عرضُ نصٍّ نُقِضَ كذبٌ، وحذفُه من القاموسِ
-         * محوُ أثرٍ.
-         */}
-        {/*
-         * ## حقلُ الملاحظاتِ / وصفِ الطردِ
-         *
-         * حينَ التوصيلُ متاحٌ، يحملُ هذا الحقلُ وصفَ الطردِ **اختياريًّا** (`WR-18` ·
-         * `ORDER-TERMS-01`): الفارغُ صالحٌ، وما كُتِبَ يُحاكَمُ في العميلِ قبلَ الإرسالِ
-         * وفي البوّابةِ بعدَه بالعقدِ نفسِه.
-         */}
-        <section className="qt__request" aria-label={t("rider.quote.request.section")}>
-          {/*
-           * ## حقلٌ محايدٌ لا سياقيٌّ
-           *
-           * الحقلُ واحدٌ لكلِّ الخدماتِ — لا يُغيِّرُ تسميتَهُ أو حدَّهُ لمجرَّدِ
-           * أنَّ التوصيلَ متاحٌ. فالراكبُ الذي يطلُبُ النقلَ لا ينبغي أن يرى
-           * «وصفَ الطردِ» لمجرَّدِ أنَّ التوصيلَ معروضاً. والتحقُّقُ يقعُ عندَ
-           * الضغطِ على بطاقةِ التوصيلِ وحدَها — لا على بطاقةِ النقلِ.
-           */}
-          <label className="qt__notes-label" htmlFor="qt-notes">
-            {t("rider.quote.notes.neutral.label")}
-          </label>
-          <textarea
-            id="qt-notes"
-            className="qt__notes"
-            value={notes}
-            maxLength={RIDE_NOTES_MAX_LENGTH}
-            placeholder={t("rider.quote.notes.placeholder")}
-            onChange={(event) => {
-              setNotes(event.target.value);
-              if (parcelError !== null) setParcelError(null);
-            }}
-          />
-          {/* الحدُّ يُعرَضُ عدداً لا يُخفى: حقلٌ يقطعُ الكتابةَ صامتاً يُقرأُ عطباً. */}
-          <p className="qt__notes-hint">
-            {t("rider.quote.notes.limit")
-              .replace("{used}", String(notes.trim().length))
-              .replace("{max}", String(RIDE_NOTES_MAX_LENGTH))}
-          </p>
-          {parcelError !== null && (
-            <p className="qt__notes-error" role="alert">
-              {t(parcelError)}
-            </p>
-          )}
-          <p className="qt__notes-hint">{t("rider.quote.notes.delivery_hint")}</p>
-
-          {/* `ORDER-TERMS-01` — وقتُ الحضورِ يظهرُ على بطاقةِ السائقِ فيُغني عن مفاوضةٍ طويلةٍ. */}
-          <fieldset className="qt__pickup">
-            <legend className="qt__notes-label">{t("rider.quote.pickup.label")}</legend>
-            <label className="qt__pickup-option">
-              <input
-                type="radio"
-                name="qt-pickup"
-                checked={pickupMode === "now"}
-                onChange={() => setPickupMode("now")}
-              />
-              {t("rider.quote.pickup.now")}
-            </label>
-            <label className="qt__pickup-option">
-              <input
-                type="radio"
-                name="qt-pickup"
-                checked={pickupMode === "later"}
-                onChange={() => setPickupMode("later")}
-              />
-              {t("rider.quote.pickup.later")}
-            </label>
-            {pickupMode === "later" && (
-              <input
-                type="time"
-                className="qt__pickup-time"
-                aria-label={t("rider.quote.pickup.later")}
-                value={pickupClock}
-                onChange={(event) => {
-                  setPickupClock(event.target.value);
-                  setPickupError(false);
-                }}
-              />
-            )}
-            {pickupMode === "later" && (
-              <p className="qt__notes-hint">{t("rider.quote.pickup.laterHint")}</p>
-            )}
-            {pickupError && (
-              <p className="qt__notes-error" role="alert">
-                {t("rider.quote.pickup.timeRequired")}
-              </p>
-            )}
-          </fieldset>
-
-          {/*
-           * `WR-05` — السعرُ داخلَ نموذجِ الطلبِ بثلاثِ حالاتٍ، لا شاشةً مستقلّة:
-           * محدَّدٌ (غيرُ قابلٍ للتفاوض) · مقترَحٌ (قابلٌ للتفاوض) · بلا سعرٍ (اتفاقٌ في المحادثة).
-           * والمنصّةُ لا تحسبُ ولا تقترحُ ولا تُحصّلُ (DEC-11 §١).
-           */}
-          <fieldset className="qt__pickup qt__offer-mode">
-            <legend className="qt__notes-label">{t("rider.quote.offerMode.title")}</legend>
-            {(["fixed", "suggested", "open"] as const).map((mode) => (
-              <label key={mode} className="qt__pickup-option">
-                <input
-                  type="radio"
-                  name="qt-offer-mode"
-                  value={mode}
-                  checked={offerMode === mode}
-                  onChange={() => {
-                    setOfferMode(mode);
-                    setOfferError(null);
-                  }}
-                />
-                {t(OFFER_MODE_LABEL[mode])}
-              </label>
-            ))}
-          </fieldset>
-          {offerMode !== "open" && (
-            <>
-              <label className="qt__notes-label" htmlFor="qt-offer">
-                {t("rider.quote.offer.label")}
-              </label>
-              <input
-                id="qt-offer"
-                className="qt__offer"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={6}
-                aria-required="true"
-                aria-invalid={offerError !== null}
-                value={offerText}
-                placeholder={t("rider.quote.offer.placeholder")}
-                onChange={(event) => {
-                  setOfferText(event.target.value);
-                  if (offerError !== null) setOfferError(null);
-                }}
-              />
-              <p className="qt__notes-hint">{t("rider.quote.offer.hint")}</p>
-            </>
-          )}
-          {offerError !== null && (
-            <p className="qt__notes-error" role="alert">
-              {t(
-                offerError === "required"
-                  ? "rider.quote.offerMode.required"
-                  : "rider.quote.offer.error",
-              )}
-            </p>
-          )}
-          <p className="qt__notes-hint">{t(OFFER_MODE_HINT[offerMode])}</p>
-        </section>
-        {/*
-         * ## طريقةُ الدفعِ **قبلَ** الطلبِ لا بعدَه — الخطوةُ ٩
-         *
-         * وموضعُها ههنا **حكمٌ لا تنسيقٌ**: زرُّ `rider.quote.request` أسفلَ هذا
-         * الموضعِ هوَ **نقطةُ اللاعودةِ** — لا شاشةَ تأكيدٍ بعدَه، بل يُسنَدُ
-         * `intent` فتُركَّبُ `SearchScreen` فتُنادي `request_ride` فوراً. فراكبٌ
-         * يطلُبُ وهوَ لا يعلمُ كيفَ يدفعُ قد صعِدَ على صمتِنا لا على علمِه.
-         *
-         * **والصمتُ ههنا ليسَ حياداً**: تطبيقٌ في هاتفٍ يُقرأُ افتراضاً «التطبيقُ
-         * يتولّى الدفعَ»، فغيابُ البيانِ يزرعُ الظنَّ الكاذبَ نفسَه الذي يزرعُه
-         * زرُّ دفعٍ لا يعملُ. فالبيانُ **نفيٌ ثلاثيٌّ صريحٌ**: لا قبضَ، ولا
-         * حفظَ، ولا تحديدَ مبلغٍ.
-         *
-         * **ولا يُخالِفُ `ADR 0039` §٤ بل يُنفِذُه**: المحجوبُ هناكَ **آليّةُ
-         * أجرةٍ** — حقلٌ أو حسبةٌ أو عمولةٌ. وهذا نصٌّ يقولُ إنَّ الآليةَ
-         * **غيرُ موجودةٍ**، وهوَ ضدُّ بنائِها لا تمهيدٌ لها. ولا زرَّ دفعٍ. والمبلغُ
-         * الذي قد يكتبُه الراكبُ فوقَه (`WR-05` · ADR 0264) عرضُه هوَ لا حسبةُ المنصّة،
-         * فالنصُّ الثالثُ يقولُ ذلك ولا ينفي وجودَ الحقل.
-         */}
-        <section className="qt__payment" aria-label={t("rider.quote.payment.title")}>
-          <h2 className="qt__subtitle">{t("rider.quote.payment.title")}</h2>
-          <p className="qt__payment-line">{t("rider.quote.payment.direct")}</p>
-          <p className="qt__payment-line">{t("rider.quote.payment.noCustody")}</p>
-          <p className="qt__payment-line">{t("rider.quote.payment.noAmount")}</p>
-        </section>
-        <section className="qt__services" aria-label={t("rider.quote.services")}>
-          <h2 className="qt__subtitle">{t("rider.quote.services")}</h2>
-          {cards.length === 0 ? (
-            <p className="sys__hint">{t("rider.quote.services.empty")}</p>
-          ) : (
-            <ul className="qt__list">
-              {cards.map((card) => (
-                <li
-                  key={card.service}
-                  className={`qt__card${card.available ? "" : " qt__card--off"}`}
-                >
-                  <span className="qt__card-head">
-                    <span className="qt__card-icon">
-                      <Glyph name={card.service === "delivery" ? "parcel" : "car"} />
-                    </span>
-                    <span className="qt__card-label">{t(card.labelKey)}</span>
-                  </span>
-                  {card.reasonKey !== null && (
-                    <span className="qt__card-reason">{t(card.reasonKey)}</span>
-                  )}
-                  {/*
-                   * الفعلُ على البطاقةِ **المتاحةِ** وحدَها: خدمةٌ غيرُ مخدومةٍ في
-                   * المدينةِ تُعرَضُ بسببِها ولا يُعرَضُ لها زرٌّ يُرفَضُ حتماً.
-                   */}
-                  {card.available && onRequest !== undefined && (
-                    <button
-                      type="button"
-                      className="qt__card-request"
-                      onClick={() => {
-                        // التحقُّقُ من وصفِ الطردِ للتوصيلِ فقط — قبلَ الإرسالِ. ونوعُ الطردِ
-                        // صارَ اختياريّاً (`ORDER-TERMS-01`): يُحاكَمُ ما كُتِبَ ولا يُلزَمُ الفارغُ.
-                        if (card.service === "delivery" && notes.trim() !== "") {
-                          const error = parcelValidationError(notes);
-                          if (error !== null) {
-                            setParcelError(error.errorKey);
-                            return;
-                          }
-                        }
-                        setParcelError(null);
-                        const offerPolicy = offerPolicyFrom(offerMode, offerText);
-                        if (!offerPolicy.ok) {
-                          setOfferError(offerPolicy.error);
-                          return;
-                        }
-                        setOfferError(null);
-                        const pickupAt = pickupMode === "later" ? pickupAtFrom(pickupClock) : null;
-                        if (pickupMode === "later" && pickupAt === null) {
-                          setPickupError(true);
-                          return;
-                        }
-                        setPickupError(false);
-                        onRequest({
-                          service: card.service,
-                          originLat: origin.lat,
-                          originLng: origin.lng,
-                          destinationLat: destination.lat,
-                          destinationLng: destination.lng,
-                          destinationLabel: destination.label,
-                          // الاسمُ المُرسَلُ هوَ ما كتبَه الراكبُ أو اختارَه — لا وصفُ «نقطة بلا اسم».
-                          pickupLabel:
-                            manualPickup === null
-                              ? null
-                              : manualPickup.place === undefined
-                                ? manualPickup.label
-                                : manualPickup.place.label,
-                          destinationUserLabel:
-                            destination.place === undefined
-                              ? destination.label
-                              : destination.place.label,
-                          pickupPlace:
-                            manualPickup?.place === undefined
-                              ? null
-                              : placeWire(manualPickup.place),
-                          dropoffPlace:
-                            destination.place === undefined ? null : placeWire(destination.place),
-                          notes: noteValue,
-                          // مفتاحٌ واحدٌ لهذه النيّةِ، ويُعادُ في كلِّ محاولةٍ (`ARCH-006`).
-                          idempotencyKey: newIdempotencyKey(),
-                          pickupAt,
-                          offerSar: offerPolicy.offerSar,
-                          offerMode: offerPolicy.offerMode,
-                        });
-                      }}
-                    >
-                      {t("rider.quote.request")}
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      </div>
+      <RequestForm
+        language={language}
+        response={state.response}
+        origin={state.origin}
+        destination={destination}
+        service={service}
+        pickup={manualPickup}
+        onChangePickup={() => setPickingPickup(true)}
+        onBack={onBack}
+        onRequest={onRequest}
+        form={{
+          notes,
+          setNotes,
+          pickupMode,
+          setPickupMode,
+          pickupClock,
+          setPickupClock,
+          pickupError,
+          setPickupError,
+          offerText,
+          setOfferText,
+          offerError,
+          setOfferError,
+          offerMode,
+          setOfferMode,
+          parcelError,
+          setParcelError,
+          notesTooLong,
+          setNotesTooLong,
+          pickedService,
+          setPickedService,
+        }}
+      />
     );
   };
 
@@ -784,5 +494,393 @@ export function QuoteScreen({
       {/* مدخلُ الاستغاثةِ (`PD-020`) — يُرسَمُ إذا مُرِّرَ، فيبقى البابُ في كلِّ سطحٍ. */}
       {onOpenSos === undefined ? null : <SosEntry onOpen={onOpenSos} language={language} />}
     </section>
+  );
+}
+
+/** `WR-17` — قيمُ النموذجِ وأفعالُه: تُحفَظُ في `QuoteScreen` فلا تضيعُ حينَ يُغيَّرُ مكانُ الالتقاط. */
+export interface RequestFormModel {
+  readonly notes: string;
+  readonly setNotes: (value: string) => void;
+  readonly pickupMode: "now" | "later";
+  readonly setPickupMode: (value: "now" | "later") => void;
+  readonly pickupClock: string;
+  readonly setPickupClock: (value: string) => void;
+  readonly pickupError: boolean;
+  readonly setPickupError: (value: boolean) => void;
+  readonly offerText: string;
+  readonly setOfferText: (value: string) => void;
+  readonly offerError: "required" | "invalid" | null;
+  readonly setOfferError: (value: "required" | "invalid" | null) => void;
+  readonly offerMode: QuoteOfferMode;
+  readonly setOfferMode: (value: QuoteOfferMode) => void;
+  readonly parcelError: string | null;
+  readonly setParcelError: (value: string | null) => void;
+  readonly notesTooLong: boolean;
+  readonly setNotesTooLong: (value: boolean) => void;
+  readonly pickedService: "transport" | "delivery" | null;
+  readonly setPickedService: (value: "transport" | "delivery") => void;
+}
+
+export interface RequestFormProps {
+  readonly language: MiniAppLanguage;
+  readonly response: Extract<QuoteRideResponse, { accepted: true }>;
+  readonly origin: { readonly lat: number; readonly lng: number };
+  readonly destination: QuoteScreenProps["destination"];
+  readonly service: "transport" | "delivery" | undefined;
+  readonly pickup: ConfirmedDestination | null;
+  readonly onChangePickup: () => void;
+  readonly onBack?: (() => void) | undefined;
+  readonly onRequest?: QuoteScreenProps["onRequest"];
+  readonly form: RequestFormModel;
+}
+
+/**
+ * `WR-17` — **نموذجُ الطلبِ الواحد** بعدَ تأكيدِ المكانَين: مراجعةٌ مختصرة، ثمَّ السعرُ بحالاتِه الثلاث،
+ * ثمَّ الملاحظةُ أو وصفُ الطرد، ثمَّ وقتُ الحضور، ثمَّ بيانُ الدفع، ثمَّ زرُّ إرسالٍ واحد. لا «رحلة
+ * مقترحة» ولا قائمةَ «الخدماتِ في مدينتك» ولا زرَّ «اطلب هذه الخدمة» لكلِّ بطاقة. ومُصدَّرٌ كي يُرسَمَ
+ * في الاختبارِ بلا شبكة (المستودعُ بلا DOM).
+ */
+export function RequestForm({
+  language,
+  response,
+  origin,
+  destination,
+  service,
+  pickup: manualPickup,
+  onChangePickup,
+  onBack,
+  onRequest,
+  form,
+}: RequestFormProps) {
+  const t = miniAppTranslator(language);
+  const pickupText = pickupTextFor(service);
+  const {
+    notes,
+    setNotes,
+    pickupMode,
+    setPickupMode,
+    pickupClock,
+    setPickupClock,
+    pickupError,
+    setPickupError,
+    offerText,
+    setOfferText,
+    offerError,
+    setOfferError,
+    offerMode,
+    setOfferMode,
+    parcelError,
+    setParcelError,
+    notesTooLong,
+    setNotesTooLong,
+    pickedService,
+    setPickedService,
+  } = form;
+  const setPickingPickup = (_: true) => onChangePickup();
+  const cityLine = (name: { readonly ar: string; readonly en: string }) => (
+    <p className="qt__city">
+      {t("rider.quote.city").replace("{city}", language === "ar" ? name.ar : name.en)}
+    </p>
+  );
+  const distance = distanceLine(response.distance);
+  const duration = durationLine(response.eta);
+  // `WR-17`: لا قائمةَ «الخدماتِ في مدينتك» ولا زرَّ طلبٍ لكلِّ بطاقة. الخدمةُ اختيرَت في الرئيسية
+  // (`WR-16C`)، فيُحكَمُ على إتاحتِها وحدَها؛ وغيابُها (مدخلٌ قديم) يُسألُ عنه **داخلَ النموذج**.
+  const cards = serviceCards(response.services);
+  const chosen = service ?? pickedService;
+  const chosenCard =
+    chosen === null ? null : (cards.find((card) => card.service === chosen) ?? null);
+  const choosable = cards.filter((card) => card.available);
+  const notesField = notesFieldFor(chosen ?? "transport");
+  const submit = () => {
+    if (chosen === null || chosenCard === null || !chosenCard.available) return;
+    if (onRequest === undefined || manualPickup === null) return;
+    const verdict = judgeRequestForm({
+      service: chosen,
+      origin,
+      destination: {
+        lat: destination.lat,
+        lng: destination.lng,
+        label: destination.label,
+        // الاسمُ المُرسَلُ هوَ ما كتبَه الراكبُ أو اختارَه — لا وصفُ «نقطة بلا اسم».
+        userLabel: destination.place === undefined ? destination.label : destination.place.label,
+        place: destination.place === undefined ? null : placeWire(destination.place),
+      },
+      pickup: {
+        label: manualPickup.place === undefined ? manualPickup.label : manualPickup.place.label,
+        place: manualPickup.place === undefined ? null : placeWire(manualPickup.place),
+      },
+      notes,
+      offerMode,
+      offerText,
+      pickupMode,
+      pickupClock,
+      // مفتاحٌ واحدٌ لهذه النيّةِ، ويُعادُ في كلِّ محاولةٍ (`ARCH-006`).
+      idempotencyKey: newIdempotencyKey,
+    });
+    setParcelError(verdict.ok || verdict.field !== "parcel" ? null : verdict.errorKey);
+    setNotesTooLong(!verdict.ok && verdict.field === "notes");
+    setOfferError(verdict.ok || verdict.field !== "offer" ? null : verdict.error);
+    setPickupError(!verdict.ok && verdict.field === "pickupAt");
+    if (verdict.ok) onRequest(verdict.intent);
+  };
+  return (
+    <div className="qt__result">
+      {/*
+       * ## المراجعةُ المختصرة — لا شاشةَ تسعيرٍ ولا «رحلة مقترحة» (`WR-17`)
+       *
+       * الخدمةُ والمكانانِ والمسافةُ والمدّةُ في كتلةٍ واحدةٍ أعلى النموذج، والمسافةُ موسومةٌ دائمًا
+       * (`ADR 0024`). وما سواها حقولُ الطلبِ نفسُها ثمَّ زرُّ إرسالٍ واحد.
+       */}
+      <section className="qt__review" aria-label={t("rider.quote.review")}>
+        {chosenCard !== null && (
+          <p className="qt__review-service">
+            <span className="qt__card-icon">
+              <Glyph name={chosenCard.service === "delivery" ? "parcel" : "car"} />
+            </span>
+            <span className="qt__card-label">{t(chosenCard.labelKey)}</span>
+          </p>
+        )}
+        {cityLine({ ar: response.city.nameAr, en: response.city.nameEn })}
+        <div className="qt__pickup">
+          <p className="qt__pickup-line">
+            {manualPickup === null
+              ? t("rider.pickup.required")
+              : t(pickupText.named).replace("{label}", manualPickup.label)}
+          </p>
+          <button
+            type="button"
+            className="qt__pickup-change"
+            onClick={() => setPickingPickup(true)}
+          >
+            {t(pickupText.change)}
+          </button>
+        </div>
+        <section className="qt__measures" aria-label={t("rider.quote.measures")}>
+          {distance === null ? (
+            // وسمٌ مجهولٌ أو قيمةٌ لا تُقاسُ: يُقالُ ولا يُعرَضُ رقمٌ بلا وسمٍ.
+            <span className="qt__measure qt__measure--off">
+              {t("rider.quote.distance.unavailable")}
+            </span>
+          ) : (
+            <span className="qt__measure">
+              <span className="qt__value">
+                {t(distance.key).replace("{value}", String(distance.value))}
+              </span>
+              {/* الوسمُ يُعرَضُ دائماً مُلاصِقاً للقيمةِ (`ADR 0024`). */}
+              <span className="qt__tag">{t(distance.kindKey)}</span>
+            </span>
+          )}
+          {duration.kind === "ROUTED" ? (
+            <span className="qt__measure">
+              <span className="qt__value">
+                {t("rider.quote.durationMinutes").replace("{value}", String(duration.minutes))}
+              </span>
+            </span>
+          ) : (
+            <span className="qt__measure qt__measure--off">{t(duration.reasonKey)}</span>
+          )}
+        </section>
+      </section>
+
+      {chosenCard !== null && !chosenCard.available ? (
+        // الخدمةُ المختارةُ غيرُ مخدومةٍ في المدينة: سببُها، ولا نموذجَ يُرفَضُ حتمًا.
+        <div className="sys" role="alert">
+          <p className="sys__body">
+            {t(chosenCard.reasonKey ?? "rider.quote.service.unavailable")}
+          </p>
+          {onBack !== undefined && (
+            <button type="button" className="sys__action" onClick={() => onBack?.()}>
+              {t("rider.quote.remedy.pickAnother")}
+            </button>
+          )}
+        </div>
+      ) : choosable.length === 0 ? (
+        <p className="sys__hint">{t("rider.quote.services.empty")}</p>
+      ) : (
+        <>
+          <section className="qt__request" aria-label={t("rider.quote.request.section")}>
+            {service === undefined && (
+              // مدخلٌ بلا خدمةٍ مختارة: السؤالُ داخلَ النموذجِ، ولا يُفترَضُ عنه شيء.
+              <fieldset className="qt__pickup">
+                <legend className="qt__notes-label">{t("rider.home.service.legend")}</legend>
+                {choosable.map((card) => (
+                  <label key={card.service} className="qt__pickup-option">
+                    <input
+                      type="radio"
+                      name="qt-service"
+                      value={card.service}
+                      checked={pickedService === card.service}
+                      onChange={() => setPickedService(card.service)}
+                    />
+                    {t(card.labelKey)}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            {/*
+             * `WR-05` · `WR-17` — السعرُ داخلَ نموذجِ الطلبِ بثلاثِ حالاتٍ، لا شاشةً مستقلّة:
+             * محدَّدٌ (غيرُ قابلٍ للتفاوض) · مقترَحٌ (قابلٌ للتفاوض) · بلا سعرٍ (اتفاقٌ في المحادثة).
+             * والمنصّةُ لا تحسبُ ولا تقترحُ ولا تُحصّلُ (DEC-11 §١).
+             */}
+            <fieldset className="qt__pickup qt__offer-mode">
+              <legend className="qt__notes-label">{t("rider.quote.offerMode.title")}</legend>
+              {(["fixed", "suggested", "open"] as const).map((mode) => (
+                <label key={mode} className="qt__pickup-option">
+                  <input
+                    type="radio"
+                    name="qt-offer-mode"
+                    value={mode}
+                    checked={offerMode === mode}
+                    onChange={() => {
+                      setOfferMode(mode);
+                      setOfferError(null);
+                    }}
+                  />
+                  {t(OFFER_MODE_LABEL[mode])}
+                </label>
+              ))}
+            </fieldset>
+            {offerMode !== "open" && (
+              <>
+                <label className="qt__notes-label" htmlFor="qt-offer">
+                  {t("rider.quote.offer.label")}
+                </label>
+                <input
+                  id="qt-offer"
+                  className="qt__offer"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={6}
+                  aria-required="true"
+                  aria-invalid={offerError !== null}
+                  value={offerText}
+                  placeholder={t("rider.quote.offer.placeholder")}
+                  onChange={(event) => {
+                    setOfferText(event.target.value);
+                    if (offerError !== null) setOfferError(null);
+                  }}
+                />
+              </>
+            )}
+            {offerError !== null && (
+              <p className="qt__notes-error" role="alert">
+                {t(
+                  offerError === "required"
+                    ? "rider.quote.offerMode.required"
+                    : "rider.quote.offer.error",
+                )}
+              </p>
+            )}
+            <p className="qt__notes-hint">{t(OFFER_MODE_HINT[offerMode])}</p>
+
+            {/*
+             * ## الملاحظةُ أو وصفُ الطرد — بحسبِ الخدمةِ المختارة (`WR-17` · `WR-18`)
+             *
+             * الخدمةُ معلومةٌ قبلَ النموذج، فلا حقلَ «محايد» ولا تلميحَ «في التوصيل: …». والفارغُ
+             * صالحٌ في الخدمتَين، وما كُتِبَ في التوصيلِ يُحاكَمُ في العميلِ ثمَّ في البوّابةِ بالعقدِ نفسِه.
+             */}
+            <label className="qt__notes-label" htmlFor="qt-notes">
+              {t(notesField.label)}
+            </label>
+            <textarea
+              id="qt-notes"
+              className="qt__notes"
+              value={notes}
+              maxLength={RIDE_NOTES_MAX_LENGTH}
+              placeholder={t(notesField.placeholder)}
+              onChange={(event) => {
+                setNotes(event.target.value);
+                if (parcelError !== null) setParcelError(null);
+                if (notesTooLong) setNotesTooLong(false);
+              }}
+            />
+            {/* الحدُّ يُعرَضُ عدداً لا يُخفى: حقلٌ يقطعُ الكتابةَ صامتاً يُقرأُ عطباً. */}
+            <p className="qt__notes-hint">
+              {t("rider.quote.notes.limit")
+                .replace("{used}", String(notes.trim().length))
+                .replace("{max}", String(RIDE_NOTES_MAX_LENGTH))}
+            </p>
+            {parcelError !== null && (
+              <p className="qt__notes-error" role="alert">
+                {t(parcelError)}
+              </p>
+            )}
+            {notesTooLong && (
+              <p className="qt__notes-error" role="alert">
+                {t("rider.quote.notes.tooLong")}
+              </p>
+            )}
+
+            {/* `ORDER-TERMS-01` — وقتُ الحضورِ يظهرُ على بطاقةِ السائقِ فيُغني عن مفاوضةٍ طويلةٍ. */}
+            <fieldset className="qt__pickup">
+              <legend className="qt__notes-label">{t("rider.quote.pickup.label")}</legend>
+              <label className="qt__pickup-option">
+                <input
+                  type="radio"
+                  name="qt-pickup"
+                  checked={pickupMode === "now"}
+                  onChange={() => setPickupMode("now")}
+                />
+                {t("rider.quote.pickup.now")}
+              </label>
+              <label className="qt__pickup-option">
+                <input
+                  type="radio"
+                  name="qt-pickup"
+                  checked={pickupMode === "later"}
+                  onChange={() => setPickupMode("later")}
+                />
+                {t("rider.quote.pickup.later")}
+              </label>
+              {pickupMode === "later" && (
+                <input
+                  type="time"
+                  className="qt__pickup-time"
+                  aria-label={t("rider.quote.pickup.later")}
+                  value={pickupClock}
+                  onChange={(event) => {
+                    setPickupClock(event.target.value);
+                    setPickupError(false);
+                  }}
+                />
+              )}
+              {pickupMode === "later" && (
+                <p className="qt__notes-hint">{t("rider.quote.pickup.laterHint")}</p>
+              )}
+              {pickupError && (
+                <p className="qt__notes-error" role="alert">
+                  {t("rider.quote.pickup.timeRequired")}
+                </p>
+              )}
+            </fieldset>
+          </section>
+          {/*
+           * ## طريقةُ الدفعِ **قبلَ** زرِّ الإرسالِ لا بعدَه — الخطوةُ ٩ (ADR 0169)
+           *
+           * زرُّ `rider.quote.request` نقطةُ اللاعودة: لا شاشةَ تأكيدٍ بعدَه، بل تُسلَّمُ النيّةُ
+           * فتُنادي `SearchScreen` الإنشاءَ فورًا. فالبيانُ نفيٌ صريحٌ قبلَه: لا قبضَ ولا حفظَ ولا
+           * تحديدَ مبلغٍ من المنصّة — والمبلغُ الذي يكتبُه الراكبُ عرضُه هوَ (`WR-05` · ADR 0264).
+           */}
+          <section className="qt__payment" aria-label={t("rider.quote.payment.title")}>
+            <h2 className="qt__subtitle">{t("rider.quote.payment.title")}</h2>
+            <p className="qt__payment-line">{t("rider.quote.payment.direct")}</p>
+            <p className="qt__payment-line">{t("rider.quote.payment.noCustody")}</p>
+            <p className="qt__payment-line">{t("rider.quote.payment.noAmount")}</p>
+          </section>
+          {onRequest !== undefined && (
+            <button
+              type="button"
+              className="qt__submit"
+              disabled={chosen === null || manualPickup === null}
+              onClick={submit}
+            >
+              {t("rider.quote.request")}
+            </button>
+          )}
+        </>
+      )}
+    </div>
   );
 }

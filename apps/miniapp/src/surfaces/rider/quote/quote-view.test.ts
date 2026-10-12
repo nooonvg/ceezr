@@ -45,9 +45,11 @@ describe("نموذجُ عرضِ الاقتباسِ (R5)", () => {
       },
     ]);
     expect(serviceCards([])).toEqual([]);
-    expect(SCREEN).toContain("cards.length === 0");
+    // `WR-17`: لا بطاقةَ بزرِّ طلب؛ الخدمةُ المختارةُ غيرُ المخدومةِ تُعرَضُ بسببِها بلا نموذج،
+    // ولا خدمةَ متاحةً تعني حالةً فارغةً صريحة.
+    expect(SCREEN).toContain("choosable.length === 0");
     expect(SCREEN).toContain('t("rider.quote.services.empty")');
-    expect(SCREEN).toContain("card.available && onRequest !== undefined");
+    expect(SCREEN).toContain("chosenCard !== null && !chosenCard.available");
   });
 
   it("الرفضُ يقدّمُ العلاجَ الممكنَ فقط؛ ولا حلَّ مخترعاً للسببِ المجهول", () => {

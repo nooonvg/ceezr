@@ -1,0 +1,33 @@
+{
+  "id": "wr-17-single-request-form",
+  "goal": "§17 إزالة شاشة التسعير المستقلة («الرحلة المقترحة» وقائمة الخدمات وزر لكل بطاقة) واستبدالها بنموذج طلب واحد فيه خيارات السعر الثلاثة وزر إرسال واحد.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0272-single-request-form.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/surfaces/rider/quote/QuoteScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/quote/request-form.ts",
+    "apps/miniapp/src/surfaces/rider/quote/quote-view.test.ts",
+    "apps/miniapp/src/surfaces/rider/search/request-by-service.ts",
+    "apps/miniapp/src/surfaces/rider/search/ride-api.ts",
+    "apps/miniapp/src/surfaces/rider/wr-17-single-request-form.test.tsx",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/roadmap/execution/STATUS.md", "docs/adr/0272-single-request-form.md"],
+  "decision": "نموذج واحد بعد تأكيد المكانين: مراجعة ← سعر ثلاثي ← ملاحظة/طرد ← وقت ← دفع ← زر واحد. لا تغيير في الخادم ولا القاعدة.",
+  "tests": ["bun test apps/miniapp/src/surfaces/rider"],
+  "evidence": "محليًا: 13/13 لـWR-17، و169/169 لاختبارات الراكب، و7403/7403 وحدات وMini App، وlint وtypecheck وحراس العقد والأصناف واللغات والأداء.",
+  "constraints": [
+    "لا شاشة سعر مستقلة",
+    "لا إخفاء بصري فقط",
+    "لا أجرة من المنصة",
+    "لا تغيير في عقد الخادم"
+  ],
+  "limitations": "لم يُفتح النموذج على هاتف في تيليجرام. وبقية §17 (RTL على شاشات صغيرة ولوحة المفاتيح) تحتاج جهازًا."
+}

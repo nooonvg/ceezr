@@ -77,5 +77,9 @@ export function requestByService(
     };
     return requestDelivery(deliveryInput, fetchFn ?? (apiFetch as unknown as ApiFetchFn));
   }
-  return requestRide(input);
+  const { service, ...rest } = input;
+  return fetchFn === undefined
+    ? requestRide({ service, ...rest })
+    : requestRide({ service, ...rest }, ((path: string, init: unknown) =>
+        fetchFn(path, init as Record<string, unknown>)) as Parameters<typeof requestRide>[1]);
 }
