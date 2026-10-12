@@ -461,6 +461,7 @@ export function JobScreen({
           translated: t("driver.job.chat.translated"),
           showOriginal: t("driver.job.chat.showOriginal"),
           showTranslation: t("driver.job.chat.showTranslation"),
+          translationNotice: t("driver.job.chat.translationNotice"),
         }}
       />
 

@@ -138,6 +138,8 @@ export function createOrderChatRoutes(deps: OrderChatRouteDependencies): Hono {
       my_last_read_seq: thread.myLastReadSeq,
       counterpart_last_read_seq: thread.counterpartLastReadSeq,
       unread: thread.unread,
+      // `WR-04` (ADR 0277) — الإفصاحُ: رسائلُ المحادثةِ تُترجَمُ آليًّا عبرَ خدمةٍ خارجيّة.
+      translation_active: thread.translationActive === true,
     });
   });
 

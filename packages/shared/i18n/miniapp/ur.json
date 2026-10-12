@@ -1836,6 +1836,7 @@
   "rider.active.chat.translated": "مشینی ترجمہ",
   "rider.active.chat.showOriginal": "اصل متن دکھائیں",
   "rider.active.chat.showTranslation": "ترجمہ دکھائیں",
+  "rider.active.chat.translationNotice": "متنی پیغامات کا ترجمہ ایک بیرونی ترجمہ سروس کے ذریعے خودکار طور پر ہوتا ہے۔ فون نمبر، ای میل یا لنک والے پیغامات اور شیئر کیا گیا مقام ترجمے کے لیے نہیں بھیجے جاتے۔",
   "driver.job.chat.shareLocation": "میرا مقام بھیجیں",
   "driver.job.chat.locating": "آپ کا مقام معلوم کیا جا رہا ہے…",
   "driver.job.chat.locationPreview": "یہ آپ کا موجودہ مقام ہے۔ کیا بھیجیں؟",
@@ -1847,5 +1848,6 @@
   "driver.job.chat.accuracy": "درستگی ± {value} میٹر",
   "driver.job.chat.translated": "مشینی ترجمہ",
   "driver.job.chat.showOriginal": "اصل متن دکھائیں",
-  "driver.job.chat.showTranslation": "ترجمہ دکھائیں"
+  "driver.job.chat.showTranslation": "ترجمہ دکھائیں",
+  "driver.job.chat.translationNotice": "متنی پیغامات کا ترجمہ ایک بیرونی ترجمہ سروس کے ذریعے خودکار طور پر ہوتا ہے۔ فون نمبر، ای میل یا لنک والے پیغامات اور شیئر کیا گیا مقام ترجمے کے لیے نہیں بھیجے جاتے۔"
 }

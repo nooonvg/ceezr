@@ -66,6 +66,8 @@ export interface ChatSnapshot {
   readonly myLastReadSeq: number;
   readonly counterpartLastReadSeq: number;
   readonly unread: number;
+  /** `WR-04` (ADR 0277) — الرسائلُ تُترجَمُ آليًّا عبرَ خدمةٍ خارجيّة؛ منه يُعرَضُ الإفصاح. */
+  readonly translationActive: boolean;
 }
 
 /** رسالةٌ أرسلَها المستخدمُ ولم يؤكِّدْها الخادمُ بعدُ — بمعرّفِها الثابت. */
@@ -119,6 +121,7 @@ interface WireThread {
   readonly my_last_read_seq: number;
   readonly counterpart_last_read_seq: number;
   readonly unread: number;
+  readonly translation_active?: boolean;
 }
 
 function finite(value: unknown): number | null {
@@ -233,6 +236,7 @@ export function applyThread(previous: ChatSnapshot | null, wire: WireThread): Ch
     myLastReadSeq: wire.my_last_read_seq,
     counterpartLastReadSeq: wire.counterpart_last_read_seq,
     unread: wire.unread,
+    translationActive: wire.translation_active === true,
   };
 }
 

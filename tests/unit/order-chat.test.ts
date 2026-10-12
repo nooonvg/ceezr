@@ -477,7 +477,9 @@ describe("WR-04 — ترجمةُ محادثةِ Mini App", () => {
     await translateThread({ translate }, { ...bilingual, myLanguage: null });
     const none = await translateThread({}, bilingual);
     expect(calls).toBe(0);
-    expect(none).toBe(bilingual);
+    // `WR-04` (ADR 0277): الرسائلُ كما هي، والإفصاحُ مطفأٌ لأنّ لا ترجمة.
+    expect(none.messages).toBe(bilingual.messages);
+    expect(none.translationActive).toBe(false);
   });
 
   it("المزوّدُ الذي يعيدُ النصَّ نفسَه أو لا شيءَ لا يُعَدُّ ترجمة", async () => {

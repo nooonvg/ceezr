@@ -1836,6 +1836,7 @@
   "rider.active.chat.translated": "Machine-translated",
   "rider.active.chat.showOriginal": "Show original",
   "rider.active.chat.showTranslation": "Show translation",
+  "rider.active.chat.translationNotice": "Text messages are machine-translated by an external translation service. Messages containing a phone number, email or link, and shared locations, are not sent for translation.",
   "driver.job.chat.shareLocation": "Share my location",
   "driver.job.chat.locating": "Finding your location…",
   "driver.job.chat.locationPreview": "This is your current location. Send it?",
@@ -1847,5 +1848,6 @@
   "driver.job.chat.accuracy": "Accuracy ± {value} m",
   "driver.job.chat.translated": "Machine-translated",
   "driver.job.chat.showOriginal": "Show original",
-  "driver.job.chat.showTranslation": "Show translation"
+  "driver.job.chat.showTranslation": "Show translation",
+  "driver.job.chat.translationNotice": "Text messages are machine-translated by an external translation service. Messages containing a phone number, email or link, and shared locations, are not sent for translation."
 }

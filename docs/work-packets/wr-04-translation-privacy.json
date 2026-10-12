@@ -1,0 +1,41 @@
+{
+  "id": "wr-04-translation-privacy",
+  "goal": "WR-04: ضوابط الترجمة بمزوّد خارجي — لا يُرسَل هاتف أو بريد أو رابط، وكل صور نفاد حصة MyMemory تُعرض بالأصل، وحد 500 بايت بلا نداء، ولا نص محادثة في السجل، وإفصاح في المحادثة حين تكون الترجمة فعّالة.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0277-translation-privacy-controls.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/index.ts",
+    "apps/gateway/src/routes/order-chat.ts",
+    "apps/miniapp/src/surfaces/chat/OrderChat.tsx",
+    "apps/miniapp/src/surfaces/chat/order-chat-client.ts",
+    "apps/miniapp/src/surfaces/chat/order-chat.test.tsx",
+    "apps/miniapp/src/surfaces/driver/job/JobScreen.tsx",
+    "apps/miniapp/src/surfaces/rider/active/ActiveRideScreen.tsx",
+    "packages/application/messaging/order-chat.ts",
+    "packages/domain/i18n-translation/entity.ts",
+    "packages/infrastructure/i18n-translation/translation-providers.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/unit/order-chat.test.ts",
+    "tests/unit/wr-04-translation-privacy.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0277-translation-privacy-controls.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0277",
+  "tests": [
+    "tests/unit/wr-04-translation-privacy.test.ts",
+    "apps/miniapp/src/surfaces/chat/order-chat.test.tsx",
+    "tests/unit/order-chat.test.ts"
+  ],
+  "constraints": ["لا أسرار", "لا نص محادثة في السجل", "الأصل يبقى"],
+  "limitations": "لم تُختبر ترجمة حقيقية بين جهازين في الإنتاج. ولا وثيقة سياسة خصوصية منشورة في المستودع."
+}

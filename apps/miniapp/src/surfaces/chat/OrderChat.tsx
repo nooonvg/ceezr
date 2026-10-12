@@ -67,6 +67,8 @@ export interface OrderChatLabels {
   readonly translated: string;
   readonly showOriginal: string;
   readonly showTranslation: string;
+  /** `WR-04` (ADR 0277) — الإفصاحُ: الرسائلُ النصّيّةُ تُترجَمُ آليًّا عبرَ خدمةٍ خارجيّة. */
+  readonly translationNotice: string;
 }
 
 type LocationDraft =
@@ -409,6 +411,9 @@ export function OrderChat({
             <p className="ocht__offer">
               {chatOfferLine(labels, snapshot.offerMode, snapshot.offerSar)}
             </p>
+          ) : null}
+          {snapshot?.translationActive === true ? (
+            <p className="ocht__offer ocht__privacy">{labels.translationNotice}</p>
           ) : null}
 
           {failure === "session" ? (

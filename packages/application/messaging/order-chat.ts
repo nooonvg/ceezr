@@ -106,6 +106,11 @@ export interface OrderChatThread {
   readonly counterpartLastReadSeq: number;
   readonly unread: number;
   /**
+   * `WR-04` (ADR 0277) — رسائلُ هذه المحادثةِ تمرُّ بمزوّدِ ترجمةٍ خارجيّ (مزوّدٌ مضبوطٌ ولغتا
+   * الطرفينِ مختلفتان). منه يُعرَضُ الإفصاحُ للكاتبِ قبلَ أن يكتب، لا بعدَ أن يُترجَم.
+   */
+  readonly translationActive?: boolean;
+  /**
    * `WR-05` — سياسةُ المبلغِ ومبلغُه كما كتبَهما الراكب، تُقرأُ بعدَ أن حكمَت القاعدةُ بأنَّ
    * القارئَ طرفٌ في الطلب. `mode` `null` ⇒ طلبٌ أقدمُ من السياسة.
    */
@@ -265,7 +270,9 @@ export async function translateThread(
   const translate = deps.translate;
   const to = primaryLanguage(thread.myLanguage);
   const from = primaryLanguage(thread.counterpart.language);
-  if (translate === undefined || to === null || from === null || to === from) return thread;
+  if (translate === undefined || to === null || from === null || to === from) {
+    return { ...thread, translationActive: false };
+  }
   let failed = 0;
   const messages = await Promise.all(
     thread.messages.map(async (message) => {
@@ -283,7 +290,7 @@ export async function translateThread(
     }),
   );
   if (failed > 0) deps.log?.("order_chat.translation_failed", { order_id: thread.orderId, failed });
-  return { ...thread, messages };
+  return { ...thread, messages, translationActive: true };
 }
 
 export async function readOrderChat(

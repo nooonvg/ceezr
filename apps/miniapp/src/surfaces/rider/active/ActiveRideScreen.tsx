@@ -551,6 +551,7 @@ export function ActiveRideScreen({
               translated: t("rider.active.chat.translated"),
               showOriginal: t("rider.active.chat.showOriginal"),
               showTranslation: t("rider.active.chat.showTranslation"),
+              translationNotice: t("rider.active.chat.translationNotice"),
             }}
           />
         )}
