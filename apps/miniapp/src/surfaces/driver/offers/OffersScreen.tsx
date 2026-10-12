@@ -63,12 +63,15 @@ import {
   setDriverAvailability,
 } from "./offers-api.ts";
 import {
+  type BoardRefreshState,
+  boardRefreshNotice,
   canAcceptNow,
   countdownSeconds,
   type DistanceLine,
   isRetryableOffersError,
   type OfferCardModel,
   offerLineText,
+  offersCodeOf,
   offersErrorKey,
   pickupAtText,
   toOffersBoard,
@@ -173,13 +176,8 @@ type ActionState =
   | { readonly kind: "busy" }
   | { readonly kind: "failed"; readonly key: string };
 
-function codeOf(thrown: unknown): string {
-  if (thrown !== null && typeof thrown === "object" && "code" in thrown) {
-    const code = (thrown as { code?: unknown }).code;
-    if (typeof code === "string") return code;
-  }
-  return "UNKNOWN";
-}
+/** `WR-16A` — خطأُ الشبكةِ يُسمّى `NETWORK_UNREACHABLE` (`offersCodeOf`). */
+const codeOf = offersCodeOf;
 
 function DistanceRow({
   line,
@@ -236,6 +234,7 @@ export function OffersScreen({
   const [state, setState] = useState<BoardState>({ kind: "loading" });
   const [availabilityState, setAvailabilityState] = useState<ActionState>({ kind: "idle" });
   const [rows, setRows] = useState<Readonly<Record<string, ActionState>>>({});
+  const [refresh, setRefresh] = useState<BoardRefreshState>({ kind: "idle" });
 
   // مرجعٌ للحالةِ الحاليّةِ — يُقرأُ في تحديثِ الـ realtimeِ دونَ أن يُدخِلَ الحالةَ
   // في تبعيّاتِ الدالّةِ المُستدعاةِ (التي تُسبِّبُ إعادةَ رسمٍ غيرَ ضروريٍّ).
@@ -269,6 +268,28 @@ export function OffersScreen({
       }
     }
   }, [now, readBoard]);
+
+  /**
+   * `WR-16A` — «حدّث اللوح» جلبٌ فعليٌّ من الخادم: اللوحُ المعروضُ يبقى أثناءَه، والفشلُ يُقالُ
+   * بسببِه (انقطاعٌ أو عطل) ولا يمسحُ ما يراه السائق، والنجاحُ يُقالُ.
+   */
+  const refreshBoard = useCallback(async () => {
+    if (stateRef.current.kind !== "ready") {
+      setRefresh({ kind: "idle" });
+      await load();
+      return;
+    }
+    setRefresh({ kind: "busy" });
+    try {
+      const board = await readBoard();
+      setState({ kind: "ready", board, readAtMs: now() });
+      setRefresh({ kind: "done" });
+    } catch (thrown) {
+      const current = stateRef.current;
+      if (current.kind === "ready") setState({ ...current, stale: true });
+      setRefresh({ kind: "failed", code: codeOf(thrown) });
+    }
+  }, [load, now, readBoard]);
 
   useEffect(() => {
     void load();
@@ -514,10 +535,24 @@ export function OffersScreen({
         </ul>
       )}
 
-      <button type="button" className="dof__refresh" onClick={() => void load()}>
+      <button
+        type="button"
+        className="dof__refresh"
+        disabled={refresh.kind === "busy"}
+        aria-busy={refresh.kind === "busy"}
+        onClick={() => void refreshBoard()}
+      >
         <Glyph name="refresh" className="dof__refresh-icon" />
         {t("driver.offers.refresh")}
       </button>
+      {(() => {
+        const notice = boardRefreshNotice(refresh, state.stale === true);
+        return notice === null ? null : (
+          <p className="dof__refresh-note" role={notice.role}>
+            {t(notice.key)}
+          </p>
+        );
+      })()}
 
       {/* `UX-V2`: أبوابُ الشاشةِ قائمةٌ واحدةٌ — كلُّ صفٍّ يُرسَمُ إن كانَ له مستقبِلٌ فحسب. */}
       <nav className="dof__links" aria-label={t("driver.tabs.navigation")}>
