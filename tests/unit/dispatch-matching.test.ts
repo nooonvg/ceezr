@@ -501,3 +501,17 @@ describe("dispatch: عمر موقع السائق", () => {
     expect(String(evaluation.rejected[0]?.driverId)).toBe("d1");
   });
 });
+
+describe("WR-23 — موقعٌ غيرُ موثوقٍ لا يُرتَّبُ به", () => {
+  it("ALERT يُستبعَدُ بـUNTRUSTED_LOCATION، وWARNING والغيابُ يبقيانِ مؤهَّلَين", () => {
+    const base = candidate({ driverId: D("d1") });
+    const params = PARAMS;
+    expect(rejectionReasonFor({ ...base, locationQuality: "ALERT" }, ORDER, params, NOW)).toBe(
+      "UNTRUSTED_LOCATION",
+    );
+    expect(
+      rejectionReasonFor({ ...base, locationQuality: "WARNING" }, ORDER, params, NOW),
+    ).toBeNull();
+    expect(rejectionReasonFor({ ...base, locationQuality: null }, ORDER, params, NOW)).toBeNull();
+  });
+});

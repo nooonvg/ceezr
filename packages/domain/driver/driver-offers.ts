@@ -138,7 +138,12 @@ export interface DriverOfferBoard {
 }
 
 /** أسبابُ الاستبعادِ التي تُعرَفُ بلا طلبٍ بعينِه — بأسمائِها في `RejectionReason`. */
-export type DriverEligibilityReason = "NOT_VERIFIED" | "NO_LOCATION" | "STALE_LOCATION";
+export type DriverEligibilityReason =
+  | "NOT_VERIFIED"
+  | "NO_LOCATION"
+  | "STALE_LOCATION"
+  /** `WR-23` — آخرُ موضعٍ حكمُه `ALERT`، فلا يُرتَّبُ به التوزيع (كـ`rejectionReasonFor`). */
+  | "UNTRUSTED_LOCATION";
 
 /** موضعٌ باسمِه وإحداثيّتِه — والاسمُ قد يغيبُ فيُقالُ عَدَمُه لا فراغُه. */
 export interface DriverOfferPlace {

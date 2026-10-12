@@ -83,6 +83,13 @@ export interface DriverCandidate {
    */
   readonly locationAtMs?: number | null;
   /**
+   * `WR-23` — حكمُ مُقيِّمِ GPS على هذا الموقعِ كما خُزِّن (`drivers.last_location_quality`).
+   * `ALERT` قفزةٌ أو سرعةٌ غيرُ معقولة: الموقعُ لا يُرتَّبُ به ولا يُقاسُ منه قربٌ. و`WARNING`
+   * (دقّةٌ خشنةٌ أو طابعٌ متأخّر) موقعٌ صحيحٌ متدهوِّرٌ يبقى. والغيابُ (صفٌّ أقدمُ من الحكم)
+   * لا يُختلَقُ له حكم، وحارسُ القِدَمِ يكفيه.
+   */
+  readonly locationQuality?: "ACCEPT" | "WARNING" | "ALERT" | null;
+  /**
    * مركز المنطقة التي يفضّل السائق العمل فيها، أو `null` لمن لا منطقة له —
    * وهي حال كل سائق قائم اليوم (البند 2.4).
    *
@@ -133,6 +140,8 @@ export type RejectionReason =
    * يُقرأ فيه السبب: لوحة العمليات وسجلّ `NoEligibleDriverError`.
    */
   | "STALE_LOCATION"
+  /** `WR-23` — آخرُ موقعٍ له حكمُه `ALERT` (قفزةٌ أو سرعةٌ غيرُ معقولة): لا يُرتَّبُ به. */
+  | "UNTRUSTED_LOCATION"
   | "SERVICE_NOT_ENABLED"
   | "NO_LIVE_SUBSCRIPTION"
   | "OUT_OF_RADIUS"
@@ -181,6 +190,7 @@ export function rejectionReasonFor(
    */
   if (candidate.location === null) return "NO_LOCATION";
   if (isLocationStale(candidate, params, now)) return "STALE_LOCATION";
+  if (candidate.locationQuality === "ALERT") return "UNTRUSTED_LOCATION";
   if (!canServe(candidate.capabilities, order.service)) return "SERVICE_NOT_ENABLED";
   if (candidate.subscription === null) return "NO_LIVE_SUBSCRIPTION";
   if (!coversService(candidate.subscription, order.service, now)) return "NO_LIVE_SUBSCRIPTION";

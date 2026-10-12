@@ -47,6 +47,8 @@ interface CandidateRow {
   readonly lng: number | null;
   /** المرحلة ٨ — بالنصّ لا بالرقم: `bigint` من القاعدة يفقد دقّته في `number` عند التحويل الضمني. */
   readonly location_at_ms: string | null;
+  /** `WR-23` — حكمُ مُقيِّمِ GPS المخزَّن (`ACCEPT` · `WARNING` · `ALERT`) أو `null` لصفٍّ أقدم. */
+  readonly location_quality: string | null;
   readonly is_available: boolean | null;
   readonly verification_status: string;
   readonly is_blocked: boolean;
@@ -102,6 +104,12 @@ function toCandidate(row: CandidateRow): DriverCandidate {
      * بصورةٍ زمنية: قيمةٌ مختلقة تمرّ من كل فحصٍ لأنها تبدو معقولة.
      */
     locationAtMs: row.location_at_ms === null ? null : Number(row.location_at_ms),
+    locationQuality:
+      row.location_quality === "ACCEPT" ||
+      row.location_quality === "WARNING" ||
+      row.location_quality === "ALERT"
+        ? row.location_quality
+        : null,
     /**
      * المنطقة المفضّلة — البند 2.4. `null` هنا يعني «لا منطقة» لا «منطقة عند
      * الصفر»: نفس السبب الذي مُنع من أجله `Number(lat ?? 0)` في `location`.
@@ -142,6 +150,7 @@ export function createDriverCandidateRepository(sql: Sql): DriverCandidateReposi
                  st_x(d.last_location::geometry) as lng,
                  -- زمن الخادم لا طابع الجهاز: السؤال «متى عرفنا؟» لا «متى يقول إنه كان؟»
                  (extract(epoch from d.last_location_at) * 1000)::bigint::text as location_at_ms,
+                 d.last_location_quality as location_quality,
                  st_y(d.preferred_area_location::geometry) as preferred_lat,
                  st_x(d.preferred_area_location::geometry) as preferred_lng,
                  a.is_available,
@@ -191,6 +200,7 @@ export function createDriverCandidateRepository(sql: Sql): DriverCandidateReposi
                  st_y(d.last_location::geometry) as lat,
                  st_x(d.last_location::geometry) as lng,
                  (extract(epoch from d.last_location_at) * 1000)::bigint::text as location_at_ms,
+                 d.last_location_quality as location_quality,
                  st_y(d.preferred_area_location::geometry) as preferred_lat,
                  st_x(d.preferred_area_location::geometry) as preferred_lng,
                  a.is_available,
@@ -216,6 +226,9 @@ export function createDriverCandidateRepository(sql: Sql): DriverCandidateReposi
              and d.verification_status = 'verified'
              and a.is_available = true
              and d.last_location is not null
+             -- WR-23: موقعٌ حكمُه ALERT لا يملأُ نافذةَ LIMIT ولا يُرتَّبُ به (السببُ مُسمّىً في
+             -- findAvailableInCity حينَ تفرغُ النافذة).
+             and d.last_location_quality is distinct from 'ALERT'
              and st_dwithin(
                    d.last_location,
                    st_setsrid(st_makepoint(${pickup.longitude}, ${pickup.latitude}), 4326)::geography,
