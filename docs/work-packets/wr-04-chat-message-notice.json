@@ -1,0 +1,45 @@
+{
+  "id": "wr-04-chat-message-notice",
+  "goal": "تنبيه الطرف الآخر في تيليجرام برسالة محادثة جديدة وهو خارج Mini App: مؤجَّل ومجمَّع، بلا نص الرسالة، وبزر يفتح الطلب الصحيح.",
+  "canonical_source": [
+    "docs/roadmap/execution/ORDER-20261012.md",
+    "docs/adr/0267-chat-message-notice.md",
+    "docs/adr/0263-order-chat-in-miniapp.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/surfaces/rider/notifications/notifications-view.ts",
+    "apps/workers/src/container.ts",
+    "packages/application/dispatch/deliver-chat-message-notice.ts",
+    "packages/shared/config/notification-kinds.ts",
+    "packages/shared/config/traffic-priority.ts",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "packages/shared/i18n/ur.json",
+    "scripts/lib/rollback-registry.ts",
+    "scripts/lib/skip-registry.ts",
+    "supabase/migrations/20261012150000_wr_04_chat_message_notice.sql",
+    "supabase/migrations/20261012150100_wr_04_chat_message_notice_validate.sql",
+    "tests/integration/wr-04-chat-message-notice.test.ts",
+    "tests/unit/check-traffic-priority-guard.test.ts",
+    "tests/unit/skip-audit.test.ts",
+    "tests/unit/wr-04-chat-message-notice.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": ["docs/adr/0267-chat-message-notice.md", "docs/roadmap/execution/STATUS.md"],
+  "decision": "نوع صادر order_chat_message تودعه post_order_message للرسالة الجديدة وحدها، مؤجَّلًا 20 ثانية ومجمَّعًا (صف واحد غير مُرسَل لكل طلب ومستقبِل، وتهدئة 120 ثانية بعد التسليم). المُطالِب يرفق read وطور الطلب، والمعالج يطوي المقروء والمنتهي.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/wr-04-chat-message-notice.test.ts tests/integration/order-chat.test.ts",
+    "bun test tests/unit/wr-04-chat-message-notice.test.ts tests/unit/check-traffic-priority-guard.test.ts"
+  ],
+  "evidence": "محليًا على PostGIS بسلسلة الهجرات كاملة: 6/6 تكامل (إيداع مؤجَّل بلا نص، تجميع وتكرار، الطرف الآخر وحده، التهدئة، قراءة المُطالِب وread، الطرف الثالث)، و12/12 لاختبار المحادثة القائم، و9/9 وحدات للمعالج.",
+  "constraints": [
+    "لا نص رسالة في التنبيه ولا الحمولة ولا السجل",
+    "لا رسالة بوت لكل رسالة دردشة (أمر المالك §4 بند 9)",
+    "لا استقصاء دوري في Mini App (ADR 0035 §4)"
+  ],
+  "limitations": "التنبيه يصل بعد نحو 20 ثانية من أول رسالة غير مقروءة. ظهوره على الهاتف لا يقيسه النظام (WR-26)."
+}

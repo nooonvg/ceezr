@@ -132,6 +132,8 @@ export const TRAFFIC_PRIORITY_RANK: Readonly<Record<TrafficPriorityClass, number
  *   أو وصولُه أو بدءُ الرحلةِ أو إكمالُها، والراكبُ ينتظرُها الآن.
  * - `driver_candidate_notice` ← **مطالبةُ إسنادٍ لها مؤقّتٌ يجري** (حرجٌ، `WR-09`):
  *   مآلُ قبولِ السائقِ بعدَ قرارِ الراكب، والسائقُ ينتظرُه ليتحرّكَ أو ينصرف.
+ * - `order_chat_message` ← **مرتفعٌ** (`WR-04`): رسالةٌ من الطرفِ الآخرِ في رحلةٍ
+ *   قائمةٍ («أنا عند البوابة»)، مؤجَّلةٌ ومجمَّعةٌ في القاعدة، وتسبقُ أخبارَ النتيجة.
  */
 export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, TrafficPriorityClass>> =
   {
@@ -144,6 +146,7 @@ export const NOTIFICATION_KIND_PRIORITY: Readonly<Record<NotificationKind, Traff
     driver_candidate_notice: "critical",
     offer: "high",
     wider_circle_opened: "high",
+    order_chat_message: "high",
     no_driver_found: "medium",
     dispute_resolution: "medium",
     subscription_notice: "medium",

@@ -36,6 +36,7 @@ function fixtureMigrations(): SqlMigration[] {
     ["driver_candidate_notice", 1],
     ["offer", 2],
     ["wider_circle_opened", 2],
+    ["order_chat_message", 2],
     ["no_driver_found", 3],
     ["dispute_resolution", 3],
     ["subscription_notice", 3],

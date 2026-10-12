@@ -526,5 +526,7 @@
   "driver.candidate_cancelled": "The customer cancelled order {order} before choosing. No need to head there.",
   "tracking.rider_candidate": "🚗 A driver accepted your order {order}\nDriver: {driver}\n⭐ Rating: {rating}\n🚙 Vehicle: {vehicle}\n🔢 Plate: {plate}\nYou have {seconds} seconds to choose or decline — open the order.",
   "tracking.rider_candidate_unrated": "New",
-  "miniapp.driver_job_button": "📱 Open the trip in Wasla"
+  "miniapp.driver_job_button": "📱 Open the trip in Wasla",
+  "chat.new_message_from_driver": "💬 You have a new message from the driver on order {order}. Open the order to read and reply.",
+  "chat.new_message_from_rider": "💬 You have a new message from the customer on order {order}. Open the trip to read and reply."
 }
