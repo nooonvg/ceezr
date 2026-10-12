@@ -453,7 +453,7 @@ export async function overviewCountersLive(
         where status = 'failed' and updated_at >= window_bounds.since)::int as failed_day,
       (select count(*) from orders, window_bounds
         where status = 'cancelled' and updated_at >= window_bounds.since)::int as cancelled_day,
-      (select avg(extract(epoch from (matched_at - created_at)))::float8
+      (select avg(extract(epoch from (matched_at - coalesce(searching_since, created_at))))::float8
          from orders, window_bounds
         where matched_at is not null and matched_at >= window_bounds.since) as avg_match_seconds,
       (select avg(stars)::float8 from ratings, window_bounds

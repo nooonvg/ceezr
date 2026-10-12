@@ -165,6 +165,36 @@ describeIf("لقطةُ مقاييسِ الإدارةِ على قاعدةٍ حق�
     expect(truth?.searching).toBeGreaterThan(0);
   });
 
+  it("`WR-06` — زمنُ مطابقةِ المجدولِ يُقاسُ من بدءِ البحثِ لا من الإنشاءِ قبلَ يومين", async () => {
+    const [scheduled] = await sql<{ id: string }[]>`
+      insert into orders (city_id, rider_id, service, status, pickup, pickup_label,
+                          created_at, searching_since, matched_at)
+      values (${cityId}, ${riderId}, 'transport', 'cancelled',
+              st_point(39.1751, 21.5471)::geography, 'الحرم',
+              now() - interval '2 days', now() - interval '90 seconds', now() - interval '30 seconds')
+      returning id
+    `;
+    if (scheduled === undefined) throw new Error("تعذّرَ بذرُ الطلبِ المجدول");
+    try {
+      const port = createMetricSnapshotRefreshPort(sql);
+      await refreshMetricSnapshots({ port }, { windowHours: DAY_WINDOW_HOURS });
+      const [snapshot] = await sql<{ match_seconds_sum: string; match_seconds_count: number }[]>`
+        select match_seconds_sum::text, match_seconds_count from admin_metric_snapshots
+         where city_id = ${cityId} and window_hours = ${DAY_WINDOW_HOURS}::integer
+      `;
+      const [own] = await sql<{ seconds: number }[]>`
+        select extract(epoch from (matched_at - coalesce(searching_since, created_at)))::float8 as seconds
+          from orders where id = ${scheduled.id}
+      `;
+      expect(own?.seconds).toBeCloseTo(60, 0);
+      expect(snapshot?.match_seconds_count).toBeGreaterThan(0);
+      // لو قيسَ من `created_at` لزادَ المجموعُ يومين (172800 ثانية) بهذا الطلبِ وحدَه.
+      expect(Number(snapshot?.match_seconds_sum)).toBeLessThan(86_400);
+    } finally {
+      await sql`delete from orders where id = ${scheduled.id}`;
+    }
+  });
+
   it("الشوطُ **مُعادُ التنفيذِ**: نداءٌ ثانٍ يُحدِّثُ في موضعِه ولا يذرُّ صفوفاً", async () => {
     const port = createMetricSnapshotRefreshPort(sql);
     const first = await refreshMetricSnapshots({ port }, { windowHours: DAY_WINDOW_HOURS });
