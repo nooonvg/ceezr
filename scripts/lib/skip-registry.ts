@@ -677,6 +677,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-23-driver-selection.test.ts",
+    suites: ["WR-23 — اختيارُ السائقينَ بالقربِ والتقييمِ على PostGIS"],
+    skipped: 6,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في `WR-23` أنَّ الترتيبَ بالقربِ والتقييمِ يقرأُ أوزانَه من `platform_settings`، وأنَّ الاستبعادَ (ومنه الموقعُ القديمُ والموقعُ `ALERT`) نافذٌ في استعلامِ PostGIS نفسِه، وأنَّ من رُفضَ عرضُه لا يقبل. وهذه أحكامُ SQL وفهارسَ جغرافيّةٍ ودوالَّ لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-24-concurrent-races.test.ts",
     suites: ["WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة"],
     skipped: 9,

@@ -13,7 +13,9 @@
     "packages/shared/i18n/miniapp/ur.json",
     "tests/integration/wr-23-driver-selection.test.ts",
     "tests/unit/dispatch-matching.test.ts",
-    "tests/unit/wr-11-driver-eligibility-state.test.ts"
+    "tests/unit/wr-11-driver-eligibility-state.test.ts",
+    "scripts/lib/skip-registry.ts",
+    "tests/unit/skip-audit.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
