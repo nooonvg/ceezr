@@ -1,0 +1,14 @@
+# دليل نشر WR-06 ج (الجدولة الحقيقية) — 2026-10-12
+
+| البند | القيمة |
+|---|---|
+| PR | #528، مدموج في `main` بـ`29f3e7e6`. كل الفحوص المطلوبة ناجحة على رأس الفرع، ومنها «تكامل على PostgreSQL حقيقي» |
+| النسخة قبل الكتابة | `wasla-backup-20261012T133924Z.tar.age`، 1,792,632 بايت، تشغيل `ceezr-backups` رقم `38256848567`. في `db_backups`: `status = success` و`restore_verification_status = verified`، و5187 صفًا مستعادًا = 5187 في المصدر، و`problems = []` |
+| الشروط المسبقة (قراءة فقط) | صفر طلبات غير نهائية (6 طلبات كلها نهائية). الهجرات الأربع غير موجودة في سجل الهجرات. `md5(prosrc)` للدوال الست المعاد تعريفها في الإنتاج يطابق الصورة التي بُنيت عليها الهجرة، فلا انحراف (`request_ride_with_offer` `52623445…`، `cancel_order_by_rider` `ca1dea5c…`، `enqueue_rider_trip_notice` `1e551d4a…`، `erase_my_account` `7c0e3568…`، `ride_search_state` `03b4d348…`، `cancel_ride_by_telegram` `51fdbb11…`) |
+| التطبيق بالترتيب | (1) `20261013000000_wr_06_scheduled_status`: قيمة الـenum وحدها. (2) `20261013000100_wr_06_scheduled_dispatch`. (3) الفهرس `orders_scheduled_dispatch_idx` بـ`concurrently` خارج المعاملة، وسُجّل في `schema_migrations` كما سُجّلت الفهارس السابقة. (4) `20261013000300_wr_06_scheduled_validate` |
+| التحقق بعدها | `md5(prosrc)` للدوال العشر في الإنتاج = المحلي، و`prosecdef` و`search_path=public` كما هي. الفهرس `indisvalid = true`. القيد `orders_scheduled_has_times` `convalidated = true`. الإعدادات الأربعة في المدن الخمس (20/60/10/15، `is_provisional = true`). الدوال الجديدة لـ`service_role` وحده (لا `anon` ولا `authenticated`). صفر طلبات قائمة مُسّت (`dispatch_at` و`searching_since` فارغان في الصفوف الستة) |
+| النشر | gateway `dep-db6e7fbbc2fs73bqou0g`، حيّ 13:43:18Z. miniapp `dep-db6e7fvavr4c73b5fsd0`، حيّ 13:42:35Z. كلاهما على `29f3e7e6` بطلب API (`autoDeploy` معطّل) |
+| ما بعد النشر | `/ready` 200 بحالة `ready`، و`missingEnv` و`failedChecks` و`degradedChecks` فارغة. العامل المضمَّن بـ80 مهمة. `release-scheduled:<city>` يعمل كل 15 ثانية في المدن الخمس، و`enqueue-scheduled-reminders` كل دقيقة (`riders=0`). لا سجل `warn` أو `error` بعد 13:43Z. الحزمة المنشورة تحمل `rider.search.scheduled.*` و«طلبك مجدول» والنص الجديد لـ«في وقت محدّد»، و`index.html` يحمل قاعدتي `rs__scheduled` |
+| الرجوع | الشيفرة: gateway `dep-db6d1eu7bikc73ce28bg` (`8a6e25dd`)، وminiapp `dep-db6crl942hec73bp5vcg`. القاعدة: الهجرات توسعة، والدوال القديمة تقبل القيمة الجديدة. ولإيقاف الجدولة دون نشر، يُرفع `scheduled_dispatch_lead_minutes` إلى 180 فلا يُجدول إلا ما بعد ثلاث ساعات. أما الرجوع الكامل، فبإعادة تعريف الدوال الخمس من صورها السابقة (`scripts/lib/rollback-registry.ts`) |
+
+**ما لم يُثبت:** لم يمرّ طلب مجدول حقيقي في الإنتاج: لا إنشاء، ولا إطلاق، ولا تذكير، ولا إلغاء. ولم يُختبر على تيليجرام ولا على جهاز، لأن إنشاء طلبات اختبار في الإنتاج يحتاج تفويض المالك وحسابات اختبار (`WR-26`). فالميزة منشورة ومقيسة آليًا على PostgreSQL حقيقي، لكنها **لم تُمارَس**.
