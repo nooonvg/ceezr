@@ -342,6 +342,15 @@ describeIf("F11-01 · فقدانُ البوّابةِ بلا إنذارٍ: ال�
       `;
       return rows[0]?.id ?? null;
     });
+    // `OPS-EGRESS-01`: الدرينرُ يستيقظُ بالإيداعِ فيعالجُ آخرَ خطوةٍ في التسجيلِ وهذا السطرُ
+    // يكتبُ في `drivers` نفسِها؛ فكتابةُ الاختبارِ المباشرةُ تنتظرُ فراغَ الطابورِ لئلّا تتقاطعَ
+    // أقفالُهما (deadlock). الانتظارُ على حالِ القاعدةِ لا على مهلةٍ ثابتة.
+    await poll("فراغُ طابورِ التحديثات", async () => {
+      const rows = await db<{ busy: number }[]>`
+        select count(*)::int as busy from telegram_update_jobs where status in ('pending', 'claimed')
+      `;
+      return (rows[0]?.busy ?? 1) === 0 ? true : null;
+    });
     await db`update drivers set verification_status = 'verified' where id = ${driverId}`;
     // اشتراكٌ سائقٍ — ليس زينةً: `city_served_services()` لا تُعرِفُ مدينةً خدمةً إلا
     // بسائقٍ موثّقٍ **مشترِكٍ** قادرٍ، والتوزيعُ يشترطُ اشتراكاً **سارياً** بفترةٍ لم

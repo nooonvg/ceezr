@@ -12,7 +12,9 @@
     "apps/workers/src/container.ts",
     "packages/infrastructure/policy/settings-repository.ts",
     "packages/infrastructure/scheduling/job-heartbeat-adapters.ts",
-    "tests/unit/ops-egress-01.test.ts"
+    "tests/unit/ops-egress-01.test.ts",
+    "tests/real-redis/deploy-swap-continuity-real.test.ts",
+    "tests/real-redis/gateway-loss-continuity-real.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
