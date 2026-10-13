@@ -72,13 +72,13 @@ bun run ci          # lint + typecheck + build + الحواجز + الاختبا
 
 ثمَّ اقرأْ ما يمسُّ مهمّتَك فقط من §2. وإن وجدْتَ تعارضًا بينَ وثيقةٍ والكود، **فالكودُ والدليلُ الحيُّ يحكمان**، وصحِّحِ الوثيقةَ في التغييرِ نفسِه.
 
-### لقطةٌ موثَّقة — 2026-10-11 مساءً (أعِدْ حسابَها بالأوامرِ أعلاه، فقد تتقادم)
+### لقطةٌ موثَّقة — 2026-10-13 صباحًا (أعِدْ حسابَها بالأوامرِ أعلاه، فقد تتقادم)
 
 | | القيمة | كيفَ تُحقِّقُها |
 |---|---|---|
-| `main` | `b9292374` (#491) | `git log -1 origin/main` |
-| الإنتاج — gateway | `b9292374` (#491، ADR 0261) — `dep-db5u5vg473hc73ce6glg`؛ رفعُ وثائقِ السائقِ موقوفٌ حتّى `DRIVER_DOCUMENT_UPLOADS=enabled` | Render deploys + سجلُّ الإقلاع `driver_documents.uploads_paused` |
-| الإنتاج — miniapp | `0a733574` (#488 مُهَلُ الإقلاع) — `dep-db5t4r7lot8c7383qjpg`، 17/17 حزمةً و`index.html` مطابقة (`docs/evidence/production/PRD-002-deploy-20261011-0a733574.md`) | Render deploys |
+| `main` | `e4ff68d8` (#549) | `git log -1 origin/main` |
+| الإنتاج — gateway | `099c1076` (#548) — `dep-db6qtc59fdbs73e0nam0`؛ رفعُ وثائقِ السائقِ موقوفٌ حتّى `DRIVER_DOCUMENT_UPLOADS=enabled`، والفرقُ حتّى `e4ff68d8` لا يمسُّ الخادم | Render deploys + سجلُّ الإقلاع `driver_documents.uploads_paused` |
+| الإنتاج — miniapp | `e4ff68d8` (#549) — `dep-db6shs3l550s739v0gt0` (`docs/evidence/production/WR-verify-20261013-099c1076.md`) | Render deploys |
 | staging | `waslah-miniapp-staging` **موقوف** (suspended). ولا بيئةَ staging عاملة (`PRD-201` Blocked) | Render |
 | `/ready` | `ready`، و`degradedChecks: []` | `curl` |
 | بنودُ الجاهزيّة | Verified: 001 · 002 · 003 · 102 · 103 · 104 · 106. ADR-Closed: 004–007 · 105. Ready: 010. **Blocked**: 008 · 009 · 101 · 201–205 | البوّابةُ (§2) |
