@@ -267,6 +267,7 @@ export const TABLE_ERASURE: Readonly<Record<string, ErasureRule>> = {
    * ADR 0243: مدّةٌ مقدَّرةٌ ولحظتُها لساقِ طلبٍ — لا عمودَ تعريفٍ ولا نصَّ ولا موضع. نسبتُها إلى
    * إنسانٍ تمرُّ بـ`orders` وحدَه، وتنقطعُ بتجهيلِه (`anonymize-in-place`) كبقيّةِ أثرِ الرحلة.
    */
+  escalation_card_closures: reference(),
   eta_observations: reference(),
 
   group_memberships: {

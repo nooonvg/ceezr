@@ -175,7 +175,7 @@ describe("العامل المدمج داخل عملية البوابة", () => {
       // وغيابُ الأوّلِ يعني طلباتٍ مجدولةً لا يُبحَثُ لها عن سائقٍ أبدًا.
       // ثمَّ أربعٌ وعشرون بإضافةِ انتهاءِ البحثِ لكلِّ مدينة (`WR-22` · `ADR 0276`): وغيابُها
       // يعني طلبًا يبحثُ إلى الأبدِ بعدَ أن استنفدَ كلَّ مسار. والرقمُ السابقُ يبقى مذكوراً أعلاهُ.
-      expect(handle.jobCount).toBe(24);
+      expect(handle.jobCount).toBe(25);
 
       const started = lines.find((line) => line.startsWith("embedded_worker.started"));
       expect(started).toBeDefined();
@@ -183,6 +183,7 @@ describe("العامل المدمج داخل عملية البوابة", () => {
         `expire-offers:${CITY_ID}`,
         `redispatch-searching:${CITY_ID}`,
         `expire-searching:${CITY_ID}`,
+        `close-escalation-cards:${CITY_ID}`,
         `sweep-unmatched:${CITY_ID}`,
         `rotate-negotiations:${CITY_ID}`,
         `cleanup-stale:${CITY_ID}`,

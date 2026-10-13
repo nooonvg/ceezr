@@ -737,6 +737,24 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/wr-22-escalation-card-close.test.ts",
+    suites: [
+      "WR-22 — بطاقةُ الإسناد: المآل",
+      "WR-22 — بطاقةُ الإسناد: ما لا يُغلَق",
+      "WR-22 — بطاقةُ الإسناد: الفشلُ والتكرارُ والتزامن",
+    ],
+    skipped: 10,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في `WR-22` (ADR 0278) أنَّ بطاقةَ الإسنادِ تُعدَّلُ مرّةً واحدةً إلى مآلِ الطلبِ بعدَ التصعيدِ الحقيقيِّ وانتهاءِ البحثِ أو الإسنادِ أو الإلغاء، وأنَّ عاملَين متزامنَين والفشلَ العابرَ وحدَّ المحاولاتِ لا يكرّرونَه ولا يُفسدونَه. وهذه أحكامُ دوالِّ تصعيدٍ وقيودِ أطوارٍ و`on conflict` في PostgreSQL لا يقيسُها محرِّكٌ مُصنَّع.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبّقة (ومنها 20261013000900). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-22-search-expiry.test.ts",
     suites: [
       "WR-22 — انتهاءُ البحث: السياسة",

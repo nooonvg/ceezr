@@ -329,6 +329,7 @@ export const WASLA_MIGRATION_MATRIX: readonly MatrixEntry[] = [
   // مستخدمٍ في أيٍّ منهما، فلا شيءَ ههنا يُهاجَرُ إلى CORE ولا يُقرأُ منه.
   { ...noMigration("city_service_areas") },
   { ...noMigration("core_event_inbox") },
+  { ...noMigration("escalation_card_closures") },
   { ...noMigration("eta_observations") },
   { ...noMigration("group_memberships") },
   { ...noMigration("db_backups") },

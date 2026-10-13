@@ -220,6 +220,7 @@ export const TABLE_RETENTION: Readonly<Record<string, RetentionClass>> = {
    * ADR 0243: أوّلُ تقديرِ وصولٍ لكلِّ (طلب، ساق) — يتبعُ الطلبَ (`on delete cascade`)، ونافذةُ
    * القياسِ نفسُها 30 يوماً؛ فلا مؤقّتَ حذفٍ مستقلٌّ قبلَ قرارِ الاستبقاءِ العامِّ للطلبات.
    */
+  escalation_card_closures: RETENTION_CLASSES.lifecycleBound,
   eta_observations: RETENTION_CLASSES.lifecycleBound,
   group_memberships: RETENTION_CLASSES.lifecycleBound,
   job_heartbeats: RETENTION_CLASSES.pendingDecision,
