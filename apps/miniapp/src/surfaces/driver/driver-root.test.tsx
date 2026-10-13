@@ -18,7 +18,8 @@ import {
 import { UiStepper, UiTimer } from "../../system/ui/index.tsx";
 import { AccountScreen } from "./account/AccountScreen.tsx";
 import { ActivityScreen } from "./activity/ActivityScreen.tsx";
-import DriverRoot from "./DriverRoot.tsx";
+// `ADR 0281`: السطحُ نفسُه بلا بوّابةِ الموافقة — البوّابةُ تُختبَرُ في `consent/driver-consent-gate.test.tsx`.
+import { DriverSurface as DriverRoot } from "./DriverRoot.tsx";
 import { DocumentsScreen } from "./documents/DocumentsScreen.tsx";
 import { UPLOAD_STEP_KEYS, uploadStepPosition, uploadStepText } from "./documents/upload-steps.ts";
 import { JobScreen } from "./job/JobScreen.tsx";

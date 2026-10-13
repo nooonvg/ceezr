@@ -1850,5 +1850,7 @@
   "driver.job.chat.translated": "Machine-translated",
   "driver.job.chat.showOriginal": "Show original",
   "driver.job.chat.showTranslation": "Show translation",
-  "driver.job.chat.translationNotice": "Text messages are machine-translated by an external translation service. Messages containing a phone number, email or link, and shared locations, are not sent for translation."
+  "driver.job.chat.translationNotice": "Text messages are machine-translated by an external translation service. Messages containing a phone number, email or link, and shared locations, are not sent for translation.",
+  "driver.consent.title": "Required consents",
+  "driver.consent.intro": "Our service documents have been updated. Read and accept them to continue to your offers and jobs. You are never asked this during an active job."
 }

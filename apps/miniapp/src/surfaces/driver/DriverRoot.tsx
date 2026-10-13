@@ -98,6 +98,7 @@ import { RootTabBar, ScreenFrame, ScreenTransition } from "../../shell/ScreenFra
 import { currentScreenKey } from "../../shell/screen-stack.ts";
 import { AccountScreen } from "./account/AccountScreen.tsx";
 import { ActivityScreen } from "./activity/ActivityScreen.tsx";
+import { DriverConsentGate } from "./consent/DriverConsentGate.tsx";
 import { DeductionTraceScreen } from "./deductions/DeductionTraceScreen.tsx";
 import { DocumentsScreen } from "./documents/DocumentsScreen.tsx";
 import {
@@ -131,7 +132,19 @@ const subscribeToOfferUpdates = (onUpdate: () => void) =>
     { onUpdate },
   ).disconnect;
 
-export default function DriverRoot({ language, onLanguageChanged, entry }: LanguageSurfaceProps) {
+/**
+ * `WR-04` (ADR 0281): بوّابةُ الموافقةِ قبلَ السطح. السائقُ الذي لم يوافق على الإصدارِ الجاري من
+ * الوثيقتين يراها أوّلًا، إلّا وسطَ مهمّةٍ نشطة.
+ */
+export default function DriverRoot(props: LanguageSurfaceProps) {
+  return (
+    <DriverConsentGate language={props.language}>
+      <DriverSurface {...props} />
+    </DriverConsentGate>
+  );
+}
+
+export function DriverSurface({ language, onLanguageChanged, entry }: LanguageSurfaceProps) {
   // D0 · `ADR 0213`: هدفُ الهبوطِ يحدّدُ الحالَ الأولى وحدَها، وما بعدَها ملاحةُ السائق.
   const [entryView] = useState(() => driverEntryView(entry));
   const [flow, dispatch] = useReducer(driverFlowReducer, entryView, initialDriverFlow);
