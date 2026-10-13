@@ -156,7 +156,9 @@ import { createAdminAuthPort } from "./admin/auth.ts";
 import { mountAdminSurface } from "./admin/mount.ts";
 import {
   startTelegramUpdateDrainer,
+  TELEGRAM_DRAINER_FALLBACK_INTERVAL_MS,
   type TelegramUpdateDrainer,
+  wakeDrainerOnEnqueue,
 } from "./background/telegram-update-drainer.ts";
 import { grammyCommandRegistrar, registerBotCommands } from "./bots/shared/register-commands.ts";
 import { buildContainer } from "./container.ts";
@@ -177,6 +179,12 @@ import {
   type RateLimiter,
 } from "./rate-limit/fixed-window.ts";
 import { type KeyDimension, rateLimitPolicy } from "./rate-limit/policy.ts";
+import {
+  JOB_HEALTH_SNAPSHOT_MS,
+  REDIS_PING_REMEMBER_MS,
+  rememberSuccess,
+  SCHEMA_CONTRACT_REMEMBER_MS,
+} from "./readiness-memo.ts";
 import {
   createActiveRideResolver,
   createOffersSessionVerifier,
@@ -1494,7 +1502,8 @@ const app = createServer({
        */
       {
         name: "database_schema",
-        check: async () => {
+        // `OPS-EGRESS-01`: النجاحُ يُتذكَّرُ عشرَ دقائق؛ الفشلُ يُعادُ في كلِّ نداء.
+        check: rememberSuccess(async () => {
           const report = await verifySchemaContract(container.sql);
           if (report.complete) return { ok: true };
           const missing = [
@@ -1506,7 +1515,7 @@ const app = createServer({
             .filter((line): line is string => line !== null)
             .join(" | ");
           return { ok: false, detail: `ترحيلات غير مطبّقة — ${missing}` };
-        },
+        }, SCHEMA_CONTRACT_REMEMBER_MS),
       },
       // Redis يُفحَص فقط حين يكون في المسار الحرج فعلاً. فحصه دائماً كان سيُسقط
       // الجهوزية في بيئةٍ لا تستعمله أصلاً، فيصير الفحص كذباً في الاتجاه المعاكس.
@@ -1525,7 +1534,7 @@ const app = createServer({
               critical: false,
               // PRD-001: النتيجةُ مفصّلةٌ لا منطقيّة — `degradedChecks: ["redis"]` بلا سببٍ
               // بقيَ أيّاماً لا يُشخَّصُ من الخارج. والتفصيلُ مُعقَّمٌ في المحوّلِ نفسِه.
-              check: async (): Promise<ProbeOutcome> => {
+              check: rememberSuccess(async (): Promise<ProbeOutcome> => {
                 const result = await rateRedis.command(["PING"]);
                 return result.ok
                   ? { ok: true }
@@ -1533,7 +1542,7 @@ const app = createServer({
                       ok: false,
                       detail: sanitizeUpstashError(`${result.error.kind}: ${result.error.detail}`),
                     };
-              },
+              }, REDIS_PING_REMEMBER_MS),
             },
           ]),
       /**
@@ -1555,6 +1564,7 @@ const app = createServer({
         },
         now: () => new Date(),
         startedAt,
+        cacheMs: JOB_HEALTH_SNAPSHOT_MS,
       }),
     ],
   },
@@ -1564,7 +1574,10 @@ const app = createServer({
     handler: instrumentTelegramHandler(container.handler, operationalMetrics, { log }),
     // مصدرُ قرارِ منعِ التكرارِ في الإنتاج: القاعدةُ لا الذاكرةُ (ADR 0054 §٣-أ).
     // ويبقى `dedup` موصولاً للمقاييسِ وللتدهورِ المُعلَنِ حينَ يغيبُ `intake`.
-    intake: instrumentUpdateIntake(createPostgresUpdateIntake(container.sql), operationalMetrics),
+    intake: wakeDrainerOnEnqueue(
+      instrumentUpdateIntake(createPostgresUpdateIntake(container.sql), operationalMetrics),
+      () => updateDrainer?.kick(),
+    ),
     // **SCL-001**: في الإنتاجِ يُحظَرُ العملُ بلا إيداعٍ صامدٍ فيُرمي المصنعُ عند الإقلاع،
     // فلا يصيرَ dedup الذاكرةُ مساراً صامتاً (ADR 0059).
     requireDurableIntake: config.env === "production",
@@ -1911,10 +1924,12 @@ for (const [audience, token] of [
  * وظائفُ تتراكمُ في الطابورِ (دائمةٌ في القاعدةِ) حتى يُقلعَ درينرٌ تالٍ، فلا يُفقَدُ
  * تحديثٌ. والسببُ يظهرُ في السجلّ.
  *
- * لماذا فترةُ نصفِ ثانيةٍ: تيليجرام لا يُرسلُ دفعةً واحدةً ضخمةً، بل وصولٌ متفرّقٌ.
- * فالمؤقّتُ القصيرُ يلتقطُ الوصولَ الحديثَ قبلَ أن يتراكمَ، ومانعُ التداخلِ يمنعُ
- * تراكُمَ الأشواطِ إن طالت معالجةٌ واحدةٌ. والدرينرُ نفسُه يفرغُ الطابورَ كاملاً في
- * كلِّ شوطٍ (claim حتى null)، فلا حاجةَ لفترةٍ أقصرَ.
+ * `OPS-EGRESS-01` (2026-10-13): كانت الفترةُ نصفَ ثانيةٍ، فكانَ الدرينرُ يسألُ القاعدةَ
+ * 7200 مرّةٍ في الساعةِ والطابورُ فارغٌ — قرابةَ خُمسِ الحركةِ الصادرةِ من Render التي
+ * استنفدت حصّةَ الـ5 GB المجانيّةَ فأُوقِفَت الخدمات. صارَ الإيداعُ في هذه العمليّةِ يوقظُ
+ * الدرينرَ فورًا (`wakeDrainerOnEnqueue`)، فلا يتأخّرُ تحديثٌ، والمؤقّتُ شبكةُ أمانٍ لما
+ * لا إيقاظَ له: إعادةٌ مؤجّلةٌ بـ`next_attempt_at`، أو صفٌّ أودعته نسخةٌ أخرى. والدرينرُ
+ * يفرغُ الطابورَ كاملاً في كلِّ شوطٍ (claim حتى null)، ومانعُ التداخلِ باقٍ.
  */
 updateDrainer = startTelegramUpdateDrainer(
   {
@@ -1922,7 +1937,7 @@ updateDrainer = startTelegramUpdateDrainer(
     handler: container.handler,
     log,
   },
-  { intervalMs: 500 },
+  { intervalMs: TELEGRAM_DRAINER_FALLBACK_INTERVAL_MS },
 );
 
 /**

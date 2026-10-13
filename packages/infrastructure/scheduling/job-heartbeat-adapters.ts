@@ -57,6 +57,11 @@ function toStatus(value: unknown): JobHeartbeatStatus {
 
 export function createJobHeartbeatReader(sql: Sql): JobHeartbeatReaderPort {
   return {
+    /**
+     * `OPS-EGRESS-01`: تفصيلُ الشوطِ السليمِ لا يقرؤه حكمُ الصحّةِ ولا بذرةُ الإقلاع، وكانَ
+     * أكثرَ بايتاتِ اللقطةِ في كلِّ `/ready`، فيُسحَبُ تفصيلُ الفاشلِ والمتخطّى وحدَه. والتعليقُ
+     * خارجَ نصِّ الاستعلامِ عمدًا: ما في النصِّ يُرسَلُ إلى القاعدةِ مع كلِّ نداء.
+     */
     list: async (): Promise<readonly JobHeartbeatRow[]> => {
       const rows = await sql<
         {
@@ -67,7 +72,8 @@ export function createJobHeartbeatReader(sql: Sql): JobHeartbeatReaderPort {
           detail: string | null;
         }[]
       >`
-        select job_name, city_id, last_run_at, last_status, detail
+        select job_name, city_id, last_run_at, last_status,
+               case when last_status = 'ok' then null else detail end as detail
         from job_heartbeats
       `;
       return rows.map((row) => ({

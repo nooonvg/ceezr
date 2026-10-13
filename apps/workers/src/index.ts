@@ -14,8 +14,17 @@ import {
 } from "../../../packages/infrastructure/observability/index.ts";
 import { createJobHeartbeatReader } from "../../../packages/infrastructure/scheduling/job-heartbeat-adapters.ts";
 import { tryLoadConfig } from "../../../packages/shared/config/index.ts";
-import { buildWorkerContainer, MAX_JOB_CONCURRENCY } from "./container.ts";
-import { createJobRunner, type JobLogger, lastRunMsFromHeartbeats } from "./runner.ts";
+import {
+  buildWorkerContainer,
+  MAX_JOB_CONCURRENCY,
+  WORKER_SETTINGS_REMEMBER_MS,
+} from "./container.ts";
+import {
+  createJobRunner,
+  HEARTBEAT_OK_REWRITE_MS,
+  type JobLogger,
+  lastRunMsFromHeartbeats,
+} from "./runner.ts";
 
 /**
  * سجلُّ العاملِ — من المُصدِرِ الوحيدِ (`F8-03` · ADR 0078). وقبلَ اليومَ كانَ
@@ -62,7 +71,10 @@ async function main(): Promise<void> {
     metricsExporter.start();
   }
 
-  const container = buildWorkerContainer(config.value, { metrics: workerMetrics });
+  const container = buildWorkerContainer(config.value, {
+    metrics: workerMetrics,
+    settingsRememberMs: WORKER_SETTINGS_REMEMBER_MS,
+  });
   const jobs = await container.jobs();
 
   if (jobs.length === 0) {
@@ -91,6 +103,8 @@ async function main(): Promise<void> {
     // النبضة (§4.3): هذه الخدمة منفصلة عن البوابة، ولا طريقةَ للبوابة لتعلم أنّ
     // مهامّها تعمل إلاّ من القاعدة. بلا هذا السطر يقول `/ready` إنّ المهامّ غائبة.
     heartbeat: container.heartbeat,
+    // `OPS-EGRESS-01`: نبضةُ `ok` المتكرّرةُ تُكتَبُ مرّةً في الدقيقةِ لا في كلِّ شوط.
+    heartbeatOkRewriteMs: HEARTBEAT_OK_REWRITE_MS,
   });
   runner.start();
   log.info("worker.started", { jobCount: jobs.length });
