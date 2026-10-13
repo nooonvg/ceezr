@@ -4387,7 +4387,8 @@ a.sys__action {
   color: var(--tg-text-color);
 }
 
-.dlb__reason {
+.dlb__reason,
+.dlb__reminder {
   margin: 0;
   font-size: var(--ui-size-caption);
   color: var(--tg-hint-color);

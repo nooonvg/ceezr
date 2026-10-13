@@ -1,0 +1,29 @@
+{
+  "id": "wr-16-home-lists-location-reminder-note",
+  "goal": "WR-16C · WR-16A: عناوين قائمتي الرئيسية في التوصيل تطابق أن المختار يصير مكان الاستلام، وعبارة الموضع للسائق المتاح تذكر تذكير البوت (WR-12)، ودليل تحقق إنتاجي مستقل على 099c1076.",
+  "canonical_source": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/adr/0268-driver-location-reminder.md"
+  ],
+  "implementation": [
+    "apps/miniapp/src/surfaces/rider/home/HomeScreen.tsx",
+    "apps/miniapp/src/surfaces/driver/location/LocationBroadcast.tsx",
+    "apps/miniapp/src/styles/global.css",
+    "apps/miniapp/src/surfaces/rider/wr-16c-service-fields.test.tsx",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/evidence/production/WR-verify-20261013-099c1076.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "لا قرار جديد: إصلاح نصوص لتطابق السلوك القائم (WR-16C، ADR 0268)",
+  "tests": ["apps/miniapp/src/surfaces/rider/wr-16c-service-fields.test.tsx"],
+  "constraints": ["لا هجرة", "لا تغيير في الخادم", "لا ميزة جديدة (PRD-010)"],
+  "limitations": "لم يُرَ على هاتف بعد. والتحقق الإنتاجي قراءة فقط."
+}
