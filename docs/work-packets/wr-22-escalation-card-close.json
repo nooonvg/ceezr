@@ -5,6 +5,7 @@
   "implementation": [
     "apps/workers/src/container.ts",
     "packages/application/dispatch/close-escalation-cards.ts",
+    "packages/infrastructure/db/schema-contract.ts",
     "packages/infrastructure/dispatch/escalation-card-adapters.ts",
     "packages/shared/config/erasure-policy.ts",
     "packages/shared/config/retention-policy.ts",
