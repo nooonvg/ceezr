@@ -147,7 +147,10 @@ import {
   createStructuredLogger,
   type OperationalMetrics,
 } from "../../../packages/infrastructure/observability/index.ts";
-import { createSettingsRepository } from "../../../packages/infrastructure/policy/settings-repository.ts";
+import {
+  createSettingsRepository,
+  rememberSettingsByCity,
+} from "../../../packages/infrastructure/policy/settings-repository.ts";
 import { createUpstashRedis } from "../../../packages/infrastructure/redis/upstash.ts";
 import { createRatingRecomputePort } from "../../../packages/infrastructure/reputation/rating-adapters.ts";
 import { createSafetyDeliveryPort } from "../../../packages/infrastructure/safety/safety-adapters.ts";
@@ -199,6 +202,13 @@ import type { JobDefinition, JobLogger } from "./runner.ts";
 /** `OPS-POOL-01`: محاولاتُ قراءةِ المدنِ عندَ الإقلاعِ وخطوةُ المهلةِ المتزايدةِ بينَها. */
 const CITY_LIST_ATTEMPTS = 8;
 const CITY_LIST_RETRY_STEP_MS = 4_000;
+
+/**
+ * `OPS-EGRESS-01` — مدّةُ تذكُّرِ إعداداتِ المدينةِ في العامل. دقيقةٌ لا تُغيّرُ معنى إعدادٍ
+ * مقيسٍ بالدقائق (مدّةُ البحث، مهلةُ العرض)، وتجعلُ القراءةَ مرّةً لكلِّ مدينةٍ في الدقيقة
+ * بدلَ مرّةٍ في كلِّ شوط. وتعديلُ المالكِ يصلُ المهامَّ خلالَها.
+ */
+export const WORKER_SETTINGS_REMEMBER_MS = 60_000;
 
 /** تواتر كل مهمّة بالثواني. تقنيّة لا تجارية: لا تُقرأ من platform_settings. */
 export const JOB_INTERVALS = {
@@ -416,6 +426,13 @@ export interface WorkerContainerOverrides {
   readonly log?: JobLogger;
   /** يُستبدل في اختبار الوحدة بقفل لا يقفل؛ الافتراضي هو القفل الحقيقي على القاعدة. */
   readonly lock?: DistributedLock;
+  /**
+   * `OPS-EGRESS-01` — مدّةُ تذكُّرِ إعداداتِ المدينةِ في مهامِّ العامل (مللي ثانية). كلُّ قراءةٍ
+   * تسحبُ قرابةَ 100 صفٍّ (~14 KB)، وكانت تتكرّرُ آلافَ المرّاتِ يوميًّا فتستهلكُ من حصّةِ
+   * Supabase للبياناتِ الصادرة. غيابُها = قراءةٌ في كلِّ مرّةٍ كما كان (الاختبارات). والإنتاجُ
+   * يمرّرُ `WORKER_SETTINGS_REMEMBER_MS`: تعديلُ المالكِ لإعدادٍ يصلُ المهامَّ خلالَها.
+   */
+  readonly settingsRememberMs?: number;
   /** تجمّع اتصالات القفل وحده — يُمرَّر في الاختبار لتقاسم قاعدة الاختبار نفسها. */
   readonly lockSql?: Sql;
   /** كاتبُ النبضة — يُحقَن في الاختبار ليُراقب ما يُكتب بلا قاعدة. */
@@ -579,7 +596,10 @@ export function buildWorkerContainer(
   const lock = overrides.lock ?? createAdvisoryLock(lockSql);
 
   const cities = createCityDirectory(sql);
-  const settings = createSettingsRepository(sql);
+  const settings =
+    overrides.settingsRememberMs === undefined
+      ? createSettingsRepository(sql)
+      : rememberSettingsByCity(createSettingsRepository(sql), overrides.settingsRememberMs);
   const offers = createPendingOfferRepository(sql);
   const expireRpc =
     overrides.metrics === undefined

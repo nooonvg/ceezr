@@ -136,6 +136,13 @@ export async function drainTelegramUpdateJobsOnce(
 export interface TelegramUpdateDrainer {
   /** يُوقفُ المؤقّتَ وينتظرُ الشوطَ الجاري إن وُجد. */
   stop(): Promise<void>;
+  /**
+   * `OPS-EGRESS-01` — إيقاظٌ فوريٌّ بعدَ إيداعِ تحديثٍ في هذه العمليّة. فالتحديثُ يُعالَجُ
+   * فورَ وصولِه لا عندَ الدورةِ التالية، والمؤقّتُ يصيرُ شبكةَ أمانٍ بطيئةً (إعاداتٌ مؤجّلة،
+   * أو تحديثٌ أودعَته نسخةٌ أخرى) بدلَ سؤالِ القاعدةِ كلَّ نصفِ ثانيةٍ والطابورُ فارغ.
+   * وإن جاءَ الإيقاظُ والشوطُ جارٍ، يُعادُ الشوطُ مرّةً بعدَه فلا يفوتُ ما أُودِعَ أثناءَه.
+   */
+  kick(): void;
 }
 
 export interface StartDrainerOptions {
@@ -157,11 +164,14 @@ export function startTelegramUpdateDrainer(
   const clearInterval = options.clock?.clearInterval ?? globalThis.clearInterval;
 
   let running = false;
+  let rerun = false;
+  let stopped = false;
   let timer: ReturnType<typeof setInterval> | null = null;
 
   const tick = async (): Promise<void> => {
     if (running) return; // مانعُ التداخلِ: لا شوطٌ فوقَ شوطٍ.
     running = true;
+    rerun = false;
     try {
       const report = await drainTelegramUpdateJobsOnce(deps);
       if (report.claimed > 0) {
@@ -176,6 +186,10 @@ export function startTelegramUpdateDrainer(
     } finally {
       running = false;
     }
+    if (rerun && !stopped) {
+      rerun = false;
+      void tick();
+    }
   };
 
   timer = setInterval(() => {
@@ -183,13 +197,56 @@ export function startTelegramUpdateDrainer(
   }, options.intervalMs) as ReturnType<typeof setInterval>;
 
   return {
+    kick: () => {
+      if (stopped) return;
+      if (running) {
+        rerun = true;
+        return;
+      }
+      void tick();
+    },
     stop: async () => {
+      stopped = true;
       if (timer !== null) clearInterval(timer);
       timer = null;
       // إن كان شوطٌ جارٍ، انتظرْه. لا نُهملُ وظيفةً محجوزةً.
       while (running) {
         await new Promise((resolve) => setTimeout(resolve, 10));
       }
+    },
+  };
+}
+
+/**
+ * `OPS-EGRESS-01` — فترةُ شبكةِ الأمانِ حينَ لا إيقاظ. الإيداعُ في هذه العمليّةِ يوقظُ الدرينرَ
+ * فورًا، فهذه الفترةُ لا تحكمُ زمنَ معالجةِ تحديثٍ جديد، بل تلتقطُ ما لا يوقظُه أحد: إعادةٌ
+ * مؤجّلةٌ حانَ موعدُها، أو صفٌّ أودعته نسخةٌ أخرى ثمَّ ماتت. عشرُ ثوانٍ تُبقي أسوأَ تأخيرٍ لهما
+ * قصيرًا، وتخفضُ أسئلةَ الطابورِ الفارغِ من 7200 إلى 360 في الساعة.
+ */
+export const TELEGRAM_DRAINER_FALLBACK_INTERVAL_MS = 10_000;
+
+/**
+ * يلفُّ منفذَ الإيداعِ فيوقظُ الدرينرَ بعدَ كلِّ إيداعٍ ناجحٍ (`enqueued`) وحدَه. والتكرارُ
+ * والتشبّعُ لا يوقظان: لا عملَ جديدًا. والإيقاظُ لا يرمي ولا يُؤخّرُ ردَّ الويبهوك: يُجدوِلُ
+ * الشوطَ ولا ينتظرُه.
+ */
+export function wakeDrainerOnEnqueue<
+  T extends {
+    claimAndEnqueue(bot: string, updateId: number, payload: unknown): Promise<string>;
+  },
+>(intake: T, wake: () => void): T {
+  return {
+    ...intake,
+    claimAndEnqueue: async (bot: string, updateId: number, payload: unknown) => {
+      const outcome = await intake.claimAndEnqueue(bot, updateId, payload);
+      if (outcome === "enqueued") {
+        try {
+          wake();
+        } catch {
+          // الإيقاظُ تحسينٌ لا شرط: شبكةُ الأمانِ تلتقطُ الصفَّ.
+        }
+      }
+      return outcome;
     },
   };
 }

@@ -1,0 +1,35 @@
+{
+  "id": "ops-egress-01-idle-egress-reduction",
+  "goal": "OPS-EGRESS-01 · WR-27: خفض الحركة الخاملة من البوابة إلى Supabase وUpstash بعد إيقاف Render لتجاوز حصة البيانات الصادرة (5 GB)، دون تغيير فواصل المهام ولا القفل الموزع.",
+  "canonical_source": ["docs/adr/0285-idle-egress-reduction.md"],
+  "implementation": [
+    "apps/gateway/src/background/telegram-update-drainer.ts",
+    "apps/gateway/src/index.ts",
+    "apps/gateway/src/readiness-memo.ts",
+    "apps/gateway/src/embedded-worker.ts",
+    "apps/workers/src/runner.ts",
+    "apps/workers/src/index.ts",
+    "apps/workers/src/container.ts",
+    "packages/infrastructure/policy/settings-repository.ts",
+    "packages/infrastructure/scheduling/job-heartbeat-adapters.ts",
+    "tests/unit/ops-egress-01.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0285-idle-egress-reduction.md",
+    "docs/evidence/production/OPS-EGRESS-01-render-suspension-20261013.md",
+    "docs/ops/free-tier-keep-alive.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0285",
+  "tests": ["tests/unit/ops-egress-01.test.ts"],
+  "constraints": [
+    "لا هجرة",
+    "لا تغيير في فواصل المهام ولا القفل الموزع",
+    "لا قرار دفع: وسيلة الدفع في Render للمالك"
+  ],
+  "limitations": "لا يُنشر حتى تُستأنف الخدمات. والأثر تقدير محسوب لم يُقس بعد النشر، ولا يكفي وحده للبقاء تحت 5 GB."
+}

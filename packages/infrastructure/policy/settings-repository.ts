@@ -38,3 +38,38 @@ export function createSettingsRepository(sql: Sql): SettingsRepository {
       }),
   };
 }
+
+/**
+ * `OPS-EGRESS-01` — يتذكّرُ قراءةَ المدينةِ الناجحةَ مدّةً قصيرة. الفشلُ لا يُتذكَّر، والقراءاتُ
+ * المتزامنةُ للمدينةِ نفسِها تشتركُ في استعلامٍ واحد. لا يُستعمَلُ في مسارِ الطلباتِ ولا لوحةِ
+ * الإدارة: العاملُ وحدَه يمرّرُه، فما يقرؤه المالكُ بعدَ التعديلِ يبقى فوريًّا.
+ */
+export function rememberSettingsByCity(
+  repo: SettingsRepository,
+  ttlMs: number,
+  now: () => number = Date.now,
+): SettingsRepository {
+  type Read = Awaited<ReturnType<SettingsRepository["findByCity"]>>;
+  const remembered = new Map<string, { readonly atMs: number; readonly read: Read }>();
+  const pending = new Map<string, Promise<Read>>();
+  return {
+    findByCity: async (cityId) => {
+      const hit = remembered.get(cityId);
+      if (hit !== undefined && now() - hit.atMs < ttlMs) return hit.read;
+      const inFlight = pending.get(cityId);
+      if (inFlight !== undefined) return inFlight;
+      const read = (async () => {
+        try {
+          const result = await repo.findByCity(cityId);
+          if (result.ok) remembered.set(cityId, { atMs: now(), read: result });
+          else remembered.delete(cityId);
+          return result;
+        } finally {
+          pending.delete(cityId);
+        }
+      })();
+      pending.set(cityId, read);
+      return read;
+    },
+  };
+}

@@ -13,10 +13,12 @@ import type { AppConfig } from "../../../packages/shared/config/index.ts";
 import {
   buildWorkerContainer,
   MAX_JOB_CONCURRENCY,
+  WORKER_SETTINGS_REMEMBER_MS,
   type WorkerContainerOverrides,
 } from "../../workers/src/container.ts";
 import {
   createJobRunner,
+  HEARTBEAT_OK_REWRITE_MS,
   type JobLogger,
   lastRunMsFromHeartbeats,
 } from "../../workers/src/runner.ts";
@@ -45,7 +47,11 @@ export async function startEmbeddedWorker(
   log: JobLogger,
   overrides: WorkerContainerOverrides = {},
 ): Promise<EmbeddedWorkerHandle> {
-  const container = buildWorkerContainer(config, { ...overrides, log });
+  const container = buildWorkerContainer(config, {
+    settingsRememberMs: WORKER_SETTINGS_REMEMBER_MS,
+    ...overrides,
+    log,
+  });
   const jobs = await container.jobs();
 
   if (jobs.length === 0) {
@@ -77,6 +83,8 @@ export async function startEmbeddedWorker(
     // موضعٌ واحد لحقيقة واحدة يعمل في الحالتين بلا فرعٍ في الفحص، ومقبضٌ في الذاكرة
     // كان سيقول «المشغّل مقلع» لا «المهامّ تعمل» — وهما ليسا شيئاً واحداً.
     heartbeat: container.heartbeat,
+    // `OPS-EGRESS-01`: نبضةُ `ok` المتكرّرةُ تُكتَبُ مرّةً في الدقيقةِ لا في كلِّ شوط.
+    heartbeatOkRewriteMs: HEARTBEAT_OK_REWRITE_MS,
   });
   runner.start();
   log.info("embedded_worker.started", {

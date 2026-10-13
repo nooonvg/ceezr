@@ -71,6 +71,13 @@ export interface JobRunnerOptions {
    */
   readonly heartbeat?: JobHeartbeatRecorderPort;
   /**
+   * `OPS-EGRESS-01` — مهلةُ إعادةِ كتابةِ نبضةٍ `ok` لمهمّةٍ آخرُ نبضةٍ كتبتها هذه النسخةُ `ok`.
+   * داخلَ المهلةِ تُتخطّى الكتابة (رحلةٌ إلى القاعدةِ في كلِّ شوط كانت ثلثَ الحركةِ الصادرة).
+   * وتغيُّرُ الحالِ (`failed` أو `skipped` أو عودةٌ إلى `ok`) يُكتَبُ فورًا دائمًا. غيابُها =
+   * كتابةٌ في كلِّ شوطٍ كما كان. والحدُّ الآمنُ: `HEARTBEAT_OK_REWRITE_MS`.
+   */
+  readonly heartbeatOkRewriteMs?: number;
+  /**
    * `JOB-LAZY-01` — آخرُ شوطٍ معروفٍ لكلِّ مهمّةٍ (مللي ثانية)، يُقرأُ من `job_heartbeats`
    * عندَ الإقلاعِ. بلا هذا تبدأُ المهمّةُ اليوميّةُ عدَّها من الصفرِ في كلِّ إقلاعٍ، والبوابةُ
    * على خطّةٍ مجّانيّةٍ تُنشَرُ وتنامُ مرّاتٍ في اليومِ فلا تبلغُ مهمّةٌ يوميّةٌ موعدَها أبداً.
@@ -174,6 +181,11 @@ export function createJobRunner(options: JobRunnerOptions): JobRunner {
   const maxConcurrency = Math.max(1, options.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY);
   const lastRunMs = new Map<string, number>(options.initialLastRunMs ?? []);
   const inFlight = new Set<string>();
+  /** `OPS-EGRESS-01` — آخرُ نبضةٍ كتبتها هذه النسخةُ لكلِّ مهمّة: الحالُ ولحظتُها. */
+  const lastBeat = new Map<
+    string,
+    { readonly status: JobHeartbeatStatus; readonly atMs: number }
+  >();
   /**
    * `JOB-LAZY-01` — مهامُّ تنتظرُ خانةً. بلا هذا تُعادُ إضافةُ المهمّةِ المنتظِرةِ في كلِّ
    * نبضةٍ (فهي ليست في `inFlight` بعدُ)، فيطولُ طابورُ الخاناتِ بنسخٍ مكرّرةٍ تُشغَّلُ
@@ -237,6 +249,13 @@ export function createJobRunner(options: JobRunnerOptions): JobRunner {
     detail: string | null,
   ): Promise<void> {
     if (options.heartbeat === undefined) return;
+    const rewriteMs = options.heartbeatOkRewriteMs;
+    const atMs = options.clock.now().getTime();
+    if (rewriteMs !== undefined && status === "ok") {
+      const last = lastBeat.get(job.name);
+      if (last !== undefined && last.status === "ok" && atMs - last.atMs < rewriteMs) return;
+    }
+    lastBeat.set(job.name, { status, atMs });
     await options.heartbeat.record({
       jobName: job.name,
       cityId: job.cityId ?? null,
@@ -423,3 +442,11 @@ export function lastRunMsFromHeartbeats(
   }
   return out;
 }
+
+/**
+ * `OPS-EGRESS-01` — أقصى مهلةٍ آمنةٍ لتخطّي إعادةِ نبضةِ `ok`. عتبةُ البياتِ في `/ready`
+ * `max(2×الفترة، 180 ث)`، وأسوأُ عمرٍ لنبضةٍ = المهلة + الفترة (+ عمرُ لقطةِ `/ready`). فبمهلةِ
+ * 60 ث ولقطةِ 30 ث: لفترةِ 60 ث = 150 < 180، ولـ120 ث = 210 < 240، ولـ300 ث = 390 < 600.
+ * ولا تبيتُ مهمّةٌ سليمةٌ في `/ready` بسببِ التخفيف.
+ */
+export const HEARTBEAT_OK_REWRITE_MS = 60_000;
