@@ -226,6 +226,11 @@ export function LocationBroadcast(props: LocationBroadcastProps) {
           : t("driver.location.onEvery").replace("{seconds}", String(seconds))}
       </p>
       <p className="dlb__reason">{t(`driver.location.reason.${decision.reason}`)}</p>
+      {/* `WR-16A` · `WR-12`: تذكيرُ البوتِ يُودَعُ للسائقِ المتاحِ بلا رحلةٍ قائمة حين يقدُمُ موضعُه،
+          فيُذكَرُ في حالِ التوافرِ وحدَها — لا يُوعَدُ به في رحلةٍ جارية. */}
+      {decision.reason === "AVAILABLE" ? (
+        <p className="dlb__reminder">{t("driver.location.reminderNote")}</p>
+      ) : null}
     </section>
   );
 }

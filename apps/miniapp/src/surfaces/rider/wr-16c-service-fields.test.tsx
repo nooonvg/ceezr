@@ -15,7 +15,7 @@ import {
   DestinationScreen,
   purposeText,
 } from "./destination/DestinationScreen.tsx";
-import { type ChosenDestination, homeFieldText } from "./home/HomeScreen.tsx";
+import { type ChosenDestination, homeFieldText, homeListText } from "./home/HomeScreen.tsx";
 import { pickupTextFor, QuoteScreen } from "./quote/QuoteScreen.tsx";
 import { initialRiderFlow, riderFlowReducer, riderFlowView } from "./rider-flow.ts";
 
@@ -130,5 +130,30 @@ describe("WR-16C — الاقتباسُ يحترمُ الاستلامَ المؤ
   it("نصُّ الالتقاطِ في التوصيلِ «الاستلام»", () => {
     expect(ar[pickupTextFor("delivery").named as keyof typeof ar]).toBe("الاستلام: {label}");
     expect(pickupTextFor(undefined).named).toBe("rider.pickup.named");
+  });
+});
+
+describe("WR-16C — عناوينُ قوائمِ الرئيسيةِ تتبعُ الخدمة", () => {
+  it("التوصيلُ لا يُسمّي القائمةَ «آخر وجهاتك» والمختارُ منها يصيرُ مكانَ الاستلام", () => {
+    const d = homeListText("delivery");
+    const tr = homeListText("transport");
+    expect(tr.recentTitle).toBe("rider.home.recent.title");
+    expect(tr.placesTitle).toBe("rider.home.places.title");
+    expect(ar[d.recentTitle as keyof typeof ar]).toBe("استلام من مكان سابق");
+    expect(ar[d.placesTitle as keyof typeof ar]).toBe("استلام من مكان محفوظ");
+    expect(ar[d.recentTitle as keyof typeof ar]).not.toContain("وجهات");
+    for (const dict of [ar, en, ur] as Record<string, string>[]) {
+      for (const key of Object.values(d)) expect(typeof dict[key]).toBe("string");
+    }
+  });
+});
+
+describe("WR-16A · WR-12 — عبارةُ الموضعِ تذكرُ تذكيرَ البوت", () => {
+  it("النصُّ موجودٌ في اللغاتِ الثلاثِ ولا يدّعي بثًّا في الخلفية", () => {
+    for (const dict of [ar, en, ur] as Record<string, string>[]) {
+      expect(typeof dict["driver.location.reminderNote"]).toBe("string");
+    }
+    expect(ar["driver.location.reminderNote"]).toContain("يذكّرك بوت السائق");
+    expect(ar["driver.location.reminderNote"]).not.toContain("الخلفية");
   });
 });

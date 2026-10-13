@@ -118,6 +118,29 @@ export function homeFieldText(service: HomeService): {
       };
 }
 
+/**
+ * `WR-16C` — عناوينُ قائمتَي الأماكنِ تتبعُ ما يصيرُه المكانُ المختار: في المشوارِ وجهة، وفي
+ * التوصيلِ مكانُ **الاستلام** (`choose` يحملُه إلى خطوةِ الاستلام). فلا يُقالُ «آخر وجهاتك»
+ * لقائمةٍ يصيرُ المختارُ منها مكانَ استلام.
+ */
+export function homeListText(service: HomeService): {
+  readonly placesTitle: string;
+  readonly recentTitle: string;
+  readonly recentEmpty: string;
+} {
+  return service === "delivery"
+    ? {
+        placesTitle: "rider.home.delivery.places.title",
+        recentTitle: "rider.home.delivery.recent.title",
+        recentEmpty: "rider.home.delivery.recent.empty",
+      }
+    : {
+        placesTitle: "rider.home.places.title",
+        recentTitle: "rider.home.recent.title",
+        recentEmpty: "rider.home.recent.empty",
+      };
+}
+
 export interface ChosenDestination {
   readonly label: string;
   readonly lat: number | null;
@@ -513,7 +536,7 @@ export function HomeScreen({
         </button>
       </div>
 
-      <h2 className="rh__heading">{t("rider.home.places.title")}</h2>
+      <h2 className="rh__heading">{t(homeListText(service).placesTitle)}</h2>
       {state.places.length === 0 ? (
         <p className="sys__hint">{t("rider.home.places.empty")}</p>
       ) : (
@@ -541,9 +564,9 @@ export function HomeScreen({
         </ul>
       )}
 
-      <h2 className="rh__heading">{t("rider.home.recent.title")}</h2>
+      <h2 className="rh__heading">{t(homeListText(service).recentTitle)}</h2>
       {state.recent.length === 0 ? (
-        <p className="sys__hint">{t("rider.home.recent.empty")}</p>
+        <p className="sys__hint">{t(homeListText(service).recentEmpty)}</p>
       ) : (
         <ul className="rh__recent">
           {state.recent.map((row) => (
