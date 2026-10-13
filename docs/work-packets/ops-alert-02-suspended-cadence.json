@@ -1,21 +1,15 @@
 {
   "id": "ops-alert-02-suspended-cadence",
   "goal": "OPS-ALERT-02 · WR-27: مراقب البوابة يميّز صفحة إيقاف Render (HTTP 503 «Service Suspended») سببًا مستقلًا، فينبّه فورًا ثم كل ساعة في Telegram وكل ست ساعات في البريد، بدل رسالة كل دقيقة طوال إيقاف لا يزول إلا بإجراء من المالك. وسير عمل الإيقاظ لا يسقط كل 5 دقائق أثناء الإيقاف نفسه، بل يكتب تحذيرًا.",
-  "canonical_source": [
-    "deploy/watchdog/README.md"
-  ],
+  "canonical_source": ["deploy/watchdog/README.md"],
   "implementation": [
     "deploy/watchdog/functions/gateway-watchdog/classify.ts",
     "deploy/watchdog/functions/gateway-watchdog/index.ts",
     "tests/unit/watchdog-suspended-cadence.test.ts",
     ".github/workflows/gateway-keep-alive.yml"
   ],
-  "state": [
-    "docs/SYSTEM_STATE.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
   "affected_docs": [
     "deploy/watchdog/README.md",
     "docs/evidence/production/OPS-ALERT-02-watchdog-suspended-cadence-20261013.md",
@@ -24,9 +18,7 @@
     "ROADMAP.md"
   ],
   "decision": "OPS-ALERT-01 (deploy/watchdog/README.md)",
-  "tests": [
-    "tests/unit/watchdog-suspended-cadence.test.ts"
-  ],
+  "tests": ["tests/unit/watchdog-suspended-cadence.test.ts"],
   "constraints": [
     "لا هجرة ولا تغيير في مخطط ops ولا في ops.watchdog_config",
     "كل توقف غير الإيقاف يبقى على إيقاعه في الإعداد",
