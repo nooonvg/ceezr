@@ -1,0 +1,24 @@
+{
+  "id": "wr-04-privacy-policy-20261013",
+  "goal": "WR-04: تطبيق إصدار سياسة الخصوصية 2026-10-13 الذي اعتمده المالك (ADR 0279)، وفيه معالج الترجمة الخارجي، مع إعادة سؤال من وافق على الإصدار السابق.",
+  "canonical_source": ["docs/adr/0279-translation-probe-and-policy-gap.md"],
+  "implementation": [
+    "packages/domain/consent/consent-documents.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/unit/wr-04-privacy-policy-version.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0279-translation-probe-and-policy-gap.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0279",
+  "tests": ["tests/unit/wr-04-privacy-policy-version.test.ts"],
+  "constraints": ["لا حذف لموافقات سابقة", "الشروط بلا تغيير"],
+  "limitations": "السائق بلا شاشة موافقة. ولم يُر النص الجديد على جهاز."
+}

@@ -66,10 +66,12 @@ export const DECLARED_CONSENT_DOCUMENTS: readonly ConsentDocument[] = Object.fre
   }),
   Object.freeze({
     kind: "privacy_policy" as const,
-    version: "2026-09-12",
+    // `2026-10-13` (ADR 0279، اعتمادُ المالك): البندُ 3 يذكرُ معالجَ الترجمةِ الخارجيّ. والإصدارُ
+    // السابقُ `2026-09-12` يبقى نصُّه في القواميسِ لمن وافقَ عليه، وموافقتُه تصيرُ `superseded`.
+    version: "2026-10-13",
     titleKey: "consent.privacy_policy.title",
     summaryKey: "consent.privacy_policy.summary",
-    textKey: "consent.privacy_policy.2026-09-12.text",
+    textKey: "consent.privacy_policy.2026-10-13.text",
     requiredForOnboarding: true,
   }),
 ]);
