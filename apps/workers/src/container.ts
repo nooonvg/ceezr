@@ -11,6 +11,7 @@ import { startRideKeyboard } from "../../../packages/application/bots/rating-dia
 import type { BroadcastPublisher } from "../../../packages/application/broadcast/ports.ts";
 import type { OfferPublisher } from "../../../packages/application/dispatch/broadcast-offers.ts";
 import { closeDeadOfferCards } from "../../../packages/application/dispatch/close-dead-offer-cards.ts";
+import { closeEscalationCards } from "../../../packages/application/dispatch/close-escalation-cards.ts";
 import {
   type CancellationMessenger,
   createOrderCancelledHandler,
@@ -74,6 +75,7 @@ import {
   createPendingOfferRepository,
   createSearchingOrderFinder,
 } from "../../../packages/infrastructure/dispatch/dispatch-adapters.ts";
+import { createStaleEscalationCardPort } from "../../../packages/infrastructure/dispatch/escalation-card-adapters.ts";
 import { createStaleGroupCardPort } from "../../../packages/infrastructure/dispatch/negotiation-adapters.ts";
 import { createNegotiationWiring } from "../../../packages/infrastructure/dispatch/negotiation-wiring.ts";
 import { createDeadOfferCardPort } from "../../../packages/infrastructure/dispatch/offer-card-adapters.ts";
@@ -225,6 +227,7 @@ export const JOB_INTERVALS = {
    * كما كانَ قبلَه، لا يُفسدُ شيئًا.
    */
   expireSearching: 60,
+  closeEscalationCards: 60,
   /** `WR-06` — تذكيراتُ المجدول (الراكبُ قبلَ موعدِه، والسائقُ المُسنَدُ قبلَ الحضور). */
   enqueueScheduledReminders: 60,
   recomputeRatings: 3600,
@@ -938,6 +941,23 @@ export function buildWorkerContainer(
         };
 
   /**
+   * `WR-22` (ADR 0278) — بطاقةُ الإسنادِ في قروبِ المدينةِ تُعدَّلُ نفسُها إلى مآلِ الطلبِ حينَ
+   * يبلغُ حالًا لا رجعةَ عنها، ببوتِ السائقِ الذي نشرَها. ولغةُ القروبِ العربيّةُ كالبطاقة.
+   */
+  const editEscalationMessage = telegram.editMessageText;
+  const escalationCards =
+    editEscalationMessage === undefined
+      ? undefined
+      : {
+          cards: createStaleEscalationCardPort(sql),
+          edit: (chatId: string, messageId: string, text: string) =>
+            editEscalationMessage(chatId, messageId, text, undefined),
+          text: (outcome: "assigned" | "cancelled" | "search_expired" | "ended", orderId: string) =>
+            translate("ar", `group.escalation_card_${outcome}`, { order: orderId }),
+          log: (event: string, meta: Record<string, unknown>) => log.info(event, meta),
+        };
+
+  /**
    * `WR-08` (ADR 0271) — بطاقةُ العرضِ الخاصّةُ التي ماتَ عرضُها (انتهى أو سُبِقَ إليه أو أُلغي
    * طلبُه) يُكتَبُ مآلُها عليها ببوتِ السائقِ الذي أرسلَها، بلا لوحةٍ فيزولُ زرّا «قبول/رفض».
    * ونصُّ «انتهى» و«سُبِقَ» هو نصُّ النقرةِ نفسُه (`WR-08`، #507)، فلا يتبدّلُ ما كتبَته النقرة.
@@ -1159,6 +1179,25 @@ export function buildWorkerContainer(
                   : `expired=${value.expired.length} held=${value.held}`;
               },
             },
+            ...(escalationCards === undefined
+              ? []
+              : [
+                  {
+                    /**
+                     * `WR-22` (ADR 0278) — بعدَ انتهاءِ البحثِ أو الإسنادِ أو الإلغاءِ تُعدَّلُ بطاقةُ
+                     * الإسنادِ نفسُها. غيرُ حرجة: عطلُ Telegram لا يمسُّ الطلبَ ولا الراكب.
+                     */
+                    name: `close-escalation-cards:${cityId}`,
+                    everySeconds: JOB_INTERVALS.closeEscalationCards,
+                    runOnStart: true,
+                    run: async () => {
+                      const report = await closeEscalationCards(cityId, escalationCards);
+                      if (!report.ok) throw new Error(JSON.stringify(report.error));
+                      const value = report.value;
+                      return `closed=${value.closed} failed=${value.failed} raced=${value.raced}`;
+                    },
+                  },
+                ]),
             {
               /**
                * قبل التصعيد لا بعده: الطلبُ الذي يمكن بثُّه ثانيةً يجب أن يُبَثّ قبل أن

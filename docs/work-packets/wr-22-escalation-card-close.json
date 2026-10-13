@@ -1,0 +1,46 @@
+{
+  "id": "wr-22-escalation-card-close",
+  "goal": "WR-22: بطاقة الإسناد في قروب المدينة تُعدَّل نفسها إلى مآل الطلب حين يبلغ حالًا لا رجعة عنها (أُسنِد، أُلغي، انتهى البحث، انتهى دون إسناد)، مرة واحدة، بلا بطاقة بديلة.",
+  "canonical_source": ["docs/adr/0278-escalation-card-close.md", "docs/adr/0276-search-expiry.md"],
+  "implementation": [
+    "apps/workers/src/container.ts",
+    "packages/application/dispatch/close-escalation-cards.ts",
+    "packages/infrastructure/dispatch/escalation-card-adapters.ts",
+    "packages/shared/config/erasure-policy.ts",
+    "packages/shared/config/retention-policy.ts",
+    "packages/shared/i18n/ar.json",
+    "packages/shared/i18n/en.json",
+    "packages/shared/i18n/ur.json",
+    "scripts/lib/skip-registry.ts",
+    "scripts/lib/wasla-boundary-registry.ts",
+    "scripts/lib/wasla-migration-matrix.ts",
+    "supabase/migrations/20261013000900_wr_22_escalation_card_close.sql",
+    "tests/integration/wr-22-escalation-card-close.test.ts",
+    "tests/unit/check-migration-matrix.test.ts",
+    "tests/unit/embedded-worker.test.ts",
+    "tests/unit/skip-audit.test.ts",
+    "tests/unit/wr-22-escalation-card-close.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0278-escalation-card-close.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md",
+    "docs/wasla/boundary-audit.md",
+    "docs/migration/matrix.md"
+  ],
+  "decision": "ADR 0278",
+  "tests": [
+    "tests/integration/wr-22-escalation-card-close.test.ts",
+    "tests/unit/wr-22-escalation-card-close.test.ts"
+  ],
+  "constraints": [
+    "لا بطاقة بديلة",
+    "matched لا يُغلق",
+    "لا نص ولا قروب في السجل",
+    "لا رسائل اختبار في القروب الحقيقي"
+  ],
+  "limitations": "ظهور التعديل في القروب يُثبت بردّ Telegram وسجل الإغلاق، لا بنظر عضو في القروب."
+}
