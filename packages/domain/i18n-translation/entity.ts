@@ -59,6 +59,12 @@ const EMAIL_PATTERN = /[^\s@]+@[^\s@]+\.[^\s@]{2,}/u;
 const LINK_PATTERN = /(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+\.(?:com|net|org|sa|me|io|ly|gl)\b/iu;
 /** سبعةُ أرقامٍ فأكثرُ متّصلةٌ أو مفصولةٌ بمسافةٍ أو شرطةٍ أو نقطةٍ أو قوس: رقمُ هاتفٍ أو حساب. */
 const LONG_NUMBER_PATTERN = /\d(?:[\s\-.()]{0,2}\d){6,}/u;
+/**
+ * إحداثيّتانِ مكتوبتانِ نصًّا («21.4858, 39.1925»): كلٌّ منهما دونَ سبعةِ أرقامٍ متّصلة، والفاصلةُ
+ * تقطعُ السلسلة، فكانتا تفلتانِ من النمطِ السابقِ إلى المزوّد. والفاصلةُ العشريّةُ العربيّةُ «٫»
+ * والفاصلةُ «،» مقبولتان.
+ */
+const COORDINATE_PATTERN = /-?\d{1,3}[.٫]\d{3,}\s*[,،]\s*-?\d{1,3}[.٫]\d{3,}/u;
 
 /**
  * `WR-04` (ADR 0277) — تقليلُ البيانات: نصُّ المحادثةِ يُرسَلُ إلى خدمةِ ترجمةٍ عامّة، فما يحملُ
@@ -70,7 +76,8 @@ export function hasSensitiveContent(text: string): boolean {
   return (
     EMAIL_PATTERN.test(normalized) ||
     LINK_PATTERN.test(normalized) ||
-    LONG_NUMBER_PATTERN.test(normalized)
+    LONG_NUMBER_PATTERN.test(normalized) ||
+    COORDINATE_PATTERN.test(normalized)
   );
 }
 

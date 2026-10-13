@@ -12,6 +12,7 @@ import {
   ReadUrlSignerAdapter,
   UnconfiguredAssetReader,
 } from "../../../packages/application/driver/vehicle-asset-reader.ts";
+import { probeTranslation } from "../../../packages/application/i18n-translation/probe-translation.ts";
 import { translateMessage } from "../../../packages/application/i18n-translation/translate-message.ts";
 import { createDriverPhoneProofs } from "../../../packages/application/identity/onboard-driver.ts";
 import { PortFailureError } from "../../../packages/application/ports/index.ts";
@@ -1793,6 +1794,27 @@ log("gateway.started", {
 
 // بعد سطر «البوابة تعمل» لا قبله، حتى لا يؤخّر استعلامٌ بطيء إعلانَ جاهزية المنفذ.
 void verifySchemaApplied();
+
+/**
+ * `WR-04` (ADR 0279) — فحصُ اتّصالٍ واحدٍ بمزوّدِ الترجمةِ من بيئةِ التشغيلِ نفسِها، بعدَ إعلانِ
+ * الجاهزيّةِ لا قبلَه. نصٌّ ثابتٌ عامٌّ، ومرّةٌ لكلِّ إقلاع، فلا يُرسَلُ شيءٌ من مستخدمٍ ولا يُستنزَفُ
+ * من الحصّةِ إلّا بضعُ حروف. والسجلُّ: المآلُ والزمنُ و«البريدُ مضبوطٌ؟» نعم/لا، لا قيمتُه.
+ */
+if (container.translation.provider !== null) {
+  const translationProvider = container.translation.provider;
+  void probeTranslation(translationProvider, {
+    contactEmailConfigured: config.translationContactEmail !== null,
+  }).then((report) => {
+    const meta = {
+      provider: report.provider,
+      kind: report.kind,
+      ms: report.ms,
+      contact_email_configured: report.contactEmailConfigured,
+    };
+    if (report.ok) log("translation.probe_ok", meta);
+    else log("translation.probe_failed", meta);
+  });
+}
 
 /**
  * `F7-04` — سطرُ ميزانيّةِ الاتّصالاتِ عندَ الإقلاعِ.
