@@ -33,6 +33,11 @@
  */
 
 import {
+  DRIVER_DOCUMENT_CONTENT_TYPES,
+  DRIVER_DOCUMENT_HARD_MAX_BYTES,
+  verifyDriverDocumentContent,
+} from "../../domain/driver/driver-document-content.ts";
+import {
   type DriverDocumentDashboard,
   type DriverDocumentType,
   type DriverDocumentUploadSlot,
@@ -48,6 +53,7 @@ import {
   type DriverDocumentStore,
   type DriverDocumentStoreError,
   isDriverDocumentRejection,
+  type ObjectContentInspector,
   type ObjectExistenceChecker,
   type RecordedDriverDocument,
   type SubmittedForReview,
@@ -72,6 +78,7 @@ export const DRIVER_DOCUMENT_PUBLIC_ERROR_CODES = [
   "FILE_TOO_LARGE",
   "OBJECT_PATH_NOT_MINE",
   "OBJECT_NOT_FOUND",
+  "FILE_CONTENT_INVALID",
   "OBJECT_NOT_SUBMITTED",
   "EXPIRY_REQUIRED",
   "EXPIRY_INVALID",
@@ -96,6 +103,11 @@ export interface DriverDocumentDeps {
    * يُوجَدْ الكائنُ فعلاً.
    */
   readonly existenceChecker?: ObjectExistenceChecker;
+  /**
+   * `WR-21` (ADR 0282): قارئُ بايتاتِ الكائن. حضورُه يجعلُ التسجيلَ مشروطًا بنوعٍ مسموحٍ من الرأس،
+   * ونهايةٍ سليمةٍ من الذيل، وحجمٍ من المخزنِ تحتَ السقف — لا بما أعلنَه العميل.
+   */
+  readonly contentInspector?: ObjectContentInspector;
   /**
    * مُوقِّعُ روابطِ القراءةِ (`DEC-31`) — اختياريٌّ: غيابُهُ يُعطِّلُ مسارَ قراءةِ
    * الوثيقةِ بـ`503` ولا يُعطِّلُ اللوحَ.
@@ -283,6 +295,28 @@ export async function recordDriverDocument(
     const exists = await deps.existenceChecker.checkExists({ objectPath: input.objectPath.trim() });
     if (!exists.ok) return err(rejection("OBJECT_PATH_NOT_MINE"));
     if (!exists.value) return err(rejection("OBJECT_NOT_FOUND"));
+  }
+
+  // `WR-21` (ADR 0282): البايتاتُ الفعليّةُ هي الحكم. تعذُّرُ القراءةِ رفضٌ لا قبول.
+  if (deps.contentInspector !== undefined) {
+    const sample = await deps.contentInspector.inspect({ objectPath: input.objectPath.trim() });
+    if (!sample.ok) {
+      return err(
+        rejection(
+          sample.error === "OBJECT_NOT_FOUND" ? "OBJECT_NOT_FOUND" : "UPLOAD_NOT_AVAILABLE",
+        ),
+      );
+    }
+    const verdict = verifyDriverDocumentContent(sample.value);
+    if (!verdict.ok) {
+      return err(
+        rejection(verdict.reason, {
+          allowedContentTypes:
+            verdict.reason === "CONTENT_TYPE_NOT_ALLOWED" ? DRIVER_DOCUMENT_CONTENT_TYPES : [],
+          maxBytes: verdict.reason === "FILE_TOO_LARGE" ? DRIVER_DOCUMENT_HARD_MAX_BYTES : null,
+        }),
+      );
+    }
   }
 
   const written = await deps.store.record({

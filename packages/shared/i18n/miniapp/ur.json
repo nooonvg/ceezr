@@ -1425,6 +1425,7 @@
   "driver.job.sos.refused": "ایمرجنسی ابھی دستیاب نہیں — خطرے میں ہوں تو ایمرجنسی سروسز کال کریں۔",
   "driver.job.sos.failed": "الرٹ بھیجنے میں ناکام — دوبارہ کوشش کریں۔",
   "driver.documents.error.OBJECT_NOT_FOUND": "فائل اسٹوریج میں نہیں ملی۔ دوبارہ اپ لوڈ کریں۔",
+  "driver.documents.error.FILE_CONTENT_INVALID": "فائل خراب ہے یا اس کی اپ لوڈنگ مکمل نہیں ہوئی۔ دوبارہ اپ لوڈ کریں۔",
   "driver.documents.error.OBJECT_NOT_SUBMITTED": "یہ دستاویز ابھی اپ لوڈ نہیں کی گئی۔",
   "driver.documents.view": "دستاویز دیکھیں",
   "driver.documents.viewing": "کھول رہا ہے...",

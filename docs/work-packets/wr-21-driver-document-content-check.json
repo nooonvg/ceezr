@@ -1,0 +1,29 @@
+{
+  "id": "wr-21-driver-document-content-check",
+  "goal": "WR-21: الخادم يحكم على بايتات وثيقة السائق وحجمها الفعليين عند التسجيل، لا على النوع الذي يعلنه العميل.",
+  "canonical_source": ["docs/adr/0282-driver-document-content-check.md"],
+  "implementation": [
+    "apps/gateway/src/index.ts",
+    "apps/gateway/src/routes/driver-documents.ts",
+    "packages/application/driver/driver-documents.ts",
+    "packages/application/driver/ports.ts",
+    "packages/domain/driver/driver-document-content.ts",
+    "packages/infrastructure/storage/object-content-inspector.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "tests/unit/wr-21-driver-document-content.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0282-driver-document-content-check.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0282",
+  "tests": ["tests/unit/wr-21-driver-document-content.test.ts"],
+  "constraints": ["الرفع موقوف في الإنتاج", "لا حاوية عامة", "لا هجرة"],
+  "limitations": "توقيع صحيح بمحتوى خبيث داخله لا يُكشف. لم يُختبر على مخزن حي."
+}
