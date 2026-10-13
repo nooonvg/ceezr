@@ -117,6 +117,49 @@ export interface JobRunner {
   readonly running: boolean;
 }
 
+/**
+ * `WR-22` (ADR 0283) — عتبةُ الإنذارِ بتأخّرِ المجدول: ربعُ ساعةٍ فوقَ موعدِ مهمّةٍ مستحقّة. هيَ مهلةُ نومِ
+ * Render المجانيّة نفسُها، وربعُ نافذةِ البحثِ (60 دقيقة): تأخّرٌ فوقَها يعني أنّ انتهاءَ البحثِ أو
+ * إغلاقَ البطاقةِ أو التذكيرَ وقعَ متأخّرًا بما يراه المستخدم.
+ */
+export const SCHEDULER_GAP_ALERT_MS = 15 * 60_000;
+
+export interface SchedulerGapReport {
+  /** مهامُّ تجاوزَت موعدَها حينَ أقلعَ المشغّل، مرتّبةً بالأكثرِ تأخّرًا. */
+  readonly overdue: readonly { readonly job: string; readonly lateMs: number }[];
+  /** أقصى تأخّرٍ (0 إن لم يتأخّر شيء). */
+  readonly maxLateMs: number;
+  readonly exceeded: boolean;
+}
+
+/**
+ * `WR-22` (ADR 0283) — كم تأخّرَت كلُّ مهمّةٍ عن موعدِها عندَ الإقلاع، من آخرِ نبضةٍ معروفة. المجدولُ
+ * يعملُ داخلَ عمليّةِ البوّابة، فإذا نامت الخدمةُ لم تُشغَّل مهمّة، و`cron` كلَّ 5 دقائق في GitHub لا يعني
+ * تنفيذًا كلَّ 5 دقائق. والاستدراكُ نفسُه في `isDue`: المهمّةُ المتأخّرةُ مستحقّةٌ في أوّلِ نبضة، وتُشغَّلُ
+ * مرّةً واحدةً لا بعددِ الأشواطِ الفائتة.
+ */
+export function assessSchedulerGap(input: {
+  readonly jobs: readonly Pick<JobDefinition, "name" | "everySeconds">[];
+  readonly lastRunMs: ReadonlyMap<string, number>;
+  readonly nowMs: number;
+  readonly alertMs?: number;
+}): SchedulerGapReport {
+  const alertMs = input.alertMs ?? SCHEDULER_GAP_ALERT_MS;
+  const overdue: { job: string; lateMs: number }[] = [];
+  const seen = new Set<string>();
+  for (const job of input.jobs) {
+    if (seen.has(job.name)) continue;
+    seen.add(job.name);
+    const last = input.lastRunMs.get(job.name);
+    if (last === undefined) continue;
+    const lateMs = input.nowMs - last - job.everySeconds * 1000;
+    if (lateMs > 0) overdue.push({ job: job.name, lateMs });
+  }
+  overdue.sort((a, b) => b.lateMs - a.lateMs);
+  const maxLateMs = overdue[0]?.lateMs ?? 0;
+  return { overdue, maxLateMs, exceeded: maxLateMs > alertMs };
+}
+
 const DEFAULT_TICK_MS = 10_000;
 const DEFAULT_MAX_CONCURRENCY = 4;
 /** `JOB-LAZY-01` — سقفُ انتظارِ أوّلِ شوطٍ لمهمّةٍ كسولةٍ لم تَجرِ قطّ. */
@@ -317,6 +360,22 @@ export function createJobRunner(options: JobRunnerOptions): JobRunner {
         jobs: options.jobs.map((job) => `${job.name}@${job.everySeconds}s`),
         tickMs,
       });
+      // `WR-22` (ADR 0283): التأخّرُ يُقاسُ قبلَ أوّلِ نبضة — بعدَها تُكتَبُ نبضاتٌ جديدةٌ فيختفي أثرُ النوم.
+      const gap = assessSchedulerGap({
+        jobs: options.jobs,
+        lastRunMs,
+        nowMs: options.clock.now().getTime(),
+      });
+      if (gap.overdue.length > 0) {
+        const fields = {
+          max_late_seconds: Math.round(gap.maxLateMs / 1000),
+          overdue_jobs: gap.overdue.length,
+          most_late: gap.overdue.slice(0, 5).map((o) => `${o.job}:${Math.round(o.lateMs / 1000)}s`),
+          alert_after_seconds: SCHEDULER_GAP_ALERT_MS / 1000,
+        };
+        if (gap.exceeded) options.log.error("scheduler.gap_exceeded", fields);
+        else options.log.info("scheduler.resumed_after_gap", fields);
+      }
       timer = setInterval(() => {
         void runDue();
       }, tickMs);

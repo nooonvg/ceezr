@@ -1,0 +1,19 @@
+{
+  "id": "wr-22-scheduler-gap-detection",
+  "goal": "WR-22: رصد تأخر المجدول عند الإقلاع بعد نوم البوابة وإنذار فوق 15 دقيقة، واختبارات الاستدراك وعدم التكرار.",
+  "canonical_source": ["docs/adr/0283-scheduler-gap-detection.md"],
+  "implementation": ["apps/workers/src/runner.ts", "tests/unit/wr-22-scheduler-gap.test.ts"],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0283-scheduler-gap-detection.md",
+    "docs/ops/free-tier-keep-alive.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0283",
+  "tests": ["tests/unit/wr-22-scheduler-gap.test.ts"],
+  "constraints": ["لا تغيير في خطة Render", "لا مزود جديد", "لا هجرة"],
+  "limitations": "السطر يظهر عند الإقلاع فقط؛ لا تنبيه خارجي جديد. لم يُنشر بعد."
+}
