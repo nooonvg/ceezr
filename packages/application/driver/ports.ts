@@ -170,6 +170,23 @@ export interface UploadSigner {
  */
 export type ObjectExistenceFailure = "CHECKER_UNAVAILABLE";
 
+export type ObjectContentInspectionFailure = "INSPECTOR_UNAVAILABLE" | "OBJECT_NOT_FOUND";
+
+/**
+ * `WR-21` (ADR 0282): قارئُ عيّنةٍ من الكائنِ المرفوع — حجمُه من المخزنِ ورأسُه وذيلُه — كي يحكمَ
+ * الخادمُ على البايتاتِ لا على النوعِ المُعلَن.
+ */
+export interface ObjectContentInspector {
+  inspect(input: {
+    readonly objectPath: string;
+  }): Promise<
+    Result<
+      { readonly sizeBytes: number; readonly head: Uint8Array; readonly tail: Uint8Array },
+      ObjectContentInspectionFailure
+    >
+  >;
+}
+
 export interface ObjectExistenceChecker {
   checkExists(input: {
     readonly objectPath: string;

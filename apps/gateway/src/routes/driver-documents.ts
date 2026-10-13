@@ -76,6 +76,8 @@ const STATUS_BY_ERROR: Readonly<
   // مسارُ غيرِكَ: **منعُ صلاحيةٍ**، ولا يُفرَّقُ بينَ «لا وجودَ له» و«لغيرِكَ».
   OBJECT_PATH_NOT_MINE: 403,
   OBJECT_NOT_FOUND: 422,
+  // `WR-21`: ملفٌّ بنوعٍ مسموحٍ في رأسِه ونهايتُه تالفةٌ أو مقطوعة.
+  FILE_CONTENT_INVALID: 422,
   OBJECT_NOT_SUBMITTED: 404,
   ACCOUNT_BLOCKED: 403,
   NOT_A_DRIVER: 403,

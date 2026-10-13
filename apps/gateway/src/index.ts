@@ -99,6 +99,7 @@ import {
 } from "../../../packages/infrastructure/safety/notification-prefs-store.ts";
 import { createSosSurfaceReader } from "../../../packages/infrastructure/safety/sos-surface-store.ts";
 import { createJobHeartbeatReader } from "../../../packages/infrastructure/scheduling/job-heartbeat-adapters.ts";
+import { HttpObjectContentInspector } from "../../../packages/infrastructure/storage/object-content-inspector.ts";
 import { HttpObjectExistenceChecker } from "../../../packages/infrastructure/storage/object-existence-checker.ts";
 import {
   HttpReadSigner,
@@ -1243,7 +1244,11 @@ const driverDocuments =
             signer: upload.signer,
             ...(storage === null
               ? {}
-              : { existenceChecker: new HttpObjectExistenceChecker(storage) }),
+              : {
+                  existenceChecker: new HttpObjectExistenceChecker(storage),
+                  // `WR-21` (ADR 0282): الحكمُ على البايتاتِ الفعليّة.
+                  contentInspector: new HttpObjectContentInspector(storage),
+                }),
             ...(readStorage === null ? {} : { readSigner: new HttpReadSigner(readStorage) }),
           },
           log,

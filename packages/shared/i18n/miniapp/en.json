@@ -1425,6 +1425,7 @@
   "driver.job.sos.refused": "SOS is unavailable right now — call emergency services if you are in danger.",
   "driver.job.sos.failed": "Failed to send alert — please try again.",
   "driver.documents.error.OBJECT_NOT_FOUND": "The file was not found in storage. Upload again.",
+  "driver.documents.error.FILE_CONTENT_INVALID": "The file is damaged or did not finish uploading. Upload again.",
   "driver.documents.error.OBJECT_NOT_SUBMITTED": "This document has not been uploaded yet.",
   "driver.documents.view": "View document",
   "driver.documents.viewing": "Opening...",
