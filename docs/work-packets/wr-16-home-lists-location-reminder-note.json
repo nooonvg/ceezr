@@ -1,7 +1,10 @@
 {
   "id": "wr-16-home-lists-location-reminder-note",
   "goal": "WR-16C · WR-16A: عناوين قائمتي الرئيسية في التوصيل تطابق أن المختار يصير مكان الاستلام، وعبارة الموضع للسائق المتاح تذكر تذكير البوت (WR-12)، ودليل تحقق إنتاجي مستقل على 099c1076.",
-  "canonical_source": ["docs/roadmap/execution/STATUS.md", "docs/adr/0268-driver-location-reminder.md"],
+  "canonical_source": [
+    "docs/roadmap/execution/STATUS.md",
+    "docs/adr/0268-driver-location-reminder.md"
+  ],
   "implementation": [
     "apps/miniapp/src/surfaces/rider/home/HomeScreen.tsx",
     "apps/miniapp/src/surfaces/driver/location/LocationBroadcast.tsx",
