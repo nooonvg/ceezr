@@ -10,7 +10,8 @@
     "apps/miniapp/src/surfaces/driver/driver-root.test.tsx",
     "packages/shared/i18n/miniapp/ar.json",
     "packages/shared/i18n/miniapp/en.json",
-    "packages/shared/i18n/miniapp/ur.json"
+    "packages/shared/i18n/miniapp/ur.json",
+    "scripts/lib/ui-surface-inventory.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
