@@ -37,10 +37,17 @@ jobs:
       - name: نبضُ البوّابة
         run: |
           set -euo pipefail
-          code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 90 \
+          code="$(curl -sS -o /tmp/health.body -w '%{http_code}' --max-time 90 \
             --retry 3 --retry-delay 10 --retry-all-errors \
             https://waslah-gateway.onrender.com/health)"
           echo "/health → ${code}"
+          # OPS-ALERT-02: إيقافُ Render (503 «Service Suspended») لا يُوقظُه نبض، ولا يزولُ إلّا بإجراءٍ من
+          # المالكِ في لوحةِ Render، ومراقبُ Supabase ينبّهُ عنه كلَّ ساعة. فلا يُسقَطُ النبضُ كلَّ 5 دقائق
+          # بإشعارِ فشلٍ مكرَّر؛ يُكتَبُ تحذيرٌ ظاهرٌ في التشغيل.
+          if [ "${code}" = "503" ] && grep -qi '<title>[[:space:]]*Service Suspended' /tmp/health.body; then
+            echo "::warning::Render أوقف البوابة (Service Suspended). يلزم إجراء من لوحة Render."
+            exit 0
+          fi
           if [ "${code}" != "200" ]; then
             echo "::error::/health أجابَ ${code} لا 200"
             exit 1
