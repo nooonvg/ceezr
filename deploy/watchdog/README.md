@@ -18,6 +18,11 @@
 
 العتباتُ في `ops.watchdog_config` وتُعدَّلُ بلا نشر.
 
+## حالةُ النشر — 2026-10-13
+
+- المنشورُ: **الإصدار 5** (`ACTIVE`، `verify_jwt = true`) من `df81182e` (#552، `OPS-ALERT-02`)، و`index.ts` و`classify.ts` مطابقان حرفيًّا.
+  الدليل: `docs/evidence/production/OPS-ALERT-02-watchdog-suspended-cadence-20261013.md`.
+
 ## حالةُ النشر والتحقّق (2026-10-04)
 
 - المنشورُ على Supabase: **الإصدار 4** (`ACTIVE`) — مطابقٌ حرفيّاً للالتزامِ `bedff13b` (يقصُّ الفراغَ من الأسرار).

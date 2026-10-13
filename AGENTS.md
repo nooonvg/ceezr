@@ -72,16 +72,17 @@ bun run ci          # lint + typecheck + build + الحواجز + الاختبا
 
 ثمَّ اقرأْ ما يمسُّ مهمّتَك فقط من §2. وإن وجدْتَ تعارضًا بينَ وثيقةٍ والكود، **فالكودُ والدليلُ الحيُّ يحكمان**، وصحِّحِ الوثيقةَ في التغييرِ نفسِه.
 
-### لقطةٌ موثَّقة — 2026-10-13 صباحًا (أعِدْ حسابَها بالأوامرِ أعلاه، فقد تتقادم)
+### لقطةٌ موثَّقة — 2026-10-13 مساءً (أعِدْ حسابَها بالأوامرِ أعلاه، فقد تتقادم)
 
 | | القيمة | كيفَ تُحقِّقُها |
 |---|---|---|
-| `main` | `e4ff68d8` (#549) | `git log -1 origin/main` |
-| الإنتاج — gateway | `099c1076` (#548) — `dep-db6qtc59fdbs73e0nam0`؛ رفعُ وثائقِ السائقِ موقوفٌ حتّى `DRIVER_DOCUMENT_UPLOADS=enabled`، والفرقُ حتّى `e4ff68d8` لا يمسُّ الخادم | Render deploys + سجلُّ الإقلاع `driver_documents.uploads_paused` |
-| الإنتاج — miniapp | `e4ff68d8` (#549) — `dep-db6shs3l550s739v0gt0` (`docs/evidence/production/WR-verify-20261013-099c1076.md`) | Render deploys |
+| `main` | `df81182e` (#552) | `git log -1 origin/main` |
+| الإنتاج — gateway | **موقوفةٌ من Render منذ 12:24:59Z** (`suspenders: billing`، تجاوزُ حصّةِ البياناتِ المجانيّة، `OPS-EGRESS-01`). آخرُ نسخةٍ عملت: `099c1076` (#548) — `dep-db6qtc59fdbs73e0nam0`؛ رفعُ وثائقِ السائقِ موقوفٌ حتّى `DRIVER_DOCUMENT_UPLOADS=enabled`، والفرقُ حتّى `e4ff68d8` لا يمسُّ الخادم | Render deploys + سجلُّ الإقلاع `driver_documents.uploads_paused` |
+| الإنتاج — miniapp | **موقوفٌ معها** (`billing`). آخرُ نسخة: `e4ff68d8` (#549) — `dep-db6shs3l550s739v0gt0` (`docs/evidence/production/WR-verify-20261013-099c1076.md`) | Render deploys |
 | staging | `waslah-miniapp-staging` **موقوف** (suspended). ولا بيئةَ staging عاملة (`PRD-201` Blocked) | Render |
-| `/ready` | `ready`، و`degradedChecks: []` | `curl` |
+| `/ready` | **HTTP 503 `Service Suspended`** حتّى يضيفَ المالكُ وسيلةَ دفعٍ في Render أو يبدأَ الشهر. و#551 و#552 (جانبُ البوّابة) غيرُ منشورَين فيها | `curl` |
 | بنودُ الجاهزيّة | Verified: 001 · 002 · 003 · 102 · 103 · 104 · 106. ADR-Closed: 004–007 · 105. Ready: 010. **Blocked**: 008 · 009 · 101 · 201–205 | البوّابةُ (§2) |
+| مراقبُ البوّابة | `gateway-watchdog` الإصدار 5 من `df81182e` (`OPS-ALERT-02`): إيقافُ Render يُنبَّهُ عنه كلَّ ساعة | `deploy/watchdog/README.md` |
 | طلباتٌ مفتوحة | لا شيءَ من عملِ الإقلاعِ ولا القاعدة (#484 #486 #488 منشورة، و#489 مُطبَّق) | `gh pr list` |
 | النسخُ الاحتياطيّ | ليليٌّ `verified` من `ceezr-backups`؛ **بايتاتُ Storage غيرُ منسوخة** (`db_backups…manifest.storage.status = not_configured`)؛ وGoogle Drive وأرشيفُ المواقعِ غيرُ عاملين | `docs/evidence/production/BACKUP-STORAGE-20261011.md` |
 | المدنُ الخمس | كلُّها `is_active = true` بقروباتِها (قراءةٌ من الإنتاج، `select` فقط؛ أُعيدَت 2026-10-11 مساءً: 5/5) | `docs/agent-core-activation.md` (رأسُها) |
