@@ -59,8 +59,9 @@ describe("WR-22 — لا ادّعاءَ أنّ cron كلَّ 5 دقائق تنف
 });
 
 describe("WR-22 — قياسُ التأخّرِ عندَ الإقلاع", () => {
+  const minutely = { name: "expire-searching:c1", everySeconds: 60 };
   const jobs = [
-    { name: "expire-searching:c1", everySeconds: 60 },
+    minutely,
     { name: "close-escalation-cards", everySeconds: 60 },
     { name: "backup-database", everySeconds: 86_400 },
   ];
@@ -89,8 +90,8 @@ describe("WR-22 — قياسُ التأخّرِ عندَ الإقلاع", () => 
   test("العتبةُ حدٌّ صارم: عندَها لا إنذار، وفوقَها ببايتٍ إنذار", () => {
     const at = (late: number) =>
       assessSchedulerGap({
-        jobs: [jobs[0]!],
-        lastRunMs: new Map([[jobs[0]!.name, 0]]),
+        jobs: [minutely],
+        lastRunMs: new Map([[minutely.name, 0]]),
         nowMs: 60_000 + late,
       });
     expect(at(SCHEDULER_GAP_ALERT_MS).exceeded).toBe(false);
@@ -99,8 +100,8 @@ describe("WR-22 — قياسُ التأخّرِ عندَ الإقلاع", () => 
   });
   test("اسمٌ مكرّرٌ (مهمّةُ مدنٍ) يُعَدُّ مرّة", () => {
     const r = assessSchedulerGap({
-      jobs: [jobs[0]!, jobs[0]!],
-      lastRunMs: new Map([[jobs[0]!.name, 0]]),
+      jobs: [minutely, minutely],
+      lastRunMs: new Map([[minutely.name, 0]]),
       nowMs: 30 * MIN,
     });
     expect(r.overdue.length).toBe(1);
