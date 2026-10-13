@@ -1,0 +1,30 @@
+{
+  "id": "wr-04-translation-probe",
+  "goal": "WR-04: فحص اتصال الترجمة من بيئة التشغيل عند الإقلاع بنص عام، والتقاط الإحداثيات المكتوبة نصًا، وتصنيف الرد غير JSON ردًّا مشوّهًا لا يُعاد، وتوثيق فجوة سياسة الخصوصية مع مسودة.",
+  "canonical_source": ["docs/adr/0279-translation-probe-and-policy-gap.md"],
+  "implementation": [
+    "apps/gateway/src/index.ts",
+    "packages/application/i18n-translation/probe-translation.ts",
+    "packages/domain/i18n-translation/entity.ts",
+    "packages/infrastructure/i18n-translation/translation-providers.ts",
+    "tests/unit/wr-04-translation-privacy.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0279-translation-probe-and-policy-gap.md",
+    "docs/adr/0277-translation-privacy-controls.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md",
+    "docs/roadmap/execution/WR-26-DEVICE-TEST-PLAN.md"
+  ],
+  "decision": "ADR 0279",
+  "tests": ["tests/unit/wr-04-translation-privacy.test.ts"],
+  "constraints": [
+    "لا نص مستخدم في الفحص",
+    "لا قيمة بريد في السجل",
+    "لا تعديل لنص السياسة دون المالك"
+  ],
+  "limitations": "لم تُختبر رسالة حقيقية بين جهازين. ونص السياسة لم يُحدَّث."
+}

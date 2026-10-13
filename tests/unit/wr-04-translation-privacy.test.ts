@@ -8,7 +8,12 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 import { translateMessage } from "../../packages/application/i18n-translation/index.ts";
+import {
+  probeTranslation,
+  TRANSLATION_PROBE_TEXT,
+} from "../../packages/application/i18n-translation/probe-translation.ts";
 import {
   type OrderChatThread,
   translateThread,
@@ -207,5 +212,145 @@ describe("الإفصاح — المحادثةُ تعلنُ أنّ الترجمة
     expect((await translateThread({ translate: async () => null }, other)).translationActive).toBe(
       false,
     );
+  });
+});
+
+describe("WR-04 — حالاتٌ إضافيّة: الإحداثيّاتُ والردودُ المشوَّهةُ والعامّيّة (ADR 0277)", () => {
+  it("إحداثيّتانِ مكتوبتانِ نصًّا (بأرقامٍ لاتينيّةٍ أو عربيّة) ⇒ حسّاس", () => {
+    for (const text of [
+      "أنا هنا 21.4858, 39.1925",
+      "موقعي 24.4672,39.6024",
+      "عند ٢١٫٤٨٥٨، ٣٩٫١٩٢٥",
+      "pin -21.48581, -39.19252",
+    ]) {
+      expect(hasSensitiveContent(text)).toBe(true);
+    }
+  });
+  it("أرقامٌ عشريّةٌ ليست إحداثيّات (أجرةٌ ومسافة) ⇒ ليست حسّاسة", () => {
+    for (const text of ["الأجرة 25.50 ريال", "المسافة 3.2 كم، والوقت 12 دقيقة"]) {
+      expect(hasSensitiveContent(text)).toBe(false);
+    }
+  });
+  it("العامّيّةُ تُرسَلُ كما هي وتُعرضُ ترجمتُها، والأصلُ محفوظ", async () => {
+    const seen: string[] = [];
+    const provider = createMyMemoryProvider({
+      fetchImpl: jsonFetch(
+        { responseStatus: 200, responseData: { translatedText: "I'm arriving in five minutes" } },
+        200,
+        seen,
+      ),
+    });
+    const out = await translateMessage(
+      { text: "أنا واصل بعد خمس دقايق، استناني عند البوابة", pair: AR_EN },
+      { provider },
+    );
+    expect(seen).toHaveLength(1);
+    expect(out.translated).toBe(true);
+    expect(out.original).toBe("أنا واصل بعد خمس دقايق، استناني عند البوابة");
+  });
+  it("ردٌّ 200 ليس JSON ⇒ `bad_response` بلا إعادةٍ تستهلكُ الحصّة", async () => {
+    let calls = 0;
+    const html = (async () => {
+      calls += 1;
+      return new Response("<html>bad gateway</html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      });
+    }) as unknown as typeof fetch;
+    const out = await createMyMemoryProvider({ fetchImpl: html, sleepImpl: noSleep }).translate({
+      text: "مرحبا",
+      pair: AR_EN,
+    });
+    expect(!out.ok && out.error.kind).toBe("bad_response");
+    expect(calls).toBe(1);
+  });
+  it("ردٌّ بلا `responseData` أو بنصٍّ غيرِ نصّيّ أو فارغ ⇒ لا تُعرضُ «ترجمة»", async () => {
+    for (const body of [
+      { responseStatus: 200 },
+      { responseStatus: 200, responseData: { translatedText: 42 } },
+      { responseStatus: 200, responseData: { translatedText: "   " } },
+      { responseStatus: 403, responseData: { translatedText: "INVALID LANGUAGE PAIR" } },
+    ]) {
+      const out = await translateMessage(
+        { text: "أنا عند البوابة", pair: AR_EN },
+        { provider: createMyMemoryProvider({ fetchImpl: jsonFetch(body), sleepImpl: noSleep }) },
+      );
+      expect(out.translated).toBe(false);
+      expect(out.text).toBe("أنا عند البوابة");
+    }
+  });
+  it("نصٌّ فارغٌ أو فراغاتٌ فقط ⇒ لا نداء", async () => {
+    const seen: string[] = [];
+    const provider = createMyMemoryProvider({ fetchImpl: jsonFetch({}, 200, seen) });
+    for (const text of ["", "   ", "\n\t"]) {
+      const out = await translateMessage({ text, pair: AR_EN }, { provider });
+      expect(out.translated).toBe(false);
+    }
+    expect(seen).toHaveLength(0);
+  });
+});
+
+describe("WR-04 — فحصُ الاتّصالِ عندَ الإقلاع (ADR 0279)", () => {
+  it("يرسلُ النصَّ العامَّ الثابتَ وحدَه، ويقولُ ok حينَ تعودُ حروفٌ عربيّة", async () => {
+    const seen: string[] = [];
+    const provider = createMyMemoryProvider({
+      fetchImpl: jsonFetch(
+        { responseStatus: 200, responseData: { translatedText: "صباح الخير" } },
+        200,
+        seen,
+      ),
+      contactEmail: "owner@example.com",
+    });
+    const report = await probeTranslation(provider, { contactEmailConfigured: true });
+    expect(report).toMatchObject({
+      provider: "mymemory",
+      ok: true,
+      kind: null,
+      contactEmailConfigured: true,
+    });
+    expect(seen).toHaveLength(1);
+    expect(decodeURIComponent(seen[0] ?? "")).toContain(
+      `q=${TRANSLATION_PROBE_TEXT}`.replace(" ", "+"),
+    );
+    expect(JSON.stringify(report)).not.toContain("owner@example.com");
+    expect(JSON.stringify(report)).not.toContain("صباح");
+  });
+  it("الحصّةُ المنتهيةُ والمهلةُ والنصُّ المعادُ كما هو ⇒ فشلٌ بنوعِه", async () => {
+    const quota = createMyMemoryProvider({
+      fetchImpl: jsonFetch({ quotaFinished: true, responseStatus: 200, responseData: {} }),
+    });
+    expect((await probeTranslation(quota, { contactEmailConfigured: false })).kind).toBe(
+      "rate_limited",
+    );
+    const echo = {
+      name: "echo",
+      translate: async () =>
+        ({ ok: true, value: { text: "Good morning", provider: "echo" } }) as never,
+    };
+    expect(await probeTranslation(echo, { contactEmailConfigured: false })).toMatchObject({
+      ok: false,
+      kind: "not_translated",
+    });
+    const throwing = {
+      name: "boom",
+      translate: async () => {
+        throw new Error("x");
+      },
+    };
+    expect((await probeTranslation(throwing, { contactEmailConfigured: false })).kind).toBe(
+      "threw",
+    );
+  });
+  it("البوّابةُ تفحصُ بعدَ إعلانِ الجاهزيّةِ، ولا تسجّلُ قيمةَ البريد", () => {
+    const source = readFileSync(
+      new URL("../../apps/gateway/src/index.ts", import.meta.url),
+      "utf8",
+    );
+    const started = source.indexOf('log("gateway.started"');
+    const probe = source.indexOf("void probeTranslation(");
+    expect(started).toBeGreaterThan(0);
+    expect(probe).toBeGreaterThan(started);
+    expect(source).toContain("contactEmailConfigured: config.translationContactEmail !== null");
+    expect(source).not.toMatch(/log\([^)]*translationContactEmail\b(?! !== null)/);
   });
 });

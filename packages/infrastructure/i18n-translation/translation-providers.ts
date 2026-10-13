@@ -75,7 +75,14 @@ async function attemptJson(
       return err(new TranslationFailure("provider_unavailable", name, `HTTP ${response.status}`));
     }
 
-    return ok((await response.json()) as unknown);
+    // ردٌّ بحالةِ 200 ليس JSON (صفحةُ خطأٍ HTML من وسيطٍ مثلًا) ردٌّ مشوَّهٌ لا انقطاع: إعادتُه
+    // تستهلكُ الحصّةَ مرّةً ثانيةً على الجوابِ نفسِه (ADR 0277).
+    const body = await response.text();
+    try {
+      return ok(JSON.parse(body) as unknown);
+    } catch {
+      return err(new TranslationFailure("bad_response", name, "non_json_body"));
+    }
   } catch (error) {
     const isAbort = error instanceof Error && error.name === "AbortError";
     // رسالةُ الخطأِ قد تحملُ الرابطَ كاملًا، وفي رابطِ MyMemory نصُّ المحادثةِ نفسُه (`q=`):
