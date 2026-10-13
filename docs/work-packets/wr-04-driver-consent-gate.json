@@ -1,0 +1,28 @@
+{
+  "id": "wr-04-driver-consent-gate",
+  "goal": "WR-04: بوابة موافقة السائق في Mini App على الإصدار الجاري من الشروط وسياسة الخصوصية، مؤجلة وسط مهمة نشطة.",
+  "canonical_source": ["docs/adr/0281-driver-consent-gate.md"],
+  "implementation": [
+    "apps/miniapp/src/surfaces/driver/DriverRoot.tsx",
+    "apps/miniapp/src/surfaces/driver/consent/DriverConsentGate.tsx",
+    "apps/miniapp/src/surfaces/driver/consent/consent-api.ts",
+    "apps/miniapp/src/surfaces/driver/consent/driver-consent-gate.test.tsx",
+    "apps/miniapp/src/surfaces/driver/driver-root.test.tsx",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "scripts/lib/ui-surface-inventory.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0281-driver-consent-gate.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0281",
+  "tests": ["apps/miniapp/src/surfaces/driver/consent/driver-consent-gate.test.tsx"],
+  "constraints": ["لا تقطع مهمة نشطة", "الحكم من الخادم", "لا تغيير في الخادم"],
+  "limitations": "لم تُختبر على جهاز. والبوت لا يمر بالبوابة."
+}

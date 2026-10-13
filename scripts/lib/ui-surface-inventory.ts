@@ -64,6 +64,7 @@ export const SURFACE_INVENTORY: readonly SurfaceGroup[] = [
       "DriverRoot.tsx",
       "account/AccountScreen.tsx",
       "activity/ActivityScreen.tsx",
+      "consent/DriverConsentGate.tsx",
       "deductions/DeductionTraceScreen.tsx",
       "documents/DocumentsScreen.tsx",
       "job/JobScreen.tsx",
