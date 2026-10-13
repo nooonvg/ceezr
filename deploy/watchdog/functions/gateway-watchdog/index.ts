@@ -12,6 +12,7 @@
 //   • SUPABASE_DB_URL يوفّرُه Supabase تلقائيّاً.
 
 import postgres from "npm:postgres@3.4.4";
+import { classifyDown, type DownCause, downDetail, downRepeatSeconds } from "./classify.ts";
 
 type Health = "up" | "degraded" | "down";
 interface Probe {
@@ -19,6 +20,7 @@ interface Probe {
   httpStatus: number | null;
   ms: number;
   detail: string;
+  cause?: DownCause;
 }
 interface Config {
   target_url: string;
@@ -89,7 +91,8 @@ async function probe(url: string): Promise<Probe> {
         health: "down",
         httpStatus: r.status,
         ms,
-        detail: `HTTP ${r.status} ${body.slice(0, 200)}`,
+        detail: downDetail(r.status, body),
+        cause: classifyDown(r.status, body),
       };
     let j: { status?: string; failedChecks?: string[]; degradedChecks?: string[] } = {};
     try {
@@ -247,12 +250,18 @@ Deno.serve(async () => {
 
   const dur = since(sinceAt, now);
   if (status === "down") {
-    const m = `🚨🚨 بوّابة وَصْلة متوقفة 🚨🚨\nمنذ: ${mins(dur)}\nالسبب: ${p.detail}\nالخدمة: ${target}\n${riyadh(nowD)} بتوقيت الرياض\n\nسيتكرر هذا التنبيه حتى تعود الخدمة.`;
-    if (since(tgAt, now) >= cfg.down_tg_every_s - 5) {
+    // OPS-ALERT-02: إيقافُ Render لا يزولُ إلّا بإجراءٍ من المالك، فلا يُكرَّرُ تنبيهُه كلَّ دقيقة.
+    const cause: DownCause = p.health === "down" ? (p.cause ?? "other") : "other";
+    const every = downRepeatSeconds(cause, cfg);
+    const m =
+      cause === "suspended"
+        ? `🚨 بوّابة وَصْلة موقوفة من Render 🚨\nمنذ: ${mins(dur)}\nالسبب: ${p.detail}\nRender أوقف الخدمة (غالبًا تجاوز الحصة الشهرية أو الفوترة). لا تعود تلقائيًا: يلزم إجراء من لوحة Render (Billing ثم Resume).\nالخدمة: ${target}\n${riyadh(nowD)} بتوقيت الرياض\n\nسيتكرر هذا التنبيه كل ساعة حتى تعود الخدمة.`
+        : `🚨🚨 بوّابة وَصْلة متوقفة 🚨🚨\nمنذ: ${mins(dur)}\nالسبب: ${p.detail}\nالخدمة: ${target}\n${riyadh(nowD)} بتوقيت الرياض\n\nسيتكرر هذا التنبيه حتى تعود الخدمة.`;
+    if (since(tgAt, now) >= every.tg - 5) {
       sent.push(await sendTelegram(cfg.telegram_chat_ids, m));
       tgAt = nowD.toISOString();
     }
-    if (since(emAt, now) >= cfg.down_email_every_s - 5) {
+    if (since(emAt, now) >= every.email - 5) {
       sent.push(await sendEmail(cfg, `🚨 وَصْلة متوقفة منذ ${mins(dur)}`, m));
       emAt = nowD.toISOString();
     }
