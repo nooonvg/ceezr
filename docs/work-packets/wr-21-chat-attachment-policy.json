@@ -1,0 +1,22 @@
+{
+  "id": "wr-21-chat-attachment-policy",
+  "goal": "WR-21: سياسة مرفقات محادثة الطلب من جهة الخادم (النوع من البايتات، والحجم من المخزن، ومسار يولّده الخادم، وقراءة لطرفي الطلب وحدهما، وروابط قصيرة، وحذف بعد 7 أيام) غير موصولة، والرفع مغلق. وتوثيق نشر WR-22 وWR-04 في الإنتاج.",
+  "canonical_source": ["docs/adr/0280-chat-attachment-policy.md"],
+  "implementation": [
+    "packages/domain/messaging/chat-attachment-policy.ts",
+    "tests/unit/wr-21-chat-attachment-policy.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0280-chat-attachment-policy.md",
+    "docs/evidence/production/WR-22-WR-04-rollout-20261013.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "ADR 0280",
+  "tests": ["tests/unit/wr-21-chat-attachment-policy.test.ts"],
+  "constraints": ["لا حاوية في الإنتاج", "لا مسار رفع", "لا ادعاء اكتمال WR-21"],
+  "limitations": "لا مسار ولا جدول ولا حاوية. والنسخ الاحتياطي للبايتات ينتظر مفاتيح S3 وتمرين استرجاع حي."
+}
