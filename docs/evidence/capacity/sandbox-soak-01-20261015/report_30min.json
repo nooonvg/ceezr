@@ -1,0 +1,751 @@
+{
+  "label": "report_30min",
+  "at": "2026-10-14T22:01:51.102Z",
+  "minute": 32.3,
+  "phase": "edge",
+  "concurrency": 24,
+  "peakConcurrency": 24,
+  "http": {
+    "total": 9490,
+    "ok": 9490,
+    "non2xx": 0,
+    "netErr": 0,
+    "p50": 3,
+    "p95": 29.9,
+    "p99": 43.9,
+    "max": 66.4
+  },
+  "perKind": {
+    "seed": {
+      "n": 846,
+      "p50": 7.7,
+      "p95": 18.2,
+      "max": 47.8
+    },
+    "driver_location": {
+      "n": 1784,
+      "p50": 23.6,
+      "p95": 44.3,
+      "max": 66.4
+    },
+    "rider_menu": {
+      "n": 280,
+      "p50": 2.7,
+      "p95": 4.5,
+      "max": 41.4
+    },
+    "rider_ride_cmd": {
+      "n": 480,
+      "p50": 2.7,
+      "p95": 4.6,
+      "max": 41.2
+    },
+    "rider_svc_delivery": {
+      "n": 280,
+      "p50": 1.9,
+      "p95": 3.6,
+      "max": 13.3
+    },
+    "rider_pickup": {
+      "n": 760,
+      "p50": 1.8,
+      "p95": 3.8,
+      "max": 20.4
+    },
+    "rider_dropoff": {
+      "n": 760,
+      "p50": 1.7,
+      "p95": 3.4,
+      "max": 10.3
+    },
+    "rider_parcel": {
+      "n": 280,
+      "p50": 1.6,
+      "p95": 3.2,
+      "max": 7.6
+    },
+    "driver_accept": {
+      "n": 607,
+      "p50": 3,
+      "p95": 5.1,
+      "max": 33.2
+    },
+    "driver_start": {
+      "n": 723,
+      "p50": 3,
+      "p95": 4.7,
+      "max": 24.4
+    },
+    "driver_complete": {
+      "n": 719,
+      "p50": 3.2,
+      "p95": 5.2,
+      "max": 29.9
+    },
+    "rider_rate": {
+      "n": 578,
+      "p50": 2.6,
+      "p95": 6.2,
+      "max": 21.7
+    },
+    "driver_rate": {
+      "n": 578,
+      "p50": 2,
+      "p95": 4.5,
+      "max": 16.5
+    },
+    "group_claim": {
+      "n": 269,
+      "p50": 3.8,
+      "p95": 7.9,
+      "max": 22.5
+    },
+    "group_select": {
+      "n": 133,
+      "p50": 2.9,
+      "p95": 6.2,
+      "max": 18.4
+    },
+    "group_chat": {
+      "n": 266,
+      "p50": 2,
+      "p95": 4.9,
+      "max": 15.6
+    },
+    "group_agree": {
+      "n": 133,
+      "p50": 1.7,
+      "p95": 3.6,
+      "max": 6.2
+    },
+    "rider_cancel": {
+      "n": 14,
+      "p50": 3.4,
+      "p95": 4.2,
+      "max": 4.2
+    }
+  },
+  "scenarios": {
+    "ride": {
+      "started": 327,
+      "ok": 311,
+      "fail": 7,
+      "successRate": 97.8,
+      "e2e_p50_ms": 22341,
+      "e2e_p95_ms": 31652,
+      "reasons": {
+        "not_completed_status_in_progress": 5,
+        "no_driver_within_75s": 2
+      }
+    },
+    "delivery": {
+      "started": 280,
+      "ok": 267,
+      "fail": 7,
+      "successRate": 97.4,
+      "e2e_p50_ms": 23653,
+      "e2e_p95_ms": 33838,
+      "reasons": {
+        "no_driver_within_75s": 4,
+        "not_completed_status_in_progress": 1,
+        "order_not_created": 2
+      }
+    },
+    "group": {
+      "started": 153,
+      "ok": 130,
+      "fail": 14,
+      "successRate": 90.3,
+      "e2e_p50_ms": 77898,
+      "e2e_p95_ms": 101364,
+      "reasons": {
+        "no_free_group_driver": 8,
+        "claims_mismatch_1_vs_2": 1,
+        "agree_not_matched_searching": 1,
+        "order_not_created": 2,
+        "group_ride_not_completed_in_progress": 2
+      }
+    }
+  },
+  "edge": [],
+  "errors": {},
+  "fixes": [],
+  "db": {
+    "byStatus": [
+      {
+        "service": "delivery",
+        "status": "cancelled",
+        "n": 4
+      },
+      {
+        "service": "delivery",
+        "status": "completed",
+        "n": 268
+      },
+      {
+        "service": "delivery",
+        "status": "in_progress",
+        "n": 3
+      },
+      {
+        "service": "delivery",
+        "status": "matched",
+        "n": 1
+      },
+      {
+        "service": "delivery",
+        "status": "searching",
+        "n": 1
+      },
+      {
+        "service": "transport",
+        "status": "cancelled",
+        "n": 10
+      },
+      {
+        "service": "transport",
+        "status": "completed",
+        "n": 448
+      },
+      {
+        "service": "transport",
+        "status": "in_progress",
+        "n": 2
+      },
+      {
+        "service": "transport",
+        "status": "matched",
+        "n": 3
+      },
+      {
+        "service": "transport",
+        "status": "searching",
+        "n": 8
+      }
+    ],
+    "neg": [
+      {
+        "status": "negotiating",
+        "n": 1
+      },
+      {
+        "status": "cancelled",
+        "n": 8
+      },
+      {
+        "status": "agreed",
+        "n": 133
+      }
+    ],
+    "misc": {
+      "offers": 2726,
+      "ratings": 1155,
+      "outbox_pending": 3305,
+      "conns": 24,
+      "stuck": 0
+    }
+  },
+  "telegram": {
+    "started_at": "2026-10-14T21:23:08.422Z",
+    "total": 23830,
+    "by_method": {
+      "setMyCommands": 8,
+      "sendMessage": 17029,
+      "answerCallbackQuery": 4591,
+      "editMessageText": 886,
+      "sendLocation": 1316
+    },
+    "by_bot": {
+      "driver": 13514,
+      "rider": 10316
+    },
+    "to_groups": 281,
+    "to_private": 18950,
+    "group_chats": {
+      "-1000000000043": 143,
+      "-1000000000053": 138
+    }
+  },
+  "timeline": [
+    {
+      "min": 2.8,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 5.8,
+      "p95": 21.8,
+      "okRate": 100
+    },
+    {
+      "min": 3.3,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 3,
+      "p95": 31.9,
+      "okRate": 100
+    },
+    {
+      "min": 3.8,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 2.7,
+      "p95": 35.1,
+      "okRate": 100
+    },
+    {
+      "min": 4.3,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 0,
+      "p95": 0,
+      "okRate": 100
+    },
+    {
+      "min": 4.8,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 3.1,
+      "p95": 48.4,
+      "okRate": 100
+    },
+    {
+      "min": 5.3,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 3,
+      "p95": 29.9,
+      "okRate": 100
+    },
+    {
+      "min": 5.8,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 3,
+      "p95": 28.8,
+      "okRate": 100
+    },
+    {
+      "min": 6.3,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 1.3,
+      "p95": 6,
+      "okRate": 100
+    },
+    {
+      "min": 6.8,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 3.3,
+      "p95": 26.8,
+      "okRate": 100
+    },
+    {
+      "min": 7.3,
+      "phase": "intensive",
+      "conc": 4,
+      "rps": 2.8,
+      "p95": 30.2,
+      "okRate": 100
+    },
+    {
+      "min": 7.8,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 5.6,
+      "p95": 23.5,
+      "okRate": 100
+    },
+    {
+      "min": 8.3,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 2.9,
+      "p95": 3.4,
+      "okRate": 100
+    },
+    {
+      "min": 8.8,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 4.4,
+      "p95": 27.6,
+      "okRate": 100
+    },
+    {
+      "min": 9.3,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 4.1,
+      "p95": 34.8,
+      "okRate": 100
+    },
+    {
+      "min": 9.8,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 3.9,
+      "p95": 21.5,
+      "okRate": 100
+    },
+    {
+      "min": 10.3,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 2.1,
+      "p95": 3,
+      "okRate": 100
+    },
+    {
+      "min": 10.8,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 4.1,
+      "p95": 41.4,
+      "okRate": 100
+    },
+    {
+      "min": 11.3,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 3.3,
+      "p95": 24.6,
+      "okRate": 100
+    },
+    {
+      "min": 11.8,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 3.8,
+      "p95": 41.4,
+      "okRate": 100
+    },
+    {
+      "min": 12.3,
+      "phase": "intensive",
+      "conc": 8,
+      "rps": 2.7,
+      "p95": 3.5,
+      "okRate": 100
+    },
+    {
+      "min": 12.8,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 7,
+      "p95": 22.5,
+      "okRate": 100
+    },
+    {
+      "min": 13.3,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 4.2,
+      "p95": 59.7,
+      "okRate": 100
+    },
+    {
+      "min": 13.8,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 5.6,
+      "p95": 22.3,
+      "okRate": 100
+    },
+    {
+      "min": 14.3,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 3.9,
+      "p95": 3.2,
+      "okRate": 100
+    },
+    {
+      "min": 14.8,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 5.3,
+      "p95": 64,
+      "okRate": 100
+    },
+    {
+      "min": 15.3,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 4.6,
+      "p95": 53.9,
+      "okRate": 100
+    },
+    {
+      "min": 15.8,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 5.8,
+      "p95": 22,
+      "okRate": 100
+    },
+    {
+      "min": 16.3,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 3.8,
+      "p95": 3.5,
+      "okRate": 100
+    },
+    {
+      "min": 16.8,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 4.8,
+      "p95": 28.7,
+      "okRate": 100
+    },
+    {
+      "min": 17.3,
+      "phase": "intensive",
+      "conc": 12,
+      "rps": 3.5,
+      "p95": 32.3,
+      "okRate": 100
+    },
+    {
+      "min": 17.8,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 5.3,
+      "p95": 24.3,
+      "okRate": 100
+    },
+    {
+      "min": 18.3,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 4.2,
+      "p95": 4.3,
+      "okRate": 100
+    },
+    {
+      "min": 18.8,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 6.9,
+      "p95": 33.4,
+      "okRate": 100
+    },
+    {
+      "min": 19.3,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 5.5,
+      "p95": 30.8,
+      "okRate": 100
+    },
+    {
+      "min": 19.8,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 5.7,
+      "p95": 23.6,
+      "okRate": 100
+    },
+    {
+      "min": 20.3,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 2.7,
+      "p95": 6.9,
+      "okRate": 100
+    },
+    {
+      "min": 20.8,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 6.1,
+      "p95": 33.9,
+      "okRate": 100
+    },
+    {
+      "min": 21.3,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 5.2,
+      "p95": 35.1,
+      "okRate": 100
+    },
+    {
+      "min": 21.8,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 5.7,
+      "p95": 16.7,
+      "okRate": 100
+    },
+    {
+      "min": 22.3,
+      "phase": "intensive",
+      "conc": 16,
+      "rps": 4.1,
+      "p95": 3.7,
+      "okRate": 100
+    },
+    {
+      "min": 22.8,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 5.9,
+      "p95": 27.3,
+      "okRate": 100
+    },
+    {
+      "min": 23.3,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 6.4,
+      "p95": 28.7,
+      "okRate": 100
+    },
+    {
+      "min": 23.8,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 7.5,
+      "p95": 20.2,
+      "okRate": 100
+    },
+    {
+      "min": 24.3,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 5.2,
+      "p95": 3.8,
+      "okRate": 100
+    },
+    {
+      "min": 24.8,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 6.7,
+      "p95": 33.5,
+      "okRate": 100
+    },
+    {
+      "min": 25.3,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 6.1,
+      "p95": 36.3,
+      "okRate": 100
+    },
+    {
+      "min": 25.8,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 6.7,
+      "p95": 26.3,
+      "okRate": 100
+    },
+    {
+      "min": 26.3,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 4,
+      "p95": 5,
+      "okRate": 100
+    },
+    {
+      "min": 26.8,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 7,
+      "p95": 30.8,
+      "okRate": 100
+    },
+    {
+      "min": 27.3,
+      "phase": "intensive",
+      "conc": 20,
+      "rps": 5.4,
+      "p95": 21.8,
+      "okRate": 100
+    },
+    {
+      "min": 27.8,
+      "phase": "intensive",
+      "conc": 24,
+      "rps": 7,
+      "p95": 44.2,
+      "okRate": 100
+    },
+    {
+      "min": 28.3,
+      "phase": "intensive",
+      "conc": 24,
+      "rps": 5.5,
+      "p95": 4.4,
+      "okRate": 100
+    },
+    {
+      "min": 28.8,
+      "phase": "intensive",
+      "conc": 24,
+      "rps": 7.5,
+      "p95": 37.2,
+      "okRate": 100
+    },
+    {
+      "min": 29.3,
+      "phase": "intensive",
+      "conc": 24,
+      "rps": 5.8,
+      "p95": 39.3,
+      "okRate": 100
+    },
+    {
+      "min": 29.8,
+      "phase": "intensive",
+      "conc": 23,
+      "rps": 6.9,
+      "p95": 19.7,
+      "okRate": 100
+    },
+    {
+      "min": 30.3,
+      "phase": "intensive",
+      "conc": 24,
+      "rps": 4.4,
+      "p95": 4.6,
+      "okRate": 100
+    },
+    {
+      "min": 30.8,
+      "phase": "intensive",
+      "conc": 24,
+      "rps": 7.3,
+      "p95": 35.1,
+      "okRate": 100
+    },
+    {
+      "min": 31.3,
+      "phase": "intensive",
+      "conc": 24,
+      "rps": 6.4,
+      "p95": 28,
+      "okRate": 100
+    },
+    {
+      "min": 31.8,
+      "phase": "intensive",
+      "conc": 23,
+      "rps": 7.2,
+      "p95": 24.4,
+      "okRate": 100
+    },
+    {
+      "min": 32.3,
+      "phase": "edge",
+      "conc": 24,
+      "rps": 5.7,
+      "p95": 4.6,
+      "okRate": 100
+    }
+  ]
+}

@@ -1936,6 +1936,9 @@ updateDrainer = startTelegramUpdateDrainer(
     queue: createPostgresTelegramUpdateQueue(container.sql),
     handler: container.handler,
     log,
+    // SANDBOX-SOAK-01: مساراتٌ متوازيةٌ لكلِّ مستخدم. الافتراضُ ١ = السلوكُ التسلسليُّ القائم،
+    // وقيمةٌ غيرُ عدديّةٍ تُسقِطُ إلى ١ داخلَ الدرينر (`Number.NaN > 1` باطل).
+    lanes: Number(process.env.TELEGRAM_DRAIN_LANES ?? "1"),
   },
   { intervalMs: TELEGRAM_DRAINER_FALLBACK_INTERVAL_MS },
 );

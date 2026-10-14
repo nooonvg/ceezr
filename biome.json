@@ -9,7 +9,9 @@
       "!coverage",
       "!docs/evidence",
       "!docs/contracts",
-      "!**/dist"
+      "!**/dist",
+      "!deploy/sandbox-soak/logs",
+      "!deploy/sandbox-soak/reports"
     ]
   },
   "formatter": {

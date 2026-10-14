@@ -52,6 +52,47 @@ export interface TelegramUpdateDrainDeps {
    * ويُمرَّرُ في الاختبارِ ليُقاسَ السقفُ نفسُه بلا مائةِ وظيفةٍ وهميّةٍ.
    */
   readonly maxJobsPerRun?: number;
+  /**
+   * SANDBOX-SOAK-01 — عددُ المساراتِ المتوازية. الافتراضُ ١ (السلوكُ التسلسليُّ القائم).
+   * عندَ >١: تُعالَجُ تحديثاتُ المستخدمين المختلفين بالتوازي، وتحديثاتُ المستخدمِ الواحدِ
+   * (لكلِّ بوت) بالترتيبِ داخلَ مسارٍ واحد — فانتظارُ دلوِ محادثةٍ (١ رسالة/ث) لا يحجبُ
+   * بقيّةَ المحادثات (Head-of-line blocking).
+   */
+  readonly lanes?: number;
+}
+
+/** حقلٌ من حمولةِ تيليجرام يحملُ مُرسِلًا أو محادثة — كلُّ ما يلزمُ مفتاحَ المسار. */
+interface LaneCarrier {
+  readonly from?: { readonly id?: number | string };
+  readonly chat?: { readonly id?: number | string };
+}
+
+/** الحقولُ التي تحملُ صاحبَ التحديثِ في Bot API، بترتيبِ الأولويّة. */
+const LANE_FIELDS = [
+  "message",
+  "edited_message",
+  "callback_query",
+  "chat_join_request",
+  "my_chat_member",
+  "chat_member",
+  "inline_query",
+] as const;
+
+/**
+ * SANDBOX-SOAK-01 — مفتاحُ المسار: البوت + هويّةُ المستخدم (وإلّا المحادثة).
+ * تحديثاتُ المستخدمِ الواحدِ لبوتٍ واحدٍ تقعُ في مسارٍ واحدٍ فيبقى ترتيبُها؛ وما لا
+ * يحملُ مستخدمًا يأخذُ مسارًا خاصًّا به (`fallback` = رقمُ التحديث) فلا يحجبُ غيرَه.
+ */
+export function laneKeyOf(bot: string, payload: unknown, fallback: string): string {
+  if (typeof payload === "object" && payload !== null) {
+    const record = payload as Readonly<Record<string, LaneCarrier | undefined>>;
+    for (const field of LANE_FIELDS) {
+      const carrier = record[field];
+      const id = carrier?.from?.id ?? carrier?.chat?.id;
+      if (id !== undefined) return `${bot}:${String(id)}`;
+    }
+  }
+  return `${bot}:u${fallback}`;
 }
 
 /** نتيجةُ شوطِ استنزافٍ واحد. */
@@ -83,6 +124,8 @@ export async function drainTelegramUpdateJobsOnce(
   let truncated = false;
 
   const maxJobsPerRun = deps.maxJobsPerRun ?? TELEGRAM_JOB_CONSUMER_CONCURRENCY;
+  const lanes = Math.max(1, Math.trunc(deps.lanes ?? 1));
+  if (lanes > 1) return drainConcurrently(deps, maxJobsPerRun, lanes);
 
   for (;;) {
     if (claimed >= maxJobsPerRun) {
@@ -103,33 +146,90 @@ export async function drainTelegramUpdateJobsOnce(
     if (job === null) break;
     claimed += 1;
 
-    const lease = { bot: job.bot, updateId: job.updateId, claimToken: job.claimToken };
-    try {
-      const handled = await deps.handler.handle(job.bot as BotKind, job.payload);
-      const sealed = await deps.queue.finish(lease, handled, handled ? undefined : "NOT_HANDLED");
-      if (handled && sealed) {
-        done += 1;
-      } else {
-        failed += 1;
-        deps.log?.("telegram.drainer.stamp_failed", {
-          bot: job.bot,
-          updateId: job.updateId,
-          handled,
-        });
-      }
-    } catch (error) {
-      failed += 1;
-      const message = error instanceof Error ? error.message : String(error);
-      // الختمُ كفشلٍ: إن لم تُستنفدِ المحاولاتُ تعاد للطابورِ، وإلّا ماتت نهائيّاً.
-      await deps.queue.finish(lease, false, message).catch(() => {});
-      deps.log?.("telegram.drainer.job_error", {
-        bot: job.bot,
-        updateId: job.updateId,
-        error: message,
-      });
-    }
+    if (await processClaimedJob(deps, job)) done += 1;
+    else failed += 1;
   }
 
+  return { claimed, done, failed, truncated };
+}
+
+/**
+ * معالجةُ وظيفةٍ ملتقَطةٍ واحدةٍ وختمُها — مشتركةٌ بينَ المسارِ التسلسليِّ والمتوازي
+ * فلا يختلفُ بينهما معنى «تمّ» ولا «فشل». تعيدُ `true` إن عولجَت وخُتمَت.
+ */
+async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob): Promise<boolean> {
+  const lease = { bot: job.bot, updateId: job.updateId, claimToken: job.claimToken };
+  try {
+    const handled = await deps.handler.handle(job.bot as BotKind, job.payload);
+    const sealed = await deps.queue.finish(lease, handled, handled ? undefined : "NOT_HANDLED");
+    if (handled && sealed) return true;
+    deps.log?.("telegram.drainer.stamp_failed", {
+      bot: job.bot,
+      updateId: job.updateId,
+      handled,
+    });
+    return false;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await deps.queue.finish(lease, false, message).catch(() => {});
+    deps.log?.("telegram.drainer.job_error", {
+      bot: job.bot,
+      updateId: job.updateId,
+      error: message,
+    });
+    return false;
+  }
+}
+
+type ClaimedJob = NonNullable<Awaited<ReturnType<TelegramUpdateQueue["claim"]>>["job"]>;
+
+/**
+ * SANDBOX-SOAK-01 — استنزافٌ متوازٍ بمساراتٍ لكلِّ مستخدم. يلتقطُ حتى `lanes` وظيفةً جاريةً،
+ * ويُسلسِلُ وظائفَ المفتاحِ الواحدِ (البوت+المستخدم) خلفَ بعضِها بترتيبِ الالتقاطِ (= created_at).
+ */
+async function drainConcurrently(
+  deps: TelegramUpdateDrainDeps,
+  maxJobsPerRun: number,
+  lanes: number,
+): Promise<DrainReport> {
+  let claimed = 0;
+  let done = 0;
+  let failed = 0;
+  let truncated = false;
+  const tails = new Map<string, Promise<void>>();
+  const inflight = new Set<Promise<void>>();
+
+  for (;;) {
+    if (claimed >= maxJobsPerRun) {
+      truncated = true;
+      break;
+    }
+    while (inflight.size >= lanes) await Promise.race(inflight);
+    let job: Awaited<ReturnType<TelegramUpdateQueue["claim"]>>["job"];
+    try {
+      job = (await deps.queue.claim()).job;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      deps.log?.("telegram.drainer.claim_failed", { error: message });
+      break;
+    }
+    if (job === null) break;
+    claimed += 1;
+    const claimedJob = job;
+    const key = laneKeyOf(claimedJob.bot, claimedJob.payload, String(claimedJob.updateId));
+    const prev = tails.get(key) ?? Promise.resolve();
+    const run = prev.then(async () => {
+      if (await processClaimedJob(deps, claimedJob)) done += 1;
+      else failed += 1;
+    });
+    tails.set(key, run);
+    const tracked: Promise<void> = run.finally(() => {
+      inflight.delete(tracked);
+      if (tails.get(key) === run) tails.delete(key);
+    });
+    inflight.add(tracked);
+  }
+  await Promise.all(inflight);
   return { claimed, done, failed, truncated };
 }
 

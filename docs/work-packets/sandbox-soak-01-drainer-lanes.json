@@ -1,0 +1,44 @@
+{
+  "id": "sandbox-soak-01-drainer-lanes",
+  "goal": "SANDBOX-SOAK-01: بيئةُ حملٍ تجريبيّةٌ محلّيّةٌ تشغّلُ البوّابةَ الحقيقيّةَ بوضعِ الإنتاج (Postgres+PostGIS وRedis وشِمّ Upstash ومحاكي تيليجرام)، ومولّدُ حملٍ للمشاويرِ والتوصيلِ والقروبات والحالاتِ الحدّيّة؛ وإصلاحُ حجبِ رأسِ الطابورِ في مستنزفِ تحديثاتِ تيليجرام بمساراتٍ متوازيةٍ لكلِّ مستخدم خلفَ TELEGRAM_DRAIN_LANES (الافتراضُ 1 = السلوكُ القائم).",
+  "canonical_source": ["docs/evidence/capacity/SANDBOX-SOAK-01-20261015.md"],
+  "implementation": [
+    "apps/gateway/src/background/telegram-update-drainer.ts",
+    "apps/gateway/src/index.ts",
+    "tests/unit/telegram-update-drainer-lanes.test.ts",
+    ".env.example",
+    "deploy/sandbox-soak/load/soak.ts",
+    "deploy/sandbox-soak/mocks/telegram-mock-preload.ts",
+    "deploy/sandbox-soak/bootstrap.sh",
+    "deploy/sandbox-soak/run_services.sh",
+    "deploy/sandbox-soak/run_all.sh",
+    "deploy/sandbox-soak/monitor.sh",
+    "deploy/sandbox-soak/config/sandbox.env",
+    "biome.json"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "deploy/sandbox-soak/README.md",
+    "docs/evidence/capacity/SANDBOX-SOAK-01-20261015.md",
+    "docs/evidence/capacity/sandbox-soak-01-20261015/report_30min.json",
+    "docs/evidence/capacity/sandbox-soak-01-20261015/report_20min.json",
+    "docs/evidence/capacity/sandbox-soak-01-20261015/report_10min.json",
+    "docs/evidence/capacity/sandbox-soak-01-20261015/load-events.jsonl",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "لا ADR: سلوكُ الإنتاجِ بلا تغييرٍ ما لم يُضبَط TELEGRAM_DRAIN_LANES>1، وتفعيلُه في الإنتاجِ قرارٌ للمالكِ بعدَ المراجعة.",
+  "tests": [
+    "tests/unit/telegram-update-drainer-lanes.test.ts",
+    "tests/unit/telegram-update-drainer-run-cap.test.ts"
+  ],
+  "constraints": [
+    "لا هجرة ولا تغيير في المخطط",
+    "الافتراضُ lanes=1 يطابقُ المسارَ التسلسليَّ حرفيًّا (معالجةُ الوظيفةِ وختمُها في دالّةٍ واحدةٍ مشتركة)",
+    "ترتيبُ تحديثاتِ المستخدمِ الواحدِ لكلِّ بوتٍ محفوظٌ داخلَ مسارِه",
+    "لا يُلمَسُ الإنتاجُ ولا Render ولا Supabase؛ الأسرارُ في sandbox.env وهميّة",
+    "biome.json يستثني مجلّدَي المخرجاتِ المحلّيّةِ للأداة (logs/ وreports/) فقط، وهما خارجَ git"
+  ],
+  "limitations": "الترتيبُ مضمونٌ داخلَ المثيلِ الواحدِ فقط (الطوبولوجيا الحاليّةُ مثيلٌ واحد). عنقُ الزجاجةِ الأخطرُ — سعةُ deliver-notifications (نحوُ 48 إشعارًا/دقيقة) — مقيسٌ وموثَّقٌ ولم يُصلَح هنا. المولّدُ يقبلُ العروضَ من القاعدةِ لا من الإشعار."
+}
