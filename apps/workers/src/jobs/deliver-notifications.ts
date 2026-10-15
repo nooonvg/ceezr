@@ -39,7 +39,9 @@ function intIn(raw: string | undefined, min: number, max: number): number | null
 }
 
 /** قيمٌ غيرُ صالحةٍ تعودُ للافتراضيِّ (لا تُعطِّلُ الإقلاع) وتُعلَنُ في `invalid`. */
-export function notificationDrainSettingsFromEnv(env: Readonly<Record<string, string | undefined>>): NotificationDrainSettings & { invalid: string[] } {
+export function notificationDrainSettingsFromEnv(
+  env: Readonly<Record<string, string | undefined>>,
+): NotificationDrainSettings & { invalid: string[] } {
   const invalid: string[] = [];
   const pickOr = (name: string, min: number, max: number, dflt: number) => {
     const raw = env[name];
@@ -49,8 +51,18 @@ export function notificationDrainSettingsFromEnv(env: Readonly<Record<string, st
   };
   return {
     lanes: pickOr("NOTIFICATION_DRAIN_LANES", 1, 64, NOTIFICATION_DRAIN_DEFAULTS.lanes),
-    budgetMs: pickOr("NOTIFICATION_DRAIN_BUDGET_MS", 0, 60_000, NOTIFICATION_DRAIN_DEFAULTS.budgetMs),
-    maxClaims: pickOr("NOTIFICATION_DRAIN_MAX_CLAIMS", 1, 100_000, NOTIFICATION_DRAIN_DEFAULTS.maxClaims),
+    budgetMs: pickOr(
+      "NOTIFICATION_DRAIN_BUDGET_MS",
+      0,
+      60_000,
+      NOTIFICATION_DRAIN_DEFAULTS.budgetMs,
+    ),
+    maxClaims: pickOr(
+      "NOTIFICATION_DRAIN_MAX_CLAIMS",
+      1,
+      100_000,
+      NOTIFICATION_DRAIN_DEFAULTS.maxClaims,
+    ),
     invalid,
   };
 }

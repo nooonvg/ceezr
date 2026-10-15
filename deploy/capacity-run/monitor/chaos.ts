@@ -33,12 +33,21 @@ const PLAN: Step[] = JSON.parse(
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const results: Record<string, unknown>[] = [];
 function tl(o: Record<string, unknown>) {
-  appendFileSync(`${EV}/timeline.jsonl`, `${JSON.stringify({ t: new Date().toISOString(), minute: +((Date.now() - START) / 60000).toFixed(2), source: "chaos", ...o })}\n`);
+  appendFileSync(
+    `${EV}/timeline.jsonl`,
+    `${JSON.stringify({ t: new Date().toISOString(), minute: +((Date.now() - START) / 60000).toFixed(2), source: "chaos", ...o })}\n`,
+  );
 }
-async function sh(cmd: string[], timeoutMs = 30_000): Promise<{ code: number | null; out: string }> {
+async function sh(
+  cmd: string[],
+  timeoutMs = 30_000,
+): Promise<{ code: number | null; out: string }> {
   const p = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", stdin: "ignore" });
   const timer = setTimeout(() => p.kill(9), timeoutMs);
-  const [out, errOut] = await Promise.all([new Response(p.stdout).text(), new Response(p.stderr).text()]);
+  const [out, errOut] = await Promise.all([
+    new Response(p.stdout).text(),
+    new Response(p.stderr).text(),
+  ]);
   const code = await p.exited;
   clearTimeout(timer);
   return { code, out: (out + errOut).slice(0, 400) };
@@ -55,7 +64,11 @@ async function readyAt(maxMs: number): Promise<number | null> {
   return null;
 }
 async function q<T>(f: (s: postgres.Sql) => Promise<T>): Promise<T | { error: string }> {
-  const s = postgres(`${DB}?application_name=cap-chaos`, { max: 1, connect_timeout: 5, idle_timeout: 2 });
+  const s = postgres(`${DB}?application_name=cap-chaos`, {
+    max: 1,
+    connect_timeout: 5,
+    idle_timeout: 2,
+  });
   try {
     return await Promise.race([f(s), sleep(10_000).then(() => ({ error: "timeout" }) as never)]);
   } catch (e) {
@@ -65,27 +78,53 @@ async function q<T>(f: (s: postgres.Sql) => Promise<T>): Promise<T | { error: st
   }
 }
 const queueState = () =>
-  q(async (s) => (
-    await s`select
+  q(
+    async (s) =>
+      (
+        await s`select
       (select count(*)::int from notification_outbox where status='sending') outbox_sending,
       (select count(*)::int from notification_outbox where status='sending' and claimed_at < now() - interval '5 minutes') outbox_sending_over_5m,
       (select count(*)::int from telegram_update_jobs where status='claimed') jobs_claimed,
       (select count(*)::int from telegram_update_jobs where status='claimed' and claimed_at < now() - interval '60 seconds') jobs_claimed_over_60s,
       (select count(*)::int from telegram_update_jobs where status='dead') jobs_dead,
       (select count(*)::int from notification_outbox where status='dead') outbox_dead`
-  )[0]);
+      )[0],
+  );
 // -u: عمليات المستخدم وحدها — بدونه يطابق pgrep غلافَ sudo (root) فيفشل kill بـEPERM (عيبُ أداةٍ مقيس في الدقيقة 20)
-const gatewayPid = async () => (await sh(["pgrep", "-u", String(process.getuid?.() ?? 1000), "-f", "[a]pps/gateway/src/index.ts"])).out.trim().split("\n").filter(Boolean).map(Number).filter((p) => p > 0);
+const gatewayPid = async () =>
+  (
+    await sh([
+      "pgrep",
+      "-u",
+      String(process.getuid?.() ?? 1000),
+      "-f",
+      "[a]pps/gateway/src/index.ts",
+    ])
+  ).out
+    .trim()
+    .split("\n")
+    .filter(Boolean)
+    .map(Number)
+    .filter((p) => p > 0);
 
 async function inject(step: Step) {
   const t0 = Date.now();
-  const rec: Record<string, unknown> = { ...step, started_at: new Date().toISOString(), before: await queueState() };
+  const rec: Record<string, unknown> = {
+    ...step,
+    started_at: new Date().toISOString(),
+    before: await queueState(),
+  };
   tl({ event: "fault.start", action: step.action });
   try {
     switch (step.action) {
       case "pg_terminate_backends": {
-        rec.result = await q(async (s) => (await s`select count(*)::int n from (select pg_terminate_backend(pid) from pg_stat_activity
-            where datname=current_database() and pid<>pg_backend_pid() and application_name not in ('cap-monitor','cap-chaos','gen1','gen2')) x`)[0]);
+        rec.result = await q(
+          async (s) =>
+            (
+              await s`select count(*)::int n from (select pg_terminate_backend(pid) from pg_stat_activity
+            where datname=current_database() and pid<>pg_backend_pid() and application_name not in ('cap-monitor','cap-chaos','gen1','gen2')) x`
+            )[0],
+        );
         break;
       }
       case "db_lock_delay": {
@@ -118,7 +157,15 @@ async function inject(step: Step) {
         break;
       }
       case "redis_pause": {
-        rec.result = await sh(["redis-cli", "-p", "56379", "CLIENT", "PAUSE", String((step.arg ?? 10) * 1000), "ALL"]);
+        rec.result = await sh([
+          "redis-cli",
+          "-p",
+          "56379",
+          "CLIENT",
+          "PAUSE",
+          String((step.arg ?? 10) * 1000),
+          "ALL",
+        ]);
         await sleep((step.arg ?? 10) * 1000);
         break;
       }
@@ -129,13 +176,48 @@ async function inject(step: Step) {
         break;
       }
       case "pg_restart": {
-        rec.result = await sh(["/usr/lib/postgresql/18/bin/pg_ctl", "-D", `${B}/pg`, "-m", "fast", "-w", "-t", "60", "-o", `-p 55432 -k ${B}/sock -c listen_addresses=127.0.0.1 -c max_connections=400 -c shared_buffers=768MB -c log_min_duration_statement=1000 -c log_lock_waits=on -c track_io_timing=on`, "-l", `${B}/logs/pg.log`, "restart"], 90_000);
+        rec.result = await sh(
+          [
+            "/usr/lib/postgresql/18/bin/pg_ctl",
+            "-D",
+            `${B}/pg`,
+            "-m",
+            "fast",
+            "-w",
+            "-t",
+            "60",
+            "-o",
+            `-p 55432 -k ${B}/sock -c listen_addresses=127.0.0.1 -c max_connections=400 -c shared_buffers=768MB -c log_min_duration_statement=1000 -c log_lock_waits=on -c track_io_timing=on`,
+            "-l",
+            `${B}/logs/pg.log`,
+            "restart",
+          ],
+          90_000,
+        );
         break;
       }
       case "redis_restart_persisted": {
         rec.shutdown = await sh(["redis-cli", "-p", "56379", "SHUTDOWN", "SAVE"]);
         await sleep(1000);
-        rec.restart = await sh(["redis-server", "--port", "56379", "--bind", "127.0.0.1", "--dir", `${B}/redis`, "--save", "", "--appendonly", "no", "--daemonize", "yes", "--logfile", `${B}/logs/redis.log`, "--pidfile", `${B}/redis/redis.pid`]);
+        rec.restart = await sh([
+          "redis-server",
+          "--port",
+          "56379",
+          "--bind",
+          "127.0.0.1",
+          "--dir",
+          `${B}/redis`,
+          "--save",
+          "",
+          "--appendonly",
+          "no",
+          "--daemonize",
+          "yes",
+          "--logfile",
+          `${B}/logs/redis.log`,
+          "--pidfile",
+          `${B}/redis/redis.pid`,
+        ]);
         break;
       }
       default:
@@ -147,11 +229,21 @@ async function inject(step: Step) {
   rec.action_ms = Date.now() - t0;
   rec.ready_after_ms = await readyAt(120_000);
   rec.recovered = rec.ready_after_ms !== null;
-  tl({ event: "fault.end", action: step.action, recovered: rec.recovered, ready_after_ms: rec.ready_after_ms, error: rec.error ?? null, killed: rec.killed ?? null });
+  tl({
+    event: "fault.end",
+    action: step.action,
+    recovered: rec.recovered,
+    ready_after_ms: rec.ready_after_ms,
+    error: rec.error ?? null,
+    killed: rec.killed ?? null,
+  });
   await sleep(60_000);
   rec.after_60s = await queueState();
   results.push(rec);
-  writeFileSync(`${EV}/fault-injection.json`, JSON.stringify({ plan: PLAN, soak_start: new Date(START).toISOString(), results }, null, 2));
+  writeFileSync(
+    `${EV}/fault-injection.json`,
+    JSON.stringify({ plan: PLAN, soak_start: new Date(START).toISOString(), results }, null, 2),
+  );
 }
 
 tl({ event: "chaos.start", plan: PLAN });

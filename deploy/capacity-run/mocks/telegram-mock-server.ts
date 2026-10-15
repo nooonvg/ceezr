@@ -229,15 +229,28 @@ Bun.serve({
         text: b.text,
       };
     } else if (method === "getMe") {
-      result = { id: Number(token.split(":")[0]) || 1, is_bot: true, first_name: `mock_${bot}`, username: `mock_${bot}_bot` };
+      result = {
+        id: Number(token.split(":")[0]) || 1,
+        is_bot: true,
+        first_name: `mock_${bot}`,
+        username: `mock_${bot}_bot`,
+      };
     } else if (method === "createChatInviteLink") {
-      result = { invite_link: `https://t.me/+mock${seq}`, creator: { id: 1 }, is_primary: false, is_revoked: false };
+      result = {
+        invite_link: `https://t.me/+mock${seq}`,
+        creator: { id: 1 },
+        is_primary: false,
+        is_revoked: false,
+      };
     } else if (method === "getFile") {
       result = { file_id: b.file_id, file_unique_id: "u", file_path: "photos/mock.jpg" };
     } else if (method === "getWebhookInfo") {
       result = { url: "", has_custom_certificate: false, pending_update_count: 0 };
     } else if (method === "getChatMember") {
-      result = { status: "member", user: { id: Number(b.user_id) || 0, is_bot: false, first_name: "t" } };
+      result = {
+        status: "member",
+        user: { id: Number(b.user_id) || 0, is_bot: false, first_name: "t" },
+      };
     } else if (method === "getChat") {
       result = { id: Number(chat) || 0, type: chat.startsWith("-") ? "supergroup" : "private" };
     }

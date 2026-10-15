@@ -33,6 +33,7 @@ import {
   type MiniAppLanguage,
 } from "../../../../packages/shared/i18n/miniapp/core.ts";
 import { loadMiniAppLanguage } from "../../../../packages/shared/i18n/miniapp/load.ts";
+import { startParamFromBoot } from "../identity/boot.ts";
 import type { ViewerView } from "../identity/viewer.ts";
 import { ErrorBoundary } from "../shell/ErrorBoundary.tsx";
 import { applyDocumentDirection } from "../styles/direction.ts";
@@ -147,7 +148,9 @@ export function RoleRouter({ fetchViewer, onReauth }: RoleRouterProps) {
   const [state, setState] = useState<RouterState>({ kind: "resolving" });
   const [language, setLanguage] = useState<MiniAppLanguage>(MINIAPP_DEFAULT_LANGUAGE);
   // يُقرأُ مرّةً لكلِّ تركيبٍ: الهدفُ يصفُ لحظةَ الفتحِ لا كلَّ إعادةِ رسمٍ.
-  const [entryTarget] = useState<string | null>(currentEntryTarget);
+  // `ADR 0286` — الهدفُ من العنوانِ (`?open=`) فإن غابَ فمن `start_param` الموقَّعِ في
+  // التبادلِ (رابطُ `startapp` من بطاقةِ قروبٍ): يُحدَّثُ بعدَ الإقلاعِ مرةً لا في كلِّ رسمٍ.
+  const [entryTarget, setEntryTarget] = useState<string | null>(currentEntryTarget);
   const mounted = useRef(true);
   /**
    * `F1-09` الصفُّ ٥ — علامةُ «وقتِ التفاعلِ»: تُوضَعُ مرّةً واحدةً حينَ يَصلُ
@@ -190,6 +193,10 @@ export function RoleRouter({ fetchViewer, onReauth }: RoleRouterProps) {
   const resolve = useCallback(async () => {
     setState({ kind: "resolving" });
     const view = await fetchViewer();
+    if (entryTarget === null) {
+      const signed = startParamFromBoot();
+      if (signed !== null) setEntryTarget(signed);
+    }
     // `PD-030`: لغةُ الواجهةِ تُقرأُ من الحسابِ لا تُفترَضُ. وغيابُها أو بطلانُها
     // يعني أنَّ الردَّ ناقصٌ فلا يُكملُ — `fetchViewer` يُعيدُ `unavailable` حينَها.
     // `D-29` · `ADR 0186`: قاموسُ لغةِ الحسابِ يُحمَّلُ **بالتوازي** معَ حزمةِ السطحِ، ولا
@@ -224,7 +231,7 @@ export function RoleRouter({ fetchViewer, onReauth }: RoleRouterProps) {
       return;
     }
     setState({ kind: "surface", Component: outcome.module.default, surface: outcome.loaded });
-  }, [fetchViewer]);
+  }, [fetchViewer, entryTarget]);
 
   useEffect(() => {
     void resolve();

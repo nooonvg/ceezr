@@ -242,7 +242,11 @@ export function withOutboundResilience(
     // فيبقى للحرجِ متنفَّسٌ. ودلوُ المحادثةِ لا حِصّةَ فيه (فتحةٌ واحدةٌ لا تُقسَمُ).
     const bucketClass = bucketClassOfSendPriority(priority);
     for (;;) {
-      const globalSlot = await options.bucket.acquire("global", options.bucketKey ?? "bot", bucketClass);
+      const globalSlot = await options.bucket.acquire(
+        "global",
+        options.bucketKey ?? "bot",
+        bucketClass,
+      );
       if (!globalSlot.granted) {
         if (waited + globalSlot.waitMs > maxBucketWaitMs) return "ازدحامُ الدلوِ العالميِّ";
         options.onEvent?.({

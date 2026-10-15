@@ -129,6 +129,24 @@ export function miniAppUrl(base: string, target: MiniAppTarget | null): string {
   return url.toString();
 }
 
+/**
+ * `ADR 0286` — رابطُ فتحِ التطبيقِ من **خارجَ المحادثاتِ الخاصةِ**: تيليجرامُ يقصرُ زرَّ
+ * `web_app` على المحادثاتِ الخاصةِ ([Bot API](https://core.telegram.org/bots/api#inlinekeyboardbutton))،
+ * فبطاقةُ القروبِ — إشعارٌ لا مسارَ عملٍ — تحملُ زرَّ رابطٍ يفتحُ التطبيقَ عبرَ معاملِ
+ * `startapp` نفسِهِ الذي يُبَثُّ داخلَ `initData` الموقَّعِ (`start_param`) فتقرؤه الشاشةُ
+ * من التبادلِ الموثَّقِ لا من ضميمةٍ خام. والترميزُ هو ترميزُ `open` بلا تحويلٍ.
+ */
+export function startappDeepLink(botUsername: string, target: MiniAppTarget | null): string {
+  if (!/^@?[A-Za-z0-9_]{4,32}$/.test(botUsername)) {
+    throw new Error(`MINIAPP_BOT_USERNAME_INVALID: ${botUsername.slice(0, 8)}`);
+  }
+  const username = botUsername.startsWith("@") ? botUsername.slice(1) : botUsername;
+  const encoded = target === null ? "" : encodeMiniAppTarget(target);
+  return encoded === ""
+    ? `https://t.me/${username}`
+    : `https://t.me/${username}?startapp=${encoded}`;
+}
+
 /** يقرأ الهدفَ من سلسلةِ استعلامِ صفحةِ التطبيقِ (`location.search`). */
 export function targetFromSearch(search: string, audience: MiniAppAudience): MiniAppTarget | null {
   const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);

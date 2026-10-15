@@ -74,6 +74,7 @@ const KNOWN_ERRORS: ReadonlySet<string> = new Set([
   "ORDER_HELD",
   "CITY_MISMATCH",
   "CLAIM_REFUSED",
+  "DRIVER_HAS_ACTIVE_ORDER",
 ]);
 
 /**

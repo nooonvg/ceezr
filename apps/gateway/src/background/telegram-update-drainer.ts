@@ -216,14 +216,23 @@ async function drainConcurrently(
           if (leases.length === 0) return;
           deps.queue.renew?.(leases).then(
             (n) => {
-              if (n < leases.length) deps.log?.("telegram.drainer.lease_renew_partial", { held: leases.length, renewed: n });
+              if (n < leases.length)
+                deps.log?.("telegram.drainer.lease_renew_partial", {
+                  held: leases.length,
+                  renewed: n,
+                });
             },
             (error: unknown) =>
-              deps.log?.("telegram.drainer.lease_renew_failed", { error: error instanceof Error ? error.message : String(error) }),
+              deps.log?.("telegram.drainer.lease_renew_failed", {
+                error: error instanceof Error ? error.message : String(error),
+              }),
           );
         }, renewEvery);
   // D2: توزيعُ الالتقاطِ بين البوتين — الأقلُّ انشغالًا أوّلًا، ومن فرغَ طابورُه في هذا الشوطِ يُتخطّى.
-  const fair = deps.fairBots !== undefined && deps.fairBots.length > 1 && deps.queue.claimFor !== undefined ? [...deps.fairBots] : null;
+  const fair =
+    deps.fairBots !== undefined && deps.fairBots.length > 1 && deps.queue.claimFor !== undefined
+      ? [...deps.fairBots]
+      : null;
   const busy = new Map<string, number>();
   const drained = new Set<string>();
   const nextClaim = async (): Promise<ClaimedJob | null> => {
@@ -258,7 +267,11 @@ async function drainConcurrently(
       claimed += 1;
       const claimedJob = job;
       const heldKey = `${claimedJob.bot}:${claimedJob.updateId}`;
-      held.set(heldKey, { bot: claimedJob.bot, updateId: claimedJob.updateId, claimToken: claimedJob.claimToken });
+      held.set(heldKey, {
+        bot: claimedJob.bot,
+        updateId: claimedJob.updateId,
+        claimToken: claimedJob.claimToken,
+      });
       busy.set(claimedJob.bot, (busy.get(claimedJob.bot) ?? 0) + 1);
       const key = laneKeyOf(claimedJob.bot, claimedJob.payload, String(claimedJob.updateId));
       const prev = tails.get(key) ?? Promise.resolve();
@@ -419,11 +432,15 @@ export function wakeDrainerOnEnqueue<
  * و"-5"/"abc" يسقطانِ صامتَين. المقبولُ عددٌ صحيحٌ عشريٌّ 1..256؛ غيرُه ⇒ 1 (التسلسليّ) مع إعلانِ invalid.
  */
 export const TELEGRAM_DRAIN_LANES_MAX = 256;
-export function parseTelegramDrainLanes(raw: string | undefined): { lanes: number; invalid: boolean } {
+export function parseTelegramDrainLanes(raw: string | undefined): {
+  lanes: number;
+  invalid: boolean;
+} {
   if (raw === undefined || raw.trim() === "") return { lanes: 1, invalid: false };
   const t = raw.trim();
   if (!/^\d+$/.test(t)) return { lanes: 1, invalid: true };
   const n = Number(t);
-  if (!Number.isSafeInteger(n) || n < 1 || n > TELEGRAM_DRAIN_LANES_MAX) return { lanes: 1, invalid: true };
+  if (!Number.isSafeInteger(n) || n < 1 || n > TELEGRAM_DRAIN_LANES_MAX)
+    return { lanes: 1, invalid: true };
   return { lanes: n, invalid: false };
 }

@@ -27,6 +27,7 @@ function baseSource(
     // ٤٠ محرفاً أبجديّاً رقميّاً: يُجيز تحقّقَ الإنتاجِ (طولٌ ≥٣٢ ومجموعةُ المحارفِ).
     TELEGRAM_WEBHOOK_SECRET: "abcdefghijklmnopqrstuvwxyz0123456789abcd",
     BOOTSTRAP_ADMIN_TELEGRAM_ID: "123456789",
+    MINIAPP_URL: "https://app.example.com",
     // F5-04 / ADR 0063: إعلانٌ إلزاميٌّ في الإنتاج — يُعلَن في الأساسِ كي يبقى
     // المُختبَرُ ههنا مخزنَ الجلساتِ وحدَه لا شرطَين معاً.
     RUN_WORKER_IN_GATEWAY: "false",

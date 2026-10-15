@@ -8,12 +8,19 @@
  */
 import { describe, expect, test } from "bun:test";
 import { createMemoryOutboundRateBucket } from "../../packages/infrastructure/notification/outbound-rate-bucket.ts";
-import { createMemoryDeadLetterSink, outboundBucketKeyOfToken, withOutboundResilience } from "../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
+import {
+  createMemoryDeadLetterSink,
+  outboundBucketKeyOfToken,
+  withOutboundResilience,
+} from "../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
 import type { TelegramSender } from "../../packages/infrastructure/notification/telegram-api-sender.ts";
 
 const fake = (sent: string[], tag: string): TelegramSender =>
   ({
-    sendMessage: async (chatId: string) => (sent.push(`${tag}:${chatId}`), "1"),
+    sendMessage: async (chatId: string) => {
+      sent.push(`${tag}:${chatId}`);
+      return "1";
+    },
   }) as unknown as TelegramSender;
 
 /** نافذةٌ واحدةٌ مجمّدةُ الزمن: 40 رسالة لكلّ بوت إلى 40 محادثةً مختلفة؛ ما لا يجدُ فتحةً يُتخلّى عنه فورًا. */
@@ -32,8 +39,16 @@ async function burst(keys: [string | undefined, string | undefined]) {
     });
   const d = mk("driver", keys[0]);
   const r = mk("rider", keys[1]);
-  await Promise.allSettled(Array.from({ length: 40 }, (_, i) => [d.sendMessage(`d${i}`, "x", null), r.sendMessage(`r${i}`, "x", null)]).flat());
-  return { driver: sent.filter((s) => s.startsWith("driver")).length, rider: sent.filter((s) => s.startsWith("rider")).length };
+  await Promise.allSettled(
+    Array.from({ length: 40 }, (_, i) => [
+      d.sendMessage(`d${i}`, "x", null),
+      r.sendMessage(`r${i}`, "x", null),
+    ]).flat(),
+  );
+  return {
+    driver: sent.filter((s) => s.startsWith("driver")).length,
+    rider: sent.filter((s) => s.startsWith("rider")).length,
+  };
 }
 
 describe("D6: دلوٌ عالميٌّ لكلِّ بوت", () => {
@@ -44,11 +59,17 @@ describe("D6: دلوٌ عالميٌّ لكلِّ بوت", () => {
     expect(r.driver + r.rider).toBe(CAP);
   });
   test("بمفتاحٍ لكلِّ رمز: السقفُ لكلِّ بوتٍ على حِدَة", async () => {
-    const r = await burst([outboundBucketKeyOfToken("111:AAA"), outboundBucketKeyOfToken("222:BBB")]);
+    const r = await burst([
+      outboundBucketKeyOfToken("111:AAA"),
+      outboundBucketKeyOfToken("222:BBB"),
+    ]);
     expect(r).toEqual({ driver: CAP, rider: CAP });
   });
   test("الرمزُ نفسُه مرّتين ⇒ دلوٌ واحد (لا مضاعفةَ للحدّ)", async () => {
-    const r = await burst([outboundBucketKeyOfToken("111:AAA"), outboundBucketKeyOfToken("111:AAA")]);
+    const r = await burst([
+      outboundBucketKeyOfToken("111:AAA"),
+      outboundBucketKeyOfToken("111:AAA"),
+    ]);
     expect(r.driver + r.rider).toBe(CAP);
   });
   test("المفتاحُ لا يحوي الرمز", () => {

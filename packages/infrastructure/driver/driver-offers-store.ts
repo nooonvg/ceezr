@@ -61,6 +61,7 @@ const REJECTIONS: readonly DriverOfferStoreRejection[] = [
   "ORDER_HELD",
   "CITY_MISMATCH",
   "CLAIM_REFUSED",
+  "DRIVER_HAS_ACTIVE_ORDER",
 ];
 
 function failed(reason: "STORE_ERROR" | "MALFORMED_RESULT"): DriverOfferStoreError {

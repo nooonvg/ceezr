@@ -71,6 +71,7 @@ export const DRIVER_OFFER_PUBLIC_ERROR_CODES = [
   "ORDER_HELD",
   "CITY_MISMATCH",
   "CLAIM_REFUSED",
+  "DRIVER_HAS_ACTIVE_ORDER",
 ] as const;
 
 export type DriverOfferPublicErrorCode = (typeof DRIVER_OFFER_PUBLIC_ERROR_CODES)[number];
@@ -159,6 +160,8 @@ function publicCodeFrom(error: DriverOfferStoreError): DriverOfferRejection {
       return rejection("CITY_MISMATCH");
     case "CLAIM_REFUSED":
       return rejection("CLAIM_REFUSED");
+    case "DRIVER_HAS_ACTIVE_ORDER":
+      return rejection("DRIVER_HAS_ACTIVE_ORDER");
   }
 }
 

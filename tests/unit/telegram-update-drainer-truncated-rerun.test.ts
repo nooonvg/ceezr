@@ -15,7 +15,14 @@ function finiteQueue(count: number, c: { claims: number; finishes: number }): Te
       if (c.claims >= count) return { job: null };
       c.claims += 1;
       return {
-        job: { bot: "rider", updateId: c.claims, payload: { update_id: c.claims, message: { from: { id: c.claims % 7 } } }, claimToken: `t${c.claims}`, attempts: 1, maxAttempts: 5 },
+        job: {
+          bot: "rider",
+          updateId: c.claims,
+          payload: { update_id: c.claims, message: { from: { id: c.claims % 7 } } },
+          claimToken: `t${c.claims}`,
+          attempts: 1,
+          maxAttempts: 5,
+        },
       };
     },
     finish: async () => {
@@ -40,7 +47,10 @@ describe("D1: الشوطُ المقطوعُ يُعيدُ الجدولةَ فور
   for (const lanes of [1, 8]) {
     test(`250 وظيفة بسقف 100 وإيقاظٍ واحد تُستنزَفُ كلُّها بلا مؤقّت (lanes=${lanes})`, async () => {
       const c = { claims: 0, finishes: 0 };
-      const d = startTelegramUpdateDrainer({ queue: finiteQueue(250, c), handler: handles, maxJobsPerRun: 100, lanes }, { intervalMs: 60_000, clock: frozenClock });
+      const d = startTelegramUpdateDrainer(
+        { queue: finiteQueue(250, c), handler: handles, maxJobsPerRun: 100, lanes },
+        { intervalMs: 60_000, clock: frozenClock },
+      );
       d.kick();
       await until(() => c.finishes >= 250, 2000);
       await d.stop();
@@ -50,7 +60,15 @@ describe("D1: الشوطُ المقطوعُ يُعيدُ الجدولةَ فور
   }
   test("طابورٌ لا يفرُغُ: stop() ما زالَ ينهي الحلقةَ", async () => {
     const c = { claims: 0, finishes: 0 };
-    const d = startTelegramUpdateDrainer({ queue: finiteQueue(Number.MAX_SAFE_INTEGER, c), handler: handles, maxJobsPerRun: 10, lanes: 4 }, { intervalMs: 60_000, clock: frozenClock });
+    const d = startTelegramUpdateDrainer(
+      {
+        queue: finiteQueue(Number.MAX_SAFE_INTEGER, c),
+        handler: handles,
+        maxJobsPerRun: 10,
+        lanes: 4,
+      },
+      { intervalMs: 60_000, clock: frozenClock },
+    );
     d.kick();
     await until(() => c.claims >= 100, 2000);
     await d.stop();

@@ -50,7 +50,9 @@ export type DriverOfferStoreRejection =
   /** سائقٌ من مدينةٍ وطلبٌ من أخرى — يُردُّ ولا يُطابَقُ. */
   | "CITY_MISMATCH"
   /** رفضٌ من `claim_ride` بلا رمزٍ معروفٍ — يُنقَلُ ولا يُخترَعُ له معنًى. */
-  | "CLAIM_REFUSED";
+  | "CLAIM_REFUSED"
+  /** `I1` · `ADR 0286` — السائقُ يحملُ التزامًا قائمًا؛ لا إسنادَ ثانياً له. */
+  | "DRIVER_HAS_ACTIVE_ORDER";
 
 /** عطبُ مخزنٍ أو حمولةٌ لا تُفهَمُ — يُنشَرُ `503`، ولا يُخلَطُ برفضٍ مُصنَّفٍ. */
 export interface DriverOfferStoreFailure {

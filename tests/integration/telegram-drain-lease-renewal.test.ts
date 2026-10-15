@@ -30,11 +30,17 @@ d("D3 على قاعدةٍ حقيقية: تجديدُ إيجارِ المحجوز
   });
 
   for (const renew of [false, true]) {
-    it(renew ? "بالتجديد: كلُّ وظيفةٍ تُعالَجُ مرّةً وتُختَم" : "إعادةُ إنتاج: بلا تجديدٍ تُعالَجُ وظائفُ مرّتين", async () => {
+    it(renew
+      ? "بالتجديد: كلُّ وظيفةٍ تُعالَجُ مرّةً وتُختَم"
+      : "إعادةُ إنتاج: بلا تجديدٍ تُعالَجُ وظائفُ مرّتين", async () => {
       const base = (renew ? 9_100_000 : 9_000_000) + (Date.now() % 100_000) * 10;
       await enqueue(base, 1, 4242);
       await enqueue(base + 1, 1, 4343);
-      const queue = createPostgresTelegramUpdateQueue(sql, { leaseTimeoutSeconds: 1, maxAttempts: 5, retryDelaySeconds: 1 });
+      const queue = createPostgresTelegramUpdateQueue(sql, {
+        leaseTimeoutSeconds: 1,
+        maxAttempts: 5,
+        retryDelaySeconds: 1,
+      });
       const q: typeof queue = renew ? queue : (({ renew: _r, ...rest }) => rest)(queue);
       const handled = new Map<number, number>();
       const stamps: string[] = [];
@@ -47,7 +53,14 @@ d("D3 على قاعدةٍ حقيقية: تجديدُ إيجارِ المحجوز
         },
       };
       // شوطان متزامنان (كنسختين/شوطين متداخلين) — الثاني يلتقطُ ما انتهى إيجارُه
-      const deps = { queue: q, handler: handler as never, maxJobsPerRun: 50, lanes: 8, leaseRenewEveryMs: 300, log: (m: string) => void stamps.push(m) };
+      const deps = {
+        queue: q,
+        handler: handler as never,
+        maxJobsPerRun: 50,
+        lanes: 8,
+        leaseRenewEveryMs: 300,
+        log: (m: string) => void stamps.push(m),
+      };
       await Promise.all([
         drainTelegramUpdateJobsOnce(deps),
         (async () => {
@@ -56,7 +69,11 @@ d("D3 على قاعدةٍ حقيقية: تجديدُ إيجارِ المحجوز
         })(),
       ]);
       const dup = [...handled.values()].filter((n) => n > 1).length;
-      const rows = [...(await sql<{ status: string; n: number }[]>`select status, count(*)::int n from telegram_update_jobs where bot='rider' and update_id between ${base} and ${base + 1} group by 1`)];
+      const rows = [
+        ...(await sql<
+          { status: string; n: number }[]
+        >`select status, count(*)::int n from telegram_update_jobs where bot='rider' and update_id between ${base} and ${base + 1} group by 1`),
+      ];
       if (renew) {
         expect(dup).toBe(0);
         expect(stamps.filter((s) => s === "telegram.drainer.stamp_failed").length).toBe(0);

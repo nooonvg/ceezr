@@ -754,6 +754,7 @@ describe("عقدُ الإنتاجِ لمخزنِ الجلساتِ — BUG-016", 
       TELEGRAM_WEBHOOK_SECRET: "t".repeat(48),
       SESSION_SECRET: "s".repeat(48),
       BOOTSTRAP_ADMIN_TELEGRAM_ID: "900000",
+      MINIAPP_URL: "https://app.example.com",
       PROCESS_TOPOLOGY: "single-process",
     };
 

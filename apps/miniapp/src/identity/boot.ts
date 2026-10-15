@@ -37,6 +37,11 @@ interface ExchangeResponse {
   readonly accessToken: string;
   readonly expiresAtMs: number;
   readonly refreshToken?: string;
+  /**
+   * `ADR 0286` — هدفُ الهبوطِ من `startapp` كما وقّعهُ تيليجرامُ في `initData`
+   * (`start_param`): تموجيهٌ لا هويةَ ولا صلاحيةَ — الهويّةُ من التوقيعِ وحده.
+   */
+  readonly startParam?: string;
 }
 
 export type BootFailureReason =
@@ -155,6 +160,16 @@ const defaultExchange = (initData: string, observe?: ApiObserver): Promise<Excha
  *      بعدَ إعادةِ تحميلٍ، أو تعطّلُ شبكة).
  *   4. مبادلةُ `initData` — حين لا رمزَ محفوظاً أو رُفِض.
  */
+/**
+ * `ADR 0286` — هدفُ الهبوطِ من `start_param` الموقَّعِ (إن وُجِدَ في آخر تبادلٍ ناجحٍ):
+ * بطاقةُ القروبِ تفتحُ التطبيقَ برابطِ `startapp` فتصلَ الشاشةُ إلى هدفِها من التبادلِ
+ * الموثَّقِ لا من ضميمةٍ خامٍ. يُقرأُ مرةً بعدَ الإقلاعِ لا في كلِّ رسمٍ.
+ */
+const bootStartParam: string | null = null;
+export function startParamFromBoot(): string | null {
+  return bootStartParam;
+}
+
 export function establishSession(deps: BootDeps = {}): Promise<BootResult> {
   // ADR 0259: نداءانِ متزامنانِ يتشاركانِ إقلاعاً واحداً. وإلّا مضى الثاني — والتقديمُ
   // مُستهلَكٌ في الأوّل — إلى تجديدٍ أو مبادلةٍ فأصدرَ جلسةً ثانية. لا ذاكرةَ للنتيجةِ بعدَ

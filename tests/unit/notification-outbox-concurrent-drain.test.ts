@@ -6,26 +6,46 @@
  */
 import { describe, expect, test } from "bun:test";
 import {
+  deliverNotifications,
+  notificationDrainSettingsFromEnv,
+} from "../../apps/workers/src/jobs/deliver-notifications.ts";
+import {
   deliverNotificationsConcurrently,
   type NotificationOutboxPort,
-  type OutboxDelivery,
   notificationLaneKey,
+  type OutboxDelivery,
 } from "../../packages/application/notification/deliver-notification.ts";
 import { PortFailureError } from "../../packages/application/ports/index.ts";
-import { deliverNotifications, notificationDrainSettingsFromEnv } from "../../apps/workers/src/jobs/deliver-notifications.ts";
 import { err, ok } from "../../packages/shared/result/index.ts";
 
 type Row = { id: string; kind: string; payload: Record<string, unknown> };
 function fakeOutbox(rows: Row[], opts: { failClaimAt?: number; batchLimit?: number } = {}) {
   const queue = [...rows];
-  const st = { claims: 0, finished: new Map<string, number>(), sent: [] as string[], inFlight: 0, peak: 0 };
+  const st = {
+    claims: 0,
+    finished: new Map<string, number>(),
+    sent: [] as string[],
+    inFlight: 0,
+    peak: 0,
+  };
   const port: NotificationOutboxPort = {
     claim: async () => {
       st.claims += 1;
-      if (opts.failClaimAt !== undefined && st.claims === opts.failClaimAt) return err(new PortFailureError("rpc.claim", "db down"));
+      if (opts.failClaimAt !== undefined && st.claims === opts.failClaimAt)
+        return err(new PortFailureError("rpc.claim", "db down"));
       const r = queue.shift();
       if (!r) return ok({ delivery: null });
-      const d: OutboxDelivery = { deliveryId: r.id, kind: r.kind, cityId: "c" as never, claimToken: `t-${r.id}`, attempts: 1, maxAttempts: 3, batchLimit: opts.batchLimit ?? 8, requestId: null, payload: r.payload };
+      const d: OutboxDelivery = {
+        deliveryId: r.id,
+        kind: r.kind,
+        cityId: "c" as never,
+        claimToken: `t-${r.id}`,
+        attempts: 1,
+        maxAttempts: 3,
+        batchLimit: opts.batchLimit ?? 8,
+        requestId: null,
+        payload: r.payload,
+      };
       return ok({ delivery: d });
     },
     finish: async ({ deliveryId }) => {
@@ -43,20 +63,40 @@ function fakeOutbox(rows: Row[], opts: { failClaimAt?: number; batchLimit?: numb
     st.inFlight -= 1;
     return ok({ abandon: false, messageId: `m-${d.deliveryId}`, failure: null });
   };
-  return { port, st, handlers: { offer: handler, negotiation_turn_opened: handler, unmatched_rider: handler, x: handler } };
+  return {
+    port,
+    st,
+    handlers: {
+      offer: handler,
+      negotiation_turn_opened: handler,
+      unmatched_rider: handler,
+      x: handler,
+    },
+  };
 }
-const offers = (n: number): Row[] => Array.from({ length: n }, (_, i) => ({ id: `o${i}`, kind: "offer", payload: { offer_id: `of${i}`, order_id: `ord${i % 10}` } }));
+const offers = (n: number): Row[] =>
+  Array.from({ length: n }, (_, i) => ({
+    id: `o${i}`,
+    kind: "offer",
+    payload: { offer_id: `of${i}`, order_id: `ord${i % 10}` },
+  }));
 
 describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", () => {
   test("إعادةُ إنتاجِ العيب: المسارُ القديمُ يرسلُ 8 فقط من 100 في الشوط", async () => {
     const f = fakeOutbox(offers(100));
-    const r = await deliverNotifications({ outbox: f.port, handlers: f.handlers }, { lanes: 8, budgetMs: 0, maxClaims: 2000 });
+    const r = await deliverNotifications(
+      { outbox: f.port, handlers: f.handlers },
+      { lanes: 8, budgetMs: 0, maxClaims: 2000 },
+    );
     expect(r.ok && r.value.delivered).toBe(8);
     expect(f.st.peak).toBe(1);
   });
   test("بعد الإصلاح: 100 من 100 في شوطٍ واحدٍ، بلا ختمٍ مكرّر، وتزامنٌ ≤ lanes", async () => {
     const f = fakeOutbox(offers(100));
-    const r = await deliverNotificationsConcurrently({ outbox: f.port, handlers: f.handlers }, { lanes: 8, budgetMs: 5000, maxClaims: 2000 });
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: f.handlers },
+      { lanes: 8, budgetMs: 5000, maxClaims: 2000 },
+    );
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.value.delivered).toBe(100);
@@ -67,9 +107,17 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
   });
   test("ترتيبُ المفتاح: صفوفُ الطلبِ نفسِه تُرسَلُ بترتيبِ التقاطِها", async () => {
     const rows: Row[] = [];
-    for (let i = 0; i < 60; i++) rows.push({ id: `r${i}`, kind: i % 2 ? "negotiation_turn_opened" : "unmatched_rider", payload: { order_id: `ord${i % 5}` } });
+    for (let i = 0; i < 60; i++)
+      rows.push({
+        id: `r${i}`,
+        kind: i % 2 ? "negotiation_turn_opened" : "unmatched_rider",
+        payload: { order_id: `ord${i % 5}` },
+      });
     const f = fakeOutbox(rows);
-    const r = await deliverNotificationsConcurrently({ outbox: f.port, handlers: f.handlers }, { lanes: 8, budgetMs: 5000, maxClaims: 2000 });
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: f.handlers },
+      { lanes: 8, budgetMs: 5000, maxClaims: 2000 },
+    );
     expect(r.ok && r.value.delivered).toBe(60);
     for (let k = 0; k < 5; k++) {
       const expected = rows.filter((x) => x.payload.order_id === `ord${k}`).map((x) => x.id);
@@ -78,36 +126,83 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
   });
   test("lanes=1 يساوي التسلسلَ لكن يواصلُ حتّى يفرغَ الطابور", async () => {
     const f = fakeOutbox(offers(30));
-    const r = await deliverNotificationsConcurrently({ outbox: f.port, handlers: f.handlers }, { lanes: 1, budgetMs: 5000, maxClaims: 2000 });
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: f.handlers },
+      { lanes: 1, budgetMs: 5000, maxClaims: 2000 },
+    );
     expect(r.ok && r.value.delivered).toBe(30);
     expect(f.st.peak).toBe(1);
   });
   test("فشلُ القاعدةِ أثناءَ الالتقاط: يتوقّفُ الالتقاطُ، ويُختَمُ ما في الطيرانِ، ويُعادُ الخطأ", async () => {
     const f = fakeOutbox(offers(50), { failClaimAt: 20 });
-    const r = await deliverNotificationsConcurrently({ outbox: f.port, handlers: f.handlers }, { lanes: 8, budgetMs: 5000, maxClaims: 2000 });
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: f.handlers },
+      { lanes: 8, budgetMs: 5000, maxClaims: 2000 },
+    );
     expect(r.ok).toBe(false);
     expect(f.st.finished.size).toBe(19); // كلُّ ما التُقطَ خُتمَ مرّةً، ولا التقاطَ بعدَ الفشل
     expect(f.st.claims).toBe(20);
   });
   test("السقفُ والميزانية: لا التقاطَ بعدَ maxClaims", async () => {
     const f = fakeOutbox(offers(100));
-    const r = await deliverNotificationsConcurrently({ outbox: f.port, handlers: f.handlers }, { lanes: 4, budgetMs: 5000, maxClaims: 25 });
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: f.handlers },
+      { lanes: 4, budgetMs: 5000, maxClaims: 25 },
+    );
     expect(r.ok && r.value.claimed).toBe(25);
     expect(r.ok && r.value.backpressure).toBe("BATCH_LIMIT");
   });
   test("مفتاحُ المسار: العروضُ مستقلّةٌ لكلِّ عرض، وغيرُها بالطلب", () => {
-    const base = { cityId: "c" as never, claimToken: "t", attempts: 1, maxAttempts: 3, batchLimit: 8, requestId: null };
-    expect(notificationLaneKey({ ...base, deliveryId: "a", kind: "offer", payload: { offer_id: "X", order_id: "O" } })).toBe("offer:X");
-    expect(notificationLaneKey({ ...base, deliveryId: "a", kind: "unmatched_rider", payload: { order_id: "O" } })).toBe("order:O");
-    expect(notificationLaneKey({ ...base, deliveryId: "a", kind: "broadcast", payload: {} })).toBe("row:a");
+    const base = {
+      cityId: "c" as never,
+      claimToken: "t",
+      attempts: 1,
+      maxAttempts: 3,
+      batchLimit: 8,
+      requestId: null,
+    };
+    expect(
+      notificationLaneKey({
+        ...base,
+        deliveryId: "a",
+        kind: "offer",
+        payload: { offer_id: "X", order_id: "O" },
+      }),
+    ).toBe("offer:X");
+    expect(
+      notificationLaneKey({
+        ...base,
+        deliveryId: "a",
+        kind: "unmatched_rider",
+        payload: { order_id: "O" },
+      }),
+    ).toBe("order:O");
+    expect(notificationLaneKey({ ...base, deliveryId: "a", kind: "broadcast", payload: {} })).toBe(
+      "row:a",
+    );
   });
   test("الإعدادُ من البيئة: القيمُ غيرُ الصالحةِ تعودُ للافتراضيِّ وتُعلَن", () => {
-    expect(notificationDrainSettingsFromEnv({})).toEqual({ lanes: 8, budgetMs: 8000, maxClaims: 2000, invalid: [] });
-    const s = notificationDrainSettingsFromEnv({ NOTIFICATION_DRAIN_LANES: "0", NOTIFICATION_DRAIN_BUDGET_MS: "abc", NOTIFICATION_DRAIN_MAX_CLAIMS: "-3" });
+    expect(notificationDrainSettingsFromEnv({})).toEqual({
+      lanes: 8,
+      budgetMs: 8000,
+      maxClaims: 2000,
+      invalid: [],
+    });
+    const s = notificationDrainSettingsFromEnv({
+      NOTIFICATION_DRAIN_LANES: "0",
+      NOTIFICATION_DRAIN_BUDGET_MS: "abc",
+      NOTIFICATION_DRAIN_MAX_CLAIMS: "-3",
+    });
     expect(s.lanes).toBe(8);
     expect(s.budgetMs).toBe(8000);
-    expect(s.invalid).toEqual(["NOTIFICATION_DRAIN_LANES", "NOTIFICATION_DRAIN_BUDGET_MS", "NOTIFICATION_DRAIN_MAX_CLAIMS"]);
-    expect(notificationDrainSettingsFromEnv({ NOTIFICATION_DRAIN_BUDGET_MS: "0" }).budgetMs).toBe(0);
+    expect(s.invalid).toEqual([
+      "NOTIFICATION_DRAIN_LANES",
+      "NOTIFICATION_DRAIN_BUDGET_MS",
+      "NOTIFICATION_DRAIN_MAX_CLAIMS",
+    ]);
+    expect(notificationDrainSettingsFromEnv({ NOTIFICATION_DRAIN_BUDGET_MS: "0" }).budgetMs).toBe(
+      0,
+    );
     expect(notificationDrainSettingsFromEnv({ NOTIFICATION_DRAIN_LANES: "999" }).lanes).toBe(8);
   });
 });

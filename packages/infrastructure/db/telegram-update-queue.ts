@@ -130,7 +130,10 @@ export function createPostgresTelegramUpdateQueue(
         job: {
           bot: String(delivery.bot),
           updateId: Number(delivery.update_id),
-          payload: typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : {},
+          payload:
+            typeof payload === "object" && payload !== null
+              ? (payload as Record<string, unknown>)
+              : {},
           claimToken: String(delivery.claim_token),
           attempts: Number(delivery.attempts),
           maxAttempts: Number(delivery.max_attempts),

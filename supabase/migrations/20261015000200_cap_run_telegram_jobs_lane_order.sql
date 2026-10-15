@@ -1,3 +1,5 @@
+-- migration-phase: expand
+
 -- CAP-RUN-20261015 / D4 — ترتيبُ وظائفِ المستخدمِ الواحدِ عبرَ الإعادة.
 --
 -- العيبُ المقيس: وظيفةٌ فشلت (مثلًا ازدحامُ دلوِ الإرسالِ العالميِّ) تعودُ pending بعدَ 5ث، بينما وظائفُ
@@ -26,9 +28,8 @@ alter table telegram_update_jobs
     )
   ) stored;
 
-create index if not exists telegram_update_jobs_lane_open_idx
-  on telegram_update_jobs (lane_key, created_at, update_id)
-  where status in ('pending', 'claimed');
+-- الفهرسُ (`telegram_update_jobs_lane_open_idx`) في ملفٍّ لاحقٍ وحدَهُ بطورِ `index`
+-- لأنَّ `concurrently` لا يُقبَلُ داخلَ معاملةٍ وهذا الملفُّ معاملةٌ واحدةٌ.
 
 create or replace function claim_telegram_update_job(
   p_lease_timeout_seconds integer default 30,

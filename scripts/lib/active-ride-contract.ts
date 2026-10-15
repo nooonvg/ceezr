@@ -50,6 +50,10 @@ export const SURFACE_FILES: readonly string[] = [
   "apps/miniapp/src/surfaces/rider/active/active-ride-view.ts",
   "apps/miniapp/src/surfaces/rider/active/active-ride-api.ts",
   "apps/miniapp/src/surfaces/rider/active/active-ride-contract.ts",
+  // `ADR 0286` — لوحةُ تفاوضِ القروبِ داخلَ الرحلةِ النشطةِ: قرارُ الراكبِ من
+  // التطبيقِ لا من محادثةِ البوتِ.
+  "apps/miniapp/src/surfaces/rider/active/NegotiationPanel.tsx",
+  "apps/miniapp/src/surfaces/rider/active/negotiation-api.ts",
 ];
 
 export const SNAPSHOT_SQL_FILE =

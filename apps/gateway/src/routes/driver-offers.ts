@@ -75,6 +75,7 @@ const STATUS_BY_ERROR: Readonly<
   ORDER_HELD: 409,
   CITY_MISMATCH: 409,
   CLAIM_REFUSED: 409,
+  DRIVER_HAS_ACTIVE_ORDER: 409,
 };
 
 function rejected(c: Context, rejection: DriverOfferRejection) {

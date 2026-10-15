@@ -15,6 +15,7 @@ import {
 import { probeTranslation } from "../../../packages/application/i18n-translation/probe-translation.ts";
 import { translateMessage } from "../../../packages/application/i18n-translation/translate-message.ts";
 import { createDriverPhoneProofs } from "../../../packages/application/identity/onboard-driver.ts";
+import { createNegotiationApp } from "../../../packages/application/negotiation/negotiation-app.ts";
 import { PortFailureError } from "../../../packages/application/ports/index.ts";
 import type { OperatingCityDeps } from "../../../packages/application/rider-city/operating-city.ts";
 import type { EmergencyContactDeps } from "../../../packages/application/safety/emergency-contact.ts";
@@ -71,6 +72,7 @@ import {
 import { createViewerAccountReader } from "../../../packages/infrastructure/identity/viewer-account.ts";
 import { createViewerAccountLanguageWriter } from "../../../packages/infrastructure/identity/viewer-language.ts";
 import { createOrderChatStore } from "../../../packages/infrastructure/messaging/order-chat-store.ts";
+import { createNegotiationAppStore } from "../../../packages/infrastructure/negotiation/negotiation-app-store.ts";
 import { grammyTelegramSender } from "../../../packages/infrastructure/notification/telegram-api-sender.ts";
 import { createUserNotificationCenter } from "../../../packages/infrastructure/notification/user-notification-center.ts";
 import {
@@ -155,6 +157,7 @@ import { jobHealthExpectations } from "../../workers/src/container.ts";
 import { createAdminAuthPort } from "./admin/auth.ts";
 import { mountAdminSurface } from "./admin/mount.ts";
 import {
+  parseTelegramDrainLanes,
   startTelegramUpdateDrainer,
   TELEGRAM_DRAINER_FALLBACK_INTERVAL_MS,
   type TelegramUpdateDrainer,
@@ -163,7 +166,6 @@ import {
 import { grammyCommandRegistrar, registerBotCommands } from "./bots/shared/register-commands.ts";
 import { buildContainer } from "./container.ts";
 import { type EmbeddedWorkerHandle, startEmbeddedWorker } from "./embedded-worker.ts";
-import { parseTelegramDrainLanes } from "./background/telegram-update-drainer.ts";
 import { createJobHealthProbes } from "./job-health.ts";
 import { createLifecycle } from "./lifecycle.ts";
 import { instrumentPaymentConfirmationDeps } from "./observability/payment.ts";
@@ -1290,6 +1292,31 @@ const driverOffers =
       };
 
 /**
+ * `ADR 0286` — أعمالُ التفاوضِ من التطبيقِ المصغَّرِ: مطالبةُ السائقِ في دورةِ
+ * القروبِ وقرارُ الراكبِ (اختيارٌ · اتفاقٌ · تجاوزٌ). **المنافذُ هي نفسُها** التي
+ * يناديها حوارُ البوتِ — لا كاتبَ ثانٍ ولا نسخةً ثانيةً من الحقيقةِ — والهويّةُ
+ * من الجلسةِ الموقَّعةِ لا من جسمِ الطلبِ. وغيابُ سرِّ الجلسةِ **يُسقِطُ السطحَ
+ * كلَّه**: مطالبةٌ بلا رمزٍ موقَّعٍ تعني مطالبةً باسمِ غيرِكَ.
+ */
+const negotiationApp =
+  config.miniappSessionSecret === null
+    ? undefined
+    : {
+        negotiation: createNegotiationApp({
+          sessions: createRevocableSessionReader(
+            createMiniAppSessionReader(config.miniappSessionSecret),
+            sessionRevocationStore,
+          ),
+          now: () => new Date(),
+          store: createNegotiationAppStore(container.sql),
+          claims: container.negotiationApp.claims,
+          rotation: container.negotiationApp.rotation,
+          drivers: container.driverOffers.drivers,
+        }),
+        log,
+      };
+
+/**
  * مَهمّةُ السائقِ النشطةُ (`F3-03`) — **منفذٌ واحدٌ لأربعةِ مساراتٍ**: مخزنٌ
  * يقرأُ الطَورَ ويُنادي كاتبَه. و**لا منفذَ إخطارٍ ولا منفذَ موضعٍ ههنا**:
  * الإخطارُ صندوقُ الصادرِ القائمُ، والبثُّ بندُ `F3-04`. وغيابُ سرِّ الجلسةِ
@@ -1606,6 +1633,7 @@ const app = createServer({
   ...(support === undefined ? {} : { support }),
   ...(driverDocuments === undefined ? {} : { driverDocuments }),
   ...(driverOffers === undefined ? {} : { driverOffers }),
+  ...(negotiationApp === undefined ? {} : { negotiationApp }),
   ...(driverJob === undefined ? {} : { driverJob }),
   ...(orderChat === undefined ? {} : { orderChat }),
   ...(driverActivity === undefined ? {} : { driverActivity }),
@@ -1933,7 +1961,11 @@ for (const [audience, token] of [
  * يفرغُ الطابورَ كاملاً في كلِّ شوطٍ (claim حتى null)، ومانعُ التداخلِ باقٍ.
  */
 const drainLanes = parseTelegramDrainLanes(process.env.TELEGRAM_DRAIN_LANES);
-if (drainLanes.invalid) log("telegram.drainer.lanes_invalid", { raw: process.env.TELEGRAM_DRAIN_LANES ?? null, using: drainLanes.lanes });
+if (drainLanes.invalid)
+  log("telegram.drainer.lanes_invalid", {
+    raw: process.env.TELEGRAM_DRAIN_LANES ?? null,
+    using: drainLanes.lanes,
+  });
 updateDrainer = startTelegramUpdateDrainer(
   {
     queue: createPostgresTelegramUpdateQueue(container.sql),

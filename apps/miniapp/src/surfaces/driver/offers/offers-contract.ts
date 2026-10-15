@@ -140,3 +140,37 @@ export interface DriverAvailabilityResponse {
   readonly ok: true;
   readonly is_available: boolean;
 }
+
+/**
+ * `ADR 0286` — دوراتُ القروباتِ المفتوحةُ في مدينةِ السائقِ: إشعارُ البطاقةِ نفسُها
+ * (الخدمةُ · الالتقاطُ · الوجهةُ · نافذةُ الجمعِ) والمطالبةُ فعلٌ من التطبيقِ لا من
+ * زرِّ القروبِ. وثواني النافذةِ من الخادمِ كما في العروضِ (`ADR 0117`).
+ */
+export interface ApiDriverNegotiationCard {
+  readonly negotiationId: string;
+  readonly orderId: string;
+  readonly service: string;
+  readonly pickupLabel: string | null;
+  readonly dropoffLabel: string | null;
+  readonly collectSecondsLeft: number;
+  readonly myPosition: number | null;
+}
+
+export interface DriverNegotiationsResponse {
+  readonly ok: true;
+  readonly negotiations: readonly ApiDriverNegotiationCard[];
+}
+
+export interface ClaimNegotiationResponse {
+  readonly ok: true;
+  readonly registered: boolean;
+  readonly position: number | null;
+  readonly slots: number | null;
+  readonly reason: string | null;
+}
+
+export interface LeaveNegotiationResponse {
+  readonly ok: true;
+  readonly withdrawn: boolean;
+  readonly reason: string | null;
+}

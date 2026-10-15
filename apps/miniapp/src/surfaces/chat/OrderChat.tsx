@@ -475,7 +475,7 @@ export function OrderChat({
             ))}
           </ol>
 
-          {snapshot !== null && snapshot.writable && locationDraft.state !== "idle" ? (
+          {snapshot?.writable && locationDraft.state !== "idle" ? (
             <div className="ocht__locdraft" role="status">
               {locationDraft.state === "locating" ? <p>{labels.locating}</p> : null}
               {locationDraft.state === "failed" ? (

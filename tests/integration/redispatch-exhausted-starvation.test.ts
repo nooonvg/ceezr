@@ -18,7 +18,11 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import { createSearchingOrderFinder } from "../../packages/infrastructure/dispatch/dispatch-adapters.ts";
 import type { CityId } from "../../packages/shared/kernel/index.ts";
-import { type ActiveCityHandle, ensureActiveCity, restoreCityBaseline } from "../support/active-city.ts";
+import {
+  type ActiveCityHandle,
+  ensureActiveCity,
+  restoreCityBaseline,
+} from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL ?? "";
 const describeIf = DATABASE_URL === "" ? describe.skip : describe;
@@ -39,11 +43,13 @@ describeIf("D8 redispatch starvation by exhausted searching orders", () => {
     const [u] = await sql<{ id: string }[]>`
       insert into users (city_id, role, telegram_id) values (${cityId}::uuid, 'rider', ${TG})
       on conflict (telegram_id) do update set telegram_id = excluded.telegram_id returning id`;
-    userId = u!.id;
+    if (u === undefined) throw new Error("users: لم يُدرَج الصفُّ — الاختبارُ لا معنى له");
+    userId = u.id;
     const [r] = await sql<{ id: string }[]>`
       insert into riders (city_id, user_id) values (${cityId}::uuid, ${userId}::uuid)
       on conflict (user_id) do update set user_id = excluded.user_id returning id`;
-    riderId = r!.id;
+    if (r === undefined) throw new Error("riders: لم يُدرَج الصفُّ — الاختبارُ لا معنى له");
+    riderId = r.id;
   });
 
   afterAll(async () => {
@@ -60,25 +66,28 @@ describeIf("D8 redispatch starvation by exhausted searching orders", () => {
         values (${cityId}::uuid, ${riderId}::uuid, 'transport', 'searching', ${pickup}::geography, 3,
                 now() - interval '10 days' + make_interval(secs => ${i}), now() - interval '10 days')
         returning id`;
-      created.push(o!.id);
+      if (o === undefined) throw new Error("orders: لم يُدرَج الصفُّ — الاختبارُ لا معنى له");
+      created.push(o.id);
     }
     const [fresh] = await sql<{ id: string }[]>`
       insert into orders (city_id, rider_id, service, status, pickup, broadcast_round, searching_since)
       values (${cityId}::uuid, ${riderId}::uuid, 'transport', 'searching', ${pickup}::geography, 1, now())
       returning id`;
-    created.push(fresh!.id);
+    if (fresh === undefined) throw new Error("orders: لم يُدرَج الطلبُ الجديدُ");
+    created.push(fresh.id);
 
     // طلبات الدورة ≤ 1 الأخرى في المدينة (من اختباراتٍ أخرى) تسبق الجديدَ بحقّ — النافذةُ تتّسع لها وله فقط.
     const [row] = await sql<{ n: number }[]>`
       select count(*)::int n from orders o
        where o.city_id = ${cityId}::uuid and o.status = 'searching' and o.assigned_driver_id is null
          and (o.candidate_expires_at is null or o.candidate_expires_at <= now())
-         and o.broadcast_round <= 1 and o.id <> ${fresh!.id}::uuid`;
-    const n = row!.n;
+         and o.broadcast_round <= 1 and o.id <> ${fresh?.id}::uuid`;
+    if (row === undefined) throw new Error("orders: لم يُعَدَّ الصفُّ — الاختبارُ لا معنى له");
+    const n = row.n;
     const finder = createSearchingOrderFinder(sql);
     const res = await finder.findSearching(cityId, n + 1);
     expect(res.ok).toBe(true);
     const ids = res.ok ? res.value.map((r) => String(r.orderId)) : [];
-    expect(ids).toContain(fresh!.id);
+    expect(ids).toContain(fresh?.id);
   });
 });

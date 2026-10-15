@@ -34,6 +34,7 @@ const FULL: Record<string, string> = {
   RUN_ADMIN_IN_GATEWAY: "false",
   TELEGRAM_WEBHOOK_SECRET: "secret",
   BOOTSTRAP_ADMIN_TELEGRAM_ID: "900000",
+  MINIAPP_URL: "https://app.example.com",
 };
 
 describe("tryLoadConfig", () => {

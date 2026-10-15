@@ -13,7 +13,9 @@ const MOCK = process.env.MOCK_TELEGRAM_URL;
 const DIR = process.env.RUN_DIR ? `${process.env.RUN_DIR}/evidence` : "/tmp";
 mkdirSync(DIR, { recursive: true });
 if (!MOCK || !/^http:\/\/127\.0\.0\.1:\d+$/.test(MOCK)) {
-  console.error("[egress-guard] MOCK_TELEGRAM_URL مفقود أو ليس loopback — رفض الإقلاع (fail closed)");
+  console.error(
+    "[egress-guard] MOCK_TELEGRAM_URL مفقود أو ليس loopback — رفض الإقلاع (fail closed)",
+  );
   process.exit(78);
 }
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]", "::1"]);

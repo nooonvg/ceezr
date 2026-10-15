@@ -117,6 +117,7 @@ import {
   withOutboundResilience,
 } from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
 import { createRiderTripNoticeOutbox } from "../../../packages/infrastructure/notification/rider-trip-notice-outbox.ts";
+import { botUsernameProvider } from "../../../packages/infrastructure/notification/telegram-client.ts";
 import { grammyGroupJoinGate } from "../../../packages/infrastructure/notification/telegram-join-gate.ts";
 import {
   grammyLiveLocationChannel,
@@ -303,6 +304,14 @@ export interface Container {
    * تحتاج تشغيل الدورة خارج مسار الـ webhook — وبنفس المحوّلات لا بنسخة موازية.
    */
   readonly negotiation: NegotiationWiring;
+  /**
+   * `ADR 0286` — منافذُ أعمالِ التفاوضِ للتطبيقِ المصغَّرِ: نفسُ منافذِ الحوارِ
+   * (`register/withdraw` · `select/settle/advanceAt`) — لا كاتبَ ثانٍ.
+   */
+  readonly negotiationApp: {
+    readonly claims: ReturnType<typeof createClaimRegistrationPort>;
+    readonly rotation: ReturnType<typeof createNegotiationRotationPort>;
+  };
   /**
    * عمليات الائتمان والاسترداد والفاتورة والتصحيح مالية إدارية/ويبهوك فقط؛ لا
    * تُوصل لحوار السائق حتى لا يصبح البوت قناة قرار استرداد أو تسوية. لوحة الإدارة
@@ -660,11 +669,20 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     rotation: rotationPort,
   };
 
+  /**
+   * `ADR 0286` — هويّةُ بوتِ السائقينَ لمرةٍ واحدةٍ (`getMe` مُخزَّنةً): زرُّ بطاقةِ القروبِ
+   * رابطُ `startapp` لا زرَّ `web_app` (فهو للمحادثاتِ الخاصةِ وحدَها)، والهويّةُ من
+   * البوتِ نفسِهِ لا من إعدادٍ يدويٍّ يتقادمُ بصمتٍ. وتعذُّرُها لا يُسقِطُ البطاقةَ:
+   * يبقى زرُّ المطالبةِ القديمَ (وضعُ `legacy` المعزولُ) لا بلا زرٍّ.
+   */
+  const driverBotUsername = botUsernameProvider(config.driverBotToken);
   const publishDeps = {
     orders,
     notes: createOrderNotesReader(sql),
     cycles: createUnsubscribedCyclePort(sql),
-    publisher: createUnsubscribedGroupPublisher(asIdentifyingSender(driverSender)),
+    publisher: createUnsubscribedGroupPublisher(asIdentifyingSender(driverSender), {
+      driverBotUsername,
+    }),
   };
 
   const escalationDeps = {
@@ -1188,6 +1206,15 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     reputation: { flags: ratingFlagPort, reader: reputationReader },
     safety: { trigger: safety.trigger },
     driverOffers: { drivers, decisions: offerDecisions },
+    /**
+     * `ADR 0286` — منافذُ أعمالِ التفاوضِ للتطبيقِ المصغَّرِ: نفسُ المنافذِ الذرّيّةِ
+     * التي يناديها حوارُ البوتِ (`register/withdraw` للمطالبةِ · `select/settle/
+     * advanceAt` لقرارِ الراكبِ) — لا كاتبَ ثانٍ ولا نسخةً ثانيةً من الحقيقةِ.
+     */
+    negotiationApp: {
+      claims: claimDeps.claims,
+      rotation: rotationDeps.rotation,
+    },
     // `WR-15` (ADR 0265) — الإيداعُ في صندوقِ الصادرِ لا الإرسالُ: العاملُ يُرسلُ ويُعيد.
     riderTripNotice: riderTripNoticeDeps,
     driverLocation: {

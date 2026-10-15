@@ -76,6 +76,10 @@ import {
 } from "./routes/me-operating-city.ts";
 import { createPlacesRoutes, type PlacesRouteDependencies } from "./routes/me-places.ts";
 import {
+  createNegotiationRoutes,
+  type NegotiationRouteDependencies,
+} from "./routes/negotiations.ts";
+import {
   createNotificationRoutes,
   type NotificationsDependencies,
 } from "./routes/notifications.ts";
@@ -196,6 +200,12 @@ export interface ServerDependencies {
    * فعلُ قاعدةٍ لا فعلُ خدمةٍ خارجيّةٍ.
    */
   readonly driverOffers?: DriverOfferRouteDependencies;
+  /**
+   * `ADR 0286` — أعمالُ التفاوضِ من التطبيقِ المصغَّرِ: مطالبةُ السائقِ في دورةِ
+   * القروبِ وقرارُ الراكبِ (اختيارٌ · اتفاقٌ · تجاوزٌ) عبرَ المنافذِ الذرّيّةِ
+   * القائمةِ. وغيابُ سرِّ الجلسةِ **يُسقِطُ السطحَ كلَّه**.
+   */
+  readonly negotiationApp?: NegotiationRouteDependencies;
   /**
    * مَهمّةُ السائقِ النشطةُ (`F3-03` / `SD-05`) — تُركَّبُ مع سرِّ الجلسةِ
    * والقاعدةِ. وغيابُها **يُعلَنُ `503`** ولا يُجابُ بـ«لا مَهمّةَ لكَ»: سائقٌ
@@ -362,6 +372,9 @@ export function createServer(deps: ServerDependencies): Hono {
   }
   if (deps.driverOffers !== undefined) {
     app.route("/", createDriverOfferRoutes(deps.driverOffers));
+  }
+  if (deps.negotiationApp !== undefined) {
+    app.route("/", createNegotiationRoutes(deps.negotiationApp));
   }
   if (deps.driverJob !== undefined) {
     app.route("/", createDriverJobRoutes(deps.driverJob));

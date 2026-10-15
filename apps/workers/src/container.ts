@@ -184,7 +184,10 @@ import { err, ok } from "../../../packages/shared/result/index.ts";
 import { type BackupConfig, createPgDumper, runDatabaseBackup } from "./jobs/backup-database.ts";
 import { cleanupStaleSessions } from "./jobs/cleanup-stale-sessions.ts";
 import { deliverBroadcasts } from "./jobs/deliver-broadcasts.ts";
-import { deliverNotifications, notificationDrainSettingsFromEnv } from "./jobs/deliver-notifications.ts";
+import {
+  deliverNotifications,
+  notificationDrainSettingsFromEnv,
+} from "./jobs/deliver-notifications.ts";
 import { deliverSafetyIncidents } from "./jobs/deliver-safety-incidents.ts";
 import { deliverSubscriptionNotices } from "./jobs/deliver-subscription-notices.ts";
 import { detectCeilingExceededOrders } from "./jobs/detect-ceiling-exceeded.ts";
@@ -773,6 +776,8 @@ export function buildWorkerContainer(
     createTelegramNegotiationMessenger(
       asIdentifyingSender(withTrafficPriority(telegram, kind)),
       asIdentifyingSender(withTrafficPriority(riderTelegram, kind)),
+      // `ADR 0286` — بطاقاتُ الراكبِ تُحيلُ إلى التطبيقِ لا أن تُنفِّذَ من المحادثةِ.
+      { miniAppUrl: config.miniAppUrl },
     );
   /**
    * إخطارا صاحبِ الطلبِ العالقِ ببوتِ الراكبِ حصرًا (BUG-004): كانا يُرسَلانِ من
@@ -1588,20 +1593,20 @@ export function buildWorkerContainer(
                 run: async () => {
                   const report = await deliverNotifications(
                     {
-                    outbox: notificationOutbox,
-                    handlers: notificationHandlers,
-                    // `F8-01` — عبورُ الطابورِ: معالجةُ الصفِّ وإعلانُ نتيجتِه
-                    // تجريانِ **بمعرِّفِ الطلبِ الذي أنشأَ الصفَّ**، فمَن بحثَ
-                    // بمعرِّفٍ من ردٍّ وجدَ أثرَ الإرسالِ في العاملِ أيضاً لا في
-                    // البوّابةِ وحدَها. وصفٌّ بلا معرِّفٍ يمضي بسياقِ الشوطِ نفسِه
-                    // (`job-…`) ولا يُلفَّقُ له معرِّفُ طلبٍ.
-                    withDeliveryCorrelation: (delivery, run) =>
-                      delivery.requestId === null
-                        ? run()
-                        : runWithCorrelationId(
-                            { requestId: delivery.requestId, entry: "worker" },
-                            run,
-                          ),
+                      outbox: notificationOutbox,
+                      handlers: notificationHandlers,
+                      // `F8-01` — عبورُ الطابورِ: معالجةُ الصفِّ وإعلانُ نتيجتِه
+                      // تجريانِ **بمعرِّفِ الطلبِ الذي أنشأَ الصفَّ**، فمَن بحثَ
+                      // بمعرِّفٍ من ردٍّ وجدَ أثرَ الإرسالِ في العاملِ أيضاً لا في
+                      // البوّابةِ وحدَها. وصفٌّ بلا معرِّفٍ يمضي بسياقِ الشوطِ نفسِه
+                      // (`job-…`) ولا يُلفَّقُ له معرِّفُ طلبٍ.
+                      withDeliveryCorrelation: (delivery, run) =>
+                        delivery.requestId === null
+                          ? run()
+                          : runWithCorrelationId(
+                              { requestId: delivery.requestId, entry: "worker" },
+                              run,
+                            ),
                     },
                     // CAP-RUN-20261015 / N1: استنزافٌ متزامنٌ محدود؛ NOTIFICATION_DRAIN_BUDGET_MS=0 = السلوكُ القديم.
                     notificationDrainSettingsFromEnv(process.env),

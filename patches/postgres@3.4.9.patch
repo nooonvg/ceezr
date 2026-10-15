@@ -1,0 +1,23 @@
+diff --git a/src/connection.js b/src/connection.js
+index 1b1cccde43b4570d5d071d6ffaab2669b3c2065a..d55023b16d3d25584ad7ff14ebae2b4f7e293c43 100644
+--- a/src/connection.js
++++ b/src/connection.js
+@@ -252,6 +252,18 @@ function Connection(options, queues = {}, { onopen = noop, onend = noop, onclose
+   }
+ 
+   function nextWrite(fn) {
++    // CEEZR D7 (ADR 0286): the socket can be gone by the time this write
++    // runs — closed() nulls it after clearImmediate, and a submit in the
++    // same tick calls here synchronously. Reject the affected queries with
++    // CONNECTION_DESTROYED and drop the pending chunk instead of crashing
++    // the process on `socket.write` of null.
++    if (!socket) {
++      chunk = null
++      nextWriteTimer !== null && clearImmediate(nextWriteTimer)
++      nextWriteTimer = null
++      error(Errors.connection('CONNECTION_DESTROYED', options))
++      return false
++    }
+     const x = socket.write(chunk, fn)
+     nextWriteTimer !== null && clearImmediate(nextWriteTimer)
+     chunk = nextWriteTimer = null

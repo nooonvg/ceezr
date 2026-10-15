@@ -6,7 +6,14 @@
  * - عند الدقائق المجدولة (REPORT_MARKS، افتراضيًا 10..60 من SOAK_START) يكتب تقريرًا JSON + MD إلى القرص.
  * - كل خطوة داخل try/catch بمهلة: تعطل البوابة أو القاعدة لا يوقف المراقب، بل يُسجَّل.
  */
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import postgres from "postgres";
 
 const RUN_DIR = process.env.RUN_DIR!;
@@ -18,10 +25,17 @@ const DB_URL = process.env.DATABASE_URL!;
 const START = Number(process.env.SOAK_START_MS ?? Date.now());
 const MARKS = (process.env.REPORT_MARKS ?? "10,20,30,40,50,60").split(",").map(Number);
 const END_MIN = Number(process.env.MONITOR_END_MIN ?? 75);
-const sql = postgres(`${DB_URL}?application_name=cap-monitor`, { max: 2, idle_timeout: 30, connect_timeout: 5 });
+const sql = postgres(`${DB_URL}?application_name=cap-monitor`, {
+  max: 2,
+  idle_timeout: 30,
+  connect_timeout: 5,
+});
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([p, new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`timeout:${label}`)), ms))]);
+  return Promise.race([
+    p,
+    new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`timeout:${label}`)), ms)),
+  ]);
 }
 function line(file: string, o: unknown) {
   try {
@@ -67,7 +81,10 @@ async function dbMetrics() {
 
 let redisClient: InstanceType<typeof Bun.RedisClient> | null = null;
 async function redisLatency() {
-  redisClient ??= new Bun.RedisClient("redis://127.0.0.1:56379", { connectionTimeout: 2000, autoReconnect: true });
+  redisClient ??= new Bun.RedisClient("redis://127.0.0.1:56379", {
+    connectionTimeout: 2000,
+    autoReconnect: true,
+  });
   const out: number[] = [];
   for (let i = 0; i < 3; i++) {
     const t = performance.now();
@@ -102,10 +119,13 @@ function procs() {
       if (!g || cmd.startsWith("sudo") || cmd.startsWith("bash")) continue;
       const stat = readFileSync(`/proc/${pid}/stat`, "utf8").split(") ")[1]!.split(" ");
       const ticks = Number(stat[11]) + Number(stat[12]);
-      const rss = Number(readFileSync(`/proc/${pid}/status`, "utf8").match(/VmRSS:\s+(\d+)/)?.[1] ?? 0) / 1024;
+      const rss =
+        Number(readFileSync(`/proc/${pid}/status`, "utf8").match(/VmRSS:\s+(\d+)/)?.[1] ?? 0) /
+        1024;
       const prev = prevCpu.get(pid);
       prevCpu.set(pid, ticks);
-      const e = (groups[g] ??= { pids: [], rss_mb: 0, cpu_pct: 0 });
+      const e = groups[g] ?? { pids: [], rss_mb: 0, cpu_pct: 0 };
+      groups[g] = e;
       e.pids.push(pid);
       e.rss_mb += rss;
       if (prev !== undefined) e.cpu_pct += ((ticks - prev) / HZ / 10) * 100;
@@ -125,7 +145,15 @@ function procs() {
   const memAvail = Number(mi.match(/MemAvailable:\s+(\d+)/)![1]) / 1024;
   const memTotal = Number(mi.match(/MemTotal:\s+(\d+)/)![1]) / 1024;
   const load = readFileSync("/proc/loadavg", "utf8").split(" ").slice(0, 3).map(Number);
-  return { groups, system: { cpu_pct: sysCpu, mem_used_mb: +(memTotal - memAvail).toFixed(0), mem_total_mb: +memTotal.toFixed(0), load } };
+  return {
+    groups,
+    system: {
+      cpu_pct: sysCpu,
+      mem_used_mb: +(memTotal - memAvail).toFixed(0),
+      mem_total_mb: +memTotal.toFixed(0),
+      load,
+    },
+  };
 }
 
 async function ready() {
@@ -139,7 +167,9 @@ async function ready() {
 }
 async function mockStats() {
   try {
-    return await (await fetch("http://127.0.0.1:58090/stats", { signal: AbortSignal.timeout(3000) })).json();
+    return await (
+      await fetch("http://127.0.0.1:58090/stats", { signal: AbortSignal.timeout(3000) })
+    ).json();
   } catch (e) {
     return { error: (e as Error).name };
   }
@@ -188,8 +218,15 @@ async function sample() {
   const rs = (rec.ready as { status: number }).status;
   if (rs !== 200 && prevReady === 200) {
     crashes++;
-    line("timeline.jsonl", { t: at, minute, source: "monitor", event: "gateway.not_ready", ready: rec.ready });
-  } else if (rs === 200 && prevReady !== 200) line("timeline.jsonl", { t: at, minute, source: "monitor", event: "gateway.ready_again" });
+    line("timeline.jsonl", {
+      t: at,
+      minute,
+      source: "monitor",
+      event: "gateway.not_ready",
+      ready: rec.ready,
+    });
+  } else if (rs === 200 && prevReady !== 200)
+    line("timeline.jsonl", { t: at, minute, source: "monitor", event: "gateway.ready_again" });
   prevReady = rs;
   rec.mock = await mockStats();
   line("database-metrics.jsonl", rec);
@@ -210,32 +247,83 @@ function writeReport(mark: number) {
   const last = history[history.length - 1] ?? {};
   const win = history.filter((h) => (h.minute as number) > mark - 10);
   const db = (last.db ?? {}) as Record<string, unknown>;
-  const cpu = win.map((h) => ((h.resources as { system: { cpu_pct: number } }).system.cpu_pct));
-  const gwRss = win.map((h) => ((h.resources as { groups: Record<string, { rss_mb: number }> }).groups.gateway?.rss_mb ?? 0));
+  const cpu = win.map((h) => (h.resources as { system: { cpu_pct: number } }).system.cpu_pct);
+  const gwRss = win.map(
+    (h) =>
+      (h.resources as { groups: Record<string, { rss_mb: number }> }).groups.gateway?.rss_mb ?? 0,
+  );
   const notReady = win.filter((h) => (h.ready as { status: number }).status !== 200).length;
-  const g = gens[0] as Record<string, any> | undefined;
+  const g = gens[0] as Record<string, unknown> | undefined;
   const rep = {
     mark_min: mark,
     written_at: new Date().toISOString(),
     phase: g?.phase,
-    load: { target: g?.target, concurrency: g?.concurrency, peak_concurrency: g?.peakConcurrency, riders_busy: g?.riders_busy, drivers: g?.drivers, rps_window: g?.http_window?.rps, http: g?.http, http_window: g?.http_window, gateway_down_now: g?.gateway_down, outages: g?.outages },
-    generators: gens.map((x) => ({ gen: x.gen, s: x.s, phase: x.phase, concurrency: x.concurrency })),
+    load: {
+      target: g?.target,
+      concurrency: g?.concurrency,
+      peak_concurrency: g?.peakConcurrency,
+      riders_busy: g?.riders_busy,
+      drivers: g?.drivers,
+      rps_window: g?.http_window?.rps,
+      http: g?.http,
+      http_window: g?.http_window,
+      gateway_down_now: g?.gateway_down,
+      outages: g?.outages,
+    },
+    generators: gens.map((x) => ({
+      gen: x.gen,
+      s: x.s,
+      phase: x.phase,
+      concurrency: x.concurrency,
+    })),
     scenarios: g?.scenarios,
     business: g?.biz,
     db_now: db,
     window_10min: {
       samples: win.length,
       not_ready_samples: notReady,
-      cpu_pct: { avg: +(cpu.reduce((a, b) => a + b, 0) / Math.max(1, cpu.length)).toFixed(1), p95: pctOf(cpu, 0.95), max: Math.max(0, ...cpu) },
+      cpu_pct: {
+        avg: +(cpu.reduce((a, b) => a + b, 0) / Math.max(1, cpu.length)).toFixed(1),
+        p95: pctOf(cpu, 0.95),
+        max: Math.max(0, ...cpu),
+      },
       gateway_rss_mb: { max: Math.max(0, ...gwRss), last: gwRss[gwRss.length - 1] },
-      outbox_due_max: Math.max(0, ...win.map((h) => Number((h.db as any)?.outbox_due ?? 0))),
-      outbox_oldest_due_s_max: Math.max(0, ...win.map((h) => Number((h.db as any)?.outbox_oldest_due_s ?? 0))),
-      outbox_created: win.reduce((a, h) => a + Number((h.db as any)?.outbox_created_10s ?? 0), 0),
-      outbox_delivered: win.reduce((a, h) => a + Number((h.db as any)?.outbox_delivered_10s ?? 0), 0),
-      updates_in: win.reduce((a, h) => a + Number((h.db as any)?.updates_in_10s ?? 0), 0),
-      updates_done: win.reduce((a, h) => a + Number((h.db as any)?.updates_done_10s ?? 0), 0),
-      pg_conns_max: Math.max(0, ...win.map((h) => Object.values(((h.db as any)?.pg_conns ?? {}) as Record<string, number>).reduce((a, b) => a + Number(b), 0))),
-      redis_ping_max_ms: Math.max(0, ...win.flatMap((h) => ((h.redis as any)?.ping_ms ?? []) as number[])),
+      outbox_due_max: Math.max(
+        0,
+        ...win.map((h) => Number((h.db as Record<string, unknown>)?.outbox_due ?? 0)),
+      ),
+      outbox_oldest_due_s_max: Math.max(
+        0,
+        ...win.map((h) => Number((h.db as Record<string, unknown>)?.outbox_oldest_due_s ?? 0)),
+      ),
+      outbox_created: win.reduce(
+        (a, h) => a + Number((h.db as Record<string, unknown>)?.outbox_created_10s ?? 0),
+        0,
+      ),
+      outbox_delivered: win.reduce(
+        (a, h) => a + Number((h.db as Record<string, unknown>)?.outbox_delivered_10s ?? 0),
+        0,
+      ),
+      updates_in: win.reduce(
+        (a, h) => a + Number((h.db as Record<string, unknown>)?.updates_in_10s ?? 0),
+        0,
+      ),
+      updates_done: win.reduce(
+        (a, h) => a + Number((h.db as Record<string, unknown>)?.updates_done_10s ?? 0),
+        0,
+      ),
+      pg_conns_max: Math.max(
+        0,
+        ...win.map((h) =>
+          Object.values(
+            ((h.db as Record<string, unknown>)?.pg_conns ?? {}) as Record<string, number>,
+          ).reduce((a, b) => a + Number(b), 0),
+        ),
+      ),
+      redis_ping_max_ms: Math.max(
+        0,
+        ...win.flatMap((h) => ((h.redis as Record<string, unknown>)?.ping_ms ?? []) as number[]),
+      ),
     },
     generator_errors: g?.errors,
     monitor_errors: errors,
@@ -245,8 +333,13 @@ function writeReport(mark: number) {
   const name = `report_${String(mark).padStart(2, "0")}min`;
   writeFileSync(`${REP}/${name}.json`, JSON.stringify(rep, null, 2));
   const w = rep.window_10min;
-  const sc = Object.entries((g?.scenarios ?? {}) as Record<string, any>)
-    .map(([k, v]) => `| ${k} | ${v.started} | ${v.ok} | ${v.fail} | ${Object.entries(v.reasons).map(([r, n]) => `${r}:${n}`).join(", ")} |`)
+  const sc = Object.entries((g?.scenarios ?? {}) as Record<string, unknown>)
+    .map(
+      ([k, v]) =>
+        `| ${k} | ${v.started} | ${v.ok} | ${v.fail} | ${Object.entries(v.reasons)
+          .map(([r, n]) => `${r}:${n}`)
+          .join(", ")} |`,
+    )
     .join("\n");
   const md = `# تقرير الدقيقة ${mark} — ${rep.written_at}
 
@@ -268,18 +361,35 @@ ${sc}
 أخطاء المولّد: ${JSON.stringify(rep.generator_errors)}
 `;
   writeFileSync(`${REP}/${name}.md`, md);
-  line("timeline.jsonl", { t: rep.written_at, minute: mark, source: "monitor", event: "report.written", file: `reports/${name}.json` });
+  line("timeline.jsonl", {
+    t: rep.written_at,
+    minute: mark,
+    source: "monitor",
+    event: "report.written",
+    file: `reports/${name}.json`,
+  });
 }
 
 const done = new Set<number>();
-line("timeline.jsonl", { t: new Date().toISOString(), source: "monitor", event: "monitor.start", soak_start: new Date(START).toISOString(), marks: MARKS });
+line("timeline.jsonl", {
+  t: new Date().toISOString(),
+  source: "monitor",
+  event: "monitor.start",
+  soak_start: new Date(START).toISOString(),
+  marks: MARKS,
+});
 for (;;) {
   const t = Date.now();
   try {
     await sample();
   } catch (e) {
     errors.sample = (errors.sample ?? 0) + 1;
-    line("timeline.jsonl", { t: new Date().toISOString(), source: "monitor", event: "monitor.sample_error", error: String(e).slice(0, 200) });
+    line("timeline.jsonl", {
+      t: new Date().toISOString(),
+      source: "monitor",
+      event: "monitor.sample_error",
+      error: String(e).slice(0, 200),
+    });
   }
   const minute = (Date.now() - START) / 60000;
   for (const m of MARKS)
@@ -288,7 +398,13 @@ for (;;) {
       try {
         writeReport(m);
       } catch (e) {
-        line("timeline.jsonl", { t: new Date().toISOString(), source: "monitor", event: "report.error", mark: m, error: String(e).slice(0, 200) });
+        line("timeline.jsonl", {
+          t: new Date().toISOString(),
+          source: "monitor",
+          event: "report.error",
+          mark: m,
+          error: String(e).slice(0, 200),
+        });
       }
     }
   if (minute > END_MIN) break;

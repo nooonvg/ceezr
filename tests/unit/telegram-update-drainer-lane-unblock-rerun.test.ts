@@ -11,7 +11,10 @@ import { startTelegramUpdateDrainer } from "../../apps/gateway/src/background/te
 import type { TelegramUpdateQueue } from "../../packages/infrastructure/db/telegram-update-queue.ts";
 
 /** طابورٌ يحاكي D4: وظائفُ مستخدمٍ واحدٍ متسلسلة؛ لا تُلتقَطُ التاليةُ قبلَ ختمِ السابقة. */
-function laneQueue(n: number, c: { claims: number; finishes: number; emptyClaims: number }): TelegramUpdateQueue {
+function laneQueue(
+  n: number,
+  c: { claims: number; finishes: number; emptyClaims: number },
+): TelegramUpdateQueue {
   let inFlight = false;
   let next = 1;
   return {
@@ -23,7 +26,16 @@ function laneQueue(n: number, c: { claims: number; finishes: number; emptyClaims
       inFlight = true;
       c.claims += 1;
       const id = next++;
-      return { job: { bot: "rider", updateId: id, payload: { update_id: id, message: { from: { id: 1 } } }, claimToken: `t${id}`, attempts: 1, maxAttempts: 5 } };
+      return {
+        job: {
+          bot: "rider",
+          updateId: id,
+          payload: { update_id: id, message: { from: { id: 1 } } },
+          claimToken: `t${id}`,
+          attempts: 1,
+          maxAttempts: 5,
+        },
+      };
     },
     finish: async () => {
       inFlight = false;
@@ -33,7 +45,10 @@ function laneQueue(n: number, c: { claims: number; finishes: number; emptyClaims
     abandon: async () => true,
   } as unknown as TelegramUpdateQueue;
 }
-const frozenClock = { setInterval: (() => 0) as unknown as typeof setInterval, clearInterval: (() => {}) as unknown as typeof clearInterval };
+const frozenClock = {
+  setInterval: (() => 0) as unknown as typeof setInterval,
+  clearInterval: (() => {}) as unknown as typeof clearInterval,
+};
 const until = async (f: () => boolean, ms: number) => {
   const end = Date.now() + ms;
   while (!f() && Date.now() < end) await new Promise((r) => setTimeout(r, 5));
@@ -44,7 +59,17 @@ describe("D5: ختمُ وظيفةٍ يُعيدُ الجدولةَ فورًا ف�
     test(`8 وظائف متسلسلة لمستخدمٍ واحدٍ بإيقاظٍ واحدٍ تُنجَزُ كلُّها بلا مؤقّت (lanes=${lanes})`, async () => {
       const c = { claims: 0, finishes: 0, emptyClaims: 0 };
       const d = startTelegramUpdateDrainer(
-        { queue: laneQueue(8, c), handler: { handle: async () => { await new Promise((r) => setTimeout(r, 5)); return true; } }, maxJobsPerRun: 100, lanes },
+        {
+          queue: laneQueue(8, c),
+          handler: {
+            handle: async () => {
+              await new Promise((r) => setTimeout(r, 5));
+              return true;
+            },
+          },
+          maxJobsPerRun: 100,
+          lanes,
+        },
         { intervalMs: 60_000, clock: frozenClock },
       );
       d.kick();

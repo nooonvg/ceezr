@@ -27,6 +27,7 @@ const PRODUCTION_ENV: Record<string, string> = {
   TELEGRAM_WEBHOOK_SECRET: "t".repeat(48),
   SESSION_SECRET: "s".repeat(48),
   BOOTSTRAP_ADMIN_TELEGRAM_ID: "1",
+  MINIAPP_URL: "https://app.example.com",
   SESSION_STORE: "redis",
   RUN_WORKER_IN_GATEWAY: "false",
   RUN_ADMIN_IN_GATEWAY: "false",

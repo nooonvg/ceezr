@@ -443,7 +443,9 @@ export async function deliverNotificationsConcurrently(
   };
   const runOne = (delivery: OutboxDelivery) => {
     const wrap = deps.withDeliveryCorrelation;
-    return wrap === undefined ? deliverClaimed(deps, delivery) : wrap(delivery, () => deliverClaimed(deps, delivery));
+    return wrap === undefined
+      ? deliverClaimed(deps, delivery)
+      : wrap(delivery, () => deliverClaimed(deps, delivery));
   };
 
   while (failure.error === null) {
@@ -482,7 +484,10 @@ export async function deliverNotificationsConcurrently(
     const task: Promise<void> = (prev ?? Promise.resolve())
       .then(() => runOne(delivery))
       .then(record, (e: unknown) => {
-        failure.error ??= new PortFailureError("outbox.deliver", e instanceof Error ? e.message : String(e));
+        failure.error ??= new PortFailureError(
+          "outbox.deliver",
+          e instanceof Error ? e.message : String(e),
+        );
       })
       .finally(() => {
         inFlight.delete(task);
@@ -494,5 +499,15 @@ export async function deliverNotificationsConcurrently(
   }
   await Promise.all(inFlight);
   if (failure.error !== null) return err(failure.error);
-  return ok({ claimed, delivered, failed, abandoned, undeliverable, died, backpressure, peakInFlight, elapsedMs: now() - started });
+  return ok({
+    claimed,
+    delivered,
+    failed,
+    abandoned,
+    undeliverable,
+    died,
+    backpressure,
+    peakInFlight,
+    elapsedMs: now() - started,
+  });
 }

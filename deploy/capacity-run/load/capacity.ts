@@ -28,10 +28,19 @@ const N_RIDERS = Number(process.env.N_RIDERS ?? 1000);
 const SEED = process.env.SEED === "1";
 const GEN_ID = process.env.GEN_ID ?? "gen1";
 type Phase = { name: string; sec: number; conc: number };
-const PROFILE: Phase[] = JSON.parse(process.env.PROFILE ?? '[{"name":"smoke","sec":120,"conc":10}]');
-const MIX = JSON.parse(process.env.MIX ?? '{"ride":0.47,"delivery":0.38,"group":0.15}') as Record<string, number>;
+const PROFILE: Phase[] = JSON.parse(
+  process.env.PROFILE ?? '[{"name":"smoke","sec":120,"conc":10}]',
+);
+const MIX = JSON.parse(process.env.MIX ?? '{"ride":0.47,"delivery":0.38,"group":0.15}') as Record<
+  string,
+  number
+>;
 const MATCH_WAIT_MS = Number(process.env.MATCH_WAIT_MS ?? 120_000);
-const sql = postgres(`${DB_URL}?application_name=${GEN_ID}`, { max: 8, idle_timeout: 20, connect_timeout: 10 });
+const sql = postgres(`${DB_URL}?application_name=${GEN_ID}`, {
+  max: 8,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 const T0 = Date.now();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -51,7 +60,10 @@ class Hist {
   b = new Float64Array(400);
   n = 0;
   add(ms: number) {
-    const i = Math.min(399, Math.max(0, Math.floor(Math.log(Math.max(ms, 0.1) * 10) / Math.log(1.06))));
+    const i = Math.min(
+      399,
+      Math.max(0, Math.floor(Math.log(Math.max(ms, 0.1) * 10) / Math.log(1.06))),
+    );
     this.b[i]!++;
     this.n++;
   }
@@ -69,13 +81,24 @@ class Hist {
     return { n: this.n, p50: this.q(0.5), p95: this.q(0.95), p99: this.q(0.99) };
   }
 }
-const http = { total: 0, ok: 0, non2xx: 0, netErr: 0, timeouts: 0, refused: 0, retried: 0, inflight: 0, peakInflight: 0 };
+const http = {
+  total: 0,
+  ok: 0,
+  non2xx: 0,
+  netErr: 0,
+  timeouts: 0,
+  refused: 0,
+  retried: 0,
+  inflight: 0,
+  peakInflight: 0,
+};
 const httpHist = new Hist();
 const httpWin = { hist: new Hist(), n: 0 };
 const byKind: Record<string, Hist> = {};
 type Sc = { started: number; ok: number; fail: number; reasons: Record<string, number>; e2e: Hist };
 const sc: Record<string, Sc> = {};
-const scen = (n: string) => (sc[n] ??= { started: 0, ok: 0, fail: 0, reasons: {}, e2e: new Hist() });
+const scen = (n: string) =>
+  (sc[n] ??= { started: 0, ok: 0, fail: 0, reasons: {}, e2e: new Hist() });
 const biz = {
   createToOrder: new Hist(), // إرسال الطلب حتى ظهور الطلب في القاعدة
   orderToOfferSeen: new Hist(), // إنشاء الطلب (أول ظهور) حتى وصول أول عرض لصندوق سائق في المحاكي
@@ -102,37 +125,66 @@ const nextId = () => (updateId += 1);
 const from = (c: number) => ({ id: c, is_bot: false, first_name: "sbx", language_code: "ar" });
 const msg = (c: number, body: Record<string, unknown>) => {
   const id = nextId();
-  return { update_id: id, message: { message_id: id, date: Math.floor(Date.now() / 1000), chat: { id: c, type: "private" }, from: from(c), ...body } };
+  return {
+    update_id: id,
+    message: {
+      message_id: id,
+      date: Math.floor(Date.now() / 1000),
+      chat: { id: c, type: "private" },
+      from: from(c),
+      ...body,
+    },
+  };
 };
 const text = (c: number, v: string) => msg(c, { text: v });
 type P = { lat: number; lng: number };
 const loc = (c: number, p: P) => msg(c, { location: { latitude: p.lat, longitude: p.lng } });
-const contact = (c: number, phone: string) => msg(c, { contact: { user_id: c, phone_number: phone, first_name: "sbx" } });
+const contact = (c: number, phone: string) =>
+  msg(c, { contact: { user_id: c, phone_number: phone, first_name: "sbx" } });
 const photo = (c: number, f: string) =>
-  msg(c, { photo: [{ file_id: `${f}_t`, file_unique_id: `${f}_tu`, width: 90, height: 90 }, { file_id: f, file_unique_id: `${f}_u`, width: 800, height: 600 }] });
+  msg(c, {
+    photo: [
+      { file_id: `${f}_t`, file_unique_id: `${f}_tu`, width: 90, height: 90 },
+      { file_id: f, file_unique_id: `${f}_u`, width: 800, height: 600 },
+    ],
+  });
 const cb = (c: number, data: string, chatId = c) => {
   const id = nextId();
   return {
     update_id: id,
-    callback_query: { id: String(id), data, chat_instance: "sbx", from: from(c), message: { message_id: 1, date: 0, chat: { id: chatId, type: chatId < 0 ? "supergroup" : "private" } } },
+    callback_query: {
+      id: String(id),
+      data,
+      chat_instance: "sbx",
+      from: from(c),
+      message: {
+        message_id: 1,
+        date: 0,
+        chat: { id: chatId, type: chatId < 0 ? "supergroup" : "private" },
+      },
+    },
   };
 };
 
 // ───────── HTTP مع اكتشاف موت البوابة ─────────
 let gatewayDownSince: number | null = null;
 const outages: { from: string; to: string; ms: number }[] = [];
-let healthLoop: Promise<void> | null = null;
+let _healthLoop: Promise<void> | null = null;
 function markDown() {
   if (gatewayDownSince !== null) return;
   gatewayDownSince = Date.now();
   ev("gateway.down_detected");
-  healthLoop ??= (async () => {
+  _healthLoop ??= (async () => {
     while (gatewayDownSince !== null) {
       try {
         const r = await fetch(`${BASE}/ready`, { signal: AbortSignal.timeout(1500) });
         if (r.status === 200) {
           const ms = Date.now() - gatewayDownSince;
-          outages.push({ from: new Date(gatewayDownSince).toISOString(), to: new Date().toISOString(), ms });
+          outages.push({
+            from: new Date(gatewayDownSince).toISOString(),
+            to: new Date().toISOString(),
+            ms,
+          });
           ev("gateway.up_detected", { downMs: ms });
           gatewayDownSince = null;
           break;
@@ -140,7 +192,7 @@ function markDown() {
       } catch {}
       await sleep(300);
     }
-    healthLoop = null;
+    _healthLoop = null;
   })();
 }
 async function waitUp(maxMs: number) {
@@ -149,7 +201,12 @@ async function waitUp(maxMs: number) {
   return gatewayDownSince === null;
 }
 
-async function post(bot: "driver" | "rider", update: unknown, kind: string, opts: { secret?: string; raw?: string; noRetry?: boolean } = {}): Promise<number> {
+async function post(
+  bot: "driver" | "rider",
+  update: unknown,
+  kind: string,
+  opts: { secret?: string; raw?: string; noRetry?: boolean } = {},
+): Promise<number> {
   const body = opts.raw ?? JSON.stringify(update);
   for (let attempt = 0; attempt < 6; attempt++) {
     if (gatewayDownSince !== null && !opts.noRetry) {
@@ -162,7 +219,10 @@ async function post(bot: "driver" | "rider", update: unknown, kind: string, opts
     try {
       const r = await fetch(`${BASE}/webhook/telegram/${bot}`, {
         method: "POST",
-        headers: { "content-type": "application/json", "x-telegram-bot-api-secret-token": opts.secret ?? SECRET },
+        headers: {
+          "content-type": "application/json",
+          "x-telegram-bot-api-secret-token": opts.secret ?? SECRET,
+        },
         body,
         signal: AbortSignal.timeout(10_000),
       });
@@ -171,7 +231,9 @@ async function post(bot: "driver" | "rider", update: unknown, kind: string, opts
       httpHist.add(d);
       httpWin.hist.add(d);
       httpWin.n++;
-      (byKind[kind] ??= new Hist()).add(d);
+      const hist = byKind[kind] ?? new Hist();
+      byKind[kind] = hist;
+      hist.add(d);
       if (r.status >= 200 && r.status < 300) http.ok++;
       else {
         http.non2xx++;
@@ -203,14 +265,27 @@ async function post(bot: "driver" | "rider", update: unknown, kind: string, opts
 }
 
 // ───────── صندوق الوارد من المحاكي ─────────
-type MockEv = { seq: number; t: number; bot: string; method: string; chat_id: string; message_id: number | null; status: number; text?: string; cbs?: string[] };
+type MockEv = {
+  seq: number;
+  t: number;
+  bot: string;
+  method: string;
+  chat_id: string;
+  message_id: number | null;
+  status: number;
+  text?: string;
+  cbs?: string[];
+};
 type Listener = (e: MockEv) => boolean; // true = استُهلك وأُزيل
 const listeners = new Map<string, Set<Listener>>();
 let mockCursor = Number(process.env.MOCK_CURSOR ?? -1);
 let mockDown = 0;
 function listen(chat: string, fn: Listener) {
   let s = listeners.get(chat);
-  if (!s) listeners.set(chat, (s = new Set()));
+  if (!s) {
+    s = new Set();
+    listeners.set(chat, s);
+  }
   s.add(fn);
   return () => s!.delete(fn);
 }
@@ -241,11 +316,16 @@ async function inboxLoop() {
   }
   for (;;) {
     try {
-      const j = (await (await fetch(`${MOCK}/events?after=${mockCursor}&limit=20000`, { signal: AbortSignal.timeout(5000) })).json()) as { seq: number; events: MockEv[] };
+      const j = (await (
+        await fetch(`${MOCK}/events?after=${mockCursor}&limit=20000`, {
+          signal: AbortSignal.timeout(5000),
+        })
+      ).json()) as { seq: number; events: MockEv[] };
       for (const e of j.events) {
         mockCursor = e.seq;
         if (e.status !== 200) continue;
-        if (e.bot === "driver" && e.cbs?.some((c) => c.startsWith("offer:accept:"))) for (const h of driverOfferHandlers) h(e);
+        if (e.bot === "driver" && e.cbs?.some((c) => c.startsWith("offer:accept:")))
+          for (const h of driverOfferHandlers) h(e);
         const s = listeners.get(e.chat_id);
         if (s) for (const fn of [...s]) fn(e);
       }
@@ -282,7 +362,9 @@ async function boardLoop() {
       }
       const riders = [...awaitingOrder.keys()];
       if (riders.length) {
-        const minSince = Math.min(...riders.flatMap((r) => awaitingOrder.get(r)!.map((x) => x.since)));
+        const minSince = Math.min(
+          ...riders.flatMap((r) => awaitingOrder.get(r)!.map((x) => x.since)),
+        );
         const rows = await sql<(OrderRow & { tg: string; created: Date })[]>`
           select distinct on (u.telegram_id) u.telegram_id::text tg, o.id::text, o.status::text, o.created_at created, null::text driver_tg
             from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id
@@ -318,7 +400,13 @@ function untrack(id: string) {
 }
 function waitOrderCreated(riderChat: number, since: number, ms: number): Promise<OrderRow | null> {
   return new Promise((resolve) => {
-    const entry = { since, resolve: (o: OrderRow | null) => (clearTimeout(tm), resolve(o)) };
+    const entry = {
+      since,
+      resolve: (o: OrderRow | null) => {
+        clearTimeout(tm);
+        resolve(o);
+      },
+    };
     const list = awaitingOrder.get(riderChat) ?? [];
     list.push(entry);
     awaitingOrder.set(riderChat, list);
@@ -330,13 +418,20 @@ function waitOrderCreated(riderChat: number, since: number, ms: number): Promise
     }, ms);
   });
 }
-function waitOrder(id: string, pred: (o: OrderRow) => boolean, ms: number): Promise<OrderRow | null> {
+function waitOrder(
+  id: string,
+  pred: (o: OrderRow) => boolean,
+  ms: number,
+): Promise<OrderRow | null> {
   track(id);
   const cur = tracked.get(id)!;
   if (pred(cur)) return Promise.resolve(cur);
   return new Promise((resolve) => {
     let s = watchers.get(id);
-    if (!s) watchers.set(id, (s = new Set()));
+    if (!s) {
+      s = new Set();
+      watchers.set(id, s);
+    }
     const f = () => {
       const o = tracked.get(id);
       if (o && pred(o)) {
@@ -354,16 +449,61 @@ function waitOrder(id: string, pred: (o: OrderRow) => boolean, ms: number): Prom
 }
 
 // ───────── العالم ─────────
-const CITIES: Record<string, { center: P; role: "core" | "group"; idx: number; drivers: [number, number]; riders: number }> = {
-  JED: { center: { lat: 21.5433, lng: 39.1728 }, role: "core", idx: 1, drivers: [160, 100], riders: 250 },
-  MKK: { center: { lat: 21.4225, lng: 39.8262 }, role: "core", idx: 2, drivers: [120, 80], riders: 200 },
-  RUH: { center: { lat: 24.7136, lng: 46.6753 }, role: "core", idx: 3, drivers: [150, 90], riders: 250 },
-  TIF: { center: { lat: 21.2703, lng: 40.4158 }, role: "group", idx: 4, drivers: [150, 0], riders: 150 },
-  MED: { center: { lat: 24.4672, lng: 39.6111 }, role: "group", idx: 5, drivers: [150, 0], riders: 150 },
+const CITIES: Record<
+  string,
+  { center: P; role: "core" | "group"; idx: number; drivers: [number, number]; riders: number }
+> = {
+  JED: {
+    center: { lat: 21.5433, lng: 39.1728 },
+    role: "core",
+    idx: 1,
+    drivers: [160, 100],
+    riders: 250,
+  },
+  MKK: {
+    center: { lat: 21.4225, lng: 39.8262 },
+    role: "core",
+    idx: 2,
+    drivers: [120, 80],
+    riders: 200,
+  },
+  RUH: {
+    center: { lat: 24.7136, lng: 46.6753 },
+    role: "core",
+    idx: 3,
+    drivers: [150, 90],
+    riders: 250,
+  },
+  TIF: {
+    center: { lat: 21.2703, lng: 40.4158 },
+    role: "group",
+    idx: 4,
+    drivers: [150, 0],
+    riders: 150,
+  },
+  MED: {
+    center: { lat: 24.4672, lng: 39.6111 },
+    role: "group",
+    idx: 5,
+    drivers: [150, 0],
+    riders: 150,
+  },
 };
-const near = (p: P, km: number): P => ({ lat: p.lat + rnd(-km, km) / 111, lng: p.lng + rnd(-km, km) / 105 });
+const near = (p: P, km: number): P => ({
+  lat: p.lat + rnd(-km, km) / 111,
+  lng: p.lng + rnd(-km, km) / 105,
+});
 type DState = "standby" | "idle" | "accepting" | "trip" | "claiming" | "unavailable" | "reserved";
-type Driver = { chat: number; city: string; service: "transport" | "delivery"; subscribed: boolean; id?: string; state: DState; at: P; offersSeen: number };
+type Driver = {
+  chat: number;
+  city: string;
+  service: "transport" | "delivery";
+  subscribed: boolean;
+  id?: string;
+  state: DState;
+  at: P;
+  offersSeen: number;
+};
 type Rider = { chat: number; city: string; busy: boolean };
 const cityIds: Record<string, string> = {};
 const unsubGroup: Record<string, number> = {};
@@ -380,14 +520,24 @@ function buildWorld() {
     unsubGroup[code] = -(1000000000000 + c.idx * 10 + 3);
     const [tr, dl] = c.drivers.map((x) => Math.round(x * scale)) as [number, number];
     for (let i = 0; i < tr + dl; i++) {
-      const d: Driver = { chat: ++dc, city: code, service: i < tr ? "transport" : "delivery", subscribed: c.role === "core", state: "idle", at: near(c.center, 2.5), offersSeen: 0 };
+      const d: Driver = {
+        chat: ++dc,
+        city: code,
+        service: i < tr ? "transport" : "delivery",
+        subscribed: c.role === "core",
+        state: "idle",
+        at: near(c.center, 2.5),
+        offersSeen: 0,
+      };
       // سائقان مشتركان «خارج الخدمة» في كل مدينة قروب: شرطُ قبولِ الطلب (city_served_services يتطلب سائقًا موثّقًا
       // مشتركًا قادرًا)، ولا يُتاحان أبدًا فيُصعَّد الطلب للقروب بعد 30ث. مستبعَدان من كل نشاط المولّد.
-      if (c.role === "group" && i >= tr + dl - 2) Object.assign(d, { subscribed: true, state: "standby" });
+      if (c.role === "group" && i >= tr + dl - 2)
+        Object.assign(d, { subscribed: true, state: "standby" });
       drivers.push(d);
       driverByChat.set(d.chat, d);
     }
-    for (let i = 0; i < Math.round(c.riders * rscale); i++) riders.push({ chat: ++rc, city: code, busy: false });
+    for (let i = 0; i < Math.round(c.riders * rscale); i++)
+      riders.push({ chat: ++rc, city: code, busy: false });
   }
 }
 
@@ -406,12 +556,19 @@ async function poolMap<T>(items: T[], n: number, fn: (x: T, i: number) => Promis
 async function seed() {
   phase = "seed";
   ev("seed.start", { drivers: drivers.length, riders: riders.length });
-  for (const code of Object.keys(CITIES)) cityIds[code] = (await sql<{ id: string }[]>`select id::text from cities where code=${code}`)[0]!.id;
+  for (const code of Object.keys(CITIES))
+    cityIds[code] = (
+      await sql<{ id: string }[]>`select id::text from cities where code=${code}`
+    )[0]!.id;
   const t = Date.now();
   await poolMap(drivers, 120, async (d, n) => {
     await post("driver", text(d.chat, "/start"), "seed");
     await post("driver", text(d.chat, `سائق تجريبي ${n + 1}`), "seed");
-    await post("driver", contact(d.chat, `+9665${String(d.chat).padStart(8, "0").slice(-8)}`), "seed");
+    await post(
+      "driver",
+      contact(d.chat, `+9665${String(d.chat).padStart(8, "0").slice(-8)}`),
+      "seed",
+    );
     await post("driver", cb(d.chat, `city:${cityIds[d.city]}`), "seed");
     await post("driver", cb(d.chat, `service:${d.service}`), "seed");
     await post("driver", cb(d.chat, "vehicle:sedan"), "seed");
@@ -420,11 +577,12 @@ async function seed() {
     await post("driver", photo(d.chat, `vphoto_${d.chat}`), "seed");
   });
   ev("seed.driver_updates_posted", { ms: Date.now() - t });
-  if (process.env.SEED_SKIP_RIDERS !== "1") await poolMap(riders, 150, async (r, n) => {
-    await post("rider", text(r.chat, "/start"), "seed");
-    await post("rider", text(r.chat, `زبون تجريبي ${n + 1}`), "seed");
-    await post("rider", cb(r.chat, `city:${cityIds[r.city]}`), "seed");
-  });
+  if (process.env.SEED_SKIP_RIDERS !== "1")
+    await poolMap(riders, 150, async (r, n) => {
+      await post("rider", text(r.chat, "/start"), "seed");
+      await post("rider", text(r.chat, `زبون تجريبي ${n + 1}`), "seed");
+      await post("rider", cb(r.chat, `city:${cityIds[r.city]}`), "seed");
+    });
   ev("seed.rider_updates_posted", { ms: Date.now() - t });
   // انتظار اكتمال تسجيل الجميع (المستنزف يعالج بترتيب كل مستخدم)
   const deadline = Date.now() + 25 * 60_000;
@@ -434,7 +592,9 @@ async function seed() {
              (select count(*)::int from riders) r,
              (select count(*)::int from telegram_update_jobs where status in ('pending','claimed')) q`;
     ev("seed.progress", c!);
-    console.log(`[seed] drivers=${c!.d}/${drivers.length} riders=${c!.r}/${riders.length} queue=${c!.q}`);
+    console.log(
+      `[seed] drivers=${c!.d}/${drivers.length} riders=${c!.r}/${riders.length} queue=${c!.q}`,
+    );
     if ((c!.d >= drivers.length && c!.r >= riders.length) || Date.now() > deadline) break;
     if (c!.q === 0 && Date.now() - t > 60_000) break;
     await sleep(5000);
@@ -447,25 +607,44 @@ async function seed() {
              where s.driver_id=d.id and c.code in ('TIF','MED') and (select u.telegram_id from users u where u.id=d.user_id) not in (7300849,7300850,7300999,7301000)`;
   ev("seed.verified");
   await loadIds();
-  await poolMap(drivers.filter((d) => d.id && d.state !== "standby"), 100, async (d) => {
-    await post("driver", text(d.chat, "/available"), "seed");
-    await post("driver", loc(d.chat, d.at), "seed");
-  });
+  await poolMap(
+    drivers.filter((d) => d.id && d.state !== "standby"),
+    100,
+    async (d) => {
+      await post("driver", text(d.chat, "/available"), "seed");
+      await post("driver", loc(d.chat, d.at), "seed");
+    },
+  );
   ev("seed.done", { ms: Date.now() - t });
 }
 
 async function reseedMissing() {
   phase = "reseed";
-  for (const code of Object.keys(CITIES)) cityIds[code] = (await sql<{ id: string }[]>`select id::text from cities where code=${code}`)[0]!.id;
-  const have = new Set((await sql<{ tg: string }[]>`select telegram_id::text tg from users`).map((r) => Number(r.tg)));
+  for (const code of Object.keys(CITIES))
+    cityIds[code] = (
+      await sql<{ id: string }[]>`select id::text from cities where code=${code}`
+    )[0]!.id;
+  const have = new Set(
+    (await sql<{ tg: string }[]>`select telegram_id::text tg from users`).map((r) => Number(r.tg)),
+  );
   const md = drivers.filter((d) => !have.has(d.chat));
-  const haveR = new Set((await sql<{ tg: string }[]>`select u.telegram_id::text tg from riders r join users u on u.id=r.user_id`).map((r) => Number(r.tg)));
+  const haveR = new Set(
+    (
+      await sql<
+        { tg: string }[]
+      >`select u.telegram_id::text tg from riders r join users u on u.id=r.user_id`
+    ).map((r) => Number(r.tg)),
+  );
   const mr = riders.filter((r) => !haveR.has(r.chat));
   ev("reseed.start", { drivers: md.length, riders: mr.length });
   await poolMap(md, 40, async (d, n) => {
     await post("driver", text(d.chat, "/start"), "seed");
     await post("driver", text(d.chat, `سائق تجريبي ب${n + 1}`), "seed");
-    await post("driver", contact(d.chat, `+9665${String(d.chat).padStart(8, "0").slice(-8)}`), "seed");
+    await post(
+      "driver",
+      contact(d.chat, `+9665${String(d.chat).padStart(8, "0").slice(-8)}`),
+      "seed",
+    );
     await post("driver", cb(d.chat, `city:${cityIds[d.city]}`), "seed");
     await post("driver", cb(d.chat, `service:${d.service}`), "seed");
     await post("driver", cb(d.chat, "vehicle:sedan"), "seed");
@@ -479,7 +658,9 @@ async function reseedMissing() {
     await post("rider", cb(r.chat, `city:${cityIds[r.city]}`), "seed");
   });
   for (let i = 0; i < 60; i++) {
-    const [q] = await sql<{ q: number }[]>`select count(*)::int q from telegram_update_jobs where status in ('pending','claimed')`;
+    const [q] = await sql<
+      { q: number }[]
+    >`select count(*)::int q from telegram_update_jobs where status in ('pending','claimed')`;
     if (q!.q === 0) break;
     await sleep(5000);
   }
@@ -492,17 +673,27 @@ async function reseedMissing() {
 }
 
 async function loadIds() {
-  for (const code of Object.keys(CITIES)) cityIds[code] = (await sql<{ id: string }[]>`select id::text from cities where code=${code}`)[0]!.id;
-  const rows = await sql<{ tg: string; id: string }[]>`select u.telegram_id::text tg, d.id::text from drivers d join users u on u.id=d.user_id`;
+  for (const code of Object.keys(CITIES))
+    cityIds[code] = (
+      await sql<{ id: string }[]>`select id::text from cities where code=${code}`
+    )[0]!.id;
+  const rows = await sql<
+    { tg: string; id: string }[]
+  >`select u.telegram_id::text tg, d.id::text from drivers d join users u on u.id=d.user_id`;
   for (const r of rows) {
     const d = driverByChat.get(Number(r.tg));
     if (d) d.id = r.id;
   }
-  const rr = await sql<{ tg: string }[]>`select u.telegram_id::text tg from riders r join users u on u.id=r.user_id`;
+  const rr = await sql<
+    { tg: string }[]
+  >`select u.telegram_id::text tg from riders r join users u on u.id=r.user_id`;
   const have = new Set(rr.map((r) => Number(r.tg)));
   const missingR = riders.filter((r) => !have.has(r.chat)).length;
   const missingD = drivers.filter((d) => !d.id).length;
-  ev("world.loaded", { drivers_registered: drivers.length - missingD, riders_registered: riders.length - missingR });
+  ev("world.loaded", {
+    drivers_registered: drivers.length - missingD,
+    riders_registered: riders.length - missingR,
+  });
   // من لم يُسجَّل لا يُستخدم
   for (let i = drivers.length - 1; i >= 0; i--) if (!drivers[i]!.id) drivers.splice(i, 1);
   for (let i = riders.length - 1; i >= 0; i--) if (!have.has(riders[i]!.chat)) riders.splice(i, 1);
@@ -513,9 +704,19 @@ async function resetActive() {
   // ثم انتظار تفريغ طابور الوارد قبل بدء القياس — حتى لا تُحسَب دفعةُ التهيئة ضمن حمل الجولة.
   phase = "reset";
   const t0 = Date.now();
-  const active = new Set((await sql<{ tg: string }[]>`select distinct u.telegram_id::text tg from orders o join riders r on r.id=o.rider_id join users u on u.id=r.user_id
-     where o.status::text in ('searching','matched','in_progress','pending','scheduled')`).map((r) => Number(r.tg)));
-  await poolMap(riders.filter((r) => active.has(r.chat)), 50, async (r) => void (await post("rider", text(r.chat, "/cancel"), "reset")));
+  const active = new Set(
+    (
+      await sql<
+        { tg: string }[]
+      >`select distinct u.telegram_id::text tg from orders o join riders r on r.id=o.rider_id join users u on u.id=r.user_id
+     where o.status::text in ('searching','matched','in_progress','pending','scheduled')`
+    ).map((r) => Number(r.tg)),
+  );
+  await poolMap(
+    riders.filter((r) => active.has(r.chat)),
+    50,
+    async (r) => void (await post("rider", text(r.chat, "/cancel"), "reset")),
+  );
   await sleep(3000);
   const dl = drivers.filter((d) => d.state !== "standby");
   await poolMap(dl, 50, async (d) => {
@@ -524,13 +725,20 @@ async function resetActive() {
   });
   let q = -1;
   for (let i = 0; i < 240; i++) {
-    const [r] = await sql<{ q: number }[]>`select count(*)::int q from telegram_update_jobs where status in ('pending','claimed')`;
+    const [r] = await sql<
+      { q: number }[]
+    >`select count(*)::int q from telegram_update_jobs where status in ('pending','claimed')`;
     q = r!.q;
     if (q <= 5) break;
     if (i % 6 === 0) console.log(`[reset] queue=${q}`);
     await sleep(5000);
   }
-  ev("reset.done", { cancelled_riders: active.size, drivers_made_available: dl.length, queue_left: q, ms: Date.now() - t0 });
+  ev("reset.done", {
+    cancelled_riders: active.size,
+    drivers_made_available: dl.length,
+    queue_left: q,
+    ms: Date.now() - t0,
+  });
 }
 
 // ───────── سلوك السائق: يتصرف فقط على العروض الواصلة إلى صندوقه ─────────
@@ -552,7 +760,13 @@ function onDriverOffer(e: MockEv) {
     const created = orderFirstSeen.get(orderId);
     if (created) biz.orderToOfferSeen.add(e.t - created);
   }
-  ev("offer.seen", { order: orderId, driver: d.chat, mock_seq: e.seq, mock_t: e.t, lag_ms: Date.now() - e.t });
+  ev("offer.seen", {
+    order: orderId,
+    driver: d.chat,
+    mock_seq: e.seq,
+    mock_t: e.t,
+    lag_ms: Date.now() - e.t,
+  });
   if (d.state !== "idle") {
     biz.offersWhileBusy++;
     return;
@@ -581,9 +795,18 @@ function onDriverOffer(e: MockEv) {
     list.push(d.chat);
     acceptQueue.set(orderId, list);
     await post("driver", cb(d.chat, acc), "driver_accept");
-    ev("offer.accept_sent", { order: orderId, driver: d.chat, seen_to_accept_ms: Date.now() - e.t });
+    ev("offer.accept_sent", {
+      order: orderId,
+      driver: d.chat,
+      seen_to_accept_ms: Date.now() - e.t,
+    });
     // إن لم يُسنَد إليه خلال 15ث يعود متاحًا
-    const o = await waitOrder(orderId, (x) => x.driver_tg !== null || ["cancelled", "completed", "expired", "failed"].includes(x.status), 15_000);
+    const o = await waitOrder(
+      orderId,
+      (x) =>
+        x.driver_tg !== null || ["cancelled", "completed", "expired", "failed"].includes(x.status),
+      15_000,
+    );
     if (!o || o.driver_tg !== String(d.chat)) {
       if (d.state === "accepting") d.state = "idle";
       biz.acceptLost++;
@@ -605,10 +828,24 @@ const TERMINAL = ["cancelled", "completed", "expired", "failed", "no_driver"];
 async function rideOrDelivery(kind: "ride" | "delivery") {
   const roll = Math.random();
   const variant =
-    roll < 0.08 ? "cancel_searching" : roll < 0.14 ? "cancel_matched" : roll < 0.18 ? "dup_create" : roll < 0.22 ? "dup_complete" : roll < 0.25 ? "cancel_in_progress" : "full";
+    roll < 0.08
+      ? "cancel_searching"
+      : roll < 0.14
+        ? "cancel_matched"
+        : roll < 0.18
+          ? "dup_create"
+          : roll < 0.22
+            ? "dup_complete"
+            : roll < 0.25
+              ? "cancel_in_progress"
+              : "full";
   const name = variant === "full" ? kind : `${kind}_${variant}`;
   const rider = takeRider(["JED", "MKK", "RUH"]);
-  if (!rider) return void (errc("no_free_rider"), await sleep(300));
+  if (!rider) {
+    errc("no_free_rider");
+    await sleep(300);
+    return;
+  }
   const s = scen(name);
   s.started++;
   const t = Date.now();
@@ -617,12 +854,26 @@ async function rideOrDelivery(kind: "ride" | "delivery") {
   const fail = (why: string, extra: Record<string, unknown> = {}) => {
     s.fail++;
     s.reasons[why] = (s.reasons[why] ?? 0) + 1;
-    ev("scenario.fail", { scenario: name, why, order: orderId, rider: rider.chat, ms: Date.now() - t, ...extra });
+    ev("scenario.fail", {
+      scenario: name,
+      why,
+      order: orderId,
+      rider: rider.chat,
+      ms: Date.now() - t,
+      ...extra,
+    });
   };
   const okDone = (extra: Record<string, unknown> = {}) => {
     s.ok++;
     s.e2e.add(Date.now() - t);
-    ev("scenario.ok", { scenario: name, order: orderId, rider: rider.chat, driver: driver?.chat, ms: Date.now() - t, ...extra });
+    ev("scenario.ok", {
+      scenario: name,
+      order: orderId,
+      rider: rider.chat,
+      driver: driver?.chat,
+      ms: Date.now() - t,
+      ...extra,
+    });
   };
   try {
     const city = CITIES[rider.city]!;
@@ -638,7 +889,11 @@ async function rideOrDelivery(kind: "ride" | "delivery") {
         await post("rider", cb(rider.chat, "svc:delivery"), "rider_svc_delivery");
         await post("rider", loc(rider.chat, pickup), "rider_pickup");
         await post("rider", loc(rider.chat, drop), "rider_dropoff");
-        await post("rider", text(rider.chat, pick(["كيس ملابس", "مستندات مهمة", "علبة هدايا", "طلب صيدلية"])), "rider_parcel");
+        await post(
+          "rider",
+          text(rider.chat, pick(["كيس ملابس", "مستندات مهمة", "علبة هدايا", "طلب صيدلية"])),
+          "rider_parcel",
+        );
       }
     };
     const tCreate = Date.now();
@@ -653,7 +908,9 @@ async function rideOrDelivery(kind: "ride" | "delivery") {
       // تكرار طلب الإنشاء من الزبون نفسه وله طلب نشط: يجب ألا يُنشأ طلب ثانٍ نشط
       await sendCreate();
       await sleep(4000);
-      const [c] = await sql<{ n: number }[]>`select count(*)::int n from orders o join riders r on r.id=o.rider_id join users u on u.id=r.user_id
+      const [c] = await sql<
+        { n: number }[]
+      >`select count(*)::int n from orders o join riders r on r.id=o.rider_id join users u on u.id=r.user_id
           where u.telegram_id=${rider.chat} and o.status in ('searching','matched','in_progress','scheduled')`;
       if (c!.n > 1) return fail("duplicate_active_order", { active: c!.n });
     }
@@ -661,21 +918,35 @@ async function rideOrDelivery(kind: "ride" | "delivery") {
       await sleep(rnd(200, 2000));
       await post("rider", text(rider.chat, "/cancel"), "rider_cancel");
       await post("rider", text(rider.chat, "/cancel"), "rider_cancel_dup"); // إلغاء مكرر
-      const o = await waitOrder(order.id, (x) => TERMINAL.includes(x.status) || x.status === "matched", 15_000);
+      const o = await waitOrder(
+        order.id,
+        (x) => TERMINAL.includes(x.status) || x.status === "matched",
+        15_000,
+      );
       if (o?.status === "cancelled") return okDone();
       if (o?.status === "matched") {
         await post("rider", text(rider.chat, "/cancel"), "rider_cancel");
         const o2 = await waitOrder(order.id, (x) => x.status === "cancelled", 10_000);
-        return o2 ? okDone({ note: "matched_before_cancel" }) : fail(`cancel_status_${tracked.get(order.id)?.status}`);
+        return o2
+          ? okDone({ note: "matched_before_cancel" })
+          : fail(`cancel_status_${tracked.get(order.id)?.status}`);
       }
       return fail(`cancel_not_applied_${tracked.get(order.id)?.status}`);
     }
     // انتظار الإسناد: يحدث فقط إن وصل عرضٌ لصندوق سائق فقبله
-    const m = await waitOrder(order.id, (x) => (x.status === "matched" && x.driver_tg !== null) || TERMINAL.includes(x.status), MATCH_WAIT_MS);
-    if (!m || m.status !== "matched") {
-      const offersToOrder = [...offerSeenAt.keys()].filter((k) => k.startsWith(`${order.id}:`)).length;
+    const m = await waitOrder(
+      order.id,
+      (x) => (x.status === "matched" && x.driver_tg !== null) || TERMINAL.includes(x.status),
+      MATCH_WAIT_MS,
+    );
+    if (m?.status !== "matched") {
+      const offersToOrder = [...offerSeenAt.keys()].filter((k) =>
+        k.startsWith(`${order.id}:`),
+      ).length;
       await post("rider", text(rider.chat, "/cancel"), "rider_cancel");
-      return fail(m ? `terminal_${m.status}` : "no_match_within_wait", { offers_seen_by_drivers: offersToOrder });
+      return fail(m ? `terminal_${m.status}` : "no_match_within_wait", {
+        offers_seen_by_drivers: offersToOrder,
+      });
     }
     driver = driverByChat.get(Number(m.driver_tg));
     if (!driver) return fail("assigned_unknown_driver");
@@ -695,8 +966,13 @@ async function rideOrDelivery(kind: "ride" | "delivery") {
     }
     await sleep(rnd(500, 2000));
     await post("driver", cb(driver.chat, `ride:start:${order.id}`), "driver_start");
-    const ip = await waitOrder(order.id, (x) => x.status === "in_progress" || TERMINAL.includes(x.status), 20_000);
-    if (ip?.status !== "in_progress") return fail(`not_in_progress_${tracked.get(order.id)?.status}`);
+    const ip = await waitOrder(
+      order.id,
+      (x) => x.status === "in_progress" || TERMINAL.includes(x.status),
+      20_000,
+    );
+    if (ip?.status !== "in_progress")
+      return fail(`not_in_progress_${tracked.get(order.id)?.status}`);
     if (variant === "cancel_in_progress") {
       await post("rider", text(rider.chat, "/cancel"), "rider_cancel_in_trip");
       await sleep(4000);
@@ -707,10 +983,15 @@ async function rideOrDelivery(kind: "ride" | "delivery") {
     }
     await sleep(rnd(800, 3000));
     await post("driver", cb(driver.chat, `ride:complete:${order.id}`), "driver_complete");
-    if (variant === "dup_complete") await post("driver", cb(driver.chat, `ride:complete:${order.id}`), "driver_complete_dup");
+    if (variant === "dup_complete")
+      await post("driver", cb(driver.chat, `ride:complete:${order.id}`), "driver_complete_dup");
     const done = await waitOrder(order.id, (x) => TERMINAL.includes(x.status), 20_000);
     if (done?.status !== "completed") return fail(`not_completed_${tracked.get(order.id)?.status}`);
-    await post("rider", cb(rider.chat, `rate:${3 + Math.floor(Math.random() * 3)}:${order.id}`), "rider_rate");
+    await post(
+      "rider",
+      cb(rider.chat, `rate:${3 + Math.floor(Math.random() * 3)}:${order.id}`),
+      "rider_rate",
+    );
     await post("driver", cb(driver.chat, `rate:5:${order.id}`), "driver_rate");
     okDone();
   } catch (e) {
@@ -738,7 +1019,9 @@ async function negResolver() {
       const ids = [...pendingNeg];
       pendingNeg.clear();
       try {
-        const rows = await sql<{ id: string; order_id: string }[]>`select id::text, order_id::text from unsubscribed_negotiations where id = any(${ids}::uuid[])`;
+        const rows = await sql<
+          { id: string; order_id: string }[]
+        >`select id::text, order_id::text from unsubscribed_negotiations where id = any(${ids}::uuid[])`;
         for (const r of rows) {
           const c = { negId: r.id, t: Date.now() };
           if (!groupCards.has(r.order_id)) groupCards.set(r.order_id, c);
@@ -757,7 +1040,11 @@ async function groupScenario() {
   const variant = roll < 0.1 ? "overfill" : roll < 0.16 ? "dup_claim" : "full";
   const name = variant === "full" ? "group" : `group_${variant}`;
   const rider = takeRider(["TIF", "MED"]);
-  if (!rider) return void (errc("no_free_group_rider"), await sleep(300));
+  if (!rider) {
+    errc("no_free_group_rider");
+    await sleep(300);
+    return;
+  }
   const s = scen(name);
   s.started++;
   const t = Date.now();
@@ -766,7 +1053,14 @@ async function groupScenario() {
   const fail = (why: string, extra: Record<string, unknown> = {}) => {
     s.fail++;
     s.reasons[why] = (s.reasons[why] ?? 0) + 1;
-    ev("scenario.fail", { scenario: name, why, order: orderId, rider: rider.chat, ms: Date.now() - t, ...extra });
+    ev("scenario.fail", {
+      scenario: name,
+      why,
+      order: orderId,
+      rider: rider.chat,
+      ms: Date.now() - t,
+      ...extra,
+    });
   };
   try {
     const city = CITIES[rider.city]!;
@@ -783,15 +1077,24 @@ async function groupScenario() {
     const card =
       groupCards.get(order.id) ??
       (await new Promise<{ negId: string; t: number } | null>((resolve) => {
-        const tm = setTimeout(() => (cardWaiters.delete(order.id), resolve(null)), 240_000);
-        cardWaiters.set(order.id, (c) => (clearTimeout(tm), cardWaiters.delete(order.id), resolve(c)));
+        const tm = setTimeout(() => {
+          cardWaiters.delete(order.id);
+          resolve(null);
+        }, 240_000);
+        cardWaiters.set(order.id, (c) => {
+          clearTimeout(tm);
+          cardWaiters.delete(order.id);
+          resolve(c);
+        });
       }));
     if (!card) {
       await post("rider", text(rider.chat, "/cancel"), "rider_cancel");
       return fail("group_card_not_delivered_240s");
     }
     biz.groupCardWait.add(card.t - tCreate);
-    const pool = drivers.filter((d) => d.city === rider.city && !d.subscribed && d.state === "idle");
+    const pool = drivers.filter(
+      (d) => d.city === rider.city && !d.subscribed && d.state === "idle",
+    );
     const want = variant === "overfill" ? 5 : 1 + Math.floor(Math.random() * 3);
     for (const d of pool.sort(() => Math.random() - 0.5).slice(0, want)) {
       d.state = "claiming";
@@ -802,19 +1105,38 @@ async function groupScenario() {
       return fail("no_free_group_driver");
     }
     const g = unsubGroup[rider.city]!;
-    await Promise.all(claimers.map((d) => post("driver", cb(d.chat, `unsub:claim:${card.negId}`, g), "group_claim")));
+    await Promise.all(
+      claimers.map((d) =>
+        post("driver", cb(d.chat, `unsub:claim:${card.negId}`, g), "group_claim"),
+      ),
+    );
     if (variant === "dup_claim") {
       // المطالبة نفسها من السائق نفسه بالتوازي عدة مرات (تحديثات مختلفة)
-      await Promise.all([1, 2, 3].map(() => post("driver", cb(claimers[0]!.chat, `unsub:claim:${card.negId}`, g), "group_claim_dup")));
+      await Promise.all(
+        [1, 2, 3].map(() =>
+          post("driver", cb(claimers[0]!.chat, `unsub:claim:${card.negId}`, g), "group_claim_dup"),
+        ),
+      );
     }
     // ننتظر معالجة المطالبات فعليًا (حتى 60ث) ثم مهلة استقرار 3ث، ثم نحكم من القاعدة
-    const qc = async () => (await sql<{ n: number; dmax: number }[]>`select count(*)::int n, coalesce(max(k),0)::int dmax from
-        (select driver_id, count(*) k from unsubscribed_claims where negotiation_id=${card.negId} group by driver_id) x`)[0]!;
+    const qc = async () =>
+      (
+        await sql<
+          { n: number; dmax: number }[]
+        >`select count(*)::int n, coalesce(max(k),0)::int dmax from
+        (select driver_id, count(*) k from unsubscribed_claims where negotiation_id=${card.negId} group by driver_id) x`
+      )[0]!;
     const tClaim = Date.now();
-    while (Date.now() - tClaim < 60_000 && (await qc()).n < Math.min(claimers.length, 3)) await sleep(1000);
+    while (Date.now() - tClaim < 60_000 && (await qc()).n < Math.min(claimers.length, 3))
+      await sleep(1000);
     await sleep(3000);
     const cc = await qc();
-    ev("group.claims_settled", { order: order.id, claimers: claimers.length, claims: cc.n, ms: Date.now() - tClaim });
+    ev("group.claims_settled", {
+      order: order.id,
+      claimers: claimers.length,
+      claims: cc.n,
+      ms: Date.now() - tClaim,
+    });
     if (cc!.n > 3) return fail("claims_exceed_slots", { claims: cc!.n });
     if (cc!.dmax > 1) return fail("duplicate_claim_same_driver", { dmax: cc!.dmax });
     if (cc!.n === 0) {
@@ -822,28 +1144,51 @@ async function groupScenario() {
       return fail("no_claim_registered");
     }
     // الزبون يختار من الأزرار التي وصلته (صندوقه في المحاكي)، وإلا يُبنى الزر بالصيغة المعروفة
-    const selMsg = await waitInbox(String(rider.chat), (e) => !!e.cbs?.some((c) => c.startsWith(`unsub:sel:${card.negId}:`)), 20_000);
-    const sel = selMsg?.cbs?.find((c) => c.startsWith(`unsub:sel:${card.negId}:`)) ?? `unsub:sel:${card.negId}:1`;
+    const selMsg = await waitInbox(
+      String(rider.chat),
+      (e) => !!e.cbs?.some((c) => c.startsWith(`unsub:sel:${card.negId}:`)),
+      20_000,
+    );
+    const sel =
+      selMsg?.cbs?.find((c) => c.startsWith(`unsub:sel:${card.negId}:`)) ??
+      `unsub:sel:${card.negId}:1`;
     if (!selMsg) errc("group_sel_buttons_not_seen");
     await post("rider", cb(rider.chat, sel), "group_select");
-    const [first] = await sql<{ tg: string }[]>`select u.telegram_id::text tg from unsubscribed_claims c join drivers d on d.id=c.driver_id
+    const [first] = await sql<
+      { tg: string }[]
+    >`select u.telegram_id::text tg from unsubscribed_claims c join drivers d on d.id=c.driver_id
         join users u on u.id=d.user_id where c.negotiation_id=${card.negId} order by position limit 1`;
     const fd = driverByChat.get(Number(first!.tg));
     await post("driver", text(Number(first!.tg), "أوصلك بثلاثين ريال"), "group_chat");
     await post("rider", text(rider.chat, "تمام اتفقنا"), "group_chat");
     await post("rider", cb(rider.chat, `unsub:agree:${card.negId}`), "group_agree");
-    const m = await waitOrder(order.id, (x) => x.status === "matched" || TERMINAL.includes(x.status), 30_000);
+    const m = await waitOrder(
+      order.id,
+      (x) => x.status === "matched" || TERMINAL.includes(x.status),
+      30_000,
+    );
     if (m?.status !== "matched") return fail(`agree_not_matched_${tracked.get(order.id)?.status}`);
     if (fd) fd.state = "trip";
     await post("driver", cb(Number(first!.tg), `ride:start:${order.id}`), "driver_start");
-    await waitOrder(order.id, (x) => x.status === "in_progress" || TERMINAL.includes(x.status), 20_000);
+    await waitOrder(
+      order.id,
+      (x) => x.status === "in_progress" || TERMINAL.includes(x.status),
+      20_000,
+    );
     await sleep(rnd(500, 2000));
     await post("driver", cb(Number(first!.tg), `ride:complete:${order.id}`), "driver_complete");
     const fin = await waitOrder(order.id, (x) => TERMINAL.includes(x.status), 20_000);
-    if (fin?.status !== "completed") return fail(`group_not_completed_${tracked.get(order.id)?.status}`);
+    if (fin?.status !== "completed")
+      return fail(`group_not_completed_${tracked.get(order.id)?.status}`);
     s.ok++;
     s.e2e.add(Date.now() - t);
-    ev("scenario.ok", { scenario: name, order: orderId, rider: rider.chat, claims: cc!.n, ms: Date.now() - t });
+    ev("scenario.ok", {
+      scenario: name,
+      order: orderId,
+      rider: rider.chat,
+      claims: cc!.n,
+      ms: Date.now() - t,
+    });
   } catch (e) {
     errc(`exc:${(e as Error).message.slice(0, 50)}`);
     fail("exception");
@@ -865,7 +1210,11 @@ async function heartbeatLoop() {
     // كل سائق مرة كل HEARTBEAT_SEC تقريبًا (افتراضيًا 240ث: داخل تذكير الموقع 300ث؛ كل نبضة يرد عليها البوت برسالة)
     const per = Math.max(1, Math.ceil(list.length / Number(process.env.HEARTBEAT_SEC ?? 240)));
     for (let i = 0; i < list.length && bgOn; i += per) {
-      await Promise.all(list.slice(i, i + per).map((d) => post("driver", loc(d.chat, near(d.at, 0.3)), "driver_location")));
+      await Promise.all(
+        list
+          .slice(i, i + per)
+          .map((d) => post("driver", loc(d.chat, near(d.at, 0.3)), "driver_location")),
+      );
       await sleep(1000);
     }
   }
@@ -895,7 +1244,10 @@ async function duplicateUpdates() {
     const u = text(r.chat, "/help");
     const body = JSON.stringify(u);
     biz.duplicateUpdatesSent++;
-    await Promise.all([post("rider", null, "dup_update", { raw: body }), post("rider", null, "dup_update", { raw: body })]);
+    await Promise.all([
+      post("rider", null, "dup_update", { raw: body }),
+      post("rider", null, "dup_update", { raw: body }),
+    ]);
     ev("dup_update.sent", { update_id: u.update_id, rider: r.chat });
   }
 }
@@ -919,9 +1271,16 @@ function snapshot() {
     outages: outages.length,
     http: { ...http, ...httpHist.sum() },
     http_window: { n: httpWin.n, rps: +(httpWin.n / 10).toFixed(1), ...w },
-    scenarios: Object.fromEntries(Object.entries(sc).map(([k, v]) => [k, { started: v.started, ok: v.ok, fail: v.fail, reasons: v.reasons, e2e: v.e2e.sum() }])),
+    scenarios: Object.fromEntries(
+      Object.entries(sc).map(([k, v]) => [
+        k,
+        { started: v.started, ok: v.ok, fail: v.fail, reasons: v.reasons, e2e: v.e2e.sum() },
+      ]),
+    ),
     biz: {
-      ...Object.fromEntries(Object.entries(biz).map(([k, v]) => [k, v instanceof Hist ? v.sum() : v])),
+      ...Object.fromEntries(
+        Object.entries(biz).map(([k, v]) => [k, v instanceof Hist ? v.sum() : v]),
+      ),
     },
     tracked_orders: tracked.size,
     mock_cursor: mockCursor,
@@ -956,10 +1315,34 @@ async function slot(id: number) {
 }
 async function main() {
   buildWorld();
-  writeFileSync(`${EV}/load-config.${GEN_ID}.json`, JSON.stringify({ GEN_ID, BASE, MOCK, N_DRIVERS, N_RIDERS, SEED, PROFILE, MIX, MATCH_WAIT_MS, cities: CITIES, driver_offer_policy: { accept: 0.85, reject: 0.08, ignore: 0.07 }, offer_source: "telegram-mock inbox only" }, null, 2));
+  writeFileSync(
+    `${EV}/load-config.${GEN_ID}.json`,
+    JSON.stringify(
+      {
+        GEN_ID,
+        BASE,
+        MOCK,
+        N_DRIVERS,
+        N_RIDERS,
+        SEED,
+        PROFILE,
+        MIX,
+        MATCH_WAIT_MS,
+        cities: CITIES,
+        driver_offer_policy: { accept: 0.85, reject: 0.08, ignore: 0.07 },
+        offer_source: "telegram-mock inbox only",
+      },
+      null,
+      2,
+    ),
+  );
   metricsLoop();
   void inboxLoop();
-  for (const code of Object.keys(CITIES)) listen(String(-(1000000000000 + CITIES[code]!.idx * 10 + 3)), (e) => (onGroupEvent(e), false));
+  for (const code of Object.keys(CITIES))
+    listen(String(-(1000000000000 + (CITIES[code]?.idx ?? 0) * 10 + 3)), (e) => {
+      onGroupEvent(e);
+      return false;
+    });
   void boardLoop();
   void negResolver();
   if (process.env.SEED === "2") await reseedMissing();
@@ -1001,14 +1384,24 @@ async function main() {
   const drainEnd = Date.now() + 240_000;
   while (running.size && Date.now() < drainEnd) await sleep(1000);
   const final = snapshot();
-  writeFileSync(`${EV}/generator-summary.${GEN_ID}.json`, JSON.stringify({ ...final, outages_detail: outages, ended_with_running: running.size }, null, 2));
+  writeFileSync(
+    `${EV}/generator-summary.${GEN_ID}.json`,
+    JSON.stringify(
+      { ...final, outages_detail: outages, ended_with_running: running.size },
+      null,
+      2,
+    ),
+  );
   ev("load.end", { running: running.size });
   await sql.end({ timeout: 5 });
   process.exit(0);
 }
 process.on("SIGTERM", () => {
   try {
-    writeFileSync(`${EV}/generator-summary.${GEN_ID}.json`, JSON.stringify({ ...snapshot(), outages_detail: outages, terminated: true }, null, 2));
+    writeFileSync(
+      `${EV}/generator-summary.${GEN_ID}.json`,
+      JSON.stringify({ ...snapshot(), outages_detail: outages, terminated: true }, null, 2),
+    );
   } catch {}
   process.exit(0);
 });

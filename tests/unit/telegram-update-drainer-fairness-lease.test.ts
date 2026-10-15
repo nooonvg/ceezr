@@ -5,15 +5,37 @@
  * ينتمي إلى: tests/unit
  */
 import { describe, expect, test } from "bun:test";
-import { drainTelegramUpdateJobsOnce, parseTelegramDrainLanes } from "../../apps/gateway/src/background/telegram-update-drainer.ts";
-import type { ClaimedTelegramUpdateJob, TelegramUpdateQueue } from "../../packages/infrastructure/db/telegram-update-queue.ts";
+import {
+  drainTelegramUpdateJobsOnce,
+  parseTelegramDrainLanes,
+} from "../../apps/gateway/src/background/telegram-update-drainer.ts";
+import type {
+  ClaimedTelegramUpdateJob,
+  TelegramUpdateQueue,
+} from "../../packages/infrastructure/db/telegram-update-queue.ts";
 
 type J = ClaimedTelegramUpdateJob;
 function twoBotQueue(riderJobs: number, driverJobs: number) {
   const all: J[] = [];
   let id = 0;
-  for (let i = 0; i < riderJobs; i++) all.push({ bot: "rider", updateId: ++id, payload: { message: { from: { id: 1000 + i } } }, claimToken: `t${id}`, attempts: 1, maxAttempts: 5 });
-  for (let i = 0; i < driverJobs; i++) all.push({ bot: "driver", updateId: ++id, payload: { message: { from: { id: 5000 + i } } }, claimToken: `t${id}`, attempts: 1, maxAttempts: 5 });
+  for (let i = 0; i < riderJobs; i++)
+    all.push({
+      bot: "rider",
+      updateId: ++id,
+      payload: { message: { from: { id: 1000 + i } } },
+      claimToken: `t${id}`,
+      attempts: 1,
+      maxAttempts: 5,
+    });
+  for (let i = 0; i < driverJobs; i++)
+    all.push({
+      bot: "driver",
+      updateId: ++id,
+      payload: { message: { from: { id: 5000 + i } } },
+      claimToken: `t${id}`,
+      attempts: 1,
+      maxAttempts: 5,
+    });
   const order: string[] = [];
   const renewCalls: number[] = [];
   const q: TelegramUpdateQueue = {
@@ -35,18 +57,34 @@ function twoBotQueue(riderJobs: number, driverJobs: number) {
   return { q, order, renewCalls };
 }
 // البوتُ «rider» مختنقٌ بدلوِه: كلُّ معالجةٍ 30ms؛ «driver» سريعٌ 1ms.
-const handler = { handle: async (bot: string) => (await new Promise((r) => setTimeout(r, bot === "rider" ? 30 : 1)), true) };
+const handler = {
+  handle: async (bot: string) => {
+    await new Promise((r) => setTimeout(r, bot === "rider" ? 30 : 1));
+    return true;
+  },
+};
 
 describe("D2: توزيعُ المساراتِ بين البوتين", () => {
   test("إعادةُ إنتاج: بلا توزيعٍ، وظائفُ driver اللاحقةُ تنتظرُ كلَّ وظائفِ rider", async () => {
     const f = twoBotQueue(200, 40);
-    await drainTelegramUpdateJobsOnce({ queue: (({ claimFor: _c, ...rest }) => rest)(f.q), handler: handler as never, maxJobsPerRun: 1000, lanes: 10 });
+    await drainTelegramUpdateJobsOnce({
+      queue: (({ claimFor: _c, ...rest }) => rest)(f.q),
+      handler: handler as never,
+      maxJobsPerRun: 1000,
+      lanes: 10,
+    });
     const firstDriver = f.order.indexOf("driver");
     expect(firstDriver).toBeGreaterThanOrEqual(190);
   });
   test("بالتوزيع: كلُّ وظائفِ driver تُنجَزُ قبلَ ربعِ وظائفِ rider", async () => {
     const f = twoBotQueue(200, 40);
-    await drainTelegramUpdateJobsOnce({ queue: f.q, handler: handler as never, maxJobsPerRun: 1000, lanes: 10, fairBots: ["driver", "rider"] });
+    await drainTelegramUpdateJobsOnce({
+      queue: f.q,
+      handler: handler as never,
+      maxJobsPerRun: 1000,
+      lanes: 10,
+      fairBots: ["driver", "rider"],
+    });
     const lastDriver = f.order.lastIndexOf("driver");
     const ridersBefore = f.order.slice(0, lastDriver).filter((b) => b === "rider").length;
     expect(f.order.length).toBe(240);
@@ -56,18 +94,36 @@ describe("D2: توزيعُ المساراتِ بين البوتين", () => {
 
 describe("D3: تجديدُ إيجارِ المحجوزِ المنتظر", () => {
   test("مستخدمٌ واحدٌ بستِّ وظائفَ متتابعةٍ: يُجدَّدُ إيجارُ المنتظرِ، وكلٌّ يُختَمُ مرّةً", async () => {
-    const jobs: J[] = Array.from({ length: 6 }, (_, i) => ({ bot: "rider", updateId: i + 1, payload: { message: { from: { id: 42 } } }, claimToken: `t${i}`, attempts: 1, maxAttempts: 5 }));
+    const jobs: J[] = Array.from({ length: 6 }, (_, i) => ({
+      bot: "rider",
+      updateId: i + 1,
+      payload: { message: { from: { id: 42 } } },
+      claimToken: `t${i}`,
+      attempts: 1,
+      maxAttempts: 5,
+    }));
     const finished: number[] = [];
     const renewed: number[] = [];
     const q: TelegramUpdateQueue = {
       claim: async () => ({ job: jobs.shift() ?? null }),
-      renew: async (l) => (renewed.push(l.length), l.length),
-      finish: async (l) => (finished.push(l.updateId), true),
+      renew: async (l) => {
+        renewed.push(l.length);
+        return l.length;
+      },
+      finish: async (l) => {
+        finished.push(l.updateId);
+        return true;
+      },
       abandon: async () => true,
     };
     await drainTelegramUpdateJobsOnce({
       queue: q,
-      handler: { handle: async () => (await new Promise((r) => setTimeout(r, 150)), true) } as never,
+      handler: {
+        handle: async () => {
+          await new Promise((r) => setTimeout(r, 150));
+          return true;
+        },
+      } as never,
       maxJobsPerRun: 100,
       lanes: 8,
       leaseRenewEveryMs: 250,

@@ -121,6 +121,7 @@ import {
   rideStatusKey,
   showsCancelButton,
 } from "./active-ride-view.ts";
+import { NegotiationPanel } from "./NegotiationPanel.tsx";
 import { RideJourney } from "./RideJourney.tsx";
 import { activeRideTruth, journeyFromActivePhase } from "./ride-journey.ts";
 
@@ -460,6 +461,14 @@ export function ActiveRideScreen({
     return (
       <div className="ar__live">
         {/* `WR-09` (ADR 0266): زرُّ إشعارِ «سائقٌ قبِلَ» يفتحُ هذه الشاشةَ والطلبُ ما زالَ يبحث. */}
+        {/* `ADR 0286` — لوحةُ تفاوضِ القروبِ: البوتُ يُخبِرُ ويُحيلُ، والقرارُ هنا. */}
+        {view.status === "searching" && (
+          <NegotiationPanel
+            language={language}
+            refreshToken={candidateToken}
+            onSettled={() => void refresh(orderId)}
+          />
+        )}
         {view.status === "searching" && (
           <RideCandidateCard
             orderId={orderId}

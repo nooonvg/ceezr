@@ -113,6 +113,28 @@ const HEADING_TAX_IDENTITY_CLOSED =
 
 export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
   {
+    migration: "20261016120000_i1_driver_single_engaged_order.sql",
+    change: "revoke_function:claim_ride(2)",
+    why: "الهجرةُ `20261016120000` (`I1` · `ADR 0286`) تُعيدُ تعريفَ `claim_ride` بحارسِ الإسنادِ الأحاديِّ (قفلُ صفِّ السائقِ والفحصُ داخلَه ثمَّ `DRIVER_HAS_ACTIVE_ORDER`)، والسحبُ بعدَ `create or replace` **إعادةُ إحكامِ السطحِ لا تضييقٌ**: الدالّةُ كانت لـ`service_role` وحدَه قبلَ الهجرةِ وتبقى كذلكَ بعدَها، و`create or replace` **يُعيدُ منحَ التنفيذِ ضمنيّاً** فالسطرُ إبطالٌ لذاكَ المنحِ الضمنيِّ لا انتزاعُ صلاحيّةٍ قائمةٍ. والدالّةُ بنصِّها الكاملِ كما في آخرِ تعريفٍ لها في `20261012140000` معَ الحارسِ وحدهُ — لا مسارَ TypeScript عُدِّلَ في هذه الهجرةِ، والمتصلونَ (`dispatch-adapters` · `driver-offers-store`) يُنادونها بعقدِها كما هوَ فيَعملونَ بحرفِه. والعودةُ بالصورةِ السابقةِ (نصُّ `20261012140000`) تكفي: يُستعادُ الحارسُ بحذفِه منَ النصِّ — تراجعُ إمكانٍ لا فقدُ قراءةٍ.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    documentedIn: null,
+  },
+  {
+    migration: "20261016120000_i1_driver_single_engaged_order.sql",
+    change: "revoke_function:rider_decide_candidate(4)",
+    why: "الهجرةُ `20261016120000` (`I1` · `ADR 0286`) تُعيدُ تعريفَ `rider_decide_candidate` بحارسِ الإسنادِ الأحاديِّ نفسِهِ (قفلُ صفِّ السائقِ والفحصُ داخلَه ثمَّ `DRIVER_HAS_ACTIVE_ORDER` معَ `release_order_candidate`)، والسحبُ بعدَ `create or replace` **إعادةُ إحكامِ السطحِ لا تضييقٌ**: الدالّةُ كانت لـ`service_role` وحدَه قبلَ الهجرةِ وتبقى كذلكَ بعدَها، و`create or replace` **يُعيدُ منحَ التنفيذِ ضمنيّاً** فالسطرُ إبطالٌ لذاكَ المنحِ الضمنيِّ. والدالّةُ بنصِّها الكاملِ كما في `20261012140000` معَ الحارسِ وحدهُ — لا مسارَ TypeScript عُدِّلَ، والمتصلُ يُناديها بعقدِها فيَعملُ بحرفِه. والعودةُ بالصورةِ السابقةِ تكفي: يُستعادُ الحارسُ بحذفِه منَ النصِّ — تراجعُ إمكانٍ لا فقدُ قراءةٍ.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    documentedIn: null,
+  },
+  {
     migration: "20260922020000_sec_19_notification_center_reads_by_internal_id.sql",
     change: "revoke_function:get_user_notifications(3)",
     why: "الهجرةُ `20260922020000` (`SEC-19` · `ADR 0031`) **تنقُلُ** منطقَ مركزِ الإشعاراتِ إلى توقيعٍ يقبلُ `users.id`، وتُبقي التوقيعَ القديمَ **غلافاً يُفوِّضُ بعقدِه حرفاً**: الحقولُ كلُّها بأسمائِها، و`USER_NOT_FOUND` كما كانَ، والتكافؤُ **مقيسٌ** في `tests/integration/notification-center-reads-by-internal-id.test.ts` بمطابقةِ الموجَزِ كاملاً لا حقلاً منه. والسحبُ بعدَ `create or replace` **إعادةُ إحكامِ السطحِ لا تضييقٌ**: الدالّةُ كانت لـ`service_role` وحدَه قبلَ الهجرةِ وتبقى كذلكَ بعدَها، و`create or replace` **يُعيدُ منحَ التنفيذِ ضمنيّاً** فالسطرُ إبطالٌ لذاكَ المنحِ الضمنيِّ لا انتزاعُ صلاحيّةٍ قائمةٍ — والإغلاقُ **مقيسٌ بالأثرِ** بـ`has_function_privilege` لا بوجودِ السطرِ. ولا مسارَ سابقاً يُخفِقُ: لا سطرَ TypeScript عُدِّلَ في هذه الهجرةِ، و`user-notification-center.ts` لا يزالُ يُنادي التوقيعَ القديمَ فيَعملُ بحرفِه. والعودةُ بالصورةِ السابقةِ تكفي: يُستعادُ المنطقُ في التوقيعِ القديمِ ويُسقَطُ الجديدُ الذي **لا يُناديه متعامِلٌ بعدُ** — تراجعُ إمكانٍ لا فقدُ قراءةٍ.",
