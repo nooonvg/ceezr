@@ -104,7 +104,10 @@ import {
 } from "../../../packages/infrastructure/notification/miniapp-entry-sender.ts";
 import { createNotificationOutboxPort } from "../../../packages/infrastructure/notification/notification-outbox-adapters.ts";
 import { createOutboundResilience } from "../../../packages/infrastructure/notification/outbound-resilience.ts";
-import { withOutboundResilience } from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
+import {
+  outboundBucketKeyOfToken,
+  withOutboundResilience,
+} from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
 import {
   createRiderCandidateFactsReader,
   createRiderTripFactsReader,
@@ -181,7 +184,7 @@ import { err, ok } from "../../../packages/shared/result/index.ts";
 import { type BackupConfig, createPgDumper, runDatabaseBackup } from "./jobs/backup-database.ts";
 import { cleanupStaleSessions } from "./jobs/cleanup-stale-sessions.ts";
 import { deliverBroadcasts } from "./jobs/deliver-broadcasts.ts";
-import { deliverNotifications } from "./jobs/deliver-notifications.ts";
+import { deliverNotifications, notificationDrainSettingsFromEnv } from "./jobs/deliver-notifications.ts";
 import { deliverSafetyIncidents } from "./jobs/deliver-safety-incidents.ts";
 import { deliverSubscriptionNotices } from "./jobs/deliver-subscription-notices.ts";
 import { detectCeilingExceededOrders } from "./jobs/detect-ceiling-exceeded.ts";
@@ -713,7 +716,10 @@ export function buildWorkerContainer(
       ? withMiniAppEntry(sender, { miniAppUrl: config.miniAppUrl, label: MINIAPP_ENTRY_LABEL })
       : sender;
   const telegram = entryFor(
-    withOutboundResilience(grammyTelegramSender(config.driverBotToken), outboundResilience.options),
+    withOutboundResilience(grammyTelegramSender(config.driverBotToken), {
+      ...outboundResilience.options,
+      bucketKey: outboundBucketKeyOfToken(config.driverBotToken), // CAP-RUN-20261015 / D6
+    }),
   );
   const driverOut = overrides.driverOut ?? asOutboundSender(telegram);
 
@@ -725,7 +731,10 @@ export function buildWorkerContainer(
    * في الإنتاج بـ403 بلا أثر مرئي — لا خطأ يوقظ أحداً، ولا رسالة تصل.
    */
   const riderTelegram = entryFor(
-    withOutboundResilience(grammyTelegramSender(config.riderBotToken), outboundResilience.options),
+    withOutboundResilience(grammyTelegramSender(config.riderBotToken), {
+      ...outboundResilience.options,
+      bucketKey: outboundBucketKeyOfToken(config.riderBotToken), // CAP-RUN-20261015 / D6
+    }),
   );
   const riderOut = overrides.riderOut ?? asOutboundSender(riderTelegram);
   const safetyPublisher = overrides.safetyPublisher ?? createSafetyCardPublisher(telegram);
@@ -1577,7 +1586,8 @@ export function buildWorkerContainer(
                 everySeconds: JOB_INTERVALS.deliverNotifications,
                 runOnStart: true,
                 run: async () => {
-                  const report = await deliverNotifications({
+                  const report = await deliverNotifications(
+                    {
                     outbox: notificationOutbox,
                     handlers: notificationHandlers,
                     // `F8-01` — عبورُ الطابورِ: معالجةُ الصفِّ وإعلانُ نتيجتِه
@@ -1592,7 +1602,10 @@ export function buildWorkerContainer(
                             { requestId: delivery.requestId, entry: "worker" },
                             run,
                           ),
-                  });
+                    },
+                    // CAP-RUN-20261015 / N1: استنزافٌ متزامنٌ محدود؛ NOTIFICATION_DRAIN_BUDGET_MS=0 = السلوكُ القديم.
+                    notificationDrainSettingsFromEnv(process.env),
+                  );
                   if (!report.ok) throw new Error(report.error.detail);
                   return [
                     `claimed=${report.value.claimed}`,

@@ -112,7 +112,10 @@ import {
   withMiniAppEntry,
 } from "../../../packages/infrastructure/notification/miniapp-entry-sender.ts";
 import { createOutboundResilience } from "../../../packages/infrastructure/notification/outbound-resilience.ts";
-import { withOutboundResilience } from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
+import {
+  outboundBucketKeyOfToken,
+  withOutboundResilience,
+} from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
 import { createRiderTripNoticeOutbox } from "../../../packages/infrastructure/notification/rider-trip-notice-outbox.ts";
 import { grammyGroupJoinGate } from "../../../packages/infrastructure/notification/telegram-join-gate.ts";
 import {
@@ -532,7 +535,11 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     // نداءً منطقيّاً واحداً يُخفي خمسَ محاولاتٍ. ولو لُفَّ القياسُ فوقَ الصمودِ
     // لأظهرَ الرسمُ البيانيُّ صادراً هادئاً بينما البوتُ يضربُ حدَّه فعلاً.
     // و`silent` لا يُستثنى: الاختبارُ يجبُ أن يسلكَ المسارَ الذي يسلكُه الإنتاجُ.
-    const resilient = withOutboundResilience(measured, outboundResilience.options);
+    // CAP-RUN-20261015 / D6: دلوٌ عالميٌّ لكلِّ رمزِ بوت — حدُّ Bot API لكلِّ بوتٍ على حِدَة.
+    const resilient = withOutboundResilience(measured, {
+      ...outboundResilience.options,
+      bucketKey: outboundBucketKeyOfToken(token),
+    });
     // `ADR 0213`: في وضعِ التطبيقِ كلُّ رسالةٍ خاصّةٍ بابٌ إليه — زرٌّ واحدٌ يُلحَقُ عند المُرسِلِ
     // لا في كلِّ مُخطِرٍ. الغلافُ **فوقَ** الصمودِ: إعادةُ المحاولةِ تُعيدُ الرسالةَ نفسَها بزرِّها.
     return config.botSurfaceMode === "miniapp" && config.miniAppUrl !== null

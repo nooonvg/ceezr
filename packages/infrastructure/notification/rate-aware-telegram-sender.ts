@@ -13,6 +13,7 @@
  *   كاملاً بمزدوجٍ في الاختبارِ، ويصمدُ لو بدَّلَ grammY أصنافَه.
  */
 
+import { createHash } from "node:crypto";
 import { bucketClassOfSendPriority } from "../../shared/config/traffic-priority.ts";
 import type { OutboundRateBucket } from "./outbound-rate-bucket.ts";
 import { interactiveOf, type SendPriority, type TelegramSender } from "./telegram-api-sender.ts";
@@ -72,6 +73,12 @@ export class OutboundSendError extends Error {
 
 export interface OutboundResilienceOptions {
   readonly bucket: OutboundRateBucket;
+  /**
+   * CAP-RUN-20261015 / D6 — مفتاحُ الدلوِ العالميِّ لهذا البوت. حدُّ Bot API لكلِّ رمزِ بوتٍ على حِدَة، فبوتا
+   * السائقِ والزبونِ دلوان لا دلوٌ واحد. غيابُه = المفتاحُ القديمُ المشتركُ "bot" (توافقٌ للاختبارات والمستدعين
+   * القدامى). يُبنى بـ`outboundBucketKeyOfToken` فلا يدخلُ الرمزُ نفسُه Redis ولا السجلّ.
+   */
+  readonly bucketKey?: string;
   readonly deadLetter: OutboundDeadLetterSink;
   /** مهلةُ النداءِ الواحدِ. نداءٌ بلا مهلةٍ يحجزُ العاملَ إلى الأبدِ عندَ تعليقِ شبكةٍ. */
   readonly callTimeoutMs?: number;
@@ -169,6 +176,14 @@ const defaultSleep = (ms: number): Promise<void> =>
  * عندَ إنشاءِ المُرسِلِ وحدَه (`container`)، فيرثُه كلُّ ما بُنيَ فوقَه — المحوّلاتُ
  * ومعالجاتُ صندوقِ الصادرِ والمُبلِّغاتُ — بلا تعديلِ موضعِ نداءٍ واحدٍ.
  */
+/**
+ * CAP-RUN-20261015 / D6 — مفتاحُ دلوٍ ثابتٌ لرمزِ بوت: بصمةٌ (sha256، 16 خانة) لا الرمزُ نفسُه. الرمزُ نفسُه مُهيَّأً
+ * لبوتين يعطي المفتاحَ نفسَه، فلا يتضاعفُ الحدُّ.
+ */
+export function outboundBucketKeyOfToken(token: string): string {
+  return `bot-${createHash("sha256").update(token).digest("hex").slice(0, 16)}`;
+}
+
 export function withOutboundResilience(
   inner: TelegramSender,
   options: OutboundResilienceOptions,
@@ -227,7 +242,7 @@ export function withOutboundResilience(
     // فيبقى للحرجِ متنفَّسٌ. ودلوُ المحادثةِ لا حِصّةَ فيه (فتحةٌ واحدةٌ لا تُقسَمُ).
     const bucketClass = bucketClassOfSendPriority(priority);
     for (;;) {
-      const globalSlot = await options.bucket.acquire("global", "bot", bucketClass);
+      const globalSlot = await options.bucket.acquire("global", options.bucketKey ?? "bot", bucketClass);
       if (!globalSlot.granted) {
         if (waited + globalSlot.waitMs > maxBucketWaitMs) return "ازدحامُ الدلوِ العالميِّ";
         options.onEvent?.({

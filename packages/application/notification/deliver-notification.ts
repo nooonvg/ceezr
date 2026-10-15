@@ -365,3 +365,134 @@ export async function deliverNotificationBatch(
   }
   return ok({ claimed, delivered, failed, abandoned, undeliverable, died, backpressure });
 }
+
+/**
+ * CAP-RUN-20261015 / N1 — استنزافٌ متزامنٌ محدودٌ لصندوقِ الصادر.
+ *
+ * العيبُ المقيس: `deliverNotificationBatch` يرسلُ تسلسليًّا حتّى `batch_limit` (= سقفُ تزامنِ
+ * المستهلكِ، 8) ثمّ ينتهي، والمشغّلُ يدقُّ كلَّ 10ث؛ فسقفُ الصادرِ كلِّه ≈ 0.8 رسالة/ث لكلِّ المدنِ
+ * مهما كانَ عمقُ الطابور، بينما حدُّ المزوّدِ المعلنُ في الكود 25/ث لكلِّ بوت.
+ *
+ * الإصلاح:
+ * - حتّى `lanes` إرسالاتٍ متزامنةٍ في العمليّة؛ و`claim_notification_delivery` يبقى الحَكَمَ: سقفُ
+ *   `sending` لكلِّ مدينةٍ (CONSUMER_CONCURRENCY)، و`skip locked` + `claim_token` ضدَّ الازدواج.
+ * - ترتيبٌ لكلِّ مفتاح: صفوفُ الطلبِ/التفاوضِ نفسِه تُرسَلُ بترتيبِ التقاطِها (مسارٌ واحدٌ للمفتاح)؛
+ *   عروضُ السائقينَ المختلفينَ مستقلّةٌ فتتوازى.
+ * - يواصلُ الالتقاطَ ما دامَ في الطابورِ عملٌ مستحقٌّ حتّى `budgetMs` أو `maxClaims`، ثمّ ينتظرُ
+ *   ما في الطيرانِ (لا يتركُ صفًّا محجوزًا بلا ختم).
+ * - لا يمسُّ حدودَ المعدّل: كلُّ إرسالٍ يمرُّ بالمرسِلِ نفسِه (دلوُ 25/ث للبوت و1/ث للمحادثة).
+ * - فشلُ منفذٍ (قاعدة) يوقفُ الالتقاطَ الجديدَ ويُعادُ كالسابق؛ الصفُّ الذي لم يُختَم يستعيدُه
+ *   `reclaim` بعدَ مهلةِ الحجزِ كما في المسارِ التسلسليّ.
+ */
+export interface ConcurrentDrainOptions {
+  readonly lanes: number;
+  readonly budgetMs: number;
+  readonly maxClaims: number;
+  readonly now?: () => number;
+}
+
+export interface ConcurrentDrainOutcome extends DeliveryBatchOutcome {
+  readonly peakInFlight: number;
+  readonly elapsedMs: number;
+}
+
+export function notificationLaneKey(delivery: OutboxDelivery): string {
+  const p = delivery.payload;
+  const s = (k: string): string | null => {
+    const v = p[k];
+    return typeof v === "string" && v.length > 0 ? v : null;
+  };
+  if (delivery.kind === "offer") return `offer:${s("offer_id") ?? delivery.deliveryId}`;
+  const order = s("order_id");
+  if (order !== null) return `order:${order}`;
+  const neg = s("negotiation_id");
+  if (neg !== null) return `neg:${neg}`;
+  return `row:${delivery.deliveryId}`;
+}
+
+export async function deliverNotificationsConcurrently(
+  deps: NotificationDeliveryDeps,
+  options: ConcurrentDrainOptions,
+): Promise<Result<ConcurrentDrainOutcome, PortFailureError>> {
+  const now = options.now ?? (() => Date.now());
+  const lanes = Math.max(1, Math.floor(options.lanes));
+  const started = now();
+  let claimed = 0;
+  let delivered = 0;
+  let failed = 0;
+  let abandoned = 0;
+  let undeliverable = 0;
+  let died = 0;
+  let peakInFlight = 0;
+  let backpressure: ClaimBackpressure | "BATCH_LIMIT" | null = null;
+  const failure: { error: PortFailureError | null } = { error: null };
+  const inFlight = new Set<Promise<void>>();
+  const laneTails = new Map<string, Promise<void>>();
+
+  const record = (r: Result<DeliveryAttemptOutcome, PortFailureError>) => {
+    if (!r.ok) {
+      failure.error ??= r.error;
+      return;
+    }
+    const a = r.value;
+    if (a.delivered) delivered += 1;
+    if (a.abandoned) abandoned += 1;
+    if (a.undeliverable) undeliverable += 1;
+    if (a.died) died += 1;
+    if (a.failure !== null) failed += 1;
+  };
+  const runOne = (delivery: OutboxDelivery) => {
+    const wrap = deps.withDeliveryCorrelation;
+    return wrap === undefined ? deliverClaimed(deps, delivery) : wrap(delivery, () => deliverClaimed(deps, delivery));
+  };
+
+  while (failure.error === null) {
+    if (claimed >= options.maxClaims) {
+      backpressure = "BATCH_LIMIT";
+      break;
+    }
+    if (now() - started >= options.budgetMs) break;
+    if (inFlight.size >= lanes) {
+      await Promise.race(inFlight);
+      continue;
+    }
+    const c = await deps.outbox.claim();
+    if (!c.ok) {
+      failure.error = c.error;
+      break;
+    }
+    const delivery = c.value.delivery;
+    if (delivery === null) {
+      if (c.value.undeliverable) {
+        claimed += 1;
+        undeliverable += 1;
+        continue;
+      }
+      if (c.value.backpressure) backpressure = c.value.backpressure;
+      // فارغٌ أو مشبَعٌ: ما في الطيرانِ قد يفكُّ تاليًا لنفسِ الطلبِ أو يحرّرُ سقفَ المدينة.
+      if (inFlight.size > 0) {
+        await Promise.race(inFlight);
+        continue;
+      }
+      break;
+    }
+    claimed += 1;
+    const key = notificationLaneKey(delivery);
+    const prev = laneTails.get(key);
+    const task: Promise<void> = (prev ?? Promise.resolve())
+      .then(() => runOne(delivery))
+      .then(record, (e: unknown) => {
+        failure.error ??= new PortFailureError("outbox.deliver", e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        inFlight.delete(task);
+        if (laneTails.get(key) === task) laneTails.delete(key);
+      });
+    laneTails.set(key, task);
+    inFlight.add(task);
+    if (inFlight.size > peakInFlight) peakInFlight = inFlight.size;
+  }
+  await Promise.all(inFlight);
+  if (failure.error !== null) return err(failure.error);
+  return ok({ claimed, delivered, failed, abandoned, undeliverable, died, backpressure, peakInFlight, elapsedMs: now() - started });
+}

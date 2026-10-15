@@ -85,7 +85,9 @@ describe("OPS-EGRESS-01 — الدرينرُ يستيقظُ بالإيداع", (
     await settle();
     expect(pending.length).toBe(0);
     // سؤالان: واحدٌ وجدَ التحديث، وواحدٌ وجدَ الطابورَ فارغًا فختمَ الشوط.
-    expect(counters.claims).toBe(2);
+    // CAP-RUN-20261015 / D5: وشوطٌ ثانٍ فوريٌّ لأنَّ الأوّلَ ختمَ وظيفةً (قد يكونُ فكَّ حجبَ وظيفةٍ تاليةٍ للمستخدمِ
+    // نفسِه تحتَ D4) — سؤالٌ فارغٌ واحدٌ ثم سكون، لا دوَران. (telegram-update-drainer-lane-unblock-rerun.test.ts)
+    expect(counters.claims).toBe(3);
     await drainer.stop();
   });
 

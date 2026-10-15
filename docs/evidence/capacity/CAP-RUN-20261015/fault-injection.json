@@ -1,0 +1,382 @@
+{
+  "soak_start": "2026-10-15T02:41:18.000Z",
+  "plan_original": [
+    {
+      "at_min": 8,
+      "action": "pg_terminate_backends"
+    },
+    {
+      "at_min": 14,
+      "action": "db_lock_delay",
+      "arg": 8
+    },
+    {
+      "at_min": 20,
+      "action": "gateway_kill9_restart",
+      "arg": 5
+    },
+    {
+      "at_min": 27,
+      "action": "redis_pause",
+      "arg": 10
+    },
+    {
+      "at_min": 33,
+      "action": "shim_kill_restart",
+      "arg": 5
+    },
+    {
+      "at_min": 38,
+      "action": "pg_restart"
+    },
+    {
+      "at_min": 45,
+      "action": "gateway_graceful_restart"
+    },
+    {
+      "at_min": 52,
+      "action": "redis_restart_persisted"
+    },
+    {
+      "at_min": 56,
+      "action": "gateway_kill9_restart",
+      "arg": 3
+    }
+  ],
+  "plan_after_tool_fix": [
+    {
+      "at_min": 24,
+      "action": "gateway_kill9_restart",
+      "arg": 5
+    },
+    {
+      "at_min": 27,
+      "action": "redis_pause",
+      "arg": 10
+    },
+    {
+      "at_min": 33,
+      "action": "shim_kill_restart",
+      "arg": 5
+    },
+    {
+      "at_min": 38,
+      "action": "pg_restart"
+    },
+    {
+      "at_min": 45,
+      "action": "gateway_graceful_restart"
+    },
+    {
+      "at_min": 52,
+      "action": "redis_restart_persisted"
+    },
+    {
+      "at_min": 56,
+      "action": "gateway_kill9_restart",
+      "arg": 3
+    }
+  ],
+  "note": "المنسّق الأول (الدقائق 8، 14، 20) ثم أُوقف وأُصلحت الأداة وأُعيد تشغيله بالخطة المتبقية على أصل الزمن نفسه. لا تُعَدّ الدقيقة 20 حقناً منفَّذاً.",
+  "supervisor": "watchdog.sh منذ 02:53:51 — يعيد البوابة بعد 15ث غياب (مماثل لسياسة Render). لم يُستدعَ فعلياً بعد تشغيله (لا أحداث gateway.auto_restart).",
+  "results": [
+    {
+      "at_min": 8,
+      "action": "pg_terminate_backends",
+      "started_at": "2026-10-15T02:49:18.006Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6743
+      },
+      "result": {
+        "n": 14
+      },
+      "action_ms": 110,
+      "ready_after_ms": null,
+      "recovered": false,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 31,
+        "jobs_claimed_over_60s": 31,
+        "jobs_dead": 0,
+        "outbox_dead": 6743
+      },
+      "verdict": "FAIL: انهارت عملية البوابة (TypeError غير ملتقط في postgres.js nextWrite) وبقيت متوقفة حتى إعادة التشغيل اليدوية 02:53:10 (انقطاع 231.9ث كما رصده المولّد). العيب D7 غير مُصلَح."
+    },
+    {
+      "at_min": 14,
+      "action": "db_lock_delay",
+      "arg": 8,
+      "started_at": "2026-10-15T02:55:18.004Z",
+      "before": {
+        "outbox_sending": 8,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 20,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      },
+      "result": {
+        "held_s": 8
+      },
+      "action_ms": 8074,
+      "ready_after_ms": 603,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 8,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 3,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      }
+    },
+    {
+      "at_min": 20,
+      "action": "gateway_kill9_restart",
+      "arg": 5,
+      "started_at": "2026-10-15T03:01:18.001Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 9,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      },
+      "error": "SystemError: kill() failed: EPERM: Operation not permitted",
+      "action_ms": 57,
+      "ready_after_ms": 1,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 8,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      },
+      "verdict": "TOOL_FAILURE: لم يُنفَّذ القتل (EPERM لأن pgrep طابق غلاف sudo المملوك لـroot). البوابة لم تُقتل؛ «recovered» هنا لا معنى له. أُعيدت الخطوة في الدقيقة 24."
+    },
+    {
+      "at_min": 24,
+      "action": "gateway_kill9_restart",
+      "arg": 5,
+      "started_at": "2026-10-15T03:05:18.002Z",
+      "before": {
+        "outbox_sending": 8,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 2,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      },
+      "killed": [
+        24629
+      ],
+      "restart": {
+        "code": 0,
+        "out": "ISOLATION_OK pg=/srv/ceezr-cap-20261015/pg redis=/srv/ceezr-cap-20261015/redis netns=ceezrsbx(lo-only)\n"
+      },
+      "action_ms": 5193,
+      "ready_after_ms": 532,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 8,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      }
+    },
+    {
+      "at_min": 27,
+      "action": "redis_pause",
+      "arg": 10,
+      "started_at": "2026-10-15T03:08:18.004Z",
+      "before": {
+        "outbox_sending": 8,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      },
+      "result": {
+        "code": 0,
+        "out": "OK\n"
+      },
+      "action_ms": 10084,
+      "ready_after_ms": 1,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 8,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 28,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6759
+      }
+    },
+    {
+      "at_min": 33,
+      "action": "shim_kill_restart",
+      "arg": 5,
+      "started_at": "2026-10-15T03:14:18.001Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      },
+      "result": {
+        "code": 0,
+        "out": ""
+      },
+      "restart": {
+        "code": 0,
+        "out": ""
+      },
+      "action_ms": 5080,
+      "ready_after_ms": 1,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 24,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      }
+    },
+    {
+      "at_min": 38,
+      "action": "pg_restart",
+      "started_at": "2026-10-15T03:19:18.001Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      },
+      "result": {
+        "code": 0,
+        "out": "waiting for server to shut down.... done\nserver stopped\nwaiting for server to start.... done\nserver started\n"
+      },
+      "action_ms": 477,
+      "ready_after_ms": 259,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      }
+    },
+    {
+      "at_min": 45,
+      "action": "gateway_graceful_restart",
+      "started_at": "2026-10-15T03:26:18.002Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      },
+      "graceful_exit_ms": 4886,
+      "restart": {
+        "code": 0,
+        "out": "ISOLATION_OK pg=/srv/ceezr-cap-20261015/pg redis=/srv/ceezr-cap-20261015/redis netns=ceezrsbx(lo-only)\n"
+      },
+      "action_ms": 5084,
+      "ready_after_ms": 306,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      }
+    },
+    {
+      "at_min": 52,
+      "action": "redis_restart_persisted",
+      "started_at": "2026-10-15T03:33:18.002Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 29,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      },
+      "shutdown": {
+        "code": 0,
+        "out": ""
+      },
+      "restart": {
+        "code": 0,
+        "out": ""
+      },
+      "action_ms": 1072,
+      "ready_after_ms": 3,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      }
+    },
+    {
+      "at_min": 56,
+      "action": "gateway_kill9_restart",
+      "arg": 3,
+      "started_at": "2026-10-15T03:37:18.004Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 4,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      },
+      "killed": [
+        30417
+      ],
+      "restart": {
+        "code": 0,
+        "out": "ISOLATION_OK pg=/srv/ceezr-cap-20261015/pg redis=/srv/ceezr-cap-20261015/redis netns=ceezrsbx(lo-only)\n"
+      },
+      "action_ms": 3234,
+      "ready_after_ms": 295,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 32,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 6767
+      }
+    }
+  ]
+}

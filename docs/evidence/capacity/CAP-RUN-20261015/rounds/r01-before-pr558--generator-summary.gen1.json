@@ -1,0 +1,313 @@
+{
+  "t": "2026-10-15T01:34:09.568Z",
+  "s": 943,
+  "gen": "gen1",
+  "phase": "drain",
+  "target": 0,
+  "concurrency": 0,
+  "peakConcurrency": 150,
+  "riders_busy": 0,
+  "drivers": {
+    "idle": 996,
+    "standby": 4
+  },
+  "gateway_down": false,
+  "outages": 0,
+  "http": {
+    "total": 10691,
+    "ok": 10691,
+    "non2xx": 0,
+    "netErr": 0,
+    "timeouts": 0,
+    "refused": 0,
+    "retried": 0,
+    "inflight": 0,
+    "peakInflight": 50,
+    "n": 10691,
+    "p50": 5.9,
+    "p95": 54.1,
+    "p99": 68.3
+  },
+  "http_window": {
+    "n": 3,
+    "rps": 0.3,
+    "p50": 3.3,
+    "p95": 3.7,
+    "p99": 3.7
+  },
+  "scenarios": {
+    "ride_cancel_matched": {
+      "started": 46,
+      "ok": 0,
+      "fail": 46,
+      "reasons": {
+        "order_not_created_45s": 41,
+        "no_match_within_wait": 5
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "ride": {
+      "started": 465,
+      "ok": 2,
+      "fail": 463,
+      "reasons": {
+        "not_in_progress_matched": 2,
+        "not_completed_in_progress": 1,
+        "order_not_created_45s": 406,
+        "no_match_within_wait": 54
+      },
+      "e2e": {
+        "n": 2,
+        "p50": 70089.8,
+        "p95": 70089.8,
+        "p99": 70089.8
+      }
+    },
+    "delivery": {
+      "started": 421,
+      "ok": 0,
+      "fail": 421,
+      "reasons": {
+        "order_not_created_45s": 362,
+        "no_match_within_wait": 59
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "group": {
+      "started": 188,
+      "ok": 0,
+      "fail": 188,
+      "reasons": {
+        "order_not_created_45s": 170,
+        "no_claim_registered": 18
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "delivery_cancel_searching": {
+      "started": 44,
+      "ok": 1,
+      "fail": 43,
+      "reasons": {
+        "cancel_not_applied_searching": 1,
+        "order_not_created_45s": 42
+      },
+      "e2e": {
+        "n": 1,
+        "p50": 27590.6,
+        "p95": 27590.6,
+        "p99": 27590.6
+      }
+    },
+    "delivery_cancel_matched": {
+      "started": 40,
+      "ok": 0,
+      "fail": 40,
+      "reasons": {
+        "order_not_created_45s": 37,
+        "no_match_within_wait": 3
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "delivery_dup_complete": {
+      "started": 16,
+      "ok": 0,
+      "fail": 16,
+      "reasons": {
+        "no_match_within_wait": 3,
+        "order_not_created_45s": 13
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "ride_dup_complete": {
+      "started": 18,
+      "ok": 0,
+      "fail": 18,
+      "reasons": {
+        "order_not_created_45s": 17,
+        "no_match_within_wait": 1
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "ride_cancel_searching": {
+      "started": 41,
+      "ok": 1,
+      "fail": 40,
+      "reasons": {
+        "cancel_not_applied_searching": 5,
+        "order_not_created_45s": 35
+      },
+      "e2e": {
+        "n": 1,
+        "p50": 27590.6,
+        "p95": 27590.6,
+        "p99": 27590.6
+      }
+    },
+    "group_dup_claim": {
+      "started": 9,
+      "ok": 0,
+      "fail": 9,
+      "reasons": {
+        "order_not_created_45s": 8,
+        "no_claim_registered": 1
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "delivery_cancel_in_progress": {
+      "started": 17,
+      "ok": 0,
+      "fail": 17,
+      "reasons": {
+        "order_not_created_45s": 16,
+        "no_match_within_wait": 1
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "ride_cancel_in_progress": {
+      "started": 23,
+      "ok": 0,
+      "fail": 23,
+      "reasons": {
+        "order_not_created_45s": 21,
+        "no_match_within_wait": 2
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "delivery_dup_create": {
+      "started": 17,
+      "ok": 0,
+      "fail": 17,
+      "reasons": {
+        "order_not_created_45s": 14,
+        "no_match_within_wait": 3
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "group_overfill": {
+      "started": 26,
+      "ok": 0,
+      "fail": 26,
+      "reasons": {
+        "order_not_created_45s": 24,
+        "no_claim_registered": 2
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "ride_dup_create": {
+      "started": 16,
+      "ok": 0,
+      "fail": 16,
+      "reasons": {
+        "order_not_created_45s": 14,
+        "duplicate_active_order": 1,
+        "no_match_within_wait": 1
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    }
+  },
+  "biz": {
+    "createToOrder": {
+      "n": 167,
+      "p50": 23165.6,
+      "p95": 43975.2,
+      "p99": 46613.7
+    },
+    "orderToOfferSeen": {
+      "n": 7,
+      "p50": 18349.3,
+      "p95": 36922.4,
+      "p99": 36922.4
+    },
+    "offerSeenToAccept": {
+      "n": 22,
+      "p50": 1497.8,
+      "p95": 2530.6,
+      "p99": 2530.6
+    },
+    "acceptToMatched": {
+      "n": 5,
+      "p50": 16330.8,
+      "p95": 18349.3,
+      "p99": 18349.3
+    },
+    "groupCardWait": {
+      "n": 21,
+      "p50": 178052.8,
+      "p95": 267725.5,
+      "p99": 267725.5
+    },
+    "offersSeen": 28,
+    "offersAcceptedSent": 22,
+    "offersRejectedSent": 2,
+    "offersIgnored": 3,
+    "offersWhileBusy": 1,
+    "acceptLost": 18,
+    "duplicateUpdatesSent": 180
+  },
+  "tracked_orders": 0,
+  "mock_cursor": 10751,
+  "mock_poll_failures": 0,
+  "errors": {},
+  "outages_detail": [],
+  "ended_with_running": 0
+}

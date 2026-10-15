@@ -1,0 +1,94 @@
+{
+  "GEN_ID": "gen1",
+  "BASE": "http://127.0.0.1:54300",
+  "MOCK": "http://127.0.0.1:58090",
+  "N_DRIVERS": 1000,
+  "N_RIDERS": 1000,
+  "SEED": false,
+  "PROFILE": [
+    {
+      "name": "smoke2",
+      "sec": 240,
+      "conc": 10
+    }
+  ],
+  "MIX": {
+    "ride": 0.47,
+    "delivery": 0.38,
+    "group": 0.15
+  },
+  "MATCH_WAIT_MS": 120000,
+  "cities": {
+    "JED": {
+      "center": {
+        "lat": 21.5433,
+        "lng": 39.1728
+      },
+      "role": "core",
+      "idx": 1,
+      "drivers": [
+        160,
+        100
+      ],
+      "riders": 250
+    },
+    "MKK": {
+      "center": {
+        "lat": 21.4225,
+        "lng": 39.8262
+      },
+      "role": "core",
+      "idx": 2,
+      "drivers": [
+        120,
+        80
+      ],
+      "riders": 200
+    },
+    "RUH": {
+      "center": {
+        "lat": 24.7136,
+        "lng": 46.6753
+      },
+      "role": "core",
+      "idx": 3,
+      "drivers": [
+        150,
+        90
+      ],
+      "riders": 250
+    },
+    "TIF": {
+      "center": {
+        "lat": 21.2703,
+        "lng": 40.4158
+      },
+      "role": "group",
+      "idx": 4,
+      "drivers": [
+        150,
+        0
+      ],
+      "riders": 150
+    },
+    "MED": {
+      "center": {
+        "lat": 24.4672,
+        "lng": 39.6111
+      },
+      "role": "group",
+      "idx": 5,
+      "drivers": [
+        150,
+        0
+      ],
+      "riders": 150
+    }
+  },
+  "driver_offer_policy": {
+    "accept": 0.85,
+    "reject": 0.08,
+    "ignore": 0.07
+  },
+  "offer_source": "telegram-mock inbox only"
+}

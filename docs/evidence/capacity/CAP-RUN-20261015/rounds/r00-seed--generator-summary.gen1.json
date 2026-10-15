@@ -1,0 +1,219 @@
+{
+  "t": "2026-10-15T01:02:10.531Z",
+  "s": 320,
+  "gen": "gen1",
+  "phase": "drain",
+  "target": 0,
+  "concurrency": 0,
+  "peakConcurrency": 10,
+  "riders_busy": 0,
+  "drivers": {
+    "unavailable": 33,
+    "idle": 967
+  },
+  "gateway_down": false,
+  "outages": 0,
+  "http": {
+    "total": 2768,
+    "ok": 2768,
+    "non2xx": 0,
+    "netErr": 0,
+    "timeouts": 0,
+    "refused": 0,
+    "retried": 0,
+    "inflight": 0,
+    "peakInflight": 31,
+    "n": 2768,
+    "p50": 2.9,
+    "p95": 36,
+    "p99": 48.1
+  },
+  "http_window": {
+    "n": 2,
+    "rps": 0.2,
+    "p50": 1.5,
+    "p95": 2.9,
+    "p99": 2.9
+  },
+  "scenarios": {
+    "ride_cancel_searching": {
+      "started": 2,
+      "ok": 2,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 2,
+        "p50": 4803.8,
+        "p95": 23165.6,
+        "p99": 23165.6
+      }
+    },
+    "delivery": {
+      "started": 29,
+      "ok": 29,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 29,
+        "p50": 34832.5,
+        "p95": 43975.2,
+        "p99": 46613.7
+      }
+    },
+    "ride": {
+      "started": 28,
+      "ok": 28,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 28,
+        "p50": 29246,
+        "p95": 39137.8,
+        "p99": 43975.2
+      }
+    },
+    "group": {
+      "started": 7,
+      "ok": 0,
+      "fail": 7,
+      "reasons": {
+        "order_not_created_45s": 7
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "delivery_dup_create": {
+      "started": 3,
+      "ok": 3,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 3,
+        "p50": 39137.8,
+        "p95": 43975.2,
+        "p99": 43975.2
+      }
+    },
+    "delivery_cancel_in_progress": {
+      "started": 3,
+      "ok": 3,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 3,
+        "p50": 43975.2,
+        "p95": 46613.7,
+        "p99": 46613.7
+      }
+    },
+    "ride_dup_create": {
+      "started": 2,
+      "ok": 2,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 2,
+        "p50": 24555.5,
+        "p95": 27590.6,
+        "p99": 27590.6
+      }
+    },
+    "ride_cancel_matched": {
+      "started": 2,
+      "ok": 2,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 2,
+        "p50": 17310.7,
+        "p95": 26028.9,
+        "p99": 26028.9
+      }
+    },
+    "delivery_cancel_matched": {
+      "started": 1,
+      "ok": 1,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 1,
+        "p50": 29246,
+        "p95": 29246,
+        "p99": 29246
+      }
+    },
+    "ride_dup_complete": {
+      "started": 1,
+      "ok": 1,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 1,
+        "p50": 43975.2,
+        "p95": 43975.2,
+        "p99": 43975.2
+      }
+    },
+    "delivery_cancel_searching": {
+      "started": 3,
+      "ok": 3,
+      "fail": 0,
+      "reasons": {},
+      "e2e": {
+        "n": 3,
+        "p50": 21854.3,
+        "p95": 23165.6,
+        "p99": 23165.6
+      }
+    }
+  },
+  "biz": {
+    "createToOrder": {
+      "n": 74,
+      "p50": 15406.4,
+      "p95": 21854.3,
+      "p99": 23165.6
+    },
+    "orderToOfferSeen": {
+      "n": 70,
+      "p50": 4033.4,
+      "p95": 9119,
+      "p99": 10860.9
+    },
+    "offerSeenToAccept": {
+      "n": 438,
+      "p50": 1587.7,
+      "p95": 2530.6,
+      "p99": 2682.4
+    },
+    "acceptToMatched": {
+      "n": 69,
+      "p50": 4033.4,
+      "p95": 5721.4,
+      "p99": 6428.6
+    },
+    "groupCardWait": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "offersSeen": 580,
+    "offersAcceptedSent": 438,
+    "offersRejectedSent": 37,
+    "offersIgnored": 36,
+    "offersWhileBusy": 69,
+    "acceptLost": 369,
+    "duplicateUpdatesSent": 80
+  },
+  "tracked_orders": 0,
+  "mock_cursor": 47980,
+  "mock_poll_failures": 0,
+  "errors": {},
+  "outages_detail": [],
+  "ended_with_running": 0
+}

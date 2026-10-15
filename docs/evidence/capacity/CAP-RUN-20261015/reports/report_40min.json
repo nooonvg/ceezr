@@ -1,0 +1,483 @@
+{
+  "mark_min": 40,
+  "written_at": "2026-10-15T03:21:19.091Z",
+  "phase": "recover150",
+  "load": {
+    "target": 150,
+    "concurrency": 150,
+    "peak_concurrency": 1000,
+    "riders_busy": 150,
+    "drivers": {
+      "idle": 837,
+      "accepting": 132,
+      "unavailable": 27,
+      "standby": 4
+    },
+    "rps_window": 17.5,
+    "http": {
+      "total": 83220,
+      "ok": 49276,
+      "non2xx": 33940,
+      "netErr": 4,
+      "timeouts": 0,
+      "refused": 1,
+      "retried": 7,
+      "inflight": 0,
+      "peakInflight": 742,
+      "n": 83216,
+      "p50": 21.3,
+      "p95": 1413.1,
+      "p99": 2530.6
+    },
+    "http_window": {
+      "n": 175,
+      "rps": 17.5,
+      "p50": 30.2,
+      "p95": 76.7,
+      "p99": 91.4
+    },
+    "gateway_down_now": false,
+    "outages": 2
+  },
+  "generators": [
+    {
+      "gen": "gen1",
+      "s": 2550,
+      "phase": "recover150",
+      "concurrency": 150
+    }
+  ],
+  "scenarios": {
+    "ride_cancel_searching": {
+      "started": 653,
+      "ok": 4,
+      "fail": 645,
+      "reasons": {
+        "order_not_created_45s": 632,
+        "cancel_status_matched": 3,
+        "cancel_not_applied_searching": 10
+      },
+      "e2e": {
+        "n": 4,
+        "p50": 11512.6,
+        "p95": 26028.9,
+        "p99": 26028.9
+      }
+    },
+    "delivery": {
+      "started": 4579,
+      "ok": 53,
+      "fail": 4481,
+      "reasons": {
+        "order_not_created_45s": 4421,
+        "not_completed_in_progress": 17,
+        "not_in_progress_matched": 23,
+        "no_match_within_wait": 20
+      },
+      "e2e": {
+        "n": 53,
+        "p50": 36922.4,
+        "p95": 88486.8,
+        "p99": 300816.4
+      }
+    },
+    "group": {
+      "started": 3568,
+      "ok": 27,
+      "fail": 3519,
+      "reasons": {
+        "agree_not_matched_searching": 28,
+        "order_not_created_45s": 3316,
+        "group_card_not_delivered_240s": 159,
+        "no_claim_registered": 16
+      },
+      "e2e": {
+        "n": 27,
+        "p50": 188735.9,
+        "p95": 252571.2,
+        "p99": 267725.5
+      }
+    },
+    "delivery_cancel_searching": {
+      "started": 525,
+      "ok": 5,
+      "fail": 516,
+      "reasons": {
+        "order_not_created_45s": 496,
+        "cancel_not_applied_searching": 13,
+        "cancel_status_matched": 7
+      },
+      "e2e": {
+        "n": 5,
+        "p50": 13711.7,
+        "p95": 31000.8,
+        "p99": 31000.8
+      }
+    },
+    "ride": {
+      "started": 5654,
+      "ok": 68,
+      "fail": 5534,
+      "reasons": {
+        "order_not_created_45s": 5436,
+        "not_completed_in_progress": 22,
+        "not_in_progress_matched": 35,
+        "no_match_within_wait": 41
+      },
+      "e2e": {
+        "n": 68,
+        "p50": 27590.6,
+        "p95": 70089.8,
+        "p99": 149496.5
+      }
+    },
+    "delivery_dup_complete": {
+      "started": 240,
+      "ok": 9,
+      "fail": 225,
+      "reasons": {
+        "order_not_created_45s": 221,
+        "not_completed_in_progress": 1,
+        "no_match_within_wait": 2,
+        "not_in_progress_matched": 1
+      },
+      "e2e": {
+        "n": 9,
+        "p50": 36922.4,
+        "p95": 55517.7,
+        "p99": 55517.7
+      }
+    },
+    "delivery_cancel_matched": {
+      "started": 355,
+      "ok": 6,
+      "fail": 348,
+      "reasons": {
+        "order_not_created_45s": 341,
+        "cancel_after_match_matched": 3,
+        "no_match_within_wait": 4
+      },
+      "e2e": {
+        "n": 6,
+        "p50": 31000.8,
+        "p95": 43975.2,
+        "p99": 43975.2
+      }
+    },
+    "delivery_cancel_in_progress": {
+      "started": 175,
+      "ok": 0,
+      "fail": 173,
+      "reasons": {
+        "order_not_created_45s": 172,
+        "no_match_within_wait": 1
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "ride_dup_complete": {
+      "started": 318,
+      "ok": 1,
+      "fail": 315,
+      "reasons": {
+        "order_not_created_45s": 312,
+        "not_in_progress_matched": 1,
+        "no_match_within_wait": 2
+      },
+      "e2e": {
+        "n": 1,
+        "p50": 20617.3,
+        "p95": 20617.3,
+        "p99": 20617.3
+      }
+    },
+    "ride_cancel_matched": {
+      "started": 499,
+      "ok": 2,
+      "fail": 495,
+      "reasons": {
+        "order_not_created_45s": 485,
+        "cancel_after_match_matched": 5,
+        "no_match_within_wait": 5
+      },
+      "e2e": {
+        "n": 2,
+        "p50": 26028.9,
+        "p95": 27590.6,
+        "p99": 27590.6
+      }
+    },
+    "group_overfill": {
+      "started": 397,
+      "ok": 3,
+      "fail": 391,
+      "reasons": {
+        "order_not_created_45s": 365,
+        "no_claim_registered": 3,
+        "group_card_not_delivered_240s": 21,
+        "agree_not_matched_searching": 2
+      },
+      "e2e": {
+        "n": 3,
+        "p50": 238274.8,
+        "p95": 252571.2,
+        "p99": 252571.2
+      }
+    },
+    "ride_cancel_in_progress": {
+      "started": 240,
+      "ok": 2,
+      "fail": 237,
+      "reasons": {
+        "order_not_created_45s": 231,
+        "not_completed_in_progress": 3,
+        "no_match_within_wait": 3
+      },
+      "e2e": {
+        "n": 2,
+        "p50": 43975.2,
+        "p95": 66122.5,
+        "p99": 66122.5
+      }
+    },
+    "ride_dup_create": {
+      "started": 292,
+      "ok": 3,
+      "fail": 286,
+      "reasons": {
+        "order_not_created_45s": 281,
+        "not_completed_in_progress": 1,
+        "not_in_progress_matched": 1,
+        "no_match_within_wait": 3
+      },
+      "e2e": {
+        "n": 3,
+        "p50": 26028.9,
+        "p95": 52375.2,
+        "p99": 52375.2
+      }
+    },
+    "group_dup_claim": {
+      "started": 245,
+      "ok": 3,
+      "fail": 241,
+      "reasons": {
+        "order_not_created_45s": 230,
+        "group_card_not_delivered_240s": 7,
+        "agree_not_matched_searching": 3,
+        "no_claim_registered": 1
+      },
+      "e2e": {
+        "n": 3,
+        "p50": 188735.9,
+        "p95": 224787.5,
+        "p99": 224787.5
+      }
+    },
+    "delivery_dup_create": {
+      "started": 235,
+      "ok": 4,
+      "fail": 229,
+      "reasons": {
+        "order_not_created_45s": 226,
+        "not_completed_in_progress": 1,
+        "duplicate_active_order": 2
+      },
+      "e2e": {
+        "n": 4,
+        "p50": 26028.9,
+        "p95": 34832.5,
+        "p99": 34832.5
+      }
+    }
+  },
+  "business": {
+    "createToOrder": {
+      "n": 660,
+      "p50": 18349.3,
+      "p95": 46613.7,
+      "p99": 200060.1
+    },
+    "orderToOfferSeen": {
+      "n": 358,
+      "p50": 3805.1,
+      "p95": 10246.2,
+      "p99": 23165.6
+    },
+    "offerSeenToAccept": {
+      "n": 1746,
+      "p50": 1497.8,
+      "p95": 2530.6,
+      "p99": 2682.4
+    },
+    "acceptToMatched": {
+      "n": 262,
+      "p50": 4531.9,
+      "p95": 19450.3,
+      "p99": 34832.5
+    },
+    "groupCardWait": {
+      "n": 86,
+      "p50": 178052.8,
+      "p95": 337997.3,
+      "p99": 426713.8
+    },
+    "offersSeen": 3458,
+    "offersAcceptedSent": 1746,
+    "offersRejectedSent": 145,
+    "offersIgnored": 129,
+    "offersWhileBusy": 1435,
+    "acceptLost": 1379,
+    "duplicateUpdatesSent": 685
+  },
+  "db_now": {
+    "outbox_by_status": {
+      "dead": 6767,
+      "delivered": 26413,
+      "undeliverable": 187
+    },
+    "outbox_offer_by_status": {
+      "dead": 6767,
+      "delivered": 14522
+    },
+    "outbox_due": "0",
+    "outbox_oldest_due_s": null,
+    "outbox_oldest_sending_s": null,
+    "outbox_created_10s": "9",
+    "outbox_delivered_10s": "20",
+    "offer_rows_created_10s": "9",
+    "offer_rows_delivered_10s": "20",
+    "outbox_latency_60s": [
+      7.545506,
+      12.188363049999998,
+      13.30508003
+    ],
+    "update_jobs_by_status": {
+      "done": 117730,
+      "claimed": 18,
+      "pending": 14965
+    },
+    "update_oldest_pending_s": "1356.428170",
+    "updates_done_10s": "144",
+    "updates_in_10s": "218",
+    "update_latency_60s": [
+      1354.355737,
+      1363.828334,
+      1367.0846474
+    ],
+    "orders": {
+      "delivery/matched": 233,
+      "transport/matched": 254,
+      "delivery/cancelled": 516,
+      "delivery/completed": 185,
+      "delivery/searching": 422,
+      "transport/cancelled": 1317,
+      "transport/completed": 276,
+      "transport/searching": 684,
+      "delivery/in_progress": 32,
+      "transport/in_progress": 47
+    },
+    "orders_created_10s": "1",
+    "offers": {
+      "expired": 13875,
+      "pending": 21,
+      "accepted": 1346,
+      "rejected": 235,
+      "cancelled": 5812
+    },
+    "offers_created_10s": "9",
+    "negotiations": {
+      "agreed": 129,
+      "cancelled": 2136,
+      "exhausted": 33
+    },
+    "claims": "346",
+    "pg_conns": {
+      "idle": 15,
+      "active": 1
+    },
+    "pg_lock_waits": "0",
+    "pg_locks_not_granted": "0",
+    "pg_longest_active_s": "0",
+    "pg_xacts": "1334325",
+    "pg_deadlocks": "0",
+    "db_bytes": "176633535"
+  },
+  "window_10min": {
+    "samples": 61,
+    "not_ready_samples": 0,
+    "cpu_pct": {
+      "avg": 26.4,
+      "p95": 42.8,
+      "max": 44.1
+    },
+    "gateway_rss_mb": {
+      "max": 132.8,
+      "last": 127.7
+    },
+    "outbox_due_max": 19,
+    "outbox_oldest_due_s_max": 5.298292,
+    "outbox_created": 411,
+    "outbox_delivered": 409,
+    "updates_in": 10055,
+    "updates_done": 10030,
+    "pg_conns_max": 22,
+    "redis_ping_max_ms": 9.17
+  },
+  "generator_errors": {
+    "group_sel_buttons_not_seen": 28,
+    "net:TypeError": 4,
+    "post_gave_up:group_claim": 5,
+    "post_gave_up:driver_location": 47,
+    "post_gave_up:driver_unavailable": 114,
+    "post_gave_up:rider_menu": 162,
+    "post_gave_up:rider_ride_cmd": 291,
+    "post_gave_up:group_select": 7,
+    "post_gave_up:dup_update": 6,
+    "post_gave_up:driver_complete": 3,
+    "post_gave_up:driver_available": 77,
+    "post_gave_up:rider_cancel": 32,
+    "post_gave_up:rider_svc_delivery": 157,
+    "post_gave_up:rider_pickup": 347,
+    "post_gave_up:group_chat": 14,
+    "post_gave_up:rider_dropoff": 130,
+    "no_free_rider": 12798,
+    "no_free_group_rider": 404,
+    "http_429:rider_menu": 2649,
+    "http_429:rider_dropoff": 8635,
+    "http_429:rider_parcel": 3010,
+    "http_429:rider_pickup": 8385,
+    "http_429:rider_svc_delivery": 2783,
+    "http_429:rider_ride_cmd": 5236,
+    "http_429:driver_unavailable": 338,
+    "http_429:driver_location": 1456,
+    "http_429:driver_available": 274,
+    "http_429:group_select": 9,
+    "http_429:group_chat": 23,
+    "http_429:group_agree": 15,
+    "http_429:rider_cancel": 124,
+    "http_429:group_claim": 47,
+    "http_429:rider_cancel_dup": 20,
+    "http_429:driver_accept": 511,
+    "http_429:driver_reject": 48,
+    "http_429:driver_start": 52,
+    "http_429:driver_complete": 22,
+    "http_429:rider_rate": 3,
+    "http_429:driver_rate": 3,
+    "http_429:rider_cancel_in_trip": 1,
+    "http_429:group_claim_dup": 3,
+    "http_503:rider_pickup": 1,
+    "http_503:rider_dropoff": 1,
+    "http_503:driver_location": 1,
+    "board:the database system is shutting down": 1
+  },
+  "monitor_errors": {
+    "redis": 1
+  },
+  "gateway_not_ready_transitions": 4,
+  "load_is_flowing": true
+}

@@ -163,6 +163,7 @@ import {
 import { grammyCommandRegistrar, registerBotCommands } from "./bots/shared/register-commands.ts";
 import { buildContainer } from "./container.ts";
 import { type EmbeddedWorkerHandle, startEmbeddedWorker } from "./embedded-worker.ts";
+import { parseTelegramDrainLanes } from "./background/telegram-update-drainer.ts";
 import { createJobHealthProbes } from "./job-health.ts";
 import { createLifecycle } from "./lifecycle.ts";
 import { instrumentPaymentConfirmationDeps } from "./observability/payment.ts";
@@ -1931,6 +1932,8 @@ for (const [audience, token] of [
  * لا إيقاظَ له: إعادةٌ مؤجّلةٌ بـ`next_attempt_at`، أو صفٌّ أودعته نسخةٌ أخرى. والدرينرُ
  * يفرغُ الطابورَ كاملاً في كلِّ شوطٍ (claim حتى null)، ومانعُ التداخلِ باقٍ.
  */
+const drainLanes = parseTelegramDrainLanes(process.env.TELEGRAM_DRAIN_LANES);
+if (drainLanes.invalid) log("telegram.drainer.lanes_invalid", { raw: process.env.TELEGRAM_DRAIN_LANES ?? null, using: drainLanes.lanes });
 updateDrainer = startTelegramUpdateDrainer(
   {
     queue: createPostgresTelegramUpdateQueue(container.sql),
@@ -1938,7 +1941,9 @@ updateDrainer = startTelegramUpdateDrainer(
     log,
     // SANDBOX-SOAK-01: مساراتٌ متوازيةٌ لكلِّ مستخدم. الافتراضُ ١ = السلوكُ التسلسليُّ القائم،
     // وقيمةٌ غيرُ عدديّةٍ تُسقِطُ إلى ١ داخلَ الدرينر (`Number.NaN > 1` باطل).
-    lanes: Number(process.env.TELEGRAM_DRAIN_LANES ?? "1"),
+    lanes: drainLanes.lanes,
+    // CAP-RUN-20261015 / D2+D3: توزيعُ المساراتِ بين البوتين وتجديدُ إيجارِ المحجوزِ المنتظر.
+    fairBots: ["driver", "rider"],
   },
   { intervalMs: TELEGRAM_DRAINER_FALLBACK_INTERVAL_MS },
 );

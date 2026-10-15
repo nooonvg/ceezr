@@ -1,0 +1,256 @@
+{
+  "at": "2026-10-15T04:28:01.951Z",
+  "precondition": {
+    "leftover_active_orders": 3,
+    "still_active_after_bot_cancel": 1
+  },
+  "results": [
+    {
+      "id": "C1",
+      "group": "telegram",
+      "title": "تكرار update_id نفسه 3 مرات بالتوازي يُعالَج مرة واحدة (ردود = ردّ /help واحد، بلا نص مكرر)",
+      "status": "PASS",
+      "evidence": {
+        "http": [
+          200,
+          200,
+          200
+        ],
+        "receipts": 1,
+        "jobs": 1,
+        "job_status": "done",
+        "replies": 3,
+        "baseline_single_help": 3,
+        "no_duplicate_text": true
+      }
+    },
+    {
+      "id": "C2",
+      "group": "telegram",
+      "title": "تحديثات بترتيب معكوس (update_id أكبر أولًا) تُعالَج كلتاهما",
+      "status": "PASS",
+      "evidence": {
+        "http": [
+          200,
+          200
+        ],
+        "jobs": {
+          "done": 2
+        }
+      }
+    },
+    {
+      "id": "C3",
+      "group": "telegram",
+      "title": "8 تحديثات متتابعة للمستخدم نفسه تُنهى بترتيب الإيداع (completed_at رتيب)",
+      "status": "PASS",
+      "evidence": {
+        "n": 8,
+        "monotonic": true
+      }
+    },
+    {
+      "id": "C4",
+      "group": "telegram",
+      "title": "60 مستخدمًا مختلفًا بالتوازي: كل التحديثات تُنجز",
+      "status": "PASS",
+      "evidence": {
+        "http_2xx": 60,
+        "jobs": {
+          "done": 60
+        },
+        "ms": 8170
+      }
+    },
+    {
+      "id": "C5",
+      "group": "telegram",
+      "title": "تحديثات غير معروفة/بلا معرّف مستخدم لا تُسقط البوابة ولا تبقى عالقة",
+      "status": "PASS",
+      "evidence": {
+        "http": [
+          200,
+          200
+        ],
+        "jobs": {
+          "done": 2
+        },
+        "ready": 200
+      }
+    },
+    {
+      "id": "E1",
+      "group": "security",
+      "title": "سرّ webhook خاطئ أو غائب يُرفض ولا يُودَع",
+      "status": "PASS",
+      "evidence": {
+        "wrong": 401,
+        "missing": 401,
+        "receipts": 0
+      }
+    },
+    {
+      "id": "E2",
+      "group": "security",
+      "title": "JSON غير صالح / بلا update_id / بوت غير معروف يُرفض بلا 5xx",
+      "status": "PASS",
+      "evidence": {
+        "invalid_json": 400,
+        "no_update_id": 400,
+        "unknown_bot": 404
+      }
+    },
+    {
+      "id": "E3",
+      "group": "security",
+      "title": "مدخل كبير (~6MB) يُرفض 413 والبوابة سليمة",
+      "status": "PASS",
+      "evidence": {
+        "http": 413,
+        "ready": 200
+      }
+    },
+    {
+      "id": "A1",
+      "group": "orders",
+      "title": "قبول سائقين للطلب نفسه في اللحظة نفسها: إسناد واحد فقط",
+      "status": "PASS",
+      "evidence": {
+        "http": [
+          200,
+          200
+        ],
+        "accepted_offers": 1,
+        "status": "matched",
+        "offered_to": 9
+      }
+    },
+    {
+      "id": "A3",
+      "group": "orders",
+      "title": "سائق بلا عرض لهذا الطلب لا يستطيع انتزاعه",
+      "status": "PASS",
+      "evidence": {
+        "assigned": "7300036",
+        "outsider": 7300001
+      }
+    },
+    {
+      "id": "A4",
+      "group": "orders",
+      "title": "إكمال الرحلة مرتين بالتوازي: completed مرة واحدة وبطاقة تقييم واحدة للزبون",
+      "status": "PASS",
+      "evidence": {
+        "status": "completed",
+        "completed_at": "2026-10-15T04:26:44.334Z",
+        "rider_rating_cards": 1
+      }
+    },
+    {
+      "id": "A5",
+      "group": "orders",
+      "title": "إلغاء بعد الإكمال لا يغيّر الحالة",
+      "status": "PASS",
+      "evidence": {
+        "status": "completed"
+      }
+    },
+    {
+      "id": "A2",
+      "group": "orders",
+      "title": "قبول عرض بعد expires_at (قبل مرور عامل الانتهاء) لا يُسند الطلب",
+      "status": "PASS",
+      "evidence": {
+        "offer_status_at_accept": "pending",
+        "assigned": null,
+        "status": "searching",
+        "reoffered_pending": 1,
+        "accept_after_expiry_ms": 3000
+      }
+    },
+    {
+      "id": "A6",
+      "group": "orders",
+      "title": "إعادة توزيع الطلب بعد انتهاء العرض (جولة عروض ثانية)",
+      "status": "PASS",
+      "evidence": {
+        "rounds": 3
+      }
+    },
+    {
+      "id": "A7",
+      "group": "orders",
+      "title": "إحداثيات مكتوبة/نص بدل الموقع لا تُنشئ طلبًا",
+      "status": "PASS",
+      "evidence": {
+        "order": null
+      }
+    },
+    {
+      "id": "A8",
+      "group": "orders",
+      "title": "طلبان متتاليان من الزبون نفسه: طلب نشط واحد فقط",
+      "status": "PASS",
+      "evidence": {
+        "active_orders": 1
+      }
+    },
+    {
+      "id": "A9",
+      "group": "orders",
+      "title": "إلغاء مكرر: الطلب ملغى مرة واحدة بلا أخطاء",
+      "status": "PASS",
+      "evidence": {
+        "orders": {
+          "n": 1,
+          "st": "cancelled"
+        }
+      }
+    },
+    {
+      "id": "B3",
+      "group": "groups",
+      "title": "مطالبة مرسلة من قروب غير مسجّل لا تُسجَّل",
+      "status": "PASS",
+      "evidence": {
+        "before": 0,
+        "after": 0
+      }
+    },
+    {
+      "id": "B5",
+      "group": "groups",
+      "title": "سائق من مدينة أخرى لا تُسجَّل مطالبته (CITY_MISMATCH)",
+      "status": "PASS",
+      "evidence": {
+        "negotiation_city": "JED",
+        "driver_city": "MKK",
+        "claims_by_outsider": 0,
+        "carried_from": "edge-cases.attempt4.json (attempt 4, 2026-10-15T04:24:00.040Z, same post-D8 code)",
+        "reason_final_run_not_verified": "لا تفاوض مفتوح في التشغيل النهائي"
+      }
+    },
+    {
+      "id": "E4",
+      "group": "security",
+      "title": "لا وصول للإنترنت من الـnetns: api.telegram.org و1.1.1.1",
+      "status": "PASS",
+      "evidence": {
+        "telegram": "blocked:TypeError:getaddrinfo ETIMEOUT api.telegram.org",
+        "ip": "blocked:TypeError"
+      }
+    }
+  ],
+  "summary": {
+    "pass": 20,
+    "fail": 0,
+    "not_verified": 0
+  },
+  "attempts": {
+    "1": "edge-attempt1.out — فشل C1 (توقع ردّاً واحداً لـ/help متعدد الرسائل)، A1/A8 (زبائن ببقايا طلبات الجولة)، A9 انهار (null): عيوب في الاختبار",
+    "2": "edge-attempt2.out — مجموعة الزبائن فارغة بعد الاستبعاد (كل زبائن JED لديهم طلب نشط من بقايا الجولة)",
+    "3": "edge-attempt3-preD8.out — A6 FAIL (rounds=1) بسبب D8، A2 FAIL (نافذة انتظار 15ث أقصر من فاصل expire-offers 60ث)، B5 FAIL (افتراض خاطئ: تفاوض JED وسائق JED)",
+    "4": "edge-attempt4-D8-catchup.out — بعد إصلاح D8: A6 PASS، B5 PASS؛ A1 NOT VERIFIED بسبب دفعة اللحاق (1678 إعادة بث لطلبات مُجوَّعة)",
+    "5": "edge.out — النهائي"
+  }
+}
