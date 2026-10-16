@@ -14,8 +14,8 @@ case "$PATH_" in
 esac
 mkdir -p "$RUN_DIR/evidence"
 # SCENARIO_DEPTH: assign (إثبات الإسناد فقط) أو full (دورة الرحلة كاملة حتى completed).
-setsid $B/bin/nsx bash -c 'export PATH="/home/user/.local/bin:$PATH"; set -a; . "$1"; . "$2"; set +a; export RUN_DIR="$3" GEN_ID="$4" PROFILE="$5" SCENARIO_DEPTH="$6" ISOLATE_CONC="$7" ISOLATE_SEC="$8" ISOLATE_B_RATE="$9" ISOLATE_B_PRESSURE_RATE="${10}"; exec bun run "${11}"' _ \
+setsid $B/bin/nsx bash -c 'export PATH="/home/user/.local/bin:$PATH"; set -a; . "$1"; . "$2"; set +a; export RUN_DIR="$3" GEN_ID="$4" PROFILE="$5" SCENARIO_DEPTH="$6" ISOLATE_CONC="$7" ISOLATE_SEC="$8" ISOLATE_B_RATE="$9" ISOLATE_B_PRESSURE_RATE="${10}" ISOLATE_RIDER_BASE="${11}" ISOLATE_DRIVER_BASE="${12}"; exec bun run "${13}"' _ \
   "$HERE/config/run.env" "$B/secrets.env" "$RUN_DIR" "$GEN_ID" "$PROFILE" "${SCENARIO_DEPTH:-full}" \
-  "${ISOLATE_CONC:-20}" "${ISOLATE_SEC:-120}" "${ISOLATE_B_RATE:-5}" "${ISOLATE_B_PRESSURE_RATE:-50}" "$SCRIPT" \
+  "${ISOLATE_CONC:-20}" "${ISOLATE_SEC:-120}" "${ISOLATE_B_RATE:-5}" "${ISOLATE_B_PRESSURE_RATE:-50}" "${ISOLATE_RIDER_BASE:-6100000}" "${ISOLATE_DRIVER_BASE:-7100000}" "$SCRIPT" \
   >>"$RUN_DIR/evidence/$GEN_ID.out" 2>&1 </dev/null &
 echo $! > "$B/pids/$GEN_ID.pid"; echo "started $GEN_ID ($PATH_) pid=$!"

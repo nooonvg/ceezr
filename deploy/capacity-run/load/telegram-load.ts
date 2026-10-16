@@ -22,7 +22,8 @@
  */
 
 import { appendFileSync, mkdirSync } from "node:fs";
-import { BASE, EV, GEN_ID, PathRecorder, RUN_DIR, sleep, T0 } from "./lib.ts";
+import { BASE, EV, GEN_ID, PathRecorder, RUN_DIR, sleep, sql, T0 } from "./lib.ts";
+import { consumePage, type MockEvent } from "./mock-events.ts";
 
 mkdirSync(`${RUN_DIR}/evidence`, { recursive: true });
 
@@ -112,38 +113,103 @@ async function sendEntry(bot: "driver" | "rider", chat: number): Promise<void> {
 
 /* ───────── رصدُ الإشعاراتِ (بلا انتظارٍ) ───────── */
 
-interface MockEvent {
-  readonly t: number;
-  readonly chat: string;
-  readonly kind: string;
+let notificationsObserved = 0;
+let observationAgeMaxMs = 0;
+let observationAgeSumMs = 0;
+let historyTruncated = false;
+
+/** إحصاءُ تأخيرِ التسليمِ منَ القاعدةِ (صندوقُ الصادر) — لا فلترَ يستبعدُ
+ *  العيناتِ البطيئةَ: التأخيرُ = delivered_at − created_at لكلِّ صفٍّ سُلِّمَ
+ *  خلالَ نافذةِ المولّدِ، بتوزيعِهِ الكاملِ (p50/p95/max). هذا هوَ زمنُ
+ *  التسليمِ الحقيقيُّ (إدراجٌ ← تسليم) لا عمرُ الحدثِ عندَ رصدِهِ. */
+async function outboxLatency(): Promise<Record<string, unknown> | null> {
+  try {
+    const startedAt = new Date(T0).toISOString();
+    const rows = await sql<
+      {
+        delivered: string;
+        pending: string;
+        dead: string;
+        p50: string | null;
+        p95: string | null;
+        max_s: string | null;
+      }[]
+    >`
+      select
+        (select count(*)::text from notification_outbox where created_at >= ${startedAt} and status = 'delivered') delivered,
+        (select count(*)::text from notification_outbox where created_at >= ${startedAt} and status in ('pending','sending')) pending,
+        (select count(*)::text from notification_outbox where created_at >= ${startedAt} and status = 'dead') dead,
+        (select percentile_disc(0.5) within group (order by extract(epoch from (delivered_at - created_at)))::text
+           from notification_outbox where created_at >= ${startedAt} and delivered_at is not null) p50,
+        (select percentile_disc(0.95) within group (order by extract(epoch from (delivered_at - created_at)))::text
+           from notification_outbox where created_at >= ${startedAt} and delivered_at is not null) p95,
+        (select max(extract(epoch from (delivered_at - created_at)))::text
+           from notification_outbox where created_at >= ${startedAt} and delivered_at is not null) max_s
+    `;
+    return rows[0] ?? null;
+  } catch {
+    // القاعدةُ غيرُ متاحةٍ من هذا المولّدِ — يُسجَّلُ الغيابُ لا رقمٌ مختلَقٌ
+    return null;
+  }
 }
 
-let notificationsObserved = 0;
-let notificationLatencyFresh = 0;
-let notificationLatencySumMs = 0;
-
 async function inboxLoop(): Promise<void> {
-  // مؤشّرُ قراءةِ المحاكيِ المتسلسلِ — قراءةُ الذيلِ فقط لا تصفيرَ لبياناتِهِ.
+  // مؤشّرُ قراءةِ المحاكي: يبدأُ منَ ذيلِ السجلِّ الحاليِّ (لا يعيدُ التاريخَ)،
+  // ثمّ يقرأُ الجديدَ فقط. بروتوكولُ المحاكي: المعاملُ `after` والردُّ يحملُُ
+  // `seq` (لا `since`/`cursor`) — الخلطُ بينَهما كانَ يعيدُ كلَّ التاريخِ في كلِّ
+  // استطلاعٍ فيصفّرُ قياسَ التأخيرِ.
   let cursor = -1;
+  let tailKnown = false;
   for (;;) {
     try {
-      const response = await fetch(`${MOCK}/events?since=${cursor}`, {
-        signal: AbortSignal.timeout(5_000),
-      });
-      if (response.ok) {
-        const body = (await response.json()) as { events?: MockEvent[]; cursor?: number };
-        for (const event of body.events ?? []) {
-          notificationsObserved += 1;
-          // تأخيرُ الإشعارِ يقيسُ الطازجَ فقط (≤60ث من لحظةِ التسليمِ في
-          // المحاكي): السجلُّ التراكميُّ منذُ إقلاعِ المحاكيِّ يجعلُ المتوسطَ
-          // دقائقَ لا معنى لها. العدُّ الكليُّ يبقى شاملًا.
-          const age = Date.now() - event.t;
-          if (age <= 60_000) {
-            notificationLatencySumMs += Math.max(0, age);
-            notificationLatencyFresh += 1;
+      if (!tailKnown) {
+        // خطوةُ الأساسِ: موضعُ الذيلِ الآن — الأحداثُ السابقةُ ليستْ ضمنَ نافذةِ
+        // القياسِ فلا تُحسَبُ ولا تُحرقُ المتوسطَ.
+        const health = await fetch(`${MOCK}/health`, { signal: AbortSignal.timeout(5_000) });
+        if (health.ok) {
+          const body = (await health.json()) as { seq?: number };
+          if (typeof body.seq === "number") {
+            cursor = body.seq;
+            tailKnown = true;
+            ev("inbox.tail_baseline", { cursor });
           }
         }
-        if (typeof body.cursor === "number") cursor = body.cursor;
+      } else {
+        const response = await fetch(`${MOCK}/events?after=${cursor}`, {
+          signal: AbortSignal.timeout(5_000),
+        });
+        if (response.ok) {
+          const body = (await response.json()) as {
+            events?: MockEvent[];
+            seq?: number;
+            truncatedHistory?: boolean;
+          };
+          const consumed = (body.events ?? []) as MockEvent[];
+          const next = consumePage(
+            consumed,
+            {
+              cursor,
+              observed: notificationsObserved,
+              ageSumMs: observationAgeSumMs,
+              ageMaxMs: observationAgeMaxMs,
+            },
+            Date.now(),
+          );
+          cursor = next.cursor;
+          notificationsObserved = next.observed;
+          observationAgeSumMs = next.ageSumMs;
+          observationAgeMaxMs = next.ageMaxMs;
+          // الصفحةُ الفارغةُ لا تعني القفزَ إلى رأسِ السجلِّ إلا إذا كانَ الرأسُ
+          // نفسُهُ هوَ الموضعَ التاليَ (لا أحداثٌ بينَ المؤشّرِ والرأسِ).
+          if (consumed.length === 0 && typeof body.seq === "number" && body.seq <= cursor + 1) {
+            cursor = body.seq;
+          }
+          if (body.truncatedHistory === true) {
+            // نقصٌ في الدليلِ (تدويرُ الحلقةِ تجاوزَ النافذةَ) — يُعلَنُ في الخلاصةِ
+            historyTruncated = true;
+            ev("inbox.truncated_history", { cursor });
+          }
+        }
       }
     } catch {
       // المحاكيُّ غائبٌ أو متعثرٌ — يُرصدُ ولا يوقفُ المسارَ (إثباتُ العزلِ).
@@ -164,11 +230,13 @@ async function main() {
       webhook2xx,
       webhookOther,
       notificationsObserved,
-      notificationLatencyAvgMs:
-        notificationLatencyFresh === 0
+      // عمرُ الحدثِ عندَ الرصدِ (متوسطٌ وأقصى) — ليسَ تأخيرَ تسليمٍ؛ التسليمُ
+      // يُقاسُ منَ القاعدةِ في `outboxLatency` ويُرفقُ عندَ الختام.
+      observationAgeAvgMs:
+        notificationsObserved === 0
           ? null
-          : Math.round(notificationLatencySumMs / notificationLatencyFresh),
-      notificationLatencyFresh,
+          : Math.round(observationAgeSumMs / notificationsObserved),
+      observationAgeMaxMs: observationAgeMaxMs === 0 ? null : observationAgeMaxMs,
     });
   }, 10_000);
   for (const ph of PROFILE) {
@@ -189,16 +257,29 @@ async function main() {
   }
   clearInterval(snapshotTimer);
   rec.snapshot(true);
+  // تأخيرُ التسليمِ منَ القاعدةِ — قياسٌ صالحٌ يلتقطُ العيناتِ البطيئةَ ولا يصفرُ
+  // نفسَهُ: إدراجٌ ← تسليمٌ لكلِّ إشعارِ النافذةِ بتوزيعِهِ الكاملِ.
+  const deliveryLatency = await outboxLatency();
   ev("gen.end", {
     webhookInbound429,
     webhook2xx,
     webhookOther,
     notificationsObserved,
+    observationAgeMaxMs: observationAgeMaxMs === 0 ? null : observationAgeMaxMs,
+    historyTruncated,
+    outboxDeliveryLatency: deliveryLatency,
     elapsedSec: Math.round((Date.now() - T0) / 1000),
   });
   console.log(
-    JSON.stringify({ path: "telegram_webhook", gen: GEN_ID, webhookInbound429, webhook2xx }),
+    JSON.stringify({
+      path: "telegram_webhook",
+      gen: GEN_ID,
+      webhookInbound429,
+      webhook2xx,
+      outboxDeliveryLatency: deliveryLatency,
+    }),
   );
+  await sql.end({ timeout: 5 }).catch(() => {});
 }
 
 void main();

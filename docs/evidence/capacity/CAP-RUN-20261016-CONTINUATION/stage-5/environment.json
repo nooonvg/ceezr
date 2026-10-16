@@ -1,0 +1,14 @@
+{
+  "branch": "work/miniapp-capacity-20261016",
+  "code_state": "dirty (stage-5 changes, this commit)",
+  "run_dir": "/srv/ceezr-cap-20261016/runs/phase5-r7",
+  "started_at": "2026-10-16T11:38:46Z",
+  "finished_at": "2026-10-16T11:48:08Z",
+  "isolation": "netns ceezrsbx2 (lo only), PG18 :55432, Redis :56379, gateway :54300, mock :58090, shim :58081",
+  "isolation_assert": "ISOLATION_OK (svc.sh assert)",
+  "bun": "1.4.2",
+  "params": { "ISOLATE_SEC": 120, "ISOLATE_CONC": 20, "ISOLATE_B_RATE": 5, "ISOLATE_B_PRESSURE_RATE": 500, "ISOLATE_RIDER_BASE": 8800000, "ISOLATE_DRIVER_BASE": 9800000, "SCENARIO_DEPTH": "full", "MATCH_WAIT_MS": 120000 },
+  "identity_blocks": { "exp1": [8800000, 8899999], "exp2": [8900000, 8999999], "exp3": [9000000, 9099999], "exp4": [9100000, 9199999], "driver_exp1": [9800000, 9899999], "driver_exp2": [9900000, 9999999], "driver_exp3": [10000000, 10099999], "driver_exp4": [10100000, 10199999] },
+  "probe_run": "r6 (clean queue) + r7 (residual backlog) — كلاهما LEGACY_BUSINESS_PATH_CLOSED",
+  "latency_query_time": "2026-10-16T11:52:00Z (post-run, drain still catching up)"
+}

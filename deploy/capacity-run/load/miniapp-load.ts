@@ -456,9 +456,12 @@ async function main() {
       if (outcome.kind === "verified") rec.scenarioEnd("verified");
       else if (outcome.kind === "rejected") rec.scenarioEnd("rejected");
       else rec.scenarioEnd("undecided");
-      if (outcome.reason !== undefined) {
-        ev("scenario.outcome", { kind: outcome.kind, reason: outcome.reason });
-      }
+      // المآلُ يُسجَّلُ دائمًا — الناجحُ أيضًا — لا فقطِ المتعثرِ: فبدلُّهِ
+      // يبدو الحملُ كلهُ فاشلًا في سجلِّ الأحداثِ رغمَ نجاحِهِ في القاعدةِ.
+      ev("scenario.outcome", {
+        kind: outcome.kind,
+        ...(outcome.reason === undefined ? {} : { reason: outcome.reason }),
+      });
     };
     while (Date.now() < stopAt) {
       while (running.size < ph.conc && Date.now() < stopAt) {
