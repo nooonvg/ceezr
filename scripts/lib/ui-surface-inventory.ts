@@ -28,6 +28,9 @@ export const SURFACE_INVENTORY: readonly SurfaceGroup[] = [
       "RiderRoot.tsx",
       "account/AccountScreen.tsx",
       "active/ActiveRideScreen.tsx",
+      // لوحةُ التفاوضِ — تُبنى مع الرحلةِ النشطةِ (وُلدت في فرعِ السعةِ e87b0229
+      // وبقيتْ خارجَ الجردِ فأسقطَ حارسُ الجردِ verify في CI — القياسُ الرابع).
+      "active/NegotiationPanel.tsx",
       "active/RideJourney.tsx",
       "destination/DestinationScreen.tsx",
       "faq/FaqScreen.tsx",
