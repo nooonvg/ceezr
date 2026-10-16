@@ -49,6 +49,7 @@
     "scripts/lib/skip-registry.ts",
     "scripts/lib/ui-surface-inventory.ts",
     "scripts/load-test.ts",
+    "scripts/verify-container-build.sh",
     "supabase/migrations/20261015000100_cap_run_telegram_drain_fairness_lease_renewal.sql",
     "supabase/migrations/20261015000200_cap_run_telegram_jobs_lane_order.sql",
     "tests/integration/",

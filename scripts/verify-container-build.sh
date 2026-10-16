@@ -49,6 +49,9 @@ run_stage() {
   local dir; dir="$(mktemp -d)"
   trap 'rm -rf "$dir"' RETURN
   cp package.json bun.lock tsconfig.json "$dir/"
+  # الرقعُ المعلَنةُ في patchedDependencies لازمَةٌ للتثبيتِ المجمَّد — غابَ نسخُها
+  # فأفشلَ الفحصَ بعدَ إضافةِ رقعةِ postgres (e87b0229). القفلُ بلا رقعتِهِ لا يُثبَّت.
+  [ -d patches ] && cp -R patches "$dir/patches"
   for m in $(workspace_manifests); do mkdir -p "$dir/$(dirname "$m")"; cp "$m" "$dir/$m"; done
   ( cd "$dir" && bun install --frozen-lockfile >/dev/null 2>&1 ) \
     || { echo "❌ ${name}: التثبيت المجمَّد فشل — القفل متعارض مع package.json"; exit 1; }
