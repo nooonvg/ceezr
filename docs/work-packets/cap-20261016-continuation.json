@@ -165,7 +165,7 @@
     "tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts",
     "tests/unit/telegram-update-drainer-truncated-rerun.test.ts"
   ],
-  "state": "قيد التنفيذ — المرحلة 9: جميع وظائف CI خضراء عبر PR #559 إلا الحزمة المتوازية (test:integration)؛ قياس CI الأخير أظهر pdpl وحده (6 اختبارات) فأُصلح بيانُه ليصنع بياناته (ensureActiveCity + مستخدم خاص)؛ الحزمة المتوازية محليًا 1559/5 (من 28) والخمسة خضراء منفردة؛ حكم CI النهائي يُقرأ بعد الدفع",
+  "state": "المرحلة 9: 11 حارس حوكمة أصلحوا (verify وكل الوظائف خضراء إلا الحزمة المتوازية)؛ الحزمة المتوازية متذبذبة — اجتازت في CI مرة (38884913018) وعادت حمراء بWR-24 ٧أ (فشل حتمي: سباق ORDER_NOT_CLAIMABLE/DRIVER_HAS_ACTIVE_ORDER)؛ البند العميق المتبقي: عزل بيانات لكل ملف؛ التالي: المرحلة 2ب",
   "roadmap": "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
   "affected_docs": [
     "README.md",
