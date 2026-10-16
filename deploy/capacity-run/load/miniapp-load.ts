@@ -37,6 +37,7 @@ import {
   GEN_ID,
   type HttpResult,
   type http,
+  http,
   PathRecorder,
   RUN_DIR,
   rnd,
@@ -81,7 +82,7 @@ function ev(event: string, data: Record<string, unknown> = {}) {
 async function call(path: string, init: Parameters<typeof http>[1] = {}): Promise<HttpResult> {
   rec.httpStart();
   try {
-    const result = await call(path, init);
+    const result = await http(path, init);
     rec.httpEnd(result);
     return result;
   } catch (error) {
@@ -190,6 +191,23 @@ async function exchangeSession(
   return { token };
 }
 
+/* خزينُ الجلساتِ: التطبيقُ الحقيقيُّ يفتحُ مرةً لكلِّ هويةٍ ويعيدُ استخدامَ
+ * الرمزَ دقائقَ — لا يُبادلُ initData معَ كلِّ عملٍ. حدُّ المبادلةِ (30/دقيقةٌ
+ * لكلِّ عنوانٍ) صحيحٌ للمنتجِ، والمولّدُ الأحاديُّ العنوانِ يحترمُه بالمشاركةِ
+ * لا بتعطيلِ الحدِّ. هويةٌ فشلتْ مبادلتُها تُعادُ محاولتُها (لا تُخزَّن).
+ */
+const sessionCache = new Map<number, string>();
+async function cachedSession(
+  botToken: string,
+  telegramId: number,
+): Promise<{ token: string | null; error?: string }> {
+  const cached = sessionCache.get(telegramId);
+  if (cached !== undefined) return { token: cached };
+  const result = await exchangeSession(botToken, telegramId);
+  if (result.token !== null) sessionCache.set(telegramId, result.token);
+  return result;
+}
+
 async function driverFindOffer(
   token: string,
   orderId: string,
@@ -242,11 +260,11 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
   const startedAt = Date.now();
   try {
     // ١) الهويةُ — تحققٌ موقَّعٌ حقيقيٌّ لكلٍّ منَ الطرفينِ.
-    const riderSession = await exchangeSession(RIDER_BOT_TOKEN, rider.telegramId);
+    const riderSession = await cachedSession(RIDER_BOT_TOKEN, rider.telegramId);
     if (riderSession.token === null) {
       return { kind: "undecided", reason: `rider_session:${riderSession.error}` };
     }
-    const driverSession = await exchangeSession(DRIVER_BOT_TOKEN, driver.telegramId);
+    const driverSession = await cachedSession(DRIVER_BOT_TOKEN, driver.telegramId);
     if (driverSession.token === null) {
       return { kind: "undecided", reason: `driver_session:${driverSession.error}` };
     }
@@ -374,6 +392,10 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     }
     return { kind: "verified" };
   } catch (error) {
+    if (error instanceof Error && /stack/i.test(error.message)) {
+      // تتبُّعُ كاملٌ لعلّةِ «تجاوزِ حجمِ المكدسِ» — يُطبعُ مرةً واحدةً.
+      console.error("STACK_TRACE_BEGIN\n" + String(error.stack) + "\nSTACK_TRACE_END");
+    }
     return {
       kind: "undecided",
       reason: error instanceof Error ? error.message.slice(0, 120) : "exception",
