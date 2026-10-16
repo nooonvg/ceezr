@@ -1,0 +1,53 @@
+{
+  "run": "CAP-RUN-20261016",
+  "branch": "work/miniapp-capacity-20261016",
+  "date": "2026-10-16",
+  "gates": {
+    "ARCH-01_02_03": "PASS",
+    "D7": "FAIL — gateway does not recover from PG outage (ready=000 for 17+ min, manual restart required)",
+    "I1": "PASS — zero violations across all rounds",
+    "D8": "MEASURED — bot queue backlog 3910 jobs at 30 msg/s intake",
+    "R1": "PASS — three paths measured separately (A: staged rounds, B: intake+backlog, C: isolation+legacy closed)",
+    "LOAD-01": "FAIL — 1000 concurrency: 1.4% verified (curve: 50→98%, 100→67%, 750→36%, 1000→1.4%)",
+    "SOAK-01": "FAIL — 60-min continuity broken at min 38 (D7)",
+    "GROUP-01": "PARTIAL — unregistered(5) verified (255 updates, 0 claims); operational 2/15 with traffic",
+    "INTEGRITY-01": "PASS — zero duplicates/conflicts",
+    "GEN-01": "PASS (with note — test DB dropped once, rebuilt)",
+    "EVIDENCE-01": "PASS — DB/mock/API/queue cross-verified",
+    "CI-01": "PARTIAL — sequential 1558/1558 green; parallel still polluted"
+  },
+  "load_curve": {
+    "50": 0.98,
+    "100": 0.67,
+    "750": 0.36,
+    "1000": 0.014
+  },
+  "soak60": {
+    "scenarios": 33626,
+    "verified": 312,
+    "networkErrors": 32771,
+    "http5xx": 605,
+    "effectiveLoadMin": 38
+  },
+  "path_b": {
+    "webhook2xx": 5190,
+    "webhook429": 0,
+    "queueBacklog": 3910
+  },
+  "tests": {
+    "files": 181,
+    "tests": 1558,
+    "passed": 1558,
+    "failed": 0,
+    "mode": "sequential"
+  },
+  "missing_evidence": [
+    "edge-cases.json (prior session, lost with env reset)",
+    "before-after.json (same)"
+  ],
+  "security": {
+    "secret_scan": "0 leaks",
+    "production": "untouched",
+    "main": "not merged"
+  }
+}

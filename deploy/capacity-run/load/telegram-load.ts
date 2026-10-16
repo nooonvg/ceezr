@@ -119,6 +119,7 @@ interface MockEvent {
 }
 
 let notificationsObserved = 0;
+let notificationLatencyFresh = 0;
 let notificationLatencySumMs = 0;
 
 async function inboxLoop(): Promise<void> {
@@ -133,7 +134,14 @@ async function inboxLoop(): Promise<void> {
         const body = (await response.json()) as { events?: MockEvent[]; cursor?: number };
         for (const event of body.events ?? []) {
           notificationsObserved += 1;
-          notificationLatencySumMs += Math.max(0, Date.now() - event.t);
+          // تأخيرُ الإشعارِ يقيسُ الطازجَ فقط (≤60ث من لحظةِ التسليمِ في
+          // المحاكي): السجلُّ التراكميُّ منذُ إقلاعِ المحاكيِّ يجعلُ المتوسطَ
+          // دقائقَ لا معنى لها. العدُّ الكليُّ يبقى شاملًا.
+          const age = Date.now() - event.t;
+          if (age <= 60_000) {
+            notificationLatencySumMs += Math.max(0, age);
+            notificationLatencyFresh += 1;
+          }
         }
         if (typeof body.cursor === "number") cursor = body.cursor;
       }
@@ -157,9 +165,10 @@ async function main() {
       webhookOther,
       notificationsObserved,
       notificationLatencyAvgMs:
-        notificationsObserved === 0
+        notificationLatencyFresh === 0
           ? null
-          : Math.round(notificationLatencySumMs / notificationsObserved),
+          : Math.round(notificationLatencySumMs / notificationLatencyFresh),
+      notificationLatencyFresh,
     });
   }, 10_000);
   for (const ph of PROFILE) {
