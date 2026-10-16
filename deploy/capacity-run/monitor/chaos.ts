@@ -176,6 +176,12 @@ async function inject(step: Step) {
         break;
       }
       case "pg_restart": {
+        // مطابق لآلية setup-env-20261016.sh: الإعداد كله من postgresql.conf
+        // (بلا -o). الخيارات المضمّنة سابقًا كانت تشير لمجلد سوكيت $B/sock
+        // غير الموجود — الفعلي $B/pg-sock من postgresql.conf — فيفشل إقلاع
+        // PG بصمت بعد التوقف ويبقى ميتًا (قُتل في جولة 2026-10-16 الأولى
+        // ولم يُعد إلا يدويًا). إضافة تحقق جاهزية مستقل بعد كل إعادة تشغيل
+        // حتى تفشل الأداة بصوت عالٍ لا بصمت.
         rec.result = await sh(
           [
             "/usr/lib/postgresql/18/bin/pg_ctl",
@@ -186,14 +192,23 @@ async function inject(step: Step) {
             "-w",
             "-t",
             "60",
-            "-o",
-            `-p 55432 -k ${B}/sock -c listen_addresses=127.0.0.1 -c max_connections=400 -c shared_buffers=768MB -c log_min_duration_statement=1000 -c log_lock_waits=on -c track_io_timing=on`,
             "-l",
-            `${B}/logs/pg.log`,
+            `${B}/pg.log`,
             "restart",
           ],
           90_000,
         );
+        rec.pgReadyCheck = await sh([
+          "pg_isready",
+          "-h",
+          "127.0.0.1",
+          "-p",
+          "55432",
+        ]);
+        if (rec.pgReadyCheck.code !== 0) {
+          rec.toolFailure =
+            "pg_restart: أعاد التشغيل لكن pg_isready فشل — الأداة لا تدّعي النجاح";
+        }
         break;
       }
       case "redis_restart_persisted": {

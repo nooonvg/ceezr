@@ -74,6 +74,7 @@
     "tests/integration/wr-19-delivery-cycle.test.ts",
     "tests/integration/wr-24-concurrent-races.test.ts",
     "tests/unit/admin-message-gallery.test.ts",
+    "tests/unit/chaos-pg-restart-contract.test.ts",
     "tests/unit/check-instance-invariant.test.ts",
     "tests/unit/config-admin-placement.test.ts",
     "tests/unit/config-bot-surface.test.ts",
@@ -98,7 +99,7 @@
     "tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts",
     "tests/unit/telegram-update-drainer-truncated-rerun.test.ts"
   ],
-  "state": "قيد التنفيذ — المرحلة 0 مكتملة (تدقيق الحالة وتثبيت الأحكام)، والتالية: 2أ (إصلاح أداة الحقن) ثم 9 (CI المتوازي) ثم 5 (أدوات القياس)",
+  "state": "قيد التنفيذ — المرحلة 0 مكتملة (4c43eb95)، والمرحلة 2أ مكتملة: إصلاح pg_restart في chaos.ts (كان يمرر -o بسوكيت غير موجود فيقتل PG دون إعادة) + pg_isready مستقل + اختبار انحدار 4/4 + اختبار مستقل: إعادة PG خلال 779ms وجاهزية البوابة 109ms ذاتيًا. التالية: 2ب (تجربة D7 كاملة مع دورة أعمال) ثم 9 (CI المتوازي)",
   "roadmap": "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
   "affected_docs": [
     "README.md",
@@ -154,6 +155,8 @@
     "docs/evidence/capacity/CAP-RUN-20261015/summary.json",
     "docs/evidence/capacity/CAP-RUN-20261015/test-results.txt.gz",
     "docs/evidence/capacity/CAP-RUN-20261015/timeline.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-2a/RESULT.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-2a/fault-injection.json",
     "docs/evidence/capacity/CAP-RUN-20261016/database-metrics.jsonl",
     "docs/evidence/capacity/CAP-RUN-20261016/environment.json",
     "docs/evidence/capacity/CAP-RUN-20261016/fault-injection.json",
