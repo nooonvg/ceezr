@@ -94,8 +94,7 @@ describeIf("ظهور اقتراح الطبقة في صفحة النزاعات", 
     ticketId = created;
   });
 
-  
-it("بلا طبقة مفعّلة: التذكرة تظهر والخلية فارغة ولا تنكسر الصفحة", async () => {
+  it("بلا طبقة مفعّلة: التذكرة تظهر والخلية فارغة ولا تنكسر الصفحة", async () => {
     const rows = await listDisputes(sql, cityId, null, LIMIT);
 
     expect(rows.length).toBe(1);

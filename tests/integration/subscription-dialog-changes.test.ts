@@ -187,8 +187,7 @@ describeIf("تغييرات الاشتراك من بوت السائق على قا
     await sql`select start_trial(${driverId}::uuid, 'transport') as result`;
   });
 
-  
-/** دورة مدفوعة حقيقية عبر الدالّة الذرّية — لا صفٌّ يُكتب يدوياً بحالةٍ مخترعة. */
+  /** دورة مدفوعة حقيقية عبر الدالّة الذرّية — لا صفٌّ يُكتب يدوياً بحالةٍ مخترعة. */
   async function activatePaid(plan = "transport"): Promise<void> {
     const activated = await sql<{ result: { ok: boolean } }[]>`
       select activate_subscription(${driverId}::uuid, ${plan}::subscription_plan, 30) as result

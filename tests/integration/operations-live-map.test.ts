@@ -261,8 +261,7 @@ describeIf("خريطة العمليات على قاعدة حقيقية", () => {
     );
   });
 
-  
-it("سائقٌ على رحلةٍ حيّةٍ وجلستُه أُغلقت يبقى مرئياً — إغلاق D13-2", async () => {
+  it("سائقٌ على رحلةٍ حيّةٍ وجلستُه أُغلقت يبقى مرئياً — إغلاق D13-2", async () => {
     const rows = await listLiveDriverStatuses(sql, cityId);
     const row = rows.find((candidate) => candidate.driverId === closedSession);
     expect(row).toBeDefined();

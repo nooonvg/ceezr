@@ -122,8 +122,7 @@ describeIf("CAP-003 — findNearbyAvailableForDispatch على PostGIS", () => {
                              driver_availability, drivers, riders, users restart identity cascade`;
   });
 
-  
-it("١ — لا يُرجعُ إلا داخلَ نصفِ القطرِ متاحاً موثَّقاً غيرَ محجوبٍ، مرتّباً بالمسافة", async () => {
+  it("١ — لا يُرجعُ إلا داخلَ نصفِ القطرِ متاحاً موثَّقاً غيرَ محجوبٍ، مرتّباً بالمسافة", async () => {
     const eligibleNear = await makeDriver("قريب-مؤهل", 1, { location: NEAR });
     const eligibleMid = await makeDriver("متوسط-مؤهل", 2, { location: MID });
     await makeDriver("خارج-نصف-القطر", 3, { location: OUTSIDE });

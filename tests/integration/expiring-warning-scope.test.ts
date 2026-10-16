@@ -74,8 +74,7 @@ describeIf("نطاقُ تحذير قربِ الانتهاء", () => {
                              drivers, riders, users restart identity cascade`;
   });
 
-  
-it("الدالّةُ تُعيد اشتراكاتِ المدينة المطلوبة وحدَها", async () => {
+  it("الدالّةُ تُعيد اشتراكاتِ المدينة المطلوبة وحدَها", async () => {
     const inJeddah = await seedExpiring(jeddah, 610_001);
     await seedExpiring(riyadh, 610_002);
 

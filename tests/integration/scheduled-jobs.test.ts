@@ -137,7 +137,6 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     });
   }, 30_000);
 
-
   /** سائق حقيقي بصفوف users + drivers، ليست بيانات وهمية بل نفس ما ينشئه البوت. */
   async function makeDriver(
     telegramId: number,

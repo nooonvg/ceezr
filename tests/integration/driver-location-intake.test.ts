@@ -195,8 +195,7 @@ describeIf("F4-01 — استقبالُ الموقعِ من HTTP إلى الصف�
     otherDriverId = await seedDriver(OTHER_TELEGRAM, "سائقٌ آخرُ");
   });
 
-  
-it("١ — نبضةٌ مقبولةٌ تكتبُ الموضعَ والدقّةَ والحكمَ في الصفِّ القانونيِّ", async () => {
+  it("١ — نبضةٌ مقبولةٌ تكتبُ الموضعَ والدقّةَ والحكمَ في الصفِّ القانونيِّ", async () => {
     const response = await ping({ ...AT_A, accuracyMeters: 9, recordedAtMs: T_NEW });
 
     expect(response.status).toBe(200);

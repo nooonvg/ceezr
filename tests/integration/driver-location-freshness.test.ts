@@ -195,8 +195,7 @@ describeIf("المرحلة ٨ — عمر موقع السائق في الإسنا
     });
   });
 
-  
-/** ضبط الحدّ في `platform_settings` — لا ثابتٌ في الكود ولا حقنٌ في الحاوية. */
+  /** ضبط الحدّ في `platform_settings` — لا ثابتٌ في الكود ولا حقنٌ في الحاوية. */
   async function setMaxAge(seconds: number): Promise<void> {
     // `${text}::jsonb` يجعل السائق يُلفّف النصّ ثانيةً فيُخزَّن jsonb من نوع
     // `string` مع value_type='number' — تلويثٌ صامت للقاعدة المشتركة. النمط

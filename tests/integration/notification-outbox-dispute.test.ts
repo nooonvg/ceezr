@@ -156,8 +156,7 @@ describeIf("قرارُ الدعمِ في صندوقِ الصادرِ الموح�
     await createFixture();
   });
 
-  
-it("القرارُ يُودِعُ صفَّ التبليغِ في معاملتِه نفسِها — ولا أثرَ صادرٌ في مسارِ القرارِ", async () => {
+  it("القرارُ يُودِعُ صفَّ التبليغِ في معاملتِه نفسِها — ولا أثرَ صادرٌ في مسارِ القرارِ", async () => {
     const sent: Sent[] = [];
     const resolved = await createSupportResolutionPort(sql).resolve({
       ticketId: driverTicketId,

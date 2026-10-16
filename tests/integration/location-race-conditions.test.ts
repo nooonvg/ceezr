@@ -170,8 +170,7 @@ describeIf("سباقاتُ مسارِ الموقعِ على PostgreSQL حقيق�
     );
   });
 
-  
-async function seedDriver(chat: number): Promise<string> {
+  async function seedDriver(chat: number): Promise<string> {
     const users = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, full_name, phone, language_code, role)
       values (${cityId}, ${chat}::bigint, ${`سائق ${chat}`}, ${`+9665${chat}`}, 'ar', 'driver')

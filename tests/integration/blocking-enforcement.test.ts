@@ -137,8 +137,7 @@ describeIf("نفاذ الحجب في مسار الإسناد", () => {
     });
   });
 
-  
-/** سائق نقل متحقَّق ومتاح بموقع داخل نصف قطر البحث. */
+  /** سائق نقل متحقَّق ومتاح بموقع داخل نصف قطر البحث. */
   async function readyDriver(): Promise<string> {
     await post("driver", text(DRIVER_CHAT, "/start"));
     await post("driver", text(DRIVER_CHAT, "خالد المطيري"));

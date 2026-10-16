@@ -151,8 +151,7 @@ describeIf("ذرّيّةُ فتحِ دورةِ البثّ — BUG-005", () => {
     orderId = created as OrderId;
   });
 
-  
-it("١ — طلبٌ باحثٌ: تُفتَح الدورةُ وتُكتَب العروضُ ويرتفعُ الرقمُ درجةً واحدة", async () => {
+  it("١ — طلبٌ باحثٌ: تُفتَح الدورةُ وتُكتَب العروضُ ويرتفعُ الرقمُ درجةً واحدة", async () => {
     const writer = createOfferWriter(sql);
     const opened = await writer.openRound(input(1, driverIds));
 

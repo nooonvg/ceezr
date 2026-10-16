@@ -177,8 +177,7 @@ describeIf("مسار الدعم والاشتراك على قاعدة حقيقي�
     });
   });
 
-  
-/** سائق مسجَّل ومتحقَّق باشتراك تجريبي — الحالة الطبيعية لمن يشتكي من اشتراكه. */
+  /** سائق مسجَّل ومتحقَّق باشتراك تجريبي — الحالة الطبيعية لمن يشتكي من اشتراكه. */
   async function registerDriver(chatId: number, name: string, phone: string): Promise<string> {
     await post("driver", text(chatId, "/start"));
     await post("driver", text(chatId, name));

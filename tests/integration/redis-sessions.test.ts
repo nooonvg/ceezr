@@ -217,8 +217,7 @@ describeIf("جلسات الحوار على Redis بحاوية حقيقية", () 
     });
   });
 
-  
-it("خطوة الحوار تُكتب في Redis لا في ذاكرة العملية", async () => {
+  it("خطوة الحوار تُكتب في Redis لا في ذاكرة العملية", async () => {
     await post(text("/start"));
 
     const keys = redis.keys();

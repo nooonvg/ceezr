@@ -222,8 +222,7 @@ describeIf("آليّةُ بلاغِ المفقودِ على PostgreSQL حقيق�
     await createFixture();
   });
 
-  
-it("تذكرةُ المفقودِ تُفتَحُ بلا طلبٍ — عقدُ F3-08 المحفوظُ، ولا ردَّ ORDER_REQUIRED", async () => {
+  it("تذكرةُ المفقودِ تُفتَحُ بلا طلبٍ — عقدُ F3-08 المحفوظُ، ولا ردَّ ORDER_REQUIRED", async () => {
     const opened = await openTicket({ telegramId: RIDER_TELEGRAM });
     expect(opened.ok).toBe(true);
     expect(opened.reference).toMatch(/^WSL-[0-9]{6,}$/);

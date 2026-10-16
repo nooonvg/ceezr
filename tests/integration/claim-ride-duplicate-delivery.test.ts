@@ -158,8 +158,7 @@ describeIf("تمييزُ التسليمِ المكرَّرِ من فقدانِ �
     }
   });
 
-  
-it("١ — مطالبةٌ صحيحةٌ أوّلَ مرّة: إسنادٌ واقعٌ و`duplicate=false`", async () => {
+  it("١ — مطالبةٌ صحيحةٌ أوّلَ مرّة: إسنادٌ واقعٌ و`duplicate=false`", async () => {
     const winner = driverIds[0];
     if (winner === undefined) throw new Error("لا سائق");
     const claim = await createDispatchRpc(sql).claimRide(orderId, winner);

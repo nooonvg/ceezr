@@ -89,8 +89,7 @@ describeIf("§4.2 — دورةُ حياة رموز التتبّع على قاع�
     ids = await seed();
   });
 
-  
-/** راكبٌ بلغةٍ غيرِ العربية (لنُثبت أنّ اللغة تُقرأ لا تُفترض)، وسائقٌ، وطلبٌ يبحث. */
+  /** راكبٌ بلغةٍ غيرِ العربية (لنُثبت أنّ اللغة تُقرأ لا تُفترض)، وسائقٌ، وطلبٌ يبحث. */
   async function seed(): Promise<{ riderId: string; driverId: string; orderId: string }> {
     const riderUsers = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, full_name, phone, language_code, role)

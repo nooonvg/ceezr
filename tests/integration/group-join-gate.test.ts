@@ -153,8 +153,7 @@ describeIf("بوّابةُ دخولِ قروبِ غيرِ المشتركينَ �
     });
   });
 
-  
-it("سائقٌ موثَّقٌ في مدينةِ القروبِ: قبولٌ + صفُّ عضويّةٍ بلا سببٍ", async () => {
+  it("سائقٌ موثَّقٌ في مدينةِ القروبِ: قبولٌ + صفُّ عضويّةٍ بلا سببٍ", async () => {
     const seeded = await seedVerifiedDriver(320_101);
     const response = await post("driver", joinRequest(UNSUB_GROUP, 320_101));
     expect(response.status).toBe(200);

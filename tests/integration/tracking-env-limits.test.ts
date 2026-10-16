@@ -139,8 +139,7 @@ describeIf("حدود التتبّع من البيئة تُغيّر المسار 
     cityHandle = await ensureActiveCity(sql, { prior: cityHandle });
   });
 
-  
-afterEach(async () => {
+  afterEach(async () => {
     if (container !== null) {
       await container.close();
       container = null;

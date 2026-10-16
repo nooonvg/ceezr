@@ -220,8 +220,7 @@ describeIf("محادثة بلغتين عبر الترجمة على قاعدة ح
     await boot(provider);
   });
 
-  
-/** سائق مسجَّل ومتحقَّق بلا اشتراك سارٍ — شرط دخوله قناة التفاوض. */
+  /** سائق مسجَّل ومتحقَّق بلا اشتراك سارٍ — شرط دخوله قناة التفاوض. */
   async function unsubscribedDriver(): Promise<string> {
     await post("driver", text(DRIVER_CHAT, "/start"));
     await post("driver", text(DRIVER_CHAT, "بلال أحمد"));

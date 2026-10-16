@@ -209,8 +209,7 @@ describeIf("ميزانُ رسائلِ تيليجرام في رحلةٍ واحد�
     });
   });
 
-  
-/** سائقٌ مسجَّلٌ متحقَّقٌ متاحٌ له موقعٌ — أدنى حالٍ يصلُه فيها عرضٌ. */
+  /** سائقٌ مسجَّلٌ متحقَّقٌ متاحٌ له موقعٌ — أدنى حالٍ يصلُه فيها عرضٌ. */
   async function registerDriver(): Promise<string> {
     await post("driver", "driver", text(DRIVER_CHAT, "/start"));
     await post("driver", "driver", text(DRIVER_CHAT, DRIVER_NAME));

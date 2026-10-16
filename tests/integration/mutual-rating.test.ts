@@ -38,8 +38,7 @@ describe.skipIf(skip)("F12-05 — التقييمُ المتبادلُ: منظو�
     await sql`truncate ratings, audit_log, orders, drivers, riders, users cascade`;
   });
 
-  
-async function seedUser(telegramId: string, role: string, fullName: string): Promise<string> {
+  async function seedUser(telegramId: string, role: string, fullName: string): Promise<string> {
     const [row] = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, role, full_name, phone)
       values (${cityId}, ${telegramId}, ${role}, ${fullName}, '+966500000999')

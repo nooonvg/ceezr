@@ -313,8 +313,7 @@ describeIf("الطلب الذي لا يجد سائقاً: تصعيد وإشعا�
     });
   });
 
-  
-it("يُعيد إنتاج العطب: طلب بلا سائق يبقى يبحث بلا أي عرض", async () => {
+  it("يُعيد إنتاج العطب: طلب بلا سائق يبقى يبحث بلا أي عرض", async () => {
     await riderOrdersRide();
 
     const orders = await sql<{ status: string; broadcast_round: number }[]>`

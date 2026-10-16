@@ -128,8 +128,7 @@ describeIf("القسم ج — اقتراح آلي على تذكرة دعم حق�
     driverSent = [];
   });
 
-  
-/** يُبنى الخادم **بعد** ضبط متغيّر التفعيل: البوّابة تقرأ الإعداد عند التركيب. */
+  /** يُبنى الخادم **بعد** ضبط متغيّر التفعيل: البوّابة تقرأ الإعداد عند التركيب. */
   function boot(): void {
     container = buildContainer(config, { driverSender: capturing(driverSent) });
     app = createServer({

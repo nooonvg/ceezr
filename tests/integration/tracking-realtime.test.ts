@@ -309,8 +309,7 @@ describeIf("النقل اللحظي على قاعدة حقيقية — المر�
     );
   });
 
-  
-async function registerDriver(): Promise<string> {
+  async function registerDriver(): Promise<string> {
     await post("driver", text(DRIVER_CHAT, "/start"));
     await post("driver", text(DRIVER_CHAT, "فهد الغامدي"));
     await post("driver", contact(DRIVER_CHAT, "0501110806"));

@@ -160,8 +160,7 @@ describeIf("قياس جدوى الاقتراحات — الحلقة مغلقة �
     });
   });
 
-  
-async function registerDriver(chatId: number): Promise<void> {
+  async function registerDriver(chatId: number): Promise<void> {
     await post(text(chatId, "/start"));
     await post(text(chatId, "فهد السائق"));
     await post(contact(chatId, "+966500000031"));

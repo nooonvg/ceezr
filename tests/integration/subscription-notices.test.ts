@@ -166,8 +166,7 @@ describeIf("إشعارات دورة حياة الاشتراك على PostgreSQL 
     notices = createSubscriptionNoticeDeliveryPort(sql);
   });
 
-  
-it("انتهاءُ التجربة يُنتج إشعاراً واحداً لا يتكرّر في الدورة التالية", async () => {
+  it("انتهاءُ التجربة يُنتج إشعاراً واحداً لا يتكرّر في الدورة التالية", async () => {
     await seedSubscription({ status: "trialing" });
     await sql`
       update subscriptions set trial_ends_at = now() - interval '1 minute' where driver_id = ${driverId}::uuid

@@ -171,8 +171,7 @@ describeIf("الموقع القانوني — ADR-0015", () => {
     });
   });
 
-  
-async function registerDriver(): Promise<string> {
+  async function registerDriver(): Promise<string> {
     await post("driver", text(DRIVER_CHAT, "/start"));
     await post("driver", text(DRIVER_CHAT, "خالد المطيري"));
     await post("driver", contact(DRIVER_CHAT, "0501110777"));

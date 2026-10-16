@@ -131,7 +131,10 @@ afterAll(async () => {
   }
 });
 
-async function createOrder(startedMinutesAgo: number, targetDriverId: string = driverId): Promise<string> {
+async function createOrder(
+  startedMinutesAgo: number,
+  targetDriverId: string = driverId,
+): Promise<string> {
   const [order] = await sql<{ id: string }[]>`
     insert into orders (city_id, rider_id, service, status, pickup, assigned_driver_id, started_at)
     values (
@@ -181,8 +184,7 @@ describeIf("F12-20 — كاشفُ تجاوزِ السقفِ", () => {
 
   it("يُرتِّبُ الأطولَ عمراً أوّلاً", async () => {
     // I1 (ADR 0286): لا التزامَينِ لسائقٍ واحدٍ — فالطلبُ الأطولُ لسائقٍ ثانٍ.
-    const secondTelegramId =
-      900_500_000 + Math.floor(Math.random() * 100_000);
+    const secondTelegramId = 900_500_000 + Math.floor(Math.random() * 100_000);
     const secondDriverUser = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, role, full_name, phone)
       values (${cityId}, ${secondTelegramId}, 'driver', 'سائقُ سقفٍ ثانٍ', '+966500000502')

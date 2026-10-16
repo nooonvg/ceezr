@@ -276,8 +276,7 @@ describeIf("فقدانُ عمليّةِ عاملٍ حقيقيّةٍ — F11-02",
     await createFixture();
   });
 
-  
-afterEach(() => {
+  afterEach(() => {
     holdGateOnce = false;
     holdSendOnce = false;
   });

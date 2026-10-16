@@ -173,8 +173,7 @@ describeIf("البثّ الجماعي على PostgreSQL فعلية", () => {
     deliveries = createBroadcastDeliveryPort(sql);
   });
 
-  
-it("العدّ يساوي ما يُنشأ فعلاً، ولا يخلط جمهوراً بجمهور", async () => {
+  it("العدّ يساوي ما يُنشأ فعلاً، ولا يخلط جمهوراً بجمهور", async () => {
     const counted = await admin.count({
       actorUserId: adminUserId,
       cityId,

@@ -147,7 +147,6 @@ describeIf("طابورُ الموتى في صندوقِ الصادرِ على Po
     await createFixture();
   }, 60_000);
 
-
   it("الإخفاقُ دونَ السقفِ يُعيدُ الصفَّ pending ويحفظُ آخرَ خطأٍ", async () => {
     const outbox = createNotificationOutboxPort(sql);
     const claimed = await outbox.claim();

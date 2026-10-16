@@ -149,8 +149,7 @@ describeIf("فعل تعذّر الإكمال على PostgreSQL فعلية", () =
     surface = createSosSurfaceReader(sql);
   });
 
-  
-it("سلسلة التعذّر: بلاغٌ مرتبطٌ بالمَهمّةِ بلا تغييرِ حالةٍ، ثمّ «استُقبِلَ»، ثمّ «اطّلعَ»", async () => {
+  it("سلسلة التعذّر: بلاغٌ مرتبطٌ بالمَهمّةِ بلا تغييرِ حالةٍ، ثمّ «استُقبِلَ»، ثمّ «اطّلعَ»", async () => {
     const reported = await cannot.report({
       actorTelegramId: DRIVER_TELEGRAM_ID,
       orderId,

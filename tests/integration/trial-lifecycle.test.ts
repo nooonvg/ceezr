@@ -166,8 +166,7 @@ describeIf("دورةُ الشهر المجاني للسائق على قاعدة 
     });
   });
 
-  
-async function registerDriver(): Promise<string> {
+  async function registerDriver(): Promise<string> {
     await post("driver", text(DRIVER_CHAT, "/start"));
     await post("driver", text(DRIVER_CHAT, "أحمد العمري"));
     await post("driver", contact(DRIVER_CHAT, "0501234567"));

@@ -61,6 +61,11 @@ const benchEnv: Record<string, string> = {
   TRANSLATION_PROVIDER: "none",
   RUN_WORKER_IN_GATEWAY: "false",
   RUN_ADMIN_IN_GATEWAY: "false",
+  // ADR 0286: الافتراضيُّ صارَ miniapp — ووضعُهُ يُلزمُ MINIAPP_URL،
+  // فالمقعدُ المعماريُّ يُعلنُهُ صراحةً (قيمةُ اختبارٍ لا إنتاج) ليبقى
+  // عقدُ البيئةِ مُلبّى بعدَ تغييرِ الافتراضيّ.
+  BOT_SURFACE_MODE: "miniapp",
+  MINIAPP_URL: "https://miniapp.bench-test.local",
 };
 
 const config = loadConfig(benchEnv);

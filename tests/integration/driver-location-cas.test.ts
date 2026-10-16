@@ -119,8 +119,7 @@ describeIf("الكتابة الشرطيّة على الموقع القانوني
     driverId = created as DriverId;
   });
 
-  
-/** أوّلُ إصلاحةٍ لا سابقةَ لها: `last_location_recorded_at is null` فتُقبَل. */
+  /** أوّلُ إصلاحةٍ لا سابقةَ لها: `last_location_recorded_at is null` فتُقبَل. */
   it("١ — الأحدث يُقبل، والكاتب يعرف أنه قُبِل", async () => {
     const directory = createDriverDirectory(sql);
     const first = await directory.updateLocation(driverId, AT_A, fix(T1));

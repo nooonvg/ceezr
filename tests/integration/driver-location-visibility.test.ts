@@ -156,8 +156,7 @@ describeIf("ظهور السائق بلا موقع، ووحدة مصدر التو
     });
   });
 
-  
-/** مدير حقيقي في القاعدة: `admin_set_driver_verification` ترفض غير المدير. */
+  /** مدير حقيقي في القاعدة: `admin_set_driver_verification` ترفض غير المدير. */
   async function admin(): Promise<string> {
     const rows = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, full_name, role)

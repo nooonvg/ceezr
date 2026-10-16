@@ -150,8 +150,7 @@ describeIf("I1 · سائقٌ واحدٌ لا يحملُ التزاماً ثان�
     }
   });
 
-  
-it("١ — التزامٌ ثانٍ للسائقِ نفسِهِ يُردُّ صراحةً بـDRIVER_HAS_ACTIVE_ORDER", async () => {
+  it("١ — التزامٌ ثانٍ للسائقِ نفسِهِ يُردُّ صراحةً بـDRIVER_HAS_ACTIVE_ORDER", async () => {
     const rpc = createDispatchRpc(sql);
 
     const first = await rpc.claimRide(orderA, driverId);

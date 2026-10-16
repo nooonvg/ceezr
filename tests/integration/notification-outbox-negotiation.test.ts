@@ -227,8 +227,7 @@ describeIf("إخطاراتُ دورةِ غيرِ المشتركينِ في صن�
     await createFixture();
   });
 
-  
-it("فتحُ الدورِ يُودِعُ صفًّا لكلِّ طرفٍ في معاملةِ التسجيلِ — ولا أثرَ صادرٌ فيها", async () => {
+  it("فتحُ الدورِ يُودِعُ صفًّا لكلِّ طرفٍ في معاملةِ التسجيلِ — ولا أثرَ صادرٌ فيها", async () => {
     const sent: Sent[] = [];
     const registered = await claim(0);
     expect(registered.ok).toBe(true);

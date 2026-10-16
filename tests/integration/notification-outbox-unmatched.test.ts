@@ -200,8 +200,7 @@ describeIf("إخطارا صاحبِ الطلبِ العالقِ في صندوق�
     await createFixture();
   });
 
-  
-it("فتحُ الدورةِ الأولى يُودِعُ صفًّا واحدًا في معاملتِها — ولا أثرَ صادرٌ فيها", async () => {
+  it("فتحُ الدورةِ الأولى يُودِعُ صفًّا واحدًا في معاملتِها — ولا أثرَ صادرٌ فيها", async () => {
     const sent: Sent[] = [];
     const opened = await openCycle();
     expect(opened.ok).toBe(true);

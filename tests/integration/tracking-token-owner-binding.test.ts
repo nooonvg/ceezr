@@ -106,8 +106,7 @@ describeIf("SEC-19 بندُ ٣ — ربطُ `created_by` بـ`users.id`", () => 
     cityHandle = await ensureActiveCity(sql, { prior: cityHandle });
   });
 
-  
-it("العمودُ والربطُ الخارجيُّ موجودانِ", async () => {
+  it("العمودُ والربطُ الخارجيُّ موجودانِ", async () => {
     const cols = await sql<{ column_name: string }[]>`
       select column_name from information_schema.columns
        where table_name = 'trip_tracking_tokens' and column_name = 'created_by_user_id'

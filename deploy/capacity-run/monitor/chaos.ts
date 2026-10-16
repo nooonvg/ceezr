@@ -198,16 +198,9 @@ async function inject(step: Step) {
           ],
           90_000,
         );
-        rec.pgReadyCheck = await sh([
-          "pg_isready",
-          "-h",
-          "127.0.0.1",
-          "-p",
-          "55432",
-        ]);
+        rec.pgReadyCheck = await sh(["pg_isready", "-h", "127.0.0.1", "-p", "55432"]);
         if (rec.pgReadyCheck.code !== 0) {
-          rec.toolFailure =
-            "pg_restart: أعاد التشغيل لكن pg_isready فشل — الأداة لا تدّعي النجاح";
+          rec.toolFailure = "pg_restart: أعاد التشغيل لكن pg_isready فشل — الأداة لا تدّعي النجاح";
         }
         break;
       }

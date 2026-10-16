@@ -215,8 +215,7 @@ describeIf("إخطارُ إلغاءِ الراكبِ في صندوقِ الصا�
     await createFixture();
   });
 
-  
-it("الإلغاءُ يُودِعُ صفًّا لكلِّ سائقٍ في معاملتِه — والإسنادُ يغلبُ العرضَ", async () => {
+  it("الإلغاءُ يُودِعُ صفًّا لكلِّ سائقٍ في معاملتِه — والإسنادُ يغلبُ العرضَ", async () => {
     const sent: Sent[] = [];
     const result = await cancel();
     expect(result.ok).toBe(true);
