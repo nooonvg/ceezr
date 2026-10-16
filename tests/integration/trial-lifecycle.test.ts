@@ -278,10 +278,12 @@ describeIf("دورةُ الشهر المجاني للسائق على قاعدة 
     `;
     expect(offers).toHaveLength(1);
     expect(offers[0]?.driver_id).toBe(driverId);
-    const offerMessage = driverSent.find((m) =>
-      JSON.stringify(m.markup ?? {}).includes("offer:accept:"),
-    );
+    // `ADR 0286` — بطاقةُ العرضِ إشعارٌ لا زرَّ عملٍ: لا يُنفَّذُ قرارٌ تجاريٌّ
+    // من المحادثةِ. وفي وضعِ `legacy` الاختباريِّ بلا `miniAppUrl` لا زرَّ أصلًا —
+    // فالمقصودُ: البطاقةُ وصلت، وبلا زرِّ `offer:` يعودُ إليها.
+    const offerMessage = driverSent.find((m) => (m.text ?? "").includes("الخدمة:"));
     expect(offerMessage).toBeDefined();
+    expect(JSON.stringify(offerMessage?.markup ?? {})).not.toContain("offer:");
   });
 
   it("انتهاءُ التجربة: صفٌّ منتهٍ، وإشعارٌ واحدٌ لا أكثر، ولو دار العاملُ مرّتين", async () => {

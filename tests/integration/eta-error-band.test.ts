@@ -3,7 +3,7 @@
  * ولا يستبدلُه، ويقيسُ نسبةَ (الفعليّ ÷ المقدَّر) على الساقاتِ المنتهيةِ في مدينةِ الطلب،
  * ولا يُنادى إلّا من `service_role`. يُتخطّى محلّياً بلا `TEST_DATABASE_URL`.
  */
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import { createEtaBandStore } from "../../packages/infrastructure/tracking/eta-band-store.ts";
 import {
@@ -84,6 +84,13 @@ beforeAll(async () => {
     returning id
   `;
   driverId = driver?.id ?? "";
+});
+
+beforeEach(async () => {
+  if (DATABASE_URL === undefined) return;
+  // I1 (ADR 0286): فهرسُ الالتزامِ الواحدِ للسائقِ يرفضُ بذرَ التزامٍ ثانٍ لسائقٍ
+  // لا يزالُ التزامُ اختبارٍ سابقٍ حيًّا — فتُنهى التزاماتُ هذا الملفِّ قبلَ كلِّ اختبارٍ.
+  await sql`update orders set status = 'completed', completed_at = now() where idempotency_key like 'eta-band:%' and is_driver_engaged_order_status(status)`;
 });
 
 afterAll(async () => {

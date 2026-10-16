@@ -30,7 +30,7 @@
  * ــ `RLS` يُقاسُ وجوداً لا أثراً: الاتصالُ بمالكِ القاعدةِ وهوَ يتخطّاه.
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import {
   type ActiveCityHandle,
@@ -67,6 +67,7 @@ let otherUserId = "";
 let otherRiderId = "";
 let driverUserId = "";
 let driverId = "";
+let secondDriverUserId = "";
 
 interface PositionPayload {
   readonly verdict?: string;
@@ -189,7 +190,11 @@ async function seedOrder(options: {
 }
 
 /** موقعُ السائقِ بعُمرٍ مُعيَّنٍ — و`null` ختماً يزرعُ نقطةً بلا ختمٍ. */
-async function seedDriverLocation(ageSeconds: number | null, hasPoint = true): Promise<void> {
+async function seedDriverLocation(
+  ageSeconds: number | null,
+  hasPoint = true,
+  targetDriverId: string = driverId,
+): Promise<void> {
   await sql`
     update drivers set
       last_location = ${
@@ -200,7 +205,7 @@ async function seedDriverLocation(ageSeconds: number | null, hasPoint = true): P
       last_location_at = ${
         ageSeconds === null ? null : sql`now() - make_interval(secs => ${ageSeconds})`
       }
-    where id = ${driverId}
+    where id = ${targetDriverId}
   `;
 }
 
@@ -280,7 +285,21 @@ beforeAll(async () => {
   driverId = driver.id;
 });
 
+beforeEach(async () => {
+  if (DATABASE_URL === undefined) return;
+  // I1 (ADR 0286): فهرسُ الالتزامِ الواحدِ للسائقِ يرفضُ بذرَ التزامٍ ثانٍ لسائقٍ
+  // لا يزالُ التزامُ اختبارٍ سابقٍ حيًّا — فتُنهى التزاماتُ هذا الملفِّ قبلَ كلِّ اختبارٍ.
+  await sql`update orders set status = 'completed', completed_at = now() where idempotency_key like 'ride-share:%' and is_driver_engaged_order_status(status)`;
+});
+
 afterAll(async () => {
+  if (DATABASE_URL !== undefined && secondDriverUserId !== "") {
+    // أوّلاً: فكُّ إسنادِ طلباتِه (قيدُ FK) ثم حذفُ السائقِ فالمستخدمِ.
+    await sql`update orders set assigned_driver_id = null, status = 'cancelled'
+               where assigned_driver_id in (select id from drivers where user_id = ${secondDriverUserId}::uuid)`;
+    await sql`delete from drivers where user_id = ${secondDriverUserId}::uuid`;
+    await sql`delete from users where id = ${secondDriverUserId}::uuid`;
+  }
   if (DATABASE_URL === undefined) return;
   for (const id of [riderId, otherRiderId]) {
     if (id === "") continue;
@@ -918,9 +937,25 @@ describeIf("F12-04 — حَكَمُ الحالاتِ العالقةِ", () => {
 
   it("٣٣) الكاشفُ يُحصي العالقَ وحدَه، أطولَ سكوناً أوّلاً، ولا يمسُّ الحيَّ", async () => {
     const stuckA = await seedOrder({ riderId, status: "in_progress", driver: driverId });
-    const stuckB = await seedOrder({ riderId, status: "in_progress", driver: driverId });
+    // I1 (ADR 0286): السائقُ الواحدُ لا يحملُ التزامين — فالعالقُ الثاني لسائقٍ آخرَ
+    // بذرَه الاختبارُ: المقيسُ إحصاءُ الكاشفِ للعالقين، لا سائقٌ واحدٌ بلا دعوى.
+    const secondDriverUser = await sql<{ id: string }[]>`
+      insert into users (city_id, telegram_id, role, full_name, phone)
+      values (${cityId}, ${DRIVER_TELEGRAM_ID + 1}, 'driver', 'سائقُ عالقٍ ثانٍ', '+966500000994')
+      returning id`;
+    secondDriverUserId = secondDriverUser[0]?.id ?? "";
+    if (secondDriverUserId === "") throw new Error("SECOND_DRIVER_USER_MISSING");
+    const secondDriver = await sql<{ id: string }[]>`
+      insert into drivers (city_id, user_id, verification_status, vehicle_type, plate_number)
+      values (${cityId}, ${secondDriverUserId}::uuid, 'verified'::verification_status, 'سيدان', 'ر س ب 5678')
+      returning id`;
+    const secondDriverId = secondDriver[0]?.id;
+    if (secondDriverId === undefined) throw new Error("SECOND_DRIVER_MISSING");
+    const stuckB = await seedOrder({ riderId, status: "in_progress", driver: secondDriverId });
     const fresh = await seedOrder({ riderId, status: "searching", driver: null });
     await seedDriverLocation(10 * 60 * 60);
+    // وللسائقِ الثاني — حاملِ العالقِ الثاني — الموقعُ المتقادمُ نفسُه.
+    await seedDriverLocation(10 * 60 * 60, true, secondDriverId);
 
     const rows = await sql<{ order_id: string; idle_seconds: number }[]>`
       select order_id, idle_seconds from detect_stalled_orders(${cityId}::uuid, 100)

@@ -224,6 +224,8 @@ describeIf("حدود التتبّع من البيئة تُغيّر المسار 
       RIDER_BOT_TOKEN: "r",
       TELEGRAM_WEBHOOK_SECRET: "s".repeat(40),
       BOOTSTRAP_ADMIN_TELEGRAM_ID: "1",
+      BOT_SURFACE_MODE: "miniapp",
+      MINIAPP_URL: "https://miniapp.example",
       TRACKING_MAX_REASONABLE_SPEED_KMH: "سريع",
     };
     const result = tryLoadConfig(base);

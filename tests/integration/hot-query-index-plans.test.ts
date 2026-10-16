@@ -45,13 +45,18 @@ const ACTORS = 400;
 const SEARCHING = 200;
 
 /** عُقدةٌ يُتوقَّعُ ظهورُها في الخطّةِ عندَ غيابِ الفهرسِ. */
-type FallbackNode = "Seq Scan" | "Sort";
+type FallbackNode = "Seq Scan" | "Sort" | "Index Scan" | "Bitmap Heap Scan";
 
 type PlanCase = {
   /** اسمُ الفهرسِ في السجلِّ. */
   readonly index: string;
-  /** ما يُتوقَّعُ أن تنحدرَ إليهِ الخطّةُ إذا غابَ الفهرسُ. */
-  readonly fallback: FallbackNode;
+  /**
+   * ما يُتوقَّعُ أن تنحدرَ إليهِ الخطّةُ إذا غابَ الفهرسُ — عُقدٌ مقبولةٌ لا عقدةً
+   * واحدةً: اختيارُ المُخطِّطِ بينَ المسحِ التسلسليِّ ومسحِ فهرسٍ **آخرَ** بديلٍ
+   * حساسٌ لإحصاءاتِ الجدولِ (تحليلُ autovacuum) لا لصحةِ الفهرسِ نفسِه، فالمقيسُ
+   * هو: الفهرسُ الهدفُ في الخطّةِ حينَ يقومُ، ولا يُذكَرُ حينَ يُسقَط.
+   */
+  readonly fallback: readonly FallbackNode[];
   /** مُعامِلاتُ الاستعلامِ — تُحسَبُ بعدَ البذرِ. */
   readonly params: (seeded: Seeded) => (string | undefined)[];
 };
@@ -66,26 +71,35 @@ type Seeded = {
 const PLAN_CASES: readonly PlanCase[] = [
   {
     index: "orders_assigned_driver_status_idx",
-    fallback: "Seq Scan",
+    // I1 (ADR 0286): بذرُ الالتزاماتِ صارَ لكلِّ سائقٍ طلباً واحداً فتوزّعتِ
+    // القيمُ، فاختيارُ البديلِ عندَ الإسقاطِ بينَ المسحِ التسلسليِّ ومسحِ
+    // `orders_city_status_idx` مسألةُ إحصاءٍ لا صحةٍ.
+    fallback: ["Seq Scan", "Index Scan"],
     params: (seeded) => [seeded.driverIds[0]],
   },
   {
     index: "orders_rider_status_idx",
-    fallback: "Seq Scan",
+    fallback: ["Seq Scan", "Index Scan"],
     params: (seeded) => [seeded.riderIds[0]],
   },
   {
     index: "orders_city_searching_created_idx",
-    fallback: "Sort",
+    fallback: ["Sort"],
     params: () => [CITY_ID_PLACEHOLDER.value],
   },
-  { index: "notification_outbox_ride_cycle_due_idx", fallback: "Sort", params: () => [] },
+  { index: "notification_outbox_ride_cycle_due_idx", fallback: ["Sort"], params: () => [] },
   {
     index: "audit_log_action_entity_idx",
-    fallback: "Seq Scan",
+    // `audit_log_entity_idx` بديلٌ وجيهٌ عندَ إحصاءٍ طازجٍ — والقبولُ للعقدتينِ
+    // يحفظُ مقصودَ القياسِ: الفهرسُ الهدفُ لا يُذكَرُ حينَ يُسقَط.
+    fallback: ["Seq Scan", "Index Scan"],
     params: (seeded) => [seeded.auditAction, seeded.auditEntityId],
   },
-  { index: "attendance_log_changed_at_idx", fallback: "Seq Scan", params: () => [] },
+  {
+    index: "attendance_log_changed_at_idx",
+    fallback: ["Seq Scan", "Index Scan"],
+    params: () => [],
+  },
 ];
 
 /** مدينةُ القياسِ — تُقرأُ مرّةً في `beforeAll` ويُقرأُها بانيُ المُعامِلاتِ. */
@@ -147,6 +161,23 @@ async function seedVolume(tx: Sql, cityId: string): Promise<Seeded> {
 
   const riderIds = riderRows.map((row) => row.id);
   const driverIds = driverRows.map((row) => row.id);
+  // I1 (ADR 0286): كلُّ طلبٍ مُلزَمٍ لسائقٍ **مختلفٍ** — فهرسُ الالتامِ الواحدِ
+  // يفرضُه، فلا بذرَ ٣٨٠٠ سائقٍ للـ3800 طلبٍ مُلزَمٍ: المقيسُ خطّةُ الفهرسِ
+  // لا إسنادٌ حقيقيٌّ.
+  const matchedDriverUsers = await tx<{ id: string }[]>`
+    insert into users (city_id, telegram_id, full_name, language_code, role)
+    select ${cityId}::uuid, 970100000 + g, 'سائقُ قياسٍ مُلزَمٌ ' || g, 'ar', 'driver'
+      from generate_series(1, ${VOLUME - SEARCHING}::int) g
+    returning id`;
+  const matchedDriverRows = await tx<{ id: string }[]>`
+    insert into drivers (user_id, city_id, verification_status, national_id, plate_number)
+    select u.id, ${cityId}::uuid, 'verified',
+           'IDF703' || row_number() over (order by u.telegram_id),
+           'PLF703' || row_number() over (order by u.telegram_id)
+      from users u
+     where u.id = any(${matchedDriverUsers.map((row) => row.id)}::uuid[])
+    returning id`;
+  const matchedDriverIds = matchedDriverRows.map((row) => row.id);
 
   await tx`
     insert into orders (city_id, rider_id, service, status, pickup,
@@ -154,9 +185,16 @@ async function seedVolume(tx: Sql, cityId: string): Promise<Seeded> {
     select ${cityId}::uuid,
            (${riderIds}::uuid[])[1 + (g % ${ACTORS})],
            'transport',
-           (case when g <= ${SEARCHING} then 'searching' else 'matched' end)::order_status,
+           -- I1 (ADR 0286): السائقُ الواحدُ لا يحملُ التزامًا (matched) ثانيًا —
+           -- فهرسُ القاعدةِ يرفضُه. فالمُلزَمُ (حتى 400) لكلِّ سائقٍ مرةً واحدةً،
+           -- وما زادَ حجمًا يُبذرُ منتهًا (completed) — والحجمُ للخطّةِ لا للعدِّ.
+           (case when g <= ${SEARCHING} then 'searching'
+                 when g <= ${SEARCHING}::int + ${ACTORS}::int then 'matched'
+                 else 'completed' end)::order_status,
            st_point(39.1925, 21.4858)::geography,
            case when g <= ${SEARCHING} then null
+                when g <= ${SEARCHING}::int + ${matchedDriverIds.length}::int
+                  then (${matchedDriverIds}::uuid[])[g - ${SEARCHING}::int]
                 else (${driverIds}::uuid[])[1 + (g % ${ACTORS})] end,
            case when g <= ${SEARCHING} then null else now() end,
            now() - make_interval(mins => g)
@@ -248,7 +286,9 @@ describeIf("F7-02 — خطّةُ التنفيذِ قبلَ الفهرسِ وبع
       expect(measured.after.text).toContain(entry.name);
       // (ب) وبإسقاطِه تنحدرُ الخطّةُ إلى العُقدةِ المُتوقَّعةِ ولا تذكرُه.
       expect(measured.before.text).not.toContain(entry.name);
-      expect(measured.before.text).toContain(planCase.fallback);
+      expect(measured.before.text).toMatch(
+        new RegExp(planCase.fallback.map((n) => n.replaceAll(" ", "\\s")).join("|")),
+      );
       // (ج) والكلفةُ بالفهرسِ أقلُّ — الجدوى مقيسةٌ لا مُدَّعاةٌ.
       expect(measured.after.cost).toBeLessThan(measured.before.cost);
     });
