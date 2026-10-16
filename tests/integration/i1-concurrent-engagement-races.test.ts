@@ -428,6 +428,17 @@ describeIf("I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ
            and o.status in ('matched', 'in_progress')
       ) s where s.c > 1`;
     expect(offenders[0]?.n ?? 1).toBe(0);
+    // ورابعٌ على مستوى العروضِ (بندُ «عدمِ قبولِ أكثرَ من عرضٍ للطلبِ نفسِه»):
+    // لا طلبَ ينتهي بأكثرَ من عرضٍ واحدٍ مقبولٍ — في القاعدةِ كلِّها، استعلامًا
+    // مستقلًّا عن مساراتِ الاختبارِ، لا منَ عدمِ ظهورِ خطأٍ فحسب.
+    const multiAccepted = await sql<{ n: number }[]>`
+      select count(*)::int as n from (
+        select order_id from order_offers
+         where status = 'accepted'
+         group by order_id
+        having count(*) > 1
+      ) as m`;
+    expect(multiAccepted[0]?.n ?? 1).toBe(0);
     // وثالثٌ مرتبطٌ بهويةِ هذه الجولةِ نفسِها: سائقوها هم تحديدًا بلا التزامٍ مزدوجٍ.
     const scoped = await sql<{ n: number }[]>`
       select count(*)::int as n from (
