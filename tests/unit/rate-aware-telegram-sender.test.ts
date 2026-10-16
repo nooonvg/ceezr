@@ -182,6 +182,57 @@ describe("غلافُ صمودِ الصادرِ (CAP-002)", () => {
     expect(events.some((event) => event.type === "gave_up")).toBe(true);
   });
 
+  it("`D8` — سياسةُ الإحالةِ على مستوى النداءِ: مسارُ الطابورِ يرمي ولا يقتل", async () => {
+    let sends = 0;
+    const closedBucket: OutboundRateBucket = {
+      acquire: async () => ({ granted: false, waitMs: 400 }),
+    };
+    const { sender, events, deadLetter } = harness(
+      stubSender(async () => {
+        sends += 1;
+        return "ok";
+      }),
+      {
+        bucket: closedBucket,
+        maxBucketWaitMs: 100,
+        congestionAbortMaxWaitMs: 300,
+        informationalMaxAttempts: 1,
+      },
+    );
+
+    // النداءُ موسومٌ بسياسةِ الإحالةِ (مسارُ صندوقِ الصادرِ الذي يملكُ `requeue`):
+    // الضغطُ يُرمى `OutboundCongestionError` فوراً لا انتظارَ ولا قتلًا.
+    await expect(
+      sender.sendMessage("111", "نصٌّ", undefined, { congestion: "abort" }),
+    ).rejects.toMatchObject({ name: "OutboundCongestionError", retryAfterMs: 400 });
+    expect(sends).toBe(0);
+    expect(deadLetter.entries()).toEqual([]);
+    expect(events.some((event) => event.type === "gave_up")).toBe(false);
+  });
+
+  it("`D8` — سياسةُ الإحالةِ تحترمُ ميزانيّتَها: فتحةٌ تُنتظَرُ قصيراً تُستعمَل", async () => {
+    let sends = 0;
+    let acquires = 0;
+    // فتحةٌ تُتاحُ بعدَ 150ms — دونَ ميزانيّةِ الإحالةِ (300ms) فتُنتظَرُ وتُرسَلُ الرسالة.
+    const slowBucket: OutboundRateBucket = {
+      acquire: async () => {
+        acquires += 1;
+        return acquires === 1 ? { granted: false, waitMs: 150 } : { granted: true, waitMs: 0 };
+      },
+    };
+    const { sender, sleeps } = harness(
+      stubSender(async () => {
+        sends += 1;
+        return "42";
+      }),
+      { bucket: slowBucket, congestionAbortMaxWaitMs: 300 },
+    );
+
+    expect(await sender.sendMessage("111", "نصٌّ", undefined, { congestion: "abort" })).toBe("42");
+    expect(sends).toBe(1);
+    expect(sleeps).toEqual([150]);
+  });
+
   it("`sendLocation` حرجةٌ افتراضاً و`sendMessage` ليست كذلك", async () => {
     const attempts = { message: 0, location: 0 };
     const { sender } = harness({

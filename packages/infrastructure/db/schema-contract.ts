@@ -156,6 +156,7 @@ export const CONTRACT_FUNCTIONS: readonly string[] = [
   "relocate_drivers_by_location",
   "renew_telegram_update_leases",
   "request_ride_with_offer",
+  "requeue_notification_delivery",
   "resolve_destination",
   "resolve_safety_incident",
   "resolve_support_ticket",

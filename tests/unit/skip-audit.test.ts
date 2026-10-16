@@ -942,8 +942,12 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 3 · I1): والآنَ 189 و 1629 — أربعُ حالاتٍ في
     // `i1-concurrent-engagement-races.test.ts` (سباقاتُ التزامنِ الحقيقيِّ لا تُقاسُ إلا على قاعدةٍ حقيقيّةٍ —
     // خطوتُها المسمّاةُ في وظيفةِ PostgreSQL الحقيقيِّ في ci.yml).
-    expect(SKIP_REGISTRY).toHaveLength(189);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1629);
+    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 4 · D8): والآنَ 190 و1632 — ثلاثُ
+    // حالاتٍ في `d8-outbox-gate-per-recipient.test.ts`: بوابةُ الالتقاطِ التسلسليُّ
+    // على المستلِمِ وإعادةُ الازدحامِ أحكامُ قاعدةٍ (claim/requeue) لا تُقاسُ إلا
+    // على PostgreSQL حقيقيٍّ — خطوتُها في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
+    expect(SKIP_REGISTRY).toHaveLength(190);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1632);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {

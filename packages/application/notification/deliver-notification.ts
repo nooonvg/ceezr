@@ -92,6 +92,18 @@ export interface NotificationOutboxPort {
     reason: string | null;
   }): Promise<Result<boolean, PortFailureError>>;
   /**
+   * `D8` — إعادةُ صفٍّ إلى الطابورِ بعدَ **ازدحامِ دلاءِ الإرسالِ** (ضغطٍ عابرٍ
+   * لا فشلِ إرسالٍ): يعودُ `pending` بموعدِ الفتحةِ القادمةِ، **ولا تُحسَبُ لهذه
+   * الدورةِ محاولةٌ** — فالموتُ باستنفادِ المحاولاتِ لعثراتِ الإرسالِ الحقيقيةِ لا
+   * لازدحامٍ يزولُ بزوالِ الحملِ. يُستدعى بموعدِ الفتحةِ الذي قدّرَه المُرسِلُ.
+   */
+  requeue(input: {
+    deliveryId: string;
+    claimToken: string;
+    /** موعدُ الفتحةِ القادمةِ من الآنِ بالمللي ثانيةِ — تقديرُ المُرسِلِ. */
+    retryAfterMs: number;
+  }): Promise<Result<boolean, PortFailureError>>;
+  /**
    * يُعلِنُ صفًّا **غيرَ قابلٍ للتسليمِ** من طبقةِ التطبيقِ (`SEC-19-ب-٤`):
    * العنوانُ غائبٌ فلا يُحاوَلُ إرسالُه ولا يُعادُ، ويُفصَلُ عن `dead` الذي
    * يعني فشلاً بعدَ جهدٍ. يَضَعُ `status = 'undeliverable'` بـ`dead_reason` و`died_at`.
@@ -277,6 +289,30 @@ async function deliverClaimed(
       batchLimit: delivery.batchLimit,
       backpressure: null,
       failure: null,
+    });
+  }
+  // `D8` — ازدحامُ دلاءِ الإرسالِ: ضغطٌ عابرٌ لا فشلَ إرسالٍ. المعالجاتُ تنقلُ
+  // اسمَ الخطأِ كما هو، وازدحامُ المُرسِلِ يحملُ اسمَه المميزَ. الصفُّ يعودُ إلى
+  // الطابورِ بموعدِ الفتحةِ القادمةِ (نافذةُ المحادثةِ) بلا محاولةٍ مُحتسَبةٍ،
+  // والمسارُ يتفرّغُ لصفٍّ آخرَ لمحادثةٍ باردةٍ — هذا هوَ صونُ عملِ المساراتِ.
+  if (handled.value.failure === "OutboundCongestionError" && handled.value.messageId === null) {
+    const requeued = await deps.outbox.requeue({
+      deliveryId: delivery.deliveryId,
+      claimToken: delivery.claimToken,
+      retryAfterMs: 1_000,
+    });
+    if (!requeued.ok) return requeued;
+    return ok({
+      found: true,
+      kind: delivery.kind,
+      delivered: false,
+      abandoned: false,
+      died: false,
+      undeliverable: false,
+      maxAttempts: delivery.maxAttempts,
+      batchLimit: delivery.batchLimit,
+      backpressure: null,
+      failure: handled.value.failure,
     });
   }
   const finished = await deps.outbox.finish({

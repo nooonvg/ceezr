@@ -9,6 +9,7 @@
  */
 
 import type { Keyboard } from "../../application/bots/types.ts";
+import { OutboundCongestionError } from "./rate-aware-telegram-sender.ts";
 import { createTelegramApi } from "./telegram-client.ts";
 import type { OutboundSender } from "./telegram-driver-notifier.ts";
 import { toTelegramMarkup } from "./telegram-markup.ts";
@@ -30,6 +31,13 @@ export type SendPriority = "critical" | "informational";
  */
 export interface SendOptions {
   readonly priority?: SendPriority;
+  /**
+   * `D8` — سياسةُ الضغطِ العكسيِّ لهذا النداءِ وحدَهُ: `"abort"` (مسارُ صندوقِ الصادرِ
+   * الذي يملكُ عقدَ `requeue`: يُرمى `OutboundCongestionError` فورَ تجاوزِ ميزانيّةٍ
+   * قصيرةٍ فيتفرّغُ المسارُ ويعودُ الصفُّ إلى الطابورِ) أو `"wait"` الافتراضيّةُ
+   * (النداءُ المباشرُ: الضغطُ فشلٌ عابرٌ يُعادُ عليهِ حتى استنفادِ المحاولاتِ).
+   */
+  readonly congestion?: "wait" | "abort";
 }
 
 /** منفذ الإرسال — grammY ينفّذه في الإنتاج، ومزدوج يلتقط الرسائل في الاختبار. */
@@ -172,7 +180,11 @@ export function asIdentifyingSender(sender: TelegramSender): IdentifyingSender {
     sendReturningId: async (chatId, text, keyboard: Keyboard | null) => {
       try {
         return await sender.sendMessage(chatId, text, toTelegramMarkup(keyboard));
-      } catch {
+      } catch (thrown) {
+        // `D8` — ازدحامُ الدلاءِ ليسَ رفضًا: إشارةُ إعادةٍ إلى الطابورِ يجبُ أن تصلَ
+        // إلى معالجِ التسليمِ خطأً كي يُعيدَ الصفَّ، لا أن تُعلَمَ رفضًا فيُقتَلَ
+        // باستنفادِ المحاولاتِ.
+        if (thrown instanceof OutboundCongestionError) throw thrown;
         return null;
       }
     },
@@ -188,14 +200,22 @@ export function asSupportSender(sender: TelegramSender): SupportSender {
     sendReturningId: async (chatId, text, keyboard) => {
       try {
         return await sender.sendMessage(chatId, text, keyboard);
-      } catch {
+      } catch (thrown) {
+        // `D8` — ازدحامُ الدلاءِ ليسَ رفضًا: إشارةُ إعادةٍ إلى الطابورِ يجبُ أن تصلَ
+        // إلى معالجِ التسليمِ خطأً كي يُعيدَ الصفَّ، لا أن تُعلَمَ رفضًا فيُقتَلَ
+        // باستنفادِ المحاولاتِ.
+        if (thrown instanceof OutboundCongestionError) throw thrown;
         return null;
       }
     },
     sendPhotoReturningId: async (chatId, fileId, caption, keyboard) => {
       try {
         return await sender.sendPhoto(chatId, fileId, caption, keyboard);
-      } catch {
+      } catch (thrown) {
+        // `D8` — ازدحامُ الدلاءِ ليسَ رفضًا: إشارةُ إعادةٍ إلى الطابورِ يجبُ أن تصلَ
+        // إلى معالجِ التسليمِ خطأً كي يُعيدَ الصفَّ، لا أن تُعلَمَ رفضًا فيُقتَلَ
+        // باستنفادِ المحاولاتِ.
+        if (thrown instanceof OutboundCongestionError) throw thrown;
         return null;
       }
     },

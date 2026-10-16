@@ -30,6 +30,10 @@ export function withTrafficPriority(inner: TelegramSender, kind: NotificationKin
   const stamp = (options: SendOptions | undefined): SendOptions => ({
     ...options,
     priority: options?.priority ?? priority,
+    // `D8` — وسمُ مسارِ صندوقِ الصادرِ: هذا الغلافُ لا يستخدمُهُ إلا معالجاتُ
+    // الإشعاراتِ في العاملِ (المستهلِكُ الذي يملكُ عقدَ `requeue`)، فكلُّ نداءٍ
+    // منهُ يحيلُ الضغطَ العكسيَّ إلى الطابورِ لا أن ينتظِرَ أو يقتُلَ الصفَّ.
+    congestion: options?.congestion ?? "abort",
   });
   return {
     sendMessage: (chatId, text, markup, options) =>

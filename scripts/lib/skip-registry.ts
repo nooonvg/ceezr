@@ -807,6 +807,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/d8-outbox-gate-per-recipient.test.ts",
+    suites: ["D8 — بوابةُ صندوقِ الصادرِ: التسلسلُ على المستلِمِ لا على الطلبِ"],
+    skipped: 3,
+    gate: "TEST_DATABASE_URL",
+    owner: "منفّذ المستودع",
+    criticalPath: "المهامُّ الدوريةُ والقفلُ الموزَّع",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    reason:
+      "بوابةُ الالتقاطِ وإعادةُ الازدحامِ عقدٌ على قاعدةِ PostgreSQL حقيقيّةٍ بها الهجراتُ (ومنها 20261016130000/131000) — لا معنى لاختبارِها بلا قاعدةٍ: تُتخطّى بلا TEST_DATABASE_URL وتُشغَّل في الوظيفةِ المتكاملةِ على PostgreSQL حقيقيٍّ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها الهجراتُ مطبّقةً. يفعله CI في الوظيفةِ «تكاملٌ على PostgreSQL حقيقيٍّ».",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/i1-concurrent-engagement-races.test.ts",
     suites: ["I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة"],
     skipped: 4,

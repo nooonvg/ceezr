@@ -1,0 +1,63 @@
+{
+  "run": "CAP-RUN-20261016-CONTINUATION/stage-4",
+  "phase": "D8",
+  "date": "2026-10-16",
+  "bench": {
+    "db": "ceezr_d8 (منفصلة عن القاعدة الحية؛ الهجرات حتى 20261016131000)",
+    "redis": "redis-d8 :56380",
+    "upstash_shim": ":58082",
+    "telegram_mock": ":58091 (GLOBAL_PER_BOT_PER_SEC=30، 429 مع retry_after=1)",
+    "gateway": ":54310 عامل مضمّن deliver-notifications كل 5ث"
+  },
+  "gateway_env": {
+    "PORT": "54310",
+    "DATABASE_URL": "postgres://postgres@127.0.0.1:55432/ceezr_d8",
+    "UPSTASH_REDIS_REST_URL": "http://127.0.0.1:58082",
+    "MOCK_TELEGRAM_URL": "http://127.0.0.1:58091",
+    "SERVICE_INSTANCE_ID": "cap-gateway-d8",
+    "NOTIFICATION_DRAIN_*": "غير مضبوطة → lanes=8 budgetMs=8000 maxClaims=2000",
+    "claim_timeout_for_J5": "مُنزل من 300ث إلى 20ث في platform_settings (لاختبار استرداد الإيجار فقط)"
+  },
+  "rate_buckets": {
+    "global_per_bot_per_sec": 25,
+    "chat_per_sec": 1,
+    "mock_global_per_bot_per_sec": 30
+  },
+  "load": {
+    "tool": "deploy/capacity-run/load/miniapp-load.ts",
+    "profile": [
+      {
+        "name": "jN",
+        "sec": 150,
+        "conc": 20
+      }
+    ],
+    "rounds": {
+      "j1": {
+        "rider_seq": 8600000,
+        "driver_seq": 9600000
+      },
+      "j2b": {
+        "rider_seq": 8650000,
+        "driver_seq": 9650000
+      },
+      "j3": {
+        "rider_seq": 8700000,
+        "driver_seq": 9700000
+      },
+      "j4": {
+        "rider_seq": 8750000,
+        "driver_seq": 9750000
+      }
+    }
+  },
+  "evidence_files": {
+    "j1_samples": "raw/queue-samples-j1.jsonl",
+    "j2b_samples": "raw/queue-samples-j2b.jsonl",
+    "j3_samples": "raw/queue-samples-j3.jsonl",
+    "j4_samples": "raw/queue-samples-j4.jsonl",
+    "gateway_log_j2b_j6": "docs/evidence/archive/cap-20261016-continuation-stage4-gateway-d8.log",
+    "load_events": "raw/archive/load-j*-events/",
+    "note": "سجل بوابة J1 فُقد عند إعادة تشغيل البوابة (استُبدل الملف) — أرقام شوط J1 (claimed=149 delivered=44 abandoned=105 لكل شوط) مُقتبسة من قراءته قبل الفقد، وعينات المصيّد لجولة J1 محفوظة كاملة."
+  }
+}

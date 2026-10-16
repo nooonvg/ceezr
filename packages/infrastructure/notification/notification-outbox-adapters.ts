@@ -120,6 +120,17 @@ export function createNotificationOutboxPort(sql: Sql): NotificationOutboxPort {
         const row = envelope(rows[0]?.result, "abandon_notification_delivery");
         return row.ok === true;
       }),
+    requeue: (input) =>
+      guard("rpc.requeue_notification_delivery", async () => {
+        // `D8` — إعادةُ ازدحامٍ: موعدُ الفتحةِ من المُرسِلِ، مسقوفٌ بدقيقةٍ حتى لا
+        // يعلَقَ صفٌّ أبدًا بموعدٍ بعيدٍ من تقديرٍ شاذٍّ.
+        const retryAfterMs = Math.min(Math.max(0, Math.floor(input.retryAfterMs)), 60_000);
+        const rows = await sql<
+          { result: unknown }[]
+        >`select requeue_notification_delivery(${input.deliveryId}::uuid, ${input.claimToken}::uuid, ${retryAfterMs}::integer) result`;
+        const row = envelope(rows[0]?.result, "requeue_notification_delivery");
+        return row.ok === true;
+      }),
     undeliverable: (input) =>
       guard("rpc.mark_notification_undeliverable", async () => {
         const rows = await sql<

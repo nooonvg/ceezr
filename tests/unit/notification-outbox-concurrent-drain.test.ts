@@ -24,6 +24,7 @@ function fakeOutbox(rows: Row[], opts: { failClaimAt?: number; batchLimit?: numb
   const st = {
     claims: 0,
     finished: new Map<string, number>(),
+    requeued: [] as string[],
     sent: [] as string[],
     inFlight: 0,
     peak: 0,
@@ -54,6 +55,10 @@ function fakeOutbox(rows: Row[], opts: { failClaimAt?: number; batchLimit?: numb
     },
     abandon: async () => ok(true),
     undeliverable: async () => ok(true),
+    requeue: async ({ deliveryId }: { deliveryId: string }) => {
+      st.requeued.push(deliveryId);
+      return ok(true);
+    },
   };
   const handler = async (d: OutboxDelivery) => {
     st.inFlight += 1;
@@ -204,5 +209,22 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
       0,
     );
     expect(notificationDrainSettingsFromEnv({ NOTIFICATION_DRAIN_LANES: "999" }).lanes).toBe(8);
+  });
+
+  test("D8: ازدحامُ الدلاءِ يُعيدُ الصفَّ إلى الطابورِ لا موتًا ولا تسليمًا", async () => {
+    // المُرسِلُ رمى ازدحامًا (`OutboundCongestionError`) — المعالجاتُ تنقلُ اسمَهُ
+    // نصًّا. الحكمُ: الصفُّ يُعادُ إلى الطابورِ بموعدِ فتحةٍ (requeue) ولا يُختمُ
+    // (finish) ولا يُتخلى عنه (abandon) ولا يُعلَنُ تسليمًا — والمسارُ يتفرّغُ.
+    const f = fakeOutbox(offers(5));
+    const congested = async () =>
+      ok({ abandon: false, messageId: null, failure: "OutboundCongestionError" });
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: { offer: congested } },
+      { lanes: 8, budgetMs: 2000, maxClaims: 2000 },
+    );
+    expect(r.ok).toBe(true);
+    expect(f.st.requeued.length).toBe(5);
+    expect(f.st.finished.size).toBe(0);
+    expect(f.st.sent.length).toBe(0);
   });
 });
