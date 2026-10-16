@@ -33,6 +33,7 @@
     "docker/Dockerfile.worker",
     "packages/application/negotiation/negotiation-app.ts",
     "packages/application/notification/deliver-notification.ts",
+    "packages/infrastructure/db/schema-contract.ts",
     "packages/infrastructure/db/telegram-update-queue.ts",
     "packages/infrastructure/dispatch/dispatch-adapters.ts",
     "packages/infrastructure/negotiation/negotiation-app-store.ts",
