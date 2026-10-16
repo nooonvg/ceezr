@@ -807,6 +807,19 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/i1-concurrent-engagement-races.test.ts",
+    suites: ["I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة"],
+    skipped: 4,
+    gate: "TEST_DATABASE_URL",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "سباقاتُ الإسنادِ الأحاديِّ المتزامنةُ على PostgreSQL حقيقيٍّ (I1)",
+    reason: "سباقاتُ التزامنِ الحقيقيِّ (قفلُ تحكمٍ وجلساتٌ متعددةٌ) لا معنى لها إلا على قاعدةِ PostgreSQL حقيقيّةٍ بها الهجراتُ — تُتخطّى بلا TEST_DATABASE_URL وتُشغَّل في خطوةِ CI المسمّاةِ وفي الحزمةِ المتكاملةِ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجراتُ مطبّقة (ومنها فهرسُ 20261016120100). يفعله CI في الوظيفةِ «تكاملٌ على PostgreSQL حقيقيٍّ» بخطوةٍ مسمّاةٍ باسمِ الملفِ.",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/wr-24-concurrent-races.test.ts",
     suites: ["WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة"],
     skipped: 9,

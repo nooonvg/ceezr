@@ -1,0 +1,10 @@
+{"run": "baseline-temp-db", "cmd": "TEST_DATABASE_URL=…/ceezr_i1_mut bun test tests/integration/i1-concurrent-engagement-races.test.ts", "exit": 0, "result": "4 pass / 0 fail"}
+{"run": "mutation-A-drop-index-test3", "cmd": "psql -d ceezr_i1_mut -c 'drop index orders_one_engaged_order_per_driver' ثم bun test … -t جدار", "exit": 1, "result": "0 pass / 1 fail — Expected length: 1, Received length: 2 (الكتابتان معًا نجحتا)"}
+{"run": "mutation-A-drop-index-full", "cmd": "الملف كاملًا بعد إسقاط الفهرس", "exit": 1, "result": "2 pass (١ و٢ — الحارس يحميهما) / 2 fail (٣ و٤)"}
+{"run": "mutation-A-restore-test3", "cmd": "create unique index … ثم bun test … -t جدار", "exit": 0, "result": "1 pass / 0 fail"}
+{"run": "mutation-B-strip-guard-test1", "cmd": "claim_ride بلا كتلة حارس I1 ثم bun test … -t يطالب طلبين", "exit": 1, "result": "0 pass / 1 fail — PostgresError 23505 orders_one_engaged_order_per_driver (اصطدام خام بدل الرمز النظيف)"}
+{"run": "mutation-B-restore-test1-full", "cmd": "إعادة الدالة الأصلية ثم الاختبار المعزول ثم الملف كاملًا", "exit": 0, "result": "1 pass ثم 4 pass / 0 fail"}
+{"run": "regression-5files-temp-db", "cmd": "bun test i1-concurrent-engagement-races + driver-single-engaged-order + i1-decide-settle-guards + wr-24-concurrent-races + claim-ride-duplicate-delivery على ceezr_i1_mut", "exit": 0, "result": "25 pass / 0 fail"}
+{"run": "new-file-live-db", "cmd": "bun test i1-concurrent-engagement-races على ceezr_cap_20261016 (تنقية موجهة)", "exit": 0, "result": "4 pass / 0 fail"}
+{"run": "http-probe-live-gateway", "cmd": "bun run deploy/capacity-run/load/i1-http-probe.ts ضد 127.0.0.1:54300", "exit": 0, "result": "قبول أول 200، قبول ثانٍ 409 DRIVER_HAS_ACTIVE_ORDER، القاعدة سليمة، VERDICT pass"}
+{"run": "isolation-assert", "cmd": "bash deploy/capacity-run/svc.sh assert", "exit": 0, "result": "ISOLATION_OK pg=… redis=… netns=ceezrsbx2(lo-only)"}
