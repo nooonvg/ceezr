@@ -157,13 +157,14 @@
     "tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts",
     "tests/unit/telegram-update-drainer-truncated-rerun.test.ts"
   ],
-  "state": "قيد التنفيذ — المرحلة 9: الدفعة الأولى أصلحت تنظيف 61 ملفًا (58→28 متوازيًا)، ثم فُتح PR #559 فقاس CI الفعلي فكان أحمر بخمس وظائف؛ الدفعة الثانية أصلحت الأربع السريعة الجذرية (تنسيق/استيراد مكرر، patches/ في Dockerfiles، MINIAPP_URL في بيئات المقعد وبوابات real-redis) — والمتبقي بند عميق واحد: عزل بيانات الحزمة المتوازية (test:integration) قبل إعادة القياس",
+  "state": "قيد التنفيذ — المرحلة 9: الحزمة المتوازية 58→28، وPR #559 قاس CI الفعلي فكان أحمر بخمس وظائف؛ أصلحت الأربع السريعة (تنسيق/patches/MINIAPP_URL) ثم شخّصت وظيفة Redis جذريًا (ADR 0286: miniapp يمنع الحوار التجاري — الاختبارات تقيس المسار القديم) وأصلحتها بlegacy+TEST_LEGACY فصارت حزمة real-redis خضراء محلّيًا 27/27؛ وحُدثت ROADMAP-MASTER. المتبقي بند عميق واحد: عزل بيانات الحزمة المتوازية (test:integration)",
   "roadmap": "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
   "affected_docs": [
     "README.md",
     "deploy/capacity-run/README.md",
     "deploy/capacity-run/answers.md",
     "deploy/capacity-run/report.template.md",
+    "docs/ROADMAP-MASTER.md",
     "docs/SYSTEM_STATE.md",
     "docs/evidence/archive/CAP-RUN-20261016-test-results.txt",
     "docs/evidence/capacity/CAP-RUN-20261015/README.md",

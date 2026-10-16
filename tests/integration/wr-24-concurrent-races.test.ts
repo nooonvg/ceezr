@@ -470,7 +470,7 @@ describeIf("WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقي
       // تشخيصُ حالتِ «كلاهما فشل» (تحتَ الحملِ): أسبابُ الرفضِ لا تُبتلع.
       if (bot.ok !== true && group.ok !== true) {
         console.error(
-          "WR24_7A_BOTH_FAILED bot=" + JSON.stringify(bot) + " group=" + JSON.stringify(group),
+          `WR24_7A_BOTH_FAILED bot=${JSON.stringify(bot)} group=${JSON.stringify(group)}`,
         );
       }
       expect([bot.ok, group.ok].filter((ok) => ok === true)).toHaveLength(1);

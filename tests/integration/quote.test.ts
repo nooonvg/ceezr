@@ -310,9 +310,7 @@ describeIf("قدرةُ المدينةِ تجمعُ التوثيقَ والاشت
          where dc.service = 'delivery'::service_type and dc.is_enabled
            and d.verification_status = 'verified'::verification_status
            and s.status in ('trialing', 'active')`;
-      console.error(
-        "QUOTE_POLLUTERS city=" + String(cityId) + " rows=" + JSON.stringify(polluters),
-      );
+      console.error(`QUOTE_POLLUTERS city=${String(cityId)} rows=${JSON.stringify(polluters)}`);
     }
     expect(payload.served_services).not.toContain("delivery");
   });

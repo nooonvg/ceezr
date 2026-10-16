@@ -400,7 +400,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
   } catch (error) {
     if (error instanceof Error && /stack/i.test(error.message)) {
       // تتبُّعُ كاملٌ لعلّةِ «تجاوزِ حجمِ المكدسِ» — يُطبعُ مرةً واحدةً.
-      console.error("STACK_TRACE_BEGIN\n" + String(error.stack) + "\nSTACK_TRACE_END");
+      console.error(`STACK_TRACE_BEGIN\n${String(error.stack)}\nSTACK_TRACE_END`);
     }
     return {
       kind: "undecided",
