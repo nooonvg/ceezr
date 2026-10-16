@@ -71,7 +71,7 @@ describeIf("F7-07 — المُطبِّقُ الآمنُ على قاعدةٍ حق
     const url = new URL(DATABASE_URL as string);
     url.pathname = `/${scratch}`;
     target = postgres(url.toString(), { max: 3, onnotice: () => {} });
-  });
+  }, 30_000);
 
   afterAll(async () => {
     // مهلةٌ صريحةٌ (30ث): حذفُ قاعدةِ الخدشِ بعدَ الحزمةِ بطيءٌ كذلك.

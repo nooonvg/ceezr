@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CAP-RUN-20261016 — مدير خدمات الجولة. كل عملية تعمل داخل netns «ceezrsbx» (loopback فقط).
+# CAP-RUN-20261016 — مدير خدمات الجولة. كل عملية تعمل داخل netns «ceezrsbx2» (loopback فقط).
 #   ./svc.sh infra|mock|shim|gateway|worker-stop|stop-gateway|kill-gateway|status|assert|stop-all
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd); REPO=$(cd "$HERE/../.." && pwd)
@@ -15,10 +15,10 @@ assert_isolation() {
   local rd; rd=$($NSX redis-cli -p 56379 config get dir 2>/dev/null | tail -1)
   [ "$rd" = "$B/redis" ] || { echo "ISOLATION_FAIL redis dir: '$rd'"; return 1; }
   # 3) netns بلا أي واجهة غير loopback ولا مسار افتراضي
-  local ifs; ifs=$(sudo -n ip netns exec ceezrsbx ip -o link | awk -F': ' '{print $2}' | tr '\n' ' ')
+  local ifs; ifs=$(sudo -n ip netns exec ceezrsbx2 ip -o link | awk -F': ' '{print $2}' | tr '\n' ' ')
   [ "$ifs" = "lo " ] || { echo "ISOLATION_FAIL netns ifaces: $ifs"; return 1; }
-  [ -z "$(sudo -n ip netns exec ceezrsbx ip route)" ] || { echo "ISOLATION_FAIL netns has routes"; return 1; }
-  echo "ISOLATION_OK pg=$B/pg redis=$B/redis netns=ceezrsbx(lo-only)"
+  [ -z "$(sudo -n ip netns exec ceezrsbx2 ip route)" ] || { echo "ISOLATION_FAIL netns has routes"; return 1; }
+  echo "ISOLATION_OK pg=$B/pg redis=$B/redis netns=ceezrsbx2(lo-only)"
 }
 start_bg() { # name cmd...  (الأسرار تُقرأ داخل العملية من ملف 600 ولا تمرّ عبر سطر الأوامر)
   local name=$1; shift
@@ -36,13 +36,13 @@ case "${1:-status}" in
     # CODE_DIR يسمح بتشغيل نسخة أخرى من الكود (مثل PR #558 الأصلي لقياس «قبل»)، والحارس من هذه النسخة دائمًا
     echo "{\"t\":\"$(date -Is)\",\"event\":\"gateway.start\",\"code_dir\":\"${CODE_DIR:-$REPO}\",\"sha\":\"$(git -C "${CODE_DIR:-$REPO}" rev-parse HEAD)\",\"dirty\":$(git -C "${CODE_DIR:-$REPO}" status --porcelain | grep -c .)}" >> "$RUN_DIR/evidence/gateway-starts.jsonl"
     CODE_DIR=${CODE_DIR:-$REPO} start_bg gateway bun --preload "$HERE/mocks/telegram-egress-guard.ts" apps/gateway/src/index.ts ;;
-  kill-gateway) sudo -n ip netns exec ceezrsbx pkill -9 -f "[a]pps/gateway/src/index.ts" ;;
-  stop-gateway) sudo -n ip netns exec ceezrsbx pkill -TERM -f "[a]pps/gateway/src/index.ts" ;;
-  stop-mock) sudo -n ip netns exec ceezrsbx pkill -TERM -f "[t]elegram-mock-server.ts" ;;
-  stop-shim) sudo -n ip netns exec ceezrsbx pkill -TERM -f "[b]un run shim.ts" ;;
+  kill-gateway) sudo -n ip netns exec ceezrsbx2 pkill -9 -f "[a]pps/gateway/src/index.ts" ;;
+  stop-gateway) sudo -n ip netns exec ceezrsbx2 pkill -TERM -f "[a]pps/gateway/src/index.ts" ;;
+  stop-mock) sudo -n ip netns exec ceezrsbx2 pkill -TERM -f "[t]elegram-mock-server.ts" ;;
+  stop-shim) sudo -n ip netns exec ceezrsbx2 pkill -TERM -f "[b]un run shim.ts" ;;
   status)
     for p in telegram-mock shim gateway; do pgrep -f "$( [ $p = gateway ] && echo [a]pps/gateway/src/index.ts || ([ $p = shim ] && echo [b]un\ run\ shim.ts || echo [t]elegram-mock-server.ts))" >/dev/null && echo "$p=up" || echo "$p=down"; done
     $NSX curl -s -m 2 -o /dev/null -w "ready=%{http_code}\n" http://127.0.0.1:54300/ready ;;
   stop-all)
-    sudo -n ip netns exec ceezrsbx pkill -TERM -f "[a]pps/gateway/src/index.ts|[t]elegram-mock-server.ts|[s]him.ts" ;;
+    sudo -n ip netns exec ceezrsbx2 pkill -TERM -f "[a]pps/gateway/src/index.ts|[t]elegram-mock-server.ts|[s]him.ts" ;;
 esac

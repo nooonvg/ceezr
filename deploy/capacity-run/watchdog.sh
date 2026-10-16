@@ -4,7 +4,7 @@
 HERE=$(cd "$(dirname "$0")" && pwd); B=/srv/ceezr-cap-20261016; : "${RUN_DIR:?}"
 down=0
 while [ ! -f "$B/pids/watchdog.stop" ]; do
-  if sudo -n ip netns exec ceezrsbx pgrep -f "[a]pps/gateway/src/index.ts" >/dev/null; then down=0
+  if sudo -n ip netns exec ceezrsbx2 pgrep -f "[a]pps/gateway/src/index.ts" >/dev/null; then down=0
   elif [ -f "$B/pids/gateway.hold" ]; then down=0
   else
     down=$((down+3))

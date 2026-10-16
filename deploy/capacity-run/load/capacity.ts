@@ -1299,42 +1299,82 @@ function metricsLoop() {
 }
 
 // ───────── GROUP-01: خمسةُ قروباتٍ غيرِ مسجَّلةٍ بتحديثاتٍ فعليةٍ ─────────
-// قروباتٌ موجودةٌ في المحاكي (معرّفاتُ سالبةٌ خارجَ نطاقِ إعداداتِ المدنِ
-// الخمس) لا تعرفُها القاعدةُ أصلاً. يرسلُ المولّدُ منها تحديثاتٍ حقيقيةً عبرَ
-// بوابةِ الويبهوك — رسائلُ سائقينَ ومحاولاتُ مطالبةٍ — فيتلقّاها النظامُ
-// (telegram_update_jobs) ولا يُسجِّلُ منها مطالبةً (B3). أثرُها مقيسٌ في
-// الجولةِ لا مجرَّدَ وجودِها.
+// قروباتٌ (معرّفاتُ محادثةٍ سالبةٌ خارجَ نطاقِ seed-cities) لا تعرفُها القاعدةُ،
+// مع سائقينَ حقيقيِّ الهويةِ (معرّفاتٌ موجبةٌ) «يحاولونَ» المطالبةَ منها على
+// بطاقاتِ تفاوضٍ حقيقيّةٍ نُشرتْ في القروباتِ الرسميةِ — فالفرقُ الوحيدُ في
+// المقارنةِ هوَ القروبُ المسجَّلُ/غيرُ المسجَّلِ (B3: لا تُسجَّل المطالبةُ من
+// قروبٍ غيرِ مسجَّلٍ). كلُّ تحديثٍ يمرُّ بالويبهوكِ ويُعالَجُ — لا رسائلَ
+// مباشرةٍ إلى المحاكي (سجلُّهُ خروجٌ لا دليلَ وصولٍ).
 const UNREG_GROUPS = [61, 62, 63, 64, 65].map((n) => -(1000000000000 + n));
+const UNREG_DRIVERS = [900_700_001, 900_700_002, 900_700_003, 900_700_004, 900_700_005];
+const unregStats = { loc: 0, msg: 0, claim: 0, claimOnCard: 0 };
 function unregisteredGroupsLoop() {
   let tick = 0;
   setInterval(async () => {
     tick++;
-    for (const g of UNREG_GROUPS) {
-      const kind = tick % 3;
+    for (let i = 0; i < UNREG_GROUPS.length; i++) {
+      const g = UNREG_GROUPS[i]!;
+      const driver = UNREG_DRIVERS[i]!;
+      const kind = (tick + i) % 3;
       try {
-        if (kind === 0)
-          // مشاركةُ موقعٍ من قروبٍ غيرِ مسجَّلٍ — تحديثٌ حقيقيٌّ يمرُّ بالبوابة.
-          await post("driver", loc(g, near({ lat: 21.4, lng: 39.8 }, 20)), "unreg_group_loc", {
-            noRetry: true,
-          });
-        else if (kind === 1)
-          // محاولةُ مطالبةٍ من قروبٍ غيرِ مسجَّلٍ — تصلُ ولا تُسجَّل (B3).
+        if (kind === 0) {
+          // مشاركةُ موقعٍ من قروبٍ غيرِ مسجَّلٍ — هويةُ سائقٍ موجبةٌ ومحادثةُ قروب.
+          const id = nextId();
           await post(
             "driver",
-            cb(g, `unsub:claim:${crypto.randomUUID()}`, g),
-            "unreg_group_claim",
+            {
+              update_id: id,
+              message: {
+                message_id: id,
+                date: Math.floor(Date.now() / 1000),
+                chat: { id: g, type: "supergroup" },
+                from: from(driver),
+                location: { latitude: 21.4, longitude: 39.8 },
+              },
+            },
+            "unreg_group_loc",
             { noRetry: true },
           );
-        // رسالةُ نصٍّ عاديةٌ من القروبِ — حركةٌ فعليةٌ لا صمت.
-        else
+          unregStats.loc++;
+        } else if (kind === 1) {
+          // رسالةُ نصٍّ من القروبِ — حركةٌ فعليةٌ بصيغةِ supergroup.
+          const id = nextId();
           await post(
             "driver",
-            msg(g, { text: "تحديثُ قروبٍ غيرِ مسجَّل", chat: { id: g, type: "supergroup" } }),
-            "unreg_group_msg",
             {
-              noRetry: true,
+              update_id: id,
+              message: {
+                message_id: id,
+                date: Math.floor(Date.now() / 1000),
+                chat: { id: g, type: "supergroup" },
+                from: from(driver),
+                text: "تحديثُ سائقٍ من قروبٍ غيرِ مسجَّل",
+              },
             },
+            "unreg_group_msg",
+            { noRetry: true },
           );
+          unregStats.msg++;
+        } else {
+          // محاولةُ مطالبةٍ على بطاقةٍ حقيقيّةٍ (تفاوضٌ قائمٌ) لكن من قروبٍ
+          // غيرِ مسجَّلٍ — إن لم توجد بطاقةٌ حيّةٌ فمطالبةٌ بهويةٍ صحيحةٍ على
+          // معرّفٍ غيرِ موجودٍ (تُرفضُ أيضًا وتُقاسُ نتيجةُ المعالجةِ).
+          const card = groupCards.size > 0 ? [...groupCards.values()][0] : null;
+          if (card !== null) {
+            await post("driver", cb(driver, `unsub:claim:${card.negId}`, g), "unreg_group_claim", {
+              noRetry: true,
+            });
+            unregStats.claimOnCard++;
+          } else {
+            await post(
+              "driver",
+              cb(driver, `unsub:claim:${crypto.randomUUID()}`, g),
+              "unreg_group_claim",
+              { noRetry: true },
+            );
+          }
+          unregStats.claim++;
+        }
       } catch {}
     }
   }, 15_000);
