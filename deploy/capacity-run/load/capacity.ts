@@ -1298,6 +1298,48 @@ function metricsLoop() {
   }, 10_000);
 }
 
+// ───────── GROUP-01: خمسةُ قروباتٍ غيرِ مسجَّلةٍ بتحديثاتٍ فعليةٍ ─────────
+// قروباتٌ موجودةٌ في المحاكي (معرّفاتُ سالبةٌ خارجَ نطاقِ إعداداتِ المدنِ
+// الخمس) لا تعرفُها القاعدةُ أصلاً. يرسلُ المولّدُ منها تحديثاتٍ حقيقيةً عبرَ
+// بوابةِ الويبهوك — رسائلُ سائقينَ ومحاولاتُ مطالبةٍ — فيتلقّاها النظامُ
+// (telegram_update_jobs) ولا يُسجِّلُ منها مطالبةً (B3). أثرُها مقيسٌ في
+// الجولةِ لا مجرَّدَ وجودِها.
+const UNREG_GROUPS = [61, 62, 63, 64, 65].map((n) => -(1000000000000 + n));
+function unregisteredGroupsLoop() {
+  let tick = 0;
+  setInterval(async () => {
+    tick++;
+    for (const g of UNREG_GROUPS) {
+      const kind = tick % 3;
+      try {
+        if (kind === 0)
+          // مشاركةُ موقعٍ من قروبٍ غيرِ مسجَّلٍ — تحديثٌ حقيقيٌّ يمرُّ بالبوابة.
+          await post("driver", loc(g, near({ lat: 21.4, lng: 39.8 }, 20)), "unreg_group_loc", {
+            noRetry: true,
+          });
+        else if (kind === 1)
+          // محاولةُ مطالبةٍ من قروبٍ غيرِ مسجَّلٍ — تصلُ ولا تُسجَّل (B3).
+          await post(
+            "driver",
+            cb(g, `unsub:claim:${crypto.randomUUID()}`, g),
+            "unreg_group_claim",
+            { noRetry: true },
+          );
+        // رسالةُ نصٍّ عاديةٌ من القروبِ — حركةٌ فعليةٌ لا صمت.
+        else
+          await post(
+            "driver",
+            msg(g, { text: "تحديثُ قروبٍ غيرِ مسجَّل", chat: { id: g, type: "supergroup" } }),
+            "unreg_group_msg",
+            {
+              noRetry: true,
+            },
+          );
+      } catch {}
+    }
+  }, 15_000);
+}
+
 // ───────── المحرّك ─────────
 async function slot(id: number) {
   concurrency++;
@@ -1345,6 +1387,7 @@ async function main() {
     });
   void boardLoop();
   void negResolver();
+  unregisteredGroupsLoop();
   if (process.env.SEED === "2") await reseedMissing();
   else if (SEED) await seed();
   else {
