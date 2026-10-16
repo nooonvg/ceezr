@@ -1,0 +1,1 @@
+{"source": "gateway.log (phase5 run)", "note": "سطر سجل البوابة عند 17:22:04 — init_data_rejected + duplicate_ignored", "line": "827342:{\"at\":\"2026-10-16T17:22:04.713Z\",\"service\":\"gateway\",\"event\":\"session.init_data_replayed\",\"request_id\":\"4d867be8-7e34-4680-852c-01d2736e23c5\"}"}

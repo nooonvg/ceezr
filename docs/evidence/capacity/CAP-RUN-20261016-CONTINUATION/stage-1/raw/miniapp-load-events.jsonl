@@ -1,0 +1,36 @@
+{"t":"2026-10-16T17:22:04.610Z","path":"miniapp_http","gen":"phase1-cycle","phase":"init","event":"gen.start","profile":[{"name":"phase1","sec":90,"conc":3}],"depth":"full","city":"JED"}
+{"t":"2026-10-16T17:22:04.610Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"phase.start","name":"phase1","sec":90,"conc":3}
+{"t":"2026-10-16T17:22:04.714Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":0,"rider":10600001,"driver":10700001,"elapsedMs":9}
+{"t":"2026-10-16T17:22:04.714Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"undecided","reason":"driver_session:HTTP 401"}
+{"t":"2026-10-16T17:23:13.491Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":1,"rider":10600002,"driver":10700002,"elapsedMs":68275}
+{"t":"2026-10-16T17:23:13.491Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:23:13.496Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":2,"rider":10600003,"driver":10700003,"elapsedMs":68280}
+{"t":"2026-10-16T17:23:13.496Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:23:13.585Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":3,"rider":10600004,"driver":10700004,"elapsedMs":68201}
+{"t":"2026-10-16T17:23:13.585Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:23:13.749Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":6,"rider":10600007,"driver":10700007,"elapsedMs":5}
+{"t":"2026-10-16T17:23:13.749Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"undecided","reason":"driver_session:HTTP 401"}
+{"t":"2026-10-16T17:24:14.446Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":5,"rider":10600006,"driver":10700005,"elapsedMs":60206}
+{"t":"2026-10-16T17:24:14.446Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:24:14.447Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":4,"rider":10600005,"driver":10700006,"elapsedMs":60215}
+{"t":"2026-10-16T17:24:14.447Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:24:14.583Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.end","index":7,"rider":10600008,"driver":10700008,"elapsedMs":60135}
+{"t":"2026-10-16T17:24:14.583Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:24:14.583Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"phase.end","name":"phase1"}
+{"t":"2026-10-16T17:24:14.584Z","path":"miniapp_http","gen":"phase1-cycle","phase":"phase1","event":"gen.end","elapsedSec":130,"engagedDuplicates":0}
+{"t":"2026-10-16T17:25:17.283Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"init","event":"gen.start","profile":[{"name":"phase1","sec":90,"conc":3}],"depth":"full","city":"JED"}
+{"t":"2026-10-16T17:25:17.283Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"phase.start","name":"phase1","sec":90,"conc":3}
+{"t":"2026-10-16T17:26:14.124Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.end","index":1,"rider":10610002,"driver":10710003,"elapsedMs":56245}
+{"t":"2026-10-16T17:26:14.124Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:26:14.125Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.end","index":2,"rider":10610003,"driver":10710001,"elapsedMs":56225}
+{"t":"2026-10-16T17:26:14.125Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:26:14.140Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.end","index":0,"rider":10610001,"driver":10710002,"elapsedMs":56252}
+{"t":"2026-10-16T17:26:14.140Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:27:14.626Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.end","index":4,"rider":10610005,"driver":10710004,"elapsedMs":60228}
+{"t":"2026-10-16T17:27:14.626Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:27:14.628Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.end","index":5,"rider":10610006,"driver":10710006,"elapsedMs":60218}
+{"t":"2026-10-16T17:27:14.628Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:27:14.629Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.end","index":3,"rider":10610004,"driver":10710005,"elapsedMs":60229}
+{"t":"2026-10-16T17:27:14.629Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"scenario.outcome","kind":"verified"}
+{"t":"2026-10-16T17:27:14.629Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"phase.end","name":"phase1"}
+{"t":"2026-10-16T17:27:14.630Z","path":"miniapp_http","gen":"phase1-cycle2","phase":"phase1","event":"gen.end","elapsedSec":117,"engagedDuplicates":0}

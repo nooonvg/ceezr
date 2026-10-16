@@ -96,6 +96,25 @@ const BOT_ACCOUNT_SETTING =
 const BOT_READONLY_VIEW = "عرضٌ للقراءةِ فقط لا يُنشئُ حالةً ولا يُغيّرُها (`ADR 0286`).";
 
 /**
+ * جردُ `ADR 0286` — أوامرُ حوارٍ قديمةٍ: خطواتٌ داخلَ مسارِ التسجيلِ القديمِ لا
+ * أعمالًا مستقلةً. لا تُعلَنُ في قوائمِ البوتِ (لا القديمةَ ولا سطحَ التطبيقِ) ولا
+ * تُصنَّفُ أعمالاً؛ وفي وضعِ التطبيقِ يُصفَّرُ الحوارُ قبلَها فلا تجدُ طورًا
+ * فتُرَدُّ مجهولةً. اختبارُ الشمولِ (`bot-surface-inventory`) يُسقِطُ أيَّ أمرٍ
+ * يُضافُ إلى الحواراتِ بلا موطنٍ: هنا أو في `COMMAND_HOMES` أو في أوامرِ المالكِ.
+ */
+export const LEGACY_DIALOG_STEP_COMMANDS: Readonly<Record<BotAudience, ReadonlySet<string>>> = {
+  rider: new Set(["/skip"]),
+  driver: new Set(["/cancel"]),
+};
+
+/**
+ * جردُ `ADR 0286` — أوامرُ تشغيلٍ للمالكِ والدعمِ عبرَ بوتِ السائقِ (قروبُ الدعمِ):
+ * ليست أعمالَ مستخدمٍ ولا تُفتَحُ لها شاشةٌ في التطبيقِ؛ استثناءٌ يُرفَعُ للمالكِ
+ * أمرًا (إن أُريدَ لها سطحٌ فقرارُهُ مالكُ المنتجِ لا الحوارُ).
+ */
+export const OWNER_OPS_COMMANDS: ReadonlySet<string> = new Set(["/activate", "/answer", "/flag"]);
+
+/**
  * السجلُّ — مصدرُ الحقيقةِ الوحيدُ لـ«أين يُخدَمُ هذا الأمرُ». يشملُ كلَّ ما في
  * `allItemsFor(audience)` ومعَهُ `/start` و`/help` و`/app`؛ واختبارُ الشمولِ يُسقِطُ أيَّ أمرٍ
  * يُضافُ إلى القائمةِ بلا موطنٍ.
@@ -157,7 +176,7 @@ export const COMMAND_HOMES: Readonly<Record<BotAudience, Readonly<Record<string,
  * `ADR 0286` — بادئاتُ الأزرارِ التي يبقى لها معالجٌ في البوتِ: الطوارئُ واللغةُ فقط.
  * كلُّ ما عداها زرُّ عملٍ تجاريٍّ يُجابُ بتوجيهٍ إلى التطبيقِ ولا يُنفَّذُ خلفيّاً.
  */
-const BOT_ALLOWED_CALLBACK_PREFIXES: ReadonlySet<string> = new Set(["lang", "sos"]);
+export const BOT_ALLOWED_CALLBACK_PREFIXES: ReadonlySet<string> = new Set(["lang", "sos"]);
 
 /** ما يقرّرُه السطحُ لتحديثٍ واحدٍ. */
 export type SurfaceDecision =

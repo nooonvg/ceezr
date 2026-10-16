@@ -26,11 +26,16 @@ export const BASE = process.env.GATEWAY_URL ?? "http://127.0.0.1:54300";
 export const DB_URL = process.env.DATABASE_URL ?? "";
 export const GEN_ID = process.env.GEN_ID ?? "gen1";
 
-export const sql = postgres(`${DB_URL}?application_name=${GEN_ID}`, {
-  max: 8,
-  idle_timeout: 20,
-  connect_timeout: 10,
-});
+export const sql = postgres(
+  DB_URL === ""
+    ? `postgres://127.0.0.1:5/none?application_name=${GEN_ID}`
+    : `${DB_URL}?application_name=${GEN_ID}`,
+  {
+    max: 8,
+    idle_timeout: 20,
+    connect_timeout: 10,
+  },
+);
 
 export const T0 = Date.now();
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

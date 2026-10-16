@@ -14,6 +14,7 @@
  */
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import postgres from "postgres";
+import { type DriverOnboardingRecord, onboardDriverViaApp } from "./driver-onboarding.ts";
 
 // ───────── إعداد ─────────
 const RUN_DIR = process.env.RUN_DIR ?? "/tmp/cap-run";
@@ -139,15 +140,6 @@ const msg = (c: number, body: Record<string, unknown>) => {
 const text = (c: number, v: string) => msg(c, { text: v });
 type P = { lat: number; lng: number };
 const loc = (c: number, p: P) => msg(c, { location: { latitude: p.lat, longitude: p.lng } });
-const contact = (c: number, phone: string) =>
-  msg(c, { contact: { user_id: c, phone_number: phone, first_name: "sbx" } });
-const photo = (c: number, f: string) =>
-  msg(c, {
-    photo: [
-      { file_id: `${f}_t`, file_unique_id: `${f}_tu`, width: 90, height: 90 },
-      { file_id: f, file_unique_id: `${f}_u`, width: 800, height: 600 },
-    ],
-  });
 const cb = (c: number, data: string, chatId = c) => {
   const id = nextId();
   return {
@@ -561,22 +553,27 @@ async function seed() {
       await sql<{ id: string }[]>`select id::text from cities where code=${code}`
     )[0]!.id;
   const t = Date.now();
-  await poolMap(drivers, 120, async (d, n) => {
-    await post("driver", text(d.chat, "/start"), "seed");
-    await post("driver", text(d.chat, `سائق تجريبي ${n + 1}`), "seed");
-    await post(
-      "driver",
-      contact(d.chat, `+9665${String(d.chat).padStart(8, "0").slice(-8)}`),
-      "seed",
-    );
-    await post("driver", cb(d.chat, `city:${cityIds[d.city]}`), "seed");
-    await post("driver", cb(d.chat, `service:${d.service}`), "seed");
-    await post("driver", cb(d.chat, "vehicle:sedan"), "seed");
-    await post("driver", text(d.chat, `أ ب ج ${String(d.chat).slice(-4)}`), "seed");
-    await post("driver", text(d.chat, `1${String(d.chat).slice(-9).padStart(9, "0")}`), "seed");
-    await post("driver", photo(d.chat, `vphoto_${d.chat}`), "seed");
+  // المرحلة 1 (ADR 0286): تسجيلُ السائقِ منَ onboarding/API لا من حوارِ البوتِ —
+  // البوتُ في وضعِ miniapp يرفضُ أزرارَ الأعمالِ أصلاً فكانَ هذا البذرُ معطلًا.
+  // الوحدةُ تنتظرُ كلَّ مهمةٍ وتحكمُ منَ القاعدةِ (pending) وتوثّقُ خطواتِ المشرفِ.
+  // لاحظ: صورةُ المركبةِ ليست في واجهةِ onboarding — إشارةُ اكتمالِ التسجيلِ صارت
+  // الحكمَ المتزامنَ للوحدةِ نفسِها لا عدَّ الصورِ.
+  let onboarded = 0;
+  const onboardingFailures: DriverOnboardingRecord[] = [];
+  await poolMap(drivers, 60, async (d) => {
+    const record = await onboardDriverViaApp({
+      telegramId: d.chat,
+      cityId: cityIds[d.city],
+      service: d.service,
+    });
+    if (record.ok) onboarded += 1;
+    else onboardingFailures.push(record);
   });
-  ev("seed.driver_updates_posted", { ms: Date.now() - t });
+  ev("seed.drivers_onboarded", {
+    ok: onboarded,
+    failed: onboardingFailures.length,
+    ms: Date.now() - t,
+  });
   if (process.env.SEED_SKIP_RIDERS !== "1")
     await poolMap(riders, 150, async (r, n) => {
       await post("rider", text(r.chat, "/start"), "seed");
@@ -588,7 +585,8 @@ async function seed() {
   const deadline = Date.now() + 25 * 60_000;
   for (;;) {
     const [c] = await sql<{ d: number; r: number; q: number }[]>`
-      select (select count(*)::int from drivers d where d.vehicle_photo_file_id is not null) d,
+      select (select count(*)::int from drivers d join users u on u.id = d.user_id
+               where u.telegram_id = any(${drivers.map((x) => x.chat)}::bigint[]) and d.verification_status = 'verified') d,
              (select count(*)::int from riders) r,
              (select count(*)::int from telegram_update_jobs where status in ('pending','claimed')) q`;
     ev("seed.progress", c!);
@@ -637,21 +635,16 @@ async function reseedMissing() {
   );
   const mr = riders.filter((r) => !haveR.has(r.chat));
   ev("reseed.start", { drivers: md.length, riders: mr.length });
-  await poolMap(md, 40, async (d, n) => {
-    await post("driver", text(d.chat, "/start"), "seed");
-    await post("driver", text(d.chat, `سائق تجريبي ب${n + 1}`), "seed");
-    await post(
-      "driver",
-      contact(d.chat, `+9665${String(d.chat).padStart(8, "0").slice(-8)}`),
-      "seed",
-    );
-    await post("driver", cb(d.chat, `city:${cityIds[d.city]}`), "seed");
-    await post("driver", cb(d.chat, `service:${d.service}`), "seed");
-    await post("driver", cb(d.chat, "vehicle:sedan"), "seed");
-    await post("driver", text(d.chat, `أ ب ج ${String(d.chat).slice(-4)}`), "seed");
-    await post("driver", text(d.chat, `1${String(d.chat).slice(-9).padStart(9, "0")}`), "seed");
-    await post("driver", photo(d.chat, `vphoto_${d.chat}`), "seed");
+  let reOnboarded = 0;
+  await poolMap(md, 40, async (d) => {
+    const record = await onboardDriverViaApp({
+      telegramId: d.chat,
+      cityId: cityIds[d.city],
+      service: d.service,
+    });
+    if (record.ok) reOnboarded += 1;
   });
+  ev("reseed.drivers_onboarded", { ok: reOnboarded, total: md.length });
   await poolMap(mr, 40, async (r, n) => {
     await post("rider", text(r.chat, "/start"), "seed");
     await post("rider", text(r.chat, `زبون تجريبي ب${n + 1}`), "seed");

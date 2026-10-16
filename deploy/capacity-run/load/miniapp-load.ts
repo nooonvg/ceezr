@@ -31,6 +31,7 @@
  */
 
 import { appendFileSync, mkdirSync } from "node:fs";
+import { type DriverOnboardingRecord, onboardDriverViaApp } from "./driver-onboarding.ts";
 import {
   EV,
   engagedDuplicates,
@@ -132,30 +133,17 @@ async function seedRider(): Promise<SeededUser> {
   return rider;
 }
 
-async function seedDriver(): Promise<SeededUser> {
+/**
+ * تجهيزُ السائقِ منَ التطبيقِ المصغَّرِ — لا بذرَ SQL مباشرًا ولا حوارَ بوتٍ
+ * (`ADR 0286` · المرحلةُ 1): جلسةٌ موقعةٌ ← إثباتُ رقمٍ عبرَ بطاقةِ اتصالٍ في
+ * الـwebhook (المستنزفُ يعالجُها فعلًا) ← `POST /v1/onboarding/driver` ←
+ * فالتحققُ منَ القاعدةِ (pending). خطواتُ المشرفِ (التوثيقُ والقدرةُ والتجربةُ)
+ * موثقةٌ داخلَ المسارِ نفسِهِ بأنها فعلُ مشرفٍ لا فعلِ المستخدمِ.
+ */
+async function seedDriverViaApp(): Promise<DriverOnboardingRecord | null> {
   driverSeq += 1;
-  const driver = await seedUser(driverSeq, "driver");
-  const drivers = await sql<{ id: string }[]>`
-    insert into drivers (city_id, user_id, verification_status, plate_number, vehicle_type)
-    values ((select id from cities where code = ${CITY}), ${driver.userId}::uuid,
-            'verified'::verification_status, ${`أ ب ج ${String(driverSeq).slice(-4)}`}, 'sedan')
-    on conflict (user_id) do update set verification_status = 'verified'::verification_status
-    returning id
-  `;
-  const driverRow = drivers[0]?.id;
-  if (driverRow === undefined) throw new Error(`تعذّر بذر سائق ${driverSeq}`);
-  // قدرةُ الخدمةِ واشتراكٌ فعّالٌ — تأسيسٌ لا عملٌ: بدءُ التجربةِ كما يفعلُ
-  // المشرفُ (اختصارٌ معلنٌ: KYC اليدويُّ ليس موضوعَ هذا الحملِ).
-  await sql`
-    insert into driver_capabilities (city_id, driver_id, service)
-    values ((select id from cities where code = ${CITY}), ${driverRow}::uuid, 'transport')
-    on conflict do nothing
-  `;
-  await sql`
-    select start_trial(${driverRow}::uuid, 'transport'::subscription_plan)
-     where not exists (select 1 from subscriptions s where s.driver_id = ${driverRow}::uuid)
-  `;
-  return driver;
+  const record = await onboardDriverViaApp({ telegramId: driverSeq, cityCode: CITY });
+  return record.ok ? record : null;
 }
 
 /* ───────── السيناريو ───────── */
@@ -254,7 +242,11 @@ async function riderDecideCandidate(
 
 async function runScenario(index: number): Promise<ScenarioOutcome> {
   const rider = await seedRider();
-  const driver = await seedDriver();
+  // تجهيزُ السائقِ منَ التطبيقِ (لا حوارَ بوتٍ) — فشلُهُ يُسجَّلُ لا يُخفى
+  const driver = await seedDriverViaApp();
+  if (driver === null) {
+    return { kind: "undecided", reason: "driver_onboarding_failed" };
+  }
   rec.scenarioStart(String(rider.telegramId));
   const startedAt = Date.now();
   try {
@@ -351,10 +343,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     }
 
     // قرارُ المرشَّحِ إن كانَ الطلبُ في نافذةِ اختيارِ الراكبِ.
-    const driverRow = await sql<{ id: string }[]>`
-      select id::text from drivers where user_id = ${driver.userId}::uuid
-    `;
-    const driverId = driverRow[0]?.id;
+    const driverId = driver.driverId;
     if (driverId === undefined) return { kind: "undecided", reason: "driver_row_missing" };
     const candidate = await call(`/v1/rides/${orderId}/candidate`, {
       token: riderSession.token,

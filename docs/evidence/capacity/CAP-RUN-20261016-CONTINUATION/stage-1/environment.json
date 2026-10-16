@@ -1,0 +1,35 @@
+{
+  "branch": "work/miniapp-capacity-20261016",
+  "code_state": "dirty (stage-1 changes incl. review fixes, this commit)",
+  "run_dirs": {
+    "initial": "/srv/ceezr-cap-20261016/runs/phase1-r1",
+    "final_reviewed": "/srv/ceezr-cap-20261016/runs/phase1-r2"
+  },
+  "started_at": "2026-10-16T17:12:00Z",
+  "finished_at": "2026-10-16T17:53:53Z",
+  "isolation": "netns ceezrsbx2 (lo only), PG18 :55432, Redis :56379, gateway :54300, mock :58090, shim :58081",
+  "isolation_assert": "ISOLATION_OK (svc.sh assert, exit 0)",
+  "bun": "1.4.2",
+  "onboarding_probe": {
+    "r1": "3/3 FAIL (NAME_LOOKS_LIKE_GIBBERISH) — شُخص وأُصلح",
+    "r1b": "2/3 ok + 1 FAIL (409 duplicate_ignored للبطاقة) — شُخص وأُصلح",
+    "r2": "3/3 ok",
+    "r2_fixed_column": "فشل استعلامي (عمود update_id لا n) — شُخص وأُصلح",
+    "r2_trial_naming": "db_no_active_sub (trialing لا active + active_sub لا activeSub) — شُخص وأُصلح",
+    "r3_final": "3/3 ok — مهمة البطاقة تُنتظر حتى done وخطوات المشرف تُحكم من القاعدة"
+  },
+  "business_cycle": {
+    "cycle1": "6/8 verified + 2 undecided (driver_session:HTTP 401 — init_data_replayed) — شُخص وأُصلح",
+    "cycle2": "6/6 verified",
+    "cycle3": "0/3 verified — offer_not_found_in_time (مدينة القدرة RUH ≠ مدينة السيناريو JED) — شُخص وأُصلح",
+    "cycle4_final": "352/352 verified — 352 طلبًا completed من القاعدة (رحلة كاملة 0.1-0.2ث)، صفر 429/5xx/I1"
+  },
+  "identity_blocks": {
+    "probe_debug": "10500011-10500021 (تشخيص يدوي — 10500011 سجل فعليًا)",
+    "probe_r1_r2": [10500000, 10930003],
+    "cycle_riders": [10600000, 10630352],
+    "cycle_drivers": [10700000, 10730352]
+  },
+  "profile": { "name": "phase1", "sec": 90, "conc": 3, "depth": "full" },
+  "tests": "bot-surface-inventory 12/12 + driver-onboarding-contract 7/7 + driver-onboarding-helpers 5/5 + tsc + biome أخضر"
+}
