@@ -249,7 +249,7 @@ describeIf("I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ
   }
 
   /** معرّفُ جلسةِ كلِّ مسارٍ — يُعدُّ بها المحجوبُ حصرًا (لا نمطًا نصيًّا قد يلتقطَ غيرَها). */
-  let lanePids: number[] = [];
+  const lanePids: number[] = [];
 
   beforeAll(async () => {
     sql = createSql({ connectionString: DATABASE_URL as string });
@@ -306,8 +306,7 @@ describeIf("I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ
       // قفلُ صفِّ السائقِ في اتصالِ تحكُّمٍ، والمطالبتانِ تنطلقانِ معًا وتُحجَبانِ
       // عنهُ معًا — التداخلُ مقيسٌ من نشاطِ القاعدةِ — ثم يُحرَّرُ القفلُ.
       const [r1, r2] = await raceUnderControlLock(
-        (tx) =>
-          tx`select id from drivers where id = ${a}::uuid for update`,
+        (tx) => tx`select id from drivers where id = ${a}::uuid for update`,
         () => [
           claimOn(lanes[0] as Sql, first.orderId, a),
           claimOn(lanes[1] as Sql, second.orderId, a),
@@ -372,7 +371,8 @@ describeIf("I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ
       // قفلُ صفَّي الطلبَينِ معًا في اتصالِ التحكُّمِ: الكتابتانِ تنطلقانِ وتُحجَبانِ
       // كلٌّ عن صفِّها معًا — تداخلٌ مقيسٌ — ثم يُحرَّرُ القفلُ فيتسابقانِ على الفهرسِ.
       const outcome = await raceUnderControlLock(
-        (tx) => tx`select id from orders where id in (${first.orderId}::uuid, ${second.orderId}::uuid) for update`,
+        (tx) =>
+          tx`select id from orders where id in (${first.orderId}::uuid, ${second.orderId}::uuid) for update`,
         () => [
           directAssignOn(lanes[0] as Sql, first.orderId, a).then(
             (n) => ({ ok: true as const, n }) as const,

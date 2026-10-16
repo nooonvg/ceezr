@@ -939,8 +939,11 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // عشرُ حالاتٍ في `notification-outbox-undeliverable-state`، وسبعٌ في `notification-outbox-claim-undeliverable-guard`،
     // وسبعٌ في `notification-outbox-mark-undeliverable`، وثلاثٌ في `emergency-contact-read`، وثمانٍ في `account-recovery`،
     // وواحدةٌ في `telegram-outage-miniapp`، وسبعٌ في `payment-provider-outage` (49 حالةً).
-    expect(SKIP_REGISTRY).toHaveLength(188);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1625);
+    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 3 · I1): والآنَ 189 و 1629 — أربعُ حالاتٍ في
+    // `i1-concurrent-engagement-races.test.ts` (سباقاتُ التزامنِ الحقيقيِّ لا تُقاسُ إلا على قاعدةٍ حقيقيّةٍ —
+    // خطوتُها المسمّاةُ في وظيفةِ PostgreSQL الحقيقيِّ في ci.yml).
+    expect(SKIP_REGISTRY).toHaveLength(189);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1629);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {

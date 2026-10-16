@@ -1,0 +1,23 @@
+bun test v1.4.2 (744846f84)
+
+tests/integration/i1-concurrent-engagement-races.test.ts:
+392 |       // واحدةٌ تنجحُ وواحدةٌ تصطدمُ بالفهرسِ (23505 **باسمِ القيدِ نفسِهِ**) — الجدارُ
+393 |       // الأخيرُ يعملُ حتى لو أفلتَ الكاتبُ من كلِّ حارسٍ في الدوالِّ. هذا الاختبارُ هو
+394 |       // الذي يفشلُ بإزالةِ الفهرسِ في تجربةِ الإزالةِ الموثَّقةِ في أدلةِ المرحلةِ 3.
+395 |       const fulfilled = [r1, r2].filter((r) => r.ok);
+396 |       const rejected = [r1, r2].filter((r) => !r.ok);
+397 |       expect(fulfilled).toHaveLength(1);
+                              ^
+error: expect(received).toHaveLength(expected)
+
+Expected length: 1
+Received length: 2
+
+      at <anonymous> (/home/user/workspace/ceezr/tests/integration/i1-concurrent-engagement-races.test.ts:397:25)
+(fail) I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة > ٣ — جدارُ القاعدةِ نفسِهِ: كتابتانِ مباشرتانِ متزامنتانِ للسائقِ نفسِهِ تصطدمُ بالفهرسِ [25.23ms]
+
+ 0 pass
+ 3 filtered out
+ 1 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [135.00ms]
