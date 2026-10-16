@@ -269,6 +269,13 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       return { kind: "undecided", reason: `driver_session:${driverSession.error}` };
     }
 
+    // نقطةُ الالتقاطِ ثابتةٌ للرحلةِ والسائقِ معًا: السائقُ ينتظرُ قربَها
+    // (±110م) فيكونُ أقربَ من أيِّ سائقٍ مزروعٍ بعيدًا عنها — المطابقةُ على
+    // القربِ لا تحتملُ أن يخسرَ سائقُ السيناريو السباقَ لسائقٍ أقربَ.
+    const pickup = {
+      lat: JED.lat + rnd(-0.01, 0.01),
+      lng: JED.lng + rnd(-0.01, 0.01),
+    };
     // ٢) إنشاءُ الرحلةِ عبرَ واجهةِ المنتجِ.
     const idempotencyKey = `cap-${GEN_ID}-${T0}-${index}`;
     const create = await call("/v1/rides", {
@@ -277,8 +284,8 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       headers: { [IDEMPOTENCY_HEADER]: idempotencyKey },
       body: {
         service: "transport",
-        originLat: JED.lat + rnd(-0.01, 0.01),
-        originLng: JED.lng + rnd(-0.01, 0.01),
+        originLat: pickup.lat,
+        originLng: pickup.lng,
         destinationLat: JED.lat + rnd(-0.02, 0.02),
         destinationLng: JED.lng + rnd(-0.02, 0.02),
       },
@@ -312,8 +319,8 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       method: "POST",
       token: driverSession.token,
       body: {
-        latitude: JED.lat + rnd(-0.01, 0.01),
-        longitude: JED.lng + rnd(-0.01, 0.01),
+        latitude: pickup.lat + rnd(-0.001, 0.001),
+        longitude: pickup.lng + rnd(-0.001, 0.001),
         accuracyMeters: 10,
       },
       timeoutMs: 15_000,

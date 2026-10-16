@@ -1354,7 +1354,12 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
     exposure: "قبلَ المصادقةِ",
     limits: [
       {
-        limit: 30,
+        /* مفتاحُ ضبطٍ لبيئةِ اختبارِ السعةِ: المولّدُ الأحاديُّ العنوانِ يحتاجُ
+         * آلافَ المبادلاتِ في الدقيقةِ (كلُّ هويةٍ جلسةً) بينما الإنسانُ يفتحُ
+         * التطبيقَ مراتٍ معدودةً. الافتراضيُّ 30 هو عتبةُ الإنتاجِ؛ ورفعُه في
+         * بيئةِ الاختبارِ يُعلَنُ في أدلةِ الجولةِ ولا يُغيّرُ سلوكَ الإنتاجِ.
+         * قيمةٌ غيرُ صالحةٍ تُرفَضُ وتُعادُ الافتراضيةُ. */
+        limit: sessionExchangePerMinute(),
         windowSeconds: 60,
         keyDimension: "عنوانُ العميلِ",
         wiredIn:
@@ -1543,6 +1548,14 @@ export function limitsFor(method: string, path: string): readonly RateLimitPolic
  * موضعُ تركيبٍ يطلبُ حدَّاً غيرَ مُعلَنٍ خطأٌ يُكتشَفُ عندَ الإقلاعِ، **لا حدٌّ
  * مُخترَعٌ في التشغيلِ** يُقرأُ سياسةً ولم يُقرِّرْهُ أحدٌ.
  */
+function sessionExchangePerMinute(): number {
+  const raw = process.env.SESSION_EXCHANGE_PER_MINUTE;
+  if (raw === undefined || raw.trim() === "") return 30;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 100_000) return 30;
+  return parsed;
+}
+
 export function rateLimitPolicy(
   method: string,
   path: string,
