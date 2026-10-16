@@ -62,6 +62,8 @@ describeIf("F7-07 — المُطبِّقُ الآمنُ على قاعدةٍ حق
   let admin: postgres.Sql;
   let target: postgres.Sql;
 
+  // مهلةٌ صريحةٌ (30ث): إنشاءُ قاعدةِ الخدشِ تحتَ حملِ الحزمةِ قد يتجاوزُ الخمسَ
+  // ثوانٍ الافتراضيةَ — المهلةُ لبطءِ I/O لا لتغطيةِ عطلٍ.
   beforeAll(async () => {
     admin = postgres(DATABASE_URL as string, { max: 1, onnotice: () => {} });
     await admin.unsafe(`drop database if exists ${scratch}`);
@@ -72,13 +74,14 @@ describeIf("F7-07 — المُطبِّقُ الآمنُ على قاعدةٍ حق
   });
 
   afterAll(async () => {
-    await target?.end({ timeout: 5 });
+    // مهلةٌ صريحةٌ (30ث): حذفُ قاعدةِ الخدشِ بعدَ الحزمةِ بطيءٌ كذلك.
+    await target?.end({ timeout: 30 });
     try {
       await admin.unsafe(`drop database if exists ${scratch}`);
     } finally {
-      await admin?.end({ timeout: 5 });
+      await admin?.end({ timeout: 30 });
     }
-  });
+  }, 30_000);
 
   it("١ — السلسلةُ كلُّها تُطبَّقُ على قاعدةٍ فارغةٍ بالمُطبِّقِ الجديدِ", async () => {
     const files = readMigrations();

@@ -98,6 +98,14 @@ describeIf("WR-19 — دورةُ التوصيلِ كاملةً على قاعدة
   });
 
   afterAll(async () => {
+    // تنظيفُ بياناتِ آخرِ اختبارٍ: الـbeforeEach يقتلعُ كلَّ شيءٍ قبلَ كلِّ
+    // اختبارٍ لكن لا شيءَ يقتلعُه بعدَ الأخيرِ — فيبقى سائقُ التوصيلِ (وغيرُه)
+    // يلوّثُ الملفاتَ التاليةَ (quote ترى `delivery` في خدماتِ المدينةِ).
+    await sql`
+      truncate table agent_outcomes, agent_decisions, audit_log, attendance_log,
+                             order_message_reads, order_messages, notification_outbox,
+                             order_offers, orders, subscriptions, driver_capabilities,
+                             driver_availability, drivers, riders, users restart identity cascade`;
     if (previousWindow !== null) {
       await sql`
         update platform_settings set value = ${sql.json(previousWindow as never)}
