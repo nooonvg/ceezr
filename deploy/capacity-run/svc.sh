@@ -22,7 +22,7 @@ assert_isolation() {
 }
 start_bg() { # name cmd...  (الأسرار تُقرأ داخل العملية من ملف 600 ولا تمرّ عبر سطر الأوامر)
   local name=$1; shift
-  ( cd "${CODE_DIR:-$REPO}"; setsid $NSX bash -c 'set -a; . "$1"; . "$2"; set +a; export RUN_DIR="$3"; shift 3; exec "$@"' _ \
+  ( cd "${CODE_DIR:-$REPO}"; setsid $NSX bash -c 'export PATH="/home/user/.local/bin:$PATH"; set -a; . "$1"; . "$2"; set +a; export RUN_DIR="$3"; shift 3; exec "$@"' _ \
       "${RUN_ENV:-$( [ -f "$RUN_DIR/run.env" ] && echo "$RUN_DIR/run.env" || echo "$HERE/config/run.env")}" "$B/secrets.env" "$RUN_DIR" "$@" >>"$RUN_DIR/evidence/$name.log" 2>&1 </dev/null &
     echo $! > "$B/pids/$name.pid" )
 }
