@@ -73,6 +73,10 @@ const CHILD_ENV: Record<string, string> = {
   RIDER_BOT_TOKEN: "2222222:fake-rider-bot-token-DDDDDDDDDDDD",
   TELEGRAM_WEBHOOK_SECRET: "fake-webhook-secret-EEEEEEEEEEEEEEEE",
   BOOTSTRAP_ADMIN_TELEGRAM_ID: "999999999",
+  // `ADR 0213/0286`: الوضعُ الافتراضيُّ miniapp يُوجبُ MINIAPP_URL للإقلاعِ —
+  // يُعطى عنوانُ اختبارٍ https صالحٌ لا تعطيلُ حارسِ الإقلاعِ.
+  BOT_SURFACE_MODE: "miniapp",
+  MINIAPP_URL: "https://miniapp.test",
   // لا مُجمِّعَ مقاييسٍ: عمليّةٌ تدفع إلى الشبكةِ من وراءِ ظهرِ كاتبِها تُخفق يومَ
   // تنقطع الشبكةُ لا يومَ ينكسر الكودُ (F5-07).
   METRICS_EXPORT_ENDPOINT: "",
