@@ -81,6 +81,29 @@ export interface TelegramApiOptions {
  * والتي تُضافُ غداً — فلا يُنسى نداءٌ. والغلافُ حولَ الدوالِّ كانَ سيُحصِّنُ
  * المعروفَ اليومَ ويترُكُ ما يُضافُ بعدَه مكشوفاً بلا أن يُخفِقَ شيءٌ.
  */
+/**
+ * `ADR 0286` — مُعطيُّ هويّةِ البوتِ لمرةٍ واحدةً: `getMe` مُخزَّنةً في الذكرى لا في
+ * إعدادٍ يدويٍّ يتقادمُ بصمتٍ، والفشلُ `null` (أفضلُ جهدٍ لا وعدٌ) فيُرسَلُ الإرشادُ
+ * بلا رابطٍ ولا تسقطُ الرسالةُ كلُّها. يعيدُ الاسمَ بلا `@`.
+ */
+export function botUsernameProvider(token: string): () => Promise<string | null> {
+  const api = createTelegramApi(token);
+  let cached: string | null | undefined;
+  return async () => {
+    if (cached !== undefined) return cached;
+    try {
+      const me = await api.getMe();
+      cached =
+        typeof me.username === "string" && /^[A-Za-z0-9_]{4,32}$/.test(me.username)
+          ? me.username
+          : null;
+    } catch {
+      cached = null;
+    }
+    return cached;
+  };
+}
+
 export function createTelegramApi(token: string, options?: TelegramApiOptions): Api {
   const api = new Api(token, {
     // المهلةُ **مُصرَّحٌ بها** ولا تُترَكُ لافتراضِ المكتبةِ.

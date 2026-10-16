@@ -62,6 +62,8 @@ describeIf("F7-07 — المُطبِّقُ الآمنُ على قاعدةٍ حق
   let admin: postgres.Sql;
   let target: postgres.Sql;
 
+  // مهلةٌ صريحةٌ (30ث): إنشاءُ قاعدةِ الخدشِ تحتَ حملِ الحزمةِ قد يتجاوزُ الخمسَ
+  // ثوانٍ الافتراضيةَ — المهلةُ لبطءِ I/O لا لتغطيةِ عطلٍ.
   beforeAll(async () => {
     admin = postgres(DATABASE_URL as string, { max: 1, onnotice: () => {} });
     await admin.unsafe(`drop database if exists ${scratch}`);
@@ -69,16 +71,17 @@ describeIf("F7-07 — المُطبِّقُ الآمنُ على قاعدةٍ حق
     const url = new URL(DATABASE_URL as string);
     url.pathname = `/${scratch}`;
     target = postgres(url.toString(), { max: 3, onnotice: () => {} });
-  });
+  }, 60_000);
 
   afterAll(async () => {
-    await target?.end({ timeout: 5 });
+    // مهلةٌ صريحةٌ (30ث): حذفُ قاعدةِ الخدشِ بعدَ الحزمةِ بطيءٌ كذلك.
+    await target?.end({ timeout: 30 });
     try {
       await admin.unsafe(`drop database if exists ${scratch}`);
     } finally {
-      await admin?.end({ timeout: 5 });
+      await admin?.end({ timeout: 30 });
     }
-  });
+  }, 60_000);
 
   it("١ — السلسلةُ كلُّها تُطبَّقُ على قاعدةٍ فارغةٍ بالمُطبِّقِ الجديدِ", async () => {
     const files = readMigrations();
@@ -146,7 +149,7 @@ insert into probe_seed (code) select 'JED' where not exists (select 1 from probe
     expect(parseArgs(["--from", cutoff]).from ?? "").toBe(cutoff);
     // قراءتانِ للسلسلةِ كلِّها وفيها هجراتُ معالمَ بآلافِ الأسطرِ (`UI-DEST-*`): تتجاوزُ
     // مهلةَ ‎5s‎ الافتراضيّةَ على مُشغِّلِ CI — زمنُ قراءةٍ لا خللٌ في `--from`.
-  }, 30_000);
+  }, 60_000);
 
   it("٣ — عبارةٌ ساقطةٌ في ملفٍّ معاملاتيٍّ لا تُخلِّفُ أثرَ ما قبلَها", async () => {
     const file = synthetic(

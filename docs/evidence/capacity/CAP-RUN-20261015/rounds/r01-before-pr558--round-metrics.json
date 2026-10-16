@@ -1,0 +1,521 @@
+{
+  "round": "r01-before-pr558",
+  "window": {
+    "load_start": "2026-10-15T01:22:36.456Z",
+    "load_end": "2026-10-15T01:31:36.552Z",
+    "drain_end": "2026-10-15T01:34:09.569Z",
+    "load_minutes": 9
+  },
+  "gateway_starts": [
+    {
+      "t": "2026-10-15T01:18:25+00:00",
+      "event": "gateway.start",
+      "code_dir": "/srv/ceezr-cap-20261015/pr558",
+      "sha": "7b0f877818566ad1b4e0c798c09800162bb9e15e",
+      "dirty": 1
+    }
+  ],
+  "orders": {
+    "by_service_status": [
+      {
+        "service": "delivery",
+        "status": "cancelled",
+        "n": 46
+      },
+      {
+        "service": "delivery",
+        "status": "searching",
+        "n": 196
+      },
+      {
+        "service": "transport",
+        "status": "cancelled",
+        "n": 49
+      },
+      {
+        "service": "transport",
+        "status": "completed",
+        "n": 3
+      },
+      {
+        "service": "transport",
+        "status": "in_progress",
+        "n": 2
+      },
+      {
+        "service": "transport",
+        "status": "searching",
+        "n": 291
+      }
+    ],
+    "total": 587,
+    "order_to_accept_s": {
+      "n": 5,
+      "p50": 26.1,
+      "p95": 44.2,
+      "p99": 44.2,
+      "max": 44.193931
+    }
+  },
+  "offers": {
+    "db_by_status": [
+      {
+        "status": "rejected",
+        "n": 1
+      },
+      {
+        "status": "cancelled",
+        "n": 100
+      },
+      {
+        "status": "accepted",
+        "n": 5
+      },
+      {
+        "status": "expired",
+        "n": 5671
+      }
+    ],
+    "db_created": 5777,
+    "delivered_in_mock": 28,
+    "delivered_ratio": 0.5,
+    "create_to_mock_s": {
+      "n": 28,
+      "p50": 18,
+      "p95": 36.4,
+      "p99": 36.4,
+      "max": 36.389
+    }
+  },
+  "outbox": {
+    "by_kind_status": [
+      {
+        "kind": "driver_location_reminder",
+        "status": "pending",
+        "n": 1016
+      },
+      {
+        "kind": "negotiation_turn_opened",
+        "status": "pending",
+        "n": 10
+      },
+      {
+        "kind": "offer",
+        "status": "dead",
+        "n": 561
+      },
+      {
+        "kind": "offer",
+        "status": "delivered",
+        "n": 28
+      },
+      {
+        "kind": "offer",
+        "status": "pending",
+        "n": 5187
+      },
+      {
+        "kind": "offer",
+        "status": "sending",
+        "n": 1
+      },
+      {
+        "kind": "order_cancelled",
+        "status": "delivered",
+        "n": 20
+      },
+      {
+        "kind": "order_cancelled",
+        "status": "pending",
+        "n": 30
+      },
+      {
+        "kind": "wider_circle_opened",
+        "status": "pending",
+        "n": 310
+      }
+    ],
+    "deliver_lag_s": {
+      "n": 48,
+      "p50": 36.4,
+      "p95": 684.4,
+      "p99": 684.4,
+      "max": 684.405339
+    }
+  },
+  "telegram_updates": {
+    "by_bot_status": [
+      {
+        "bot": "driver",
+        "status": "done",
+        "n": 1989,
+        "retried": 0
+      },
+      {
+        "bot": "rider",
+        "status": "pending",
+        "n": 1599,
+        "retried": 0
+      },
+      {
+        "bot": "rider",
+        "status": "done",
+        "n": 4025,
+        "retried": 0
+      },
+      {
+        "bot": "driver",
+        "status": "pending",
+        "n": 862,
+        "retried": 0
+      },
+      {
+        "bot": "rider",
+        "status": "claimed",
+        "n": 19,
+        "retried": 0
+      },
+      {
+        "bot": "driver",
+        "status": "claimed",
+        "n": 13,
+        "retried": 0
+      }
+    ],
+    "completion_lag_s": {
+      "driver": {
+        "n": 1989,
+        "p50": 171.2,
+        "p95": 409.2,
+        "p99": 445.6,
+        "max": 459.605705
+      },
+      "rider": {
+        "n": 4025,
+        "p50": 196.3,
+        "p95": 421.4,
+        "p99": 448.2,
+        "max": 459.558613
+      }
+    }
+  },
+  "mock": {
+    "sends_by_bot": {
+      "rider": 5227,
+      "driver": 2637
+    },
+    "http_429": 6,
+    "rate_per_s_by_bot": {
+      "rider": 7.54,
+      "driver": 3.8
+    }
+  },
+  "groups": {
+    "negotiations_by_status": [
+      {
+        "status": "collecting",
+        "n": 6
+      },
+      {
+        "status": "cancelled",
+        "n": 533
+      }
+    ],
+    "negotiations_over_3_claims": 0,
+    "duplicate_claims_same_driver": 0
+  },
+  "integrity": {
+    "orders_with_two_accepted_offers": 0,
+    "drivers_with_two_active_orders_now": 0,
+    "outbox_stuck_sending_gt_5min_now": 0
+  },
+  "generator": {
+    "http": {
+      "total": 10691,
+      "ok": 10691,
+      "non2xx": 0,
+      "netErr": 0,
+      "timeouts": 0,
+      "refused": 0,
+      "retried": 0,
+      "inflight": 0,
+      "peakInflight": 50,
+      "n": 10691,
+      "p50": 5.9,
+      "p95": 54.1,
+      "p99": 68.3
+    },
+    "scenarios": {
+      "ride_cancel_matched": {
+        "started": 46,
+        "ok": 0,
+        "fail": 46,
+        "reasons": {
+          "order_not_created_45s": 41,
+          "no_match_within_wait": 5
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "ride": {
+        "started": 465,
+        "ok": 2,
+        "fail": 463,
+        "reasons": {
+          "not_in_progress_matched": 2,
+          "not_completed_in_progress": 1,
+          "order_not_created_45s": 406,
+          "no_match_within_wait": 54
+        },
+        "e2e": {
+          "n": 2,
+          "p50": 70089.8,
+          "p95": 70089.8,
+          "p99": 70089.8
+        }
+      },
+      "delivery": {
+        "started": 421,
+        "ok": 0,
+        "fail": 421,
+        "reasons": {
+          "order_not_created_45s": 362,
+          "no_match_within_wait": 59
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "group": {
+        "started": 188,
+        "ok": 0,
+        "fail": 188,
+        "reasons": {
+          "order_not_created_45s": 170,
+          "no_claim_registered": 18
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "delivery_cancel_searching": {
+        "started": 44,
+        "ok": 1,
+        "fail": 43,
+        "reasons": {
+          "cancel_not_applied_searching": 1,
+          "order_not_created_45s": 42
+        },
+        "e2e": {
+          "n": 1,
+          "p50": 27590.6,
+          "p95": 27590.6,
+          "p99": 27590.6
+        }
+      },
+      "delivery_cancel_matched": {
+        "started": 40,
+        "ok": 0,
+        "fail": 40,
+        "reasons": {
+          "order_not_created_45s": 37,
+          "no_match_within_wait": 3
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "delivery_dup_complete": {
+        "started": 16,
+        "ok": 0,
+        "fail": 16,
+        "reasons": {
+          "no_match_within_wait": 3,
+          "order_not_created_45s": 13
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "ride_dup_complete": {
+        "started": 18,
+        "ok": 0,
+        "fail": 18,
+        "reasons": {
+          "order_not_created_45s": 17,
+          "no_match_within_wait": 1
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "ride_cancel_searching": {
+        "started": 41,
+        "ok": 1,
+        "fail": 40,
+        "reasons": {
+          "cancel_not_applied_searching": 5,
+          "order_not_created_45s": 35
+        },
+        "e2e": {
+          "n": 1,
+          "p50": 27590.6,
+          "p95": 27590.6,
+          "p99": 27590.6
+        }
+      },
+      "group_dup_claim": {
+        "started": 9,
+        "ok": 0,
+        "fail": 9,
+        "reasons": {
+          "order_not_created_45s": 8,
+          "no_claim_registered": 1
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "delivery_cancel_in_progress": {
+        "started": 17,
+        "ok": 0,
+        "fail": 17,
+        "reasons": {
+          "order_not_created_45s": 16,
+          "no_match_within_wait": 1
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "ride_cancel_in_progress": {
+        "started": 23,
+        "ok": 0,
+        "fail": 23,
+        "reasons": {
+          "order_not_created_45s": 21,
+          "no_match_within_wait": 2
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "delivery_dup_create": {
+        "started": 17,
+        "ok": 0,
+        "fail": 17,
+        "reasons": {
+          "order_not_created_45s": 14,
+          "no_match_within_wait": 3
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "group_overfill": {
+        "started": 26,
+        "ok": 0,
+        "fail": 26,
+        "reasons": {
+          "order_not_created_45s": 24,
+          "no_claim_registered": 2
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "ride_dup_create": {
+        "started": 16,
+        "ok": 0,
+        "fail": 16,
+        "reasons": {
+          "order_not_created_45s": 14,
+          "duplicate_active_order": 1,
+          "no_match_within_wait": 1
+        },
+        "e2e": {
+          "n": 0,
+          "p50": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      }
+    },
+    "biz": {
+      "createToOrder": {
+        "n": 167,
+        "p50": 23165.6,
+        "p95": 43975.2,
+        "p99": 46613.7
+      },
+      "orderToOfferSeen": {
+        "n": 7,
+        "p50": 18349.3,
+        "p95": 36922.4,
+        "p99": 36922.4
+      },
+      "offerSeenToAccept": {
+        "n": 22,
+        "p50": 1497.8,
+        "p95": 2530.6,
+        "p99": 2530.6
+      },
+      "acceptToMatched": {
+        "n": 5,
+        "p50": 16330.8,
+        "p95": 18349.3,
+        "p99": 18349.3
+      },
+      "groupCardWait": {
+        "n": 21,
+        "p50": 178052.8,
+        "p95": 267725.5,
+        "p99": 267725.5
+      },
+      "offersSeen": 28,
+      "offersAcceptedSent": 22,
+      "offersRejectedSent": 2,
+      "offersIgnored": 3,
+      "offersWhileBusy": 1,
+      "acceptLost": 18,
+      "duplicateUpdatesSent": 180
+    },
+    "peakConcurrency": 150,
+    "outages": 0
+  },
+  "timeline_events": 6
+}

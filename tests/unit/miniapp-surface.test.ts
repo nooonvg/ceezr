@@ -1,5 +1,5 @@
 /**
- * الغرض: طبقةُ البوتِ الخفيفةُ — ما يبقى في المحادثةِ وما يُحالُ إلى التطبيقِ (`ADR 0213`).
+ * الغرض: طبقةُ البوتِ الخفيفةُ — ما يبقى في المحادثةِ وما يُحالُ إلى التطبيقِ (`ADR 0213` · `ADR 0286`).
  * الحالة: منفّذ فعلياً.
  * ينتمي إلى: tests/unit
  */
@@ -136,7 +136,7 @@ describe("decideSurface: قرارٌ متزامنٌ بلا قراءةٍ", () => {
     expect(decideSurface("rider", text("/history", "-100200"))).toEqual({ kind: "legacy" });
   });
 
-  it("زرُّ رسالةٍ قائمةٍ (عرضٌ) ⇒ legacy: العروضُ المُرسَلةُ قبلَ التحويلِ تبقى قابلةً للقبولِ", () => {
+  it("زرُّ رسالةٍ قائمةٍ (عرضٌ) ⇒ app_button: لا يُنفَّذُ عملٌ من البوتِ (ADR 0286)", () => {
     expect(
       decideSurface("driver", {
         kind: "callback",
@@ -144,7 +144,47 @@ describe("decideSurface: قرارٌ متزامنٌ بلا قراءةٍ", () => {
         data: "offer:accept:1",
         from: { telegramUserId: USER, chatId: USER, languageHint: "ar" },
       }),
-    ).toEqual({ kind: "legacy" });
+    ).toEqual({ kind: "app_button" });
+  });
+
+  it("أزرارُ العملِ القديمةُ كلُّها ⇒ app_button — لا استثناءَ لعرضٍ أو رحلةٍ أو مطالبة", () => {
+    for (const data of [
+      "offer:accept:1",
+      "offer:reject:2",
+      "ride:start:3",
+      "ride:complete:3",
+      "unsub:claim:4",
+      "sub:buy:plan-a",
+      "avail:off",
+      "rate:5:5",
+      "trk:off:6",
+      "sup:type:question",
+      "fin:view",
+      "area:skip",
+      "city:9",
+    ]) {
+      expect(
+        decideSurface("driver", {
+          kind: "callback",
+          updateId: 1,
+          data,
+          from: { telegramUserId: USER, chatId: USER, languageHint: "ar" },
+        }),
+      ).toEqual({ kind: "app_button" });
+    }
+  });
+
+  it("أزرارُ الطوارئِ واللغةِ وحدها تمرُّ إلى معالجِها", () => {
+    for (const data of ["sos:claim:7", "lang:ar", "lang:en"]) {
+      expect(
+        decideSurface("driver", {
+          kind: "callback",
+          updateId: 1,
+          data,
+          from: { telegramUserId: USER, chatId: USER, languageHint: "ar" },
+        }),
+      ).toEqual({ kind: "legacy" });
+    }
   });
 
   it("زرُّ cmd: من لوحةِ /help ⇒ يمرُّ بالسجلِّ", () => {
@@ -229,7 +269,7 @@ describe("handleSurfaceUpdate", () => {
     ]);
   });
 
-  it("/status بطلبِ توصيلٍ وحدَه ⇒ الحوارُ القديمُ: التوصيلُ لا شاشةَ له", async () => {
+  it("/status بطلبِ توصيلٍ وحدَه ⇒ السجلُّ: لا عملَ يُنفَّذُ في المحادثةِ (ADR 0286)", async () => {
     const h = harness({
       active: [
         {
@@ -243,7 +283,8 @@ describe("handleSurfaceUpdate", () => {
       ],
     });
     const out = await run("rider", text("/status"), h);
-    expect(out.legacyCalls).toBe(1);
+    expect(out.legacyCalls).toBe(0);
+    expect(webAppUrls(out.replies)).toEqual(["https://waslah-miniapp.onrender.com/?open=history"]);
   });
 
   it("/status بلا طلبٍ ⇒ السجلُّ", async () => {
@@ -251,11 +292,14 @@ describe("handleSurfaceUpdate", () => {
     expect(webAppUrls(out.replies)).toEqual(["https://waslah-miniapp.onrender.com/?open=history"]);
   });
 
-  it("/start لسائقٍ غيرِ مسجَّلٍ ⇒ التسجيلُ في المحادثةِ", async () => {
+  it("/start لسائقٍ غيرِ مسجَّلٍ ⇒ التسجيلُ في التطبيقِ لا حواراً في البوتِ (ADR 0286)", async () => {
     const h = harness({ registered: false });
     const out = await run("driver", text("/start"), h);
-    expect(out.legacyCalls).toBe(1);
-    expect(h.starts).toEqual([]);
+    expect(out.legacyCalls).toBe(0);
+    expect(h.starts).toEqual([USER]);
+    expect(webAppUrls(out.replies)).toEqual(["https://waslah-miniapp.onrender.com/"]);
+    // الرسالةُ ترحيبُ الدخولِ نفسُه: التطبيقُ يوجِّهُ غيرَ المسجَّلِ إلى سطحِ التسجيلِ.
+    expect(out.replies[0]?.text).toContain(t("ar")("miniapp.entry.welcome_driver"));
   });
 
   it("/start لسائقٍ مسجَّلٍ ⇒ ترحيبٌ وزرٌّ، وترقيةُ المسؤولِ تُحاوَلُ (ADR 0212)", async () => {
@@ -276,10 +320,20 @@ describe("handleSurfaceUpdate", () => {
     ]);
   });
 
-  it("نصٌّ حرٌّ في حوارٍ جارٍ ⇒ جوابُ خطوتِه في الحوارِ القديمِ", async () => {
+  it("نصٌّ حرٌّ في حوارٍ جارٍ ⇒ يُصفَّرُ إلى الخمولِ ويُوجَّهُ إلى التطبيقِ — لا جوابَ خطوةٍ في البوتِ (ADR 0286)", async () => {
+    const saved: DialogState[] = [];
     const h = harness({ state: { ...INITIAL_STATE, step: "awaiting_name" } });
+    const originalSave = h.ports.sessions.save.bind(h.ports.sessions);
+    h.ports.sessions.save = async (id: string, state: DialogState) => {
+      saved.push(state);
+      return originalSave(id, state);
+    };
     const out = await run("driver", text("أحمد علي"), h);
-    expect(out.legacyCalls).toBe(1);
+    expect(out.legacyCalls).toBe(0);
+    expect(saved).toHaveLength(1);
+    expect(saved[0]?.step).toBe("idle");
+    // موطنُ السائقِ في التطبيقِ: لوحُ العروضِ.
+    expect(webAppUrls(out.replies)).toEqual(["https://waslah-miniapp.onrender.com/?open=offers"]);
   });
 
   it("نصٌّ حرٌّ بلا حوارٍ ⇒ زرُّ التطبيقِ", async () => {
@@ -288,9 +342,11 @@ describe("handleSurfaceUpdate", () => {
     expect(webAppUrls(out.replies)).toHaveLength(1);
   });
 
-  it("تعذُّرُ القراءةِ ⇒ الحوارُ القديمُ يجيبُ عن العطلِ لا الطبقةُ الخفيفةُ", async () => {
+  it("تعذُّرُ القراءةِ ⇒ ردُّ عطلٍ صريحٌ من الطبقةِ الخفيفةِ، لا عملٌ في المحادثةِ (ADR 0286)", async () => {
     const out = await run("rider", text("/start"), harness({ registered: null }));
-    expect(out.legacyCalls).toBe(1);
+    expect(out.legacyCalls).toBe(0);
+    expect(out.replies).toHaveLength(1);
+    expect(out.replies[0]?.text).toBe(t("ar")("common.error_try_again"));
   });
 
   it("أمرٌ مجهولٌ للسجلِّ ⇒ الحوارُ القديمُ", async () => {

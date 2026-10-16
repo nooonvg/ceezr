@@ -1,0 +1,90 @@
+{"t":"2026-10-14T21:29:33.097Z","min":0,"phase":"seed","event":"seed.start"}
+{"t":"2026-10-14T21:31:51.094Z","min":2.3,"phase":"seed","event":"seed.done","d":50,"r":100,"av":48,"groups":20}
+{"t":"2026-10-14T21:31:51.097Z","min":2.3,"phase":"intensive","event":"ramp","target":4}
+{"t":"2026-10-14T21:36:51.097Z","min":7.3,"phase":"intensive","event":"ramp","target":8}
+{"t":"2026-10-14T21:41:51.097Z","min":12.3,"phase":"intensive","event":"ramp","target":12}
+{"t":"2026-10-14T21:46:51.098Z","min":17.3,"phase":"intensive","event":"ramp","target":16}
+{"t":"2026-10-14T21:47:14.684Z","min":17.69,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200089}
+{"t":"2026-10-14T21:50:13.438Z","min":20.67,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200096}
+{"t":"2026-10-14T21:50:14.546Z","min":20.69,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200082}
+{"t":"2026-10-14T21:50:15.434Z","min":20.71,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200094}
+{"t":"2026-10-14T21:50:16.669Z","min":20.73,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200091}
+{"t":"2026-10-14T21:51:51.098Z","min":22.3,"phase":"intensive","event":"ramp","target":20}
+{"t":"2026-10-14T21:53:15.391Z","min":23.7,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200073}
+{"t":"2026-10-14T21:55:24.491Z","min":25.86,"phase":"intensive","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200021}
+{"t":"2026-10-14T21:55:48.085Z","min":26.25,"phase":"intensive","event":"delivery.fail","why":"no_driver_within_75s","rider":7200028}
+{"t":"2026-10-14T21:55:48.156Z","min":26.25,"phase":"intensive","event":"delivery.fail","why":"no_driver_within_75s","rider":7200022}
+{"t":"2026-10-14T21:55:48.683Z","min":26.26,"phase":"intensive","event":"delivery.fail","why":"no_driver_within_75s","rider":7200002}
+{"t":"2026-10-14T21:56:13.904Z","min":26.68,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200061}
+{"t":"2026-10-14T21:56:24.456Z","min":26.86,"phase":"intensive","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200031}
+{"t":"2026-10-14T21:56:51.098Z","min":27.3,"phase":"intensive","event":"ramp","target":24}
+{"t":"2026-10-14T21:57:26.706Z","min":27.89,"phase":"intensive","event":"group.fail","why":"claims_mismatch_1_vs_2","rider":7200069}
+{"t":"2026-10-14T21:57:26.742Z","min":27.89,"phase":"intensive","event":"group.fail","why":"agree_not_matched_searching","rider":7200097}
+{"t":"2026-10-14T21:57:43.201Z","min":28.17,"phase":"intensive","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200048}
+{"t":"2026-10-14T21:57:43.498Z","min":28.17,"phase":"intensive","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200040}
+{"t":"2026-10-14T21:58:08.575Z","min":28.59,"phase":"intensive","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200016}
+{"t":"2026-10-14T21:58:48.770Z","min":29.26,"phase":"intensive","event":"ride.fail","why":"no_driver_within_75s","rider":7200047}
+{"t":"2026-10-14T21:59:13.667Z","min":29.68,"phase":"intensive","event":"group.fail","why":"no_free_group_driver","rider":7200079}
+{"t":"2026-10-14T21:59:25.177Z","min":29.87,"phase":"intensive","event":"group.fail","why":"order_not_created","rider":7200069}
+{"t":"2026-10-14T21:59:46.377Z","min":30.22,"phase":"intensive","event":"delivery.fail","why":"not_completed_status_in_progress","rider":7200058}
+{"t":"2026-10-14T21:59:55.075Z","min":30.37,"phase":"intensive","event":"delivery.fail","why":"order_not_created","rider":7200019}
+{"t":"2026-10-14T22:00:19.276Z","min":30.77,"phase":"intensive","event":"delivery.fail","why":"order_not_created","rider":7200019}
+{"t":"2026-10-14T22:00:33.630Z","min":31.01,"phase":"intensive","event":"group.fail","why":"group_ride_not_completed_in_progress","rider":7200080}
+{"t":"2026-10-14T22:00:34.405Z","min":31.02,"phase":"intensive","event":"group.fail","why":"group_ride_not_completed_in_progress","rider":7200091}
+{"t":"2026-10-14T22:00:51.274Z","min":31.3,"phase":"intensive","event":"ride.fail","why":"no_driver_within_75s","rider":7200015}
+{"t":"2026-10-14T22:00:52.575Z","min":31.32,"phase":"intensive","event":"delivery.fail","why":"no_driver_within_75s","rider":7200024}
+{"t":"2026-10-14T22:01:12.508Z","min":31.66,"phase":"intensive","event":"group.fail","why":"order_not_created","rider":7200069}
+{"t":"2026-10-14T22:01:51.100Z","min":32.3,"phase":"edge","event":"phase.edge"}
+{"t":"2026-10-14T22:02:01.640Z","min":32.48,"phase":"edge","event":"delivery.fail","why":"not_completed_status_in_progress","rider":7200056}
+{"t":"2026-10-14T22:02:02.884Z","min":32.5,"phase":"edge","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200051}
+{"t":"2026-10-14T22:02:04.446Z","min":32.52,"phase":"edge","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200012}
+{"t":"2026-10-14T22:02:12.622Z","min":32.66,"phase":"edge","event":"delivery.fail","why":"order_not_created","rider":7200011}
+{"t":"2026-10-14T22:02:13.394Z","min":32.67,"phase":"edge","event":"delivery.fail","why":"not_completed_status_in_progress","rider":7200049}
+{"t":"2026-10-14T22:02:24.882Z","min":32.86,"phase":"edge","event":"delivery.fail","why":"order_not_created","rider":7200031}
+{"t":"2026-10-14T22:02:38.520Z","min":33.09,"phase":"edge","event":"group.fail","why":"group_ride_not_completed_in_progress","rider":7200095}
+{"t":"2026-10-14T22:02:39.099Z","min":33.1,"phase":"edge","event":"group.fail","why":"group_ride_not_completed_in_progress","rider":7200090}
+{"t":"2026-10-14T22:02:40.404Z","min":33.12,"phase":"edge","event":"group.fail","why":"group_ride_not_completed_in_progress","rider":7200064}
+{"t":"2026-10-14T22:02:51.103Z","min":33.3,"phase":"edge","event":"edge","name":"[1] سرّ ويبهوك خاطئ يُرفض","pass":true,"detail":"status=401"}
+{"t":"2026-10-14T22:02:51.104Z","min":33.3,"phase":"edge","event":"edge","name":"[1] JSON مشوّه لا يُسقط الخادم","pass":true,"detail":"status=400 health=200"}
+{"t":"2026-10-14T22:03:08.255Z","min":33.59,"phase":"edge","event":"ride.fail","why":"no_driver_within_75s","rider":7200007}
+{"t":"2026-10-14T22:03:08.853Z","min":33.6,"phase":"edge","event":"ride.fail","why":"no_driver_within_75s","rider":7200019}
+{"t":"2026-10-14T22:03:11.190Z","min":33.63,"phase":"edge","event":"group.fail","why":"no_free_group_driver","rider":7200093}
+{"t":"2026-10-14T22:03:11.968Z","min":33.65,"phase":"edge","event":"group.fail","why":"no_free_group_driver","rider":7200096}
+{"t":"2026-10-14T22:03:12.187Z","min":33.65,"phase":"edge","event":"group.fail","why":"no_free_group_driver","rider":7200068}
+{"t":"2026-10-14T22:03:12.852Z","min":33.66,"phase":"edge","event":"group.fail","why":"no_free_group_driver","rider":7200087}
+{"t":"2026-10-14T22:03:13.019Z","min":33.67,"phase":"edge","event":"group.fail","why":"no_free_group_driver","rider":7200070}
+{"t":"2026-10-14T22:03:13.270Z","min":33.67,"phase":"edge","event":"ride.fail","why":"no_driver_within_75s","rider":7200021}
+{"t":"2026-10-14T22:03:14.127Z","min":33.68,"phase":"edge","event":"group.fail","why":"no_free_group_driver","rider":7200098}
+{"t":"2026-10-14T22:03:14.151Z","min":33.68,"phase":"edge","event":"group.fail","why":"no_free_group_driver","rider":7200075}
+{"t":"2026-10-14T22:03:17.785Z","min":33.74,"phase":"edge","event":"edge","name":"[1] تكرار نفس update_id (إعادة تسليم تيليجرام) لا يضاعف القبول","pass":true,"detail":"http=200,200 accepted=1 final=completed dupComplete=200"}
+{"t":"2026-10-14T22:03:18.707Z","min":33.76,"phase":"edge","event":"ride.fail","why":"no_driver_within_75s","rider":7200001}
+{"t":"2026-10-14T22:03:18.708Z","min":33.76,"phase":"edge","event":"ride.fail","why":"no_driver_within_75s","rider":7200029}
+{"t":"2026-10-14T22:03:18.806Z","min":33.76,"phase":"edge","event":"ride.fail","why":"no_driver_within_75s","rider":7200030}
+{"t":"2026-10-14T22:03:18.806Z","min":33.76,"phase":"edge","event":"ride.fail","why":"no_driver_within_75s","rider":7200005}
+{"t":"2026-10-14T22:03:23.745Z","min":33.84,"phase":"edge","event":"delivery.fail","why":"not_completed_status_in_progress","rider":7200035}
+{"t":"2026-10-14T22:03:23.762Z","min":33.84,"phase":"edge","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200036}
+{"t":"2026-10-14T22:03:24.245Z","min":33.85,"phase":"edge","event":"delivery.fail","why":"not_completed_status_in_progress","rider":7200045}
+{"t":"2026-10-14T22:03:24.363Z","min":33.85,"phase":"edge","event":"ride.fail","why":"cancel_not_applied","rider":7200052}
+{"t":"2026-10-14T22:03:26.681Z","min":33.89,"phase":"edge","event":"group.fail","why":"agree_not_matched_searching","rider":7200084}
+{"t":"2026-10-14T22:03:33.460Z","min":34.01,"phase":"edge","event":"delivery.fail","why":"order_not_created","rider":7200059}
+{"t":"2026-10-14T22:03:37.867Z","min":34.08,"phase":"edge","event":"edge","name":"[1] تضارب: سائقان يقبلان نفس الطلب في نفس اللحظة","pass":true,"detail":"racers=2 status=matched accepted_offers=1"}
+{"t":"2026-10-14T22:03:47.172Z","min":34.23,"phase":"edge","event":"delivery.fail","why":"order_not_created","rider":7200041}
+{"t":"2026-10-14T22:03:57.905Z","min":34.41,"phase":"edge","event":"edge","name":"[1] زبون يطلب مشواراً ثانياً وله طلب نشط","pass":false,"detail":"no rider"}
+{"t":"2026-10-14T22:04:11.458Z","min":34.64,"phase":"edge","event":"edge","name":"[1] سائق غير متاح لا تصله عروض","pass":true,"detail":"is_available=false offers_to_unavailable=0"}
+{"t":"2026-10-14T22:04:31.514Z","min":34.97,"phase":"edge","event":"edge","name":"[1] مطالبة مكررة من نفس السائق في القروب","pass":false,"detail":"no group rider"}
+{"t":"2026-10-14T22:04:31.523Z","min":34.97,"phase":"edge","event":"edge","name":"[1] طلبات انضمام القروبات (موثّق/زبون/قروب مجهول)","pass":true,"detail":"driver=200 rider=200 foreign=200"}
+{"t":"2026-10-14T22:04:31.558Z","min":34.97,"phase":"edge","event":"ride.fail","why":"exception","rider":7200031}
+{"t":"2026-10-14T22:04:31.576Z","min":34.97,"phase":"edge","event":"group.fail","why":"exception","rider":7200100}
+{"t":"2026-10-14T22:04:31.576Z","min":34.97,"phase":"edge","event":"group.fail","why":"exception","rider":7200094}
+{"t":"2026-10-14T22:04:32.249Z","min":34.99,"phase":"edge","event":"ride.fail","why":"cancel_not_applied","rider":7200059}
+{"t":"2026-10-14T22:04:43.120Z","min":35.17,"phase":"edge","event":"edge","name":"انقطاع قاعدة البيانات: إنهاء كل اتصالات البوّابة (pg_terminate_backend)","pass":true,"detail":"terminated=23 ready_after=true new_order_after=true"}
+{"t":"2026-10-14T22:04:45.388Z","min":35.2,"phase":"edge","event":"ride.fail","why":"not_completed_status_in_progress","rider":7200037}
+{"t":"2026-10-14T22:10:23.086Z","min":0.43,"phase":"edge","event":"edge","name":"[2] سرّ ويبهوك خاطئ يُرفض","pass":true,"detail":"status=401"}
+{"t":"2026-10-14T22:10:23.093Z","min":0.43,"phase":"edge","event":"edge","name":"[2] JSON مشوّه لا يُسقط الخادم","pass":true,"detail":"status=400 health=200"}
+{"t":"2026-10-14T22:10:40.950Z","min":0.73,"phase":"edge","event":"edge","name":"[2] تكرار نفس update_id (إعادة تسليم تيليجرام) لا يضاعف القبول","pass":true,"detail":"http=200,200 accepted=1 final=completed dupComplete=200"}
+{"t":"2026-10-14T22:10:52.521Z","min":0.92,"phase":"edge","event":"edge","name":"[2] تضارب: سائقان يقبلان نفس الطلب في نفس اللحظة","pass":true,"detail":"racers=2 status=matched accepted_offers=1"}
+{"t":"2026-10-14T22:10:59.663Z","min":1.04,"phase":"edge","event":"ride.fail","why":"order_not_created","rider":7200007}
+{"t":"2026-10-14T22:11:01.866Z","min":1.07,"phase":"edge","event":"edge","name":"[2] زبون يطلب مشواراً ثانياً وله طلب نشط","pass":true,"detail":"active_orders=1 (since 4322ms)"}
+{"t":"2026-10-14T22:11:09.168Z","min":1.2,"phase":"edge","event":"edge","name":"[2] سائق غير متاح لا تصله عروض","pass":true,"detail":"is_available=false offers_to_unavailable=0"}
+{"t":"2026-10-14T22:11:19.974Z","min":1.38,"phase":"edge","event":"delivery.fail","why":"order_not_created","rider":7200031}
+{"t":"2026-10-14T22:11:48.771Z","min":1.86,"phase":"edge","event":"edge","name":"[2] طلبات انضمام القروبات (موثّق/زبون/قروب مجهول)","pass":true,"detail":"driver=200 rider=200 foreign=200"}

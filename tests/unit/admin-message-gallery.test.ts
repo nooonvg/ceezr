@@ -58,7 +58,10 @@ describe("معرض الرسائل — العيّنات", () => {
     const cancelled = specimens.find((s) => s.id === "driver-cancelled-assigned");
     expect(JSON.stringify(cancelled?.markup)).toContain("📱 وَصْلة");
     const offer = specimens.find((s) => s.id === "driver-offer-delivery");
-    expect(JSON.stringify(offer?.markup)).toContain("offer:accept:");
+    // `ADR 0286` — بطاقةُ العرضِ إشعارٌ وزرُّ تطبيقٍ: القبولُ في التطبيقِ لا زرَّ
+    // رجوعٍ في المحادثةِ، فالعيّنةُ تحملُ زرَّ `web_app` إلى العرضِ بذاتِهِ.
+    expect(JSON.stringify(offer?.markup)).toContain("web_app");
+    expect(JSON.stringify(offer?.markup)).toContain("open=offer_");
   });
 
   it("بلا رابط التطبيق لا زرَّ تطبيقٍ في أيّ عيّنة", async () => {

@@ -1,0 +1,19 @@
+{
+  "repo": "https://github.com/uxxxug/ceezr",
+  "pr": 558,
+  "pr_branch": "sandbox/soak-fixes",
+  "origin_main_sha": "f6996c42527e7840808d9ed77b70ecff835f528a",
+  "pr_head_sha": "7b0f877818566ad1b4e0c798c09800162bb9e15e",
+  "work_branch": "work/miniapp-capacity-20261016",
+  "work_head_sha": "b5b57cb2ecf0e1aa92e6abcc416b09844abe238e",
+  "baseline_worktree_for_B0": "/srv/ceezr-cap-20261016/pr558 @ ",
+  "changed_files": [
+    "M deploy/capacity-run/load/telegram-load.ts",
+    "?? docker/upstash-rest-shim/bun.lock"
+  ],
+  "migrations_added": [
+    "20261016120000_i1_driver_single_engaged_order.sql",
+    "20261016120100_i1_engaged_order_index.sql",
+    "20261016120300_cap_run_telegram_jobs_lane_index.sql"
+  ]
+}

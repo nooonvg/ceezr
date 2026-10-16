@@ -1,5 +1,5 @@
 /**
- * الغرض: ضبطُ سطحِ البوتِ (`BOT_SURFACE_MODE` · `MINIAPP_URL`) — `ADR 0213`.
+ * الغرض: ضبطُ سطحِ البوتِ (`BOT_SURFACE_MODE` · `MINIAPP_URL`) — `ADR 0213` · `ADR 0286`.
  * الحالة: منفّذ فعلياً.
  * ينتمي إلى: tests/unit
  */
@@ -27,13 +27,56 @@ function baseSource(
   };
 }
 
-describe("ADR 0213: ضبطُ سطحِ البوتِ", () => {
-  it("الغيابُ ⇒ legacy بلا رابطٍ — بيئةٌ لا تعرفُ التطبيقَ لا تبني زرَّه", () => {
-    const result = tryLoadConfig(baseSource({}));
+describe("ADR 0213 · ADR 0286: ضبطُ سطحِ البوتِ", () => {
+  it("الغيابُ ⇒ miniapp — وهو سطحُ المنتجِ الوحيدَ في التشغيلِ الفعليّ", () => {
+    const result = tryLoadConfig(baseSource({ MINIAPP_URL: "https://app.example.com" }));
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.botSurfaceMode).toBe("legacy");
-      expect(result.value.miniAppUrl).toBeNull();
+      expect(result.value.botSurfaceMode).toBe("miniapp");
+      expect(result.value.miniAppUrl).toBe("https://app.example.com/");
+    }
+  });
+
+  it("الغيابُ بلا MINIAPP_URL ⇒ فشلُ إقلاعٍ صريحٌ لا سقوطٌ صامتٌ إلى legacy", () => {
+    const result = tryLoadConfig(baseSource({}));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain("MINIAPP_URL");
+  });
+
+  it("legacy بلا علمٍ صريحٍ ⇒ مرفوضٌ حتى خارجَ الإنتاجِ — لا عودةً بالسهو", () => {
+    const result = tryLoadConfig(
+      baseSource({ BOT_SURFACE_MODE: "legacy", MINIAPP_URL: "https://app.example.com" }),
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain("ADR 0286");
+  });
+
+  it("legacy بعلمٍ صريحٍ خارجَ الإنتاجِ ⇒ مسارُ اختبارِ توافقٍ معزولٌ مقبول", () => {
+    const result = tryLoadConfig(
+      baseSource({
+        BOT_SURFACE_MODE: "legacy",
+        BOT_SURFACE_TEST_LEGACY: "1",
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.botSurfaceMode).toBe("legacy");
+  });
+
+  it("legacy في الإنتاجِ ⇒ مرفوضٌ رفضاً قاطعاً ولو مع العلمِ الصريح", () => {
+    const result = tryLoadConfig(
+      baseSource({
+        NODE_ENV: "production",
+        TELEGRAM_TRANSPORT: "real",
+        // جلساتُ redis سليمةٌ عمداً — ليكونَ الرفضُ عن سطحِ البوتِ وحدَه لا عن غيرِه.
+        SESSION_STORE: "redis",
+        BOT_SURFACE_MODE: "legacy",
+        BOT_SURFACE_TEST_LEGACY: "1",
+      }),
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain("BOT_SURFACE_MODE");
+      expect(result.error.message).toContain("الإنتاج");
     }
   });
 
@@ -62,7 +105,9 @@ describe("ADR 0213: ضبطُ سطحِ البوتِ", () => {
   });
 
   it("وضعٌ مجهولٌ ⇒ مرفوضٌ بالمتاحِ", () => {
-    const result = tryLoadConfig(baseSource({ BOT_SURFACE_MODE: "hybrid" }));
+    const result = tryLoadConfig(
+      baseSource({ BOT_SURFACE_MODE: "hybrid", MINIAPP_URL: "https://app.example.com" }),
+    );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toContain("BOT_SURFACE_MODE");
   });

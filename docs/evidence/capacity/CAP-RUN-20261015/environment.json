@@ -1,0 +1,45 @@
+{
+  "host": {
+    "os": "Ubuntu 26.04.1 LTS",
+    "kernel": "6.1.155",
+    "cpus": 2,
+    "mem": "7.8Gi",
+    "disk": "/dev/root        20G  9.1G   11G  47% /"
+  },
+  "versions": {
+    "node": "v20.20.2",
+    "bun": "1.4.2",
+    "postgres": "PostgreSQL 18.6 (Ubuntu 18.6-0ubuntu0.26.04.1) on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, 64-bit",
+    "postgis": "3.6.2",
+    "redis": "Redis server v=8.0.5 sha=00000000:0 malloc=jemalloc-5.3.0 bits=64 build=d47fc40702b1fad8"
+  },
+  "isolation": {
+    "netns": "ceezrsbx",
+    "netns_links": "lo:",
+    "netns_routes": "(none)",
+    "curl_api_telegram_org": "000",
+    "curl_1_1_1_1": "000",
+    "listening_sockets_in_netns": "*:54300 *:58081 127.0.0.1:55432 127.0.0.1:56379 127.0.0.1:58090",
+    "pg": {
+      "data_dir": "/srv/ceezr-cap-20261015/pg",
+      "port": 55432,
+      "listen": "127.0.0.1",
+      "run_marker": "ceezr-cap-20261015",
+      "databases": "ceezr_cap_20261015,ceezr_cap_test_20261015,ceezr_cap_test_pre_d4"
+    },
+    "redis": {
+      "dir": "/srv/ceezr-cap-20261015/redis",
+      "port": 56379,
+      "bind": "127.0.0.1"
+    },
+    "assert_output": "ISOLATION_OK pg=/srv/ceezr-cap-20261015/pg redis=/srv/ceezr-cap-20261015/redis netns=ceezrsbx(lo-only)"
+  },
+  "ports": {
+    "gateway": 54300,
+    "upstash_shim": 58081,
+    "telegram_mock": 58090,
+    "postgres": 55432,
+    "redis": 56379
+  },
+  "process_topology": "single-process: gateway + embedded worker (WORKER_IN_GATEWAY) كما في run.env"
+}

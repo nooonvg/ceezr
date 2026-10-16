@@ -32,6 +32,7 @@ const BASE_ENV: Record<string, string> = {
   RIDER_BOT_TOKEN: "rider-token",
   TELEGRAM_WEBHOOK_SECRET: "unit-secret",
   BOOTSTRAP_ADMIN_TELEGRAM_ID: "990001",
+  MINIAPP_URL: "https://app.example.com",
 };
 
 const config: AppConfig = testConfig({

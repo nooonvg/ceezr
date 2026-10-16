@@ -34,6 +34,7 @@ import {
 } from "../../application/i18n-translation/index.ts";
 import { normalizeLanguageTag } from "../../domain/i18n-translation/index.ts";
 import { DEFAULT_LANGUAGE, t } from "../../shared/i18n/index.ts";
+import { startappDeepLink } from "../../shared/miniapp-link/index.ts";
 import { orderTermsLines } from "../../shared/order-terms/index.ts";
 import { serviceMarker } from "../../shared/service-marker/index.ts";
 import { guard } from "../db/client.ts";
@@ -55,6 +56,14 @@ function groupLanguage(): string {
 
 export function createUnsubscribedGroupPublisher(
   sender: IdentifyingSender,
+  options?: {
+    /**
+     * `ADR 0286` — هويّةُ بوتِ السائقينَ (`getMe` مُخزَّنةً لا إعدادًا يدويًّا يتقادمُ
+     * بصمتٍ): زرُّ القروبِ رابطُ `startapp` لا زرَّ `web_app` — فتيليجرامُ يقصرُهُ على
+     * المحادثاتِ الخاصةِ، والقروبُ إشعارٌ يفتحُ التطبيقَ بمعاملِهِ الموقَّعِ.
+     */
+    readonly driverBotUsername?: () => Promise<string | null>;
+  },
 ): UnsubscribedGroupPublisher {
   return {
     publishCard: (card: UnsubscribedCard) =>
@@ -97,17 +106,42 @@ export function createUnsubscribedGroupPublisher(
           cycle: card.cycle,
           details: details.join("\n"),
         });
-        const keyboard: Keyboard = {
-          kind: "inline",
-          rows: [
-            [
-              {
-                label: tr("group.unsub_accept_button"),
-                data: `unsub:claim:${card.negotiationId}`,
-              },
-            ],
-          ],
-        };
+        // `ADR 0286` — القروبُ إشعارٌ لا مسارَ عملٍ: زرُّهُ رابطٌ يفتحُ تطبيقَ السائقِ
+        // حيثُ جلستُهُ الموقَّعةُ ولوحُ عروضِهِ ودوراتُهُ. وغيابُ الهويّةِ (وضعُ `legacy`
+        // الاختباريُّ المعزولُ) يُبقي زرَّ المطالبةِ القديمَ — مسارَ توافقٍ لا يُفعَّلُ في
+        // تشغيلٍ فعليٍّ. ولا `web_app` ههنا: تيليجرامُ يقصرُهُ على المحادثاتِ الخاصةِ.
+        let username: string | null = null;
+        if (options?.driverBotUsername !== undefined) {
+          try {
+            username = await options.driverBotUsername();
+          } catch {
+            username = null;
+          }
+        }
+        const keyboard: Keyboard =
+          username === null
+            ? {
+                kind: "inline",
+                rows: [
+                  [
+                    {
+                      label: tr("group.unsub_accept_button"),
+                      data: `unsub:claim:${card.negotiationId}`,
+                    },
+                  ],
+                ],
+              }
+            : {
+                kind: "inline",
+                rows: [
+                  [
+                    {
+                      label: tr("group.unsub_app_button"),
+                      url: startappDeepLink(username, { audience: "driver", screen: "offers" }),
+                    },
+                  ],
+                ],
+              };
         return sender.sendReturningId(card.groupId, text, keyboard);
       }),
   };
@@ -143,9 +177,18 @@ export function createEscalationGroupPublisher(
 export function createTelegramNegotiationMessenger(
   driverSender: IdentifyingSender,
   riderSender: IdentifyingSender,
+  options?: { readonly miniAppUrl?: string | null },
 ): NegotiationMessenger {
   const senderFor = (side: "driver" | "rider"): IdentifyingSender =>
     side === "driver" ? driverSender : riderSender;
+  // `ADR 0286` — هدفُّ بطاقاتِ الراكبِ: الرئيسةُ تعرضُ طلبَهُ الجاري وسطحَ القرارِ فيه.
+  const riderApp =
+    options?.miniAppUrl === undefined || options?.miniAppUrl === null
+      ? undefined
+      : {
+          miniAppOrigin: options.miniAppUrl,
+          target: { audience: "rider", screen: "home" } as const,
+        };
 
   return {
     sendTurnOpened: (notice: NegotiationSideNotice) =>
@@ -165,12 +208,19 @@ export function createTelegramNegotiationMessenger(
           );
         }
         const card = selected
-          ? riderChatCard(tr, notice.negotiationId, notice.position, notice.deadlineSeconds)
+          ? riderChatCard(
+              tr,
+              notice.negotiationId,
+              notice.position,
+              notice.deadlineSeconds,
+              riderApp,
+            )
           : riderPresentationCard(
               tr,
               notice.negotiationId,
               notice.position,
               notice.deadlineSeconds,
+              riderApp,
             );
         return riderSender.sendReturningId(notice.chatId, card.text, card.keyboard);
       }),

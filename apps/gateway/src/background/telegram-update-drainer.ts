@@ -40,7 +40,10 @@
  */
 
 import type { TelegramUpdateQueue } from "../../../../packages/infrastructure/db/telegram-update-queue.ts";
-import { TELEGRAM_JOB_CONSUMER_CONCURRENCY } from "../../../../packages/shared/config/domain-ingress.ts";
+import {
+  MIN_DRAINER_LEASE_RENEW_MS,
+  TELEGRAM_JOB_CONSUMER_CONCURRENCY,
+} from "../../../../packages/shared/config/domain-ingress.ts";
 import type { BotKind, UpdateHandler } from "../routes/telegram-webhook.ts";
 
 export interface TelegramUpdateDrainDeps {
@@ -52,6 +55,54 @@ export interface TelegramUpdateDrainDeps {
    * ويُمرَّرُ في الاختبارِ ليُقاسَ السقفُ نفسُه بلا مائةِ وظيفةٍ وهميّةٍ.
    */
   readonly maxJobsPerRun?: number;
+  /**
+   * SANDBOX-SOAK-01 — عددُ المساراتِ المتوازية. الافتراضُ ١ (السلوكُ التسلسليُّ القائم).
+   * عندَ >١: تُعالَجُ تحديثاتُ المستخدمين المختلفين بالتوازي، وتحديثاتُ المستخدمِ الواحدِ
+   * (لكلِّ بوت) بالترتيبِ داخلَ مسارٍ واحد — فانتظارُ دلوِ محادثةٍ (١ رسالة/ث) لا يحجبُ
+   * بقيّةَ المحادثات (Head-of-line blocking).
+   */
+  readonly lanes?: number;
+  /**
+   * CAP-RUN-20261015 / D2 — البوتاتُ التي تُوزَّعُ عليها المساراتُ (الأقلُّ انشغالًا أوّلًا).
+   * يتطلّبُ `queue.claimFor`؛ وبدونه يبقى الالتقاطُ العامُّ بـ created_at.
+   */
+  readonly fairBots?: readonly string[];
+  /** CAP-RUN-20261015 / D3 — فترةُ تجديدِ إيجارِ المحجوزِ المنتظرِ (مللي ثانية). الافتراضيُّ 10ث (ثلثُ الإيجار). */
+  readonly leaseRenewEveryMs?: number;
+}
+
+/** حقلٌ من حمولةِ تيليجرام يحملُ مُرسِلًا أو محادثة — كلُّ ما يلزمُ مفتاحَ المسار. */
+interface LaneCarrier {
+  readonly from?: { readonly id?: number | string };
+  readonly chat?: { readonly id?: number | string };
+}
+
+/** الحقولُ التي تحملُ صاحبَ التحديثِ في Bot API، بترتيبِ الأولويّة. */
+const LANE_FIELDS = [
+  "message",
+  "edited_message",
+  "callback_query",
+  "chat_join_request",
+  "my_chat_member",
+  "chat_member",
+  "inline_query",
+] as const;
+
+/**
+ * SANDBOX-SOAK-01 — مفتاحُ المسار: البوت + هويّةُ المستخدم (وإلّا المحادثة).
+ * تحديثاتُ المستخدمِ الواحدِ لبوتٍ واحدٍ تقعُ في مسارٍ واحدٍ فيبقى ترتيبُها؛ وما لا
+ * يحملُ مستخدمًا يأخذُ مسارًا خاصًّا به (`fallback` = رقمُ التحديث) فلا يحجبُ غيرَه.
+ */
+export function laneKeyOf(bot: string, payload: unknown, fallback: string): string {
+  if (typeof payload === "object" && payload !== null) {
+    const record = payload as Readonly<Record<string, LaneCarrier | undefined>>;
+    for (const field of LANE_FIELDS) {
+      const carrier = record[field];
+      const id = carrier?.from?.id ?? carrier?.chat?.id;
+      if (id !== undefined) return `${bot}:${String(id)}`;
+    }
+  }
+  return `${bot}:u${fallback}`;
 }
 
 /** نتيجةُ شوطِ استنزافٍ واحد. */
@@ -83,6 +134,8 @@ export async function drainTelegramUpdateJobsOnce(
   let truncated = false;
 
   const maxJobsPerRun = deps.maxJobsPerRun ?? TELEGRAM_JOB_CONSUMER_CONCURRENCY;
+  const lanes = Math.max(1, Math.trunc(deps.lanes ?? 1));
+  if (lanes > 1) return drainConcurrently(deps, maxJobsPerRun, lanes);
 
   for (;;) {
     if (claimed >= maxJobsPerRun) {
@@ -103,33 +156,145 @@ export async function drainTelegramUpdateJobsOnce(
     if (job === null) break;
     claimed += 1;
 
-    const lease = { bot: job.bot, updateId: job.updateId, claimToken: job.claimToken };
-    try {
-      const handled = await deps.handler.handle(job.bot as BotKind, job.payload);
-      const sealed = await deps.queue.finish(lease, handled, handled ? undefined : "NOT_HANDLED");
-      if (handled && sealed) {
-        done += 1;
-      } else {
-        failed += 1;
-        deps.log?.("telegram.drainer.stamp_failed", {
-          bot: job.bot,
-          updateId: job.updateId,
-          handled,
-        });
-      }
-    } catch (error) {
-      failed += 1;
-      const message = error instanceof Error ? error.message : String(error);
-      // الختمُ كفشلٍ: إن لم تُستنفدِ المحاولاتُ تعاد للطابورِ، وإلّا ماتت نهائيّاً.
-      await deps.queue.finish(lease, false, message).catch(() => {});
-      deps.log?.("telegram.drainer.job_error", {
-        bot: job.bot,
-        updateId: job.updateId,
-        error: message,
-      });
-    }
+    if (await processClaimedJob(deps, job)) done += 1;
+    else failed += 1;
   }
 
+  return { claimed, done, failed, truncated };
+}
+
+/**
+ * معالجةُ وظيفةٍ ملتقَطةٍ واحدةٍ وختمُها — مشتركةٌ بينَ المسارِ التسلسليِّ والمتوازي
+ * فلا يختلفُ بينهما معنى «تمّ» ولا «فشل». تعيدُ `true` إن عولجَت وخُتمَت.
+ */
+async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob): Promise<boolean> {
+  const lease = { bot: job.bot, updateId: job.updateId, claimToken: job.claimToken };
+  try {
+    const handled = await deps.handler.handle(job.bot as BotKind, job.payload);
+    const sealed = await deps.queue.finish(lease, handled, handled ? undefined : "NOT_HANDLED");
+    if (handled && sealed) return true;
+    deps.log?.("telegram.drainer.stamp_failed", {
+      bot: job.bot,
+      updateId: job.updateId,
+      handled,
+    });
+    return false;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await deps.queue.finish(lease, false, message).catch(() => {});
+    deps.log?.("telegram.drainer.job_error", {
+      bot: job.bot,
+      updateId: job.updateId,
+      error: message,
+    });
+    return false;
+  }
+}
+
+type ClaimedJob = NonNullable<Awaited<ReturnType<TelegramUpdateQueue["claim"]>>["job"]>;
+
+/**
+ * SANDBOX-SOAK-01 — استنزافٌ متوازٍ بمساراتٍ لكلِّ مستخدم. يلتقطُ حتى `lanes` وظيفةً جاريةً،
+ * ويُسلسِلُ وظائفَ المفتاحِ الواحدِ (البوت+المستخدم) خلفَ بعضِها بترتيبِ الالتقاطِ (= created_at).
+ */
+async function drainConcurrently(
+  deps: TelegramUpdateDrainDeps,
+  maxJobsPerRun: number,
+  lanes: number,
+): Promise<DrainReport> {
+  let claimed = 0;
+  let done = 0;
+  let failed = 0;
+  let truncated = false;
+  const tails = new Map<string, Promise<void>>();
+  const inflight = new Set<Promise<void>>();
+  // D3: كلُّ محجوزٍ لم يُختَم بعدُ (ينتظرُ مسارَه أو يُعالَج) يُجدَّدُ إيجارُه دوريًّا.
+  const held = new Map<string, { bot: string; updateId: number; claimToken: string }>();
+  const renewEvery = Math.max(MIN_DRAINER_LEASE_RENEW_MS, deps.leaseRenewEveryMs ?? 10_000);
+  const renewTimer =
+    deps.queue.renew === undefined
+      ? null
+      : setInterval(() => {
+          const leases = [...held.values()];
+          if (leases.length === 0) return;
+          deps.queue.renew?.(leases).then(
+            (n) => {
+              if (n < leases.length)
+                deps.log?.("telegram.drainer.lease_renew_partial", {
+                  held: leases.length,
+                  renewed: n,
+                });
+            },
+            (error: unknown) =>
+              deps.log?.("telegram.drainer.lease_renew_failed", {
+                error: error instanceof Error ? error.message : String(error),
+              }),
+          );
+        }, renewEvery);
+  // D2: توزيعُ الالتقاطِ بين البوتين — الأقلُّ انشغالًا أوّلًا، ومن فرغَ طابورُه في هذا الشوطِ يُتخطّى.
+  const fair =
+    deps.fairBots !== undefined && deps.fairBots.length > 1 && deps.queue.claimFor !== undefined
+      ? [...deps.fairBots]
+      : null;
+  const busy = new Map<string, number>();
+  const drained = new Set<string>();
+  const nextClaim = async (): Promise<ClaimedJob | null> => {
+    if (fair === null) return (await deps.queue.claim()).job;
+    for (;;) {
+      const open = fair.filter((b) => !drained.has(b));
+      if (open.length === 0) return null;
+      open.sort((a, b) => (busy.get(a) ?? 0) - (busy.get(b) ?? 0));
+      const bot = open[0] as string;
+      const job = (await deps.queue.claimFor?.(bot))?.job ?? null;
+      if (job !== null) return job;
+      drained.add(bot);
+    }
+  };
+
+  try {
+    for (;;) {
+      if (claimed >= maxJobsPerRun) {
+        truncated = true;
+        break;
+      }
+      while (inflight.size >= lanes) await Promise.race(inflight);
+      let job: ClaimedJob | null;
+      try {
+        job = await nextClaim();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        deps.log?.("telegram.drainer.claim_failed", { error: message });
+        break;
+      }
+      if (job === null) break;
+      claimed += 1;
+      const claimedJob = job;
+      const heldKey = `${claimedJob.bot}:${claimedJob.updateId}`;
+      held.set(heldKey, {
+        bot: claimedJob.bot,
+        updateId: claimedJob.updateId,
+        claimToken: claimedJob.claimToken,
+      });
+      busy.set(claimedJob.bot, (busy.get(claimedJob.bot) ?? 0) + 1);
+      const key = laneKeyOf(claimedJob.bot, claimedJob.payload, String(claimedJob.updateId));
+      const prev = tails.get(key) ?? Promise.resolve();
+      const run = prev.then(async () => {
+        if (await processClaimedJob(deps, claimedJob)) done += 1;
+        else failed += 1;
+      });
+      tails.set(key, run);
+      const tracked: Promise<void> = run.finally(() => {
+        held.delete(heldKey);
+        busy.set(claimedJob.bot, (busy.get(claimedJob.bot) ?? 1) - 1);
+        inflight.delete(tracked);
+        if (tails.get(key) === run) tails.delete(key);
+      });
+      inflight.add(tracked);
+    }
+    await Promise.all(inflight);
+  } finally {
+    if (renewTimer !== null) clearInterval(renewTimer);
+  }
   return { claimed, done, failed, truncated };
 }
 
@@ -182,13 +347,27 @@ export function startTelegramUpdateDrainer(
         deps.log?.("telegram.drainer.sweep_cap_reached", {
           claimed: report.claimed,
         });
+        // CAP-RUN-20261015 / D1: بقيَ عملٌ مستحقٌّ يقينًا، فيُستأنَفُ فورًا بدلَ انتظارِ مؤقّتِ
+        // الأمانِ (10ث). السقفُ يبقى حدًّا للشوطِ الواحدِ (ليُسمَعَ stop ويُعادَ تقييمُ الطابور)،
+        // لا سقفًا لمعدّلِ الاستنزافِ كلِّه. مُختبَر: telegram-update-drainer-truncated-rerun.test.ts
+        rerun = true;
+      }
+      if (report.done + report.failed > 0) {
+        // CAP-RUN-20261015 / D5: مع D4 لا تُلتقَطُ وظيفةُ المستخدمِ التاليةُ ما دامت سابقتُه محجوزة؛ فمسارٌ
+        // رأى claim=null قد خرجَ قبلَ أن تُختَمَ السابقة. شوطٌ ختمَ وظيفةً يُعيدُ الجدولةَ فورًا ليلتقطَ ما
+        // فُكَّ حجبُه، وشوطٌ فارغٌ لا يُعيد (لا دوَرانَ فارغ). مُختبَر: telegram-update-drainer-lane-unblock-rerun.test.ts
+        rerun = true;
       }
     } finally {
       running = false;
     }
     if (rerun && !stopped) {
       rerun = false;
-      void tick();
+      // CAP-RUN-20261015 / D1: الإعادةُ بعدَ تسليمِ الحلقةِ (macrotask) لا في السلسلةِ نفسِها، فلا
+      // تُجوِّعُ سلسلةُ أشواطٍ متتاليةٍ حلقةَ الأحداثِ (مؤقّتات، stop، استقبالُ الويبهوك).
+      setImmediate(() => {
+        if (!stopped) void tick();
+      });
     }
   };
 
@@ -249,4 +428,22 @@ export function wakeDrainerOnEnqueue<
       return outcome;
     },
   };
+}
+
+/**
+ * CAP-RUN-20261015 — تحليلٌ صريحٌ لـ`TELEGRAM_DRAIN_LANES` بدل `Number(...)`: كان "1e3" يصيرُ 1000،
+ * و"-5"/"abc" يسقطانِ صامتَين. المقبولُ عددٌ صحيحٌ عشريٌّ 1..256؛ غيرُه ⇒ 1 (التسلسليّ) مع إعلانِ invalid.
+ */
+export const TELEGRAM_DRAIN_LANES_MAX = 256;
+export function parseTelegramDrainLanes(raw: string | undefined): {
+  lanes: number;
+  invalid: boolean;
+} {
+  if (raw === undefined || raw.trim() === "") return { lanes: 1, invalid: false };
+  const t = raw.trim();
+  if (!/^\d+$/.test(t)) return { lanes: 1, invalid: true };
+  const n = Number(t);
+  if (!Number.isSafeInteger(n) || n < 1 || n > TELEGRAM_DRAIN_LANES_MAX)
+    return { lanes: 1, invalid: true };
+  return { lanes: n, invalid: false };
 }

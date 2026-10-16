@@ -23,9 +23,12 @@
 import { apiFetch } from "../../../api/client.ts";
 import type {
   AcceptDriverOfferResponse,
+  ClaimNegotiationResponse,
   DriverAvailabilityResponse,
+  DriverNegotiationsResponse,
   DriverOfferDetailResponse,
   DriverOffersResponse,
+  LeaveNegotiationResponse,
   RejectDriverOfferResponse,
 } from "./offers-contract.ts";
 
@@ -55,5 +58,25 @@ export function setDriverAvailability(isAvailable: boolean): Promise<DriverAvail
   return apiFetch<DriverAvailabilityResponse>("/v1/driver/availability", {
     method: "POST",
     body: { is_available: isAvailable },
+  });
+}
+
+/**
+ * `ADR 0286` — دوراتُ القروبِ المفتوحةُ: المطالبةُ من التطبيقِ عبرَ المنفذِ الذرّيِّ
+ * نفسِهِ، وثواني النافذةِ من الخادمِ لا من ساعةِ الجهازِ.
+ */
+export function readDriverNegotiations(): Promise<DriverNegotiationsResponse> {
+  return apiFetch<DriverNegotiationsResponse>("/v1/driver/negotiations", { method: "GET" });
+}
+
+export function claimDriverNegotiation(negotiationId: string): Promise<ClaimNegotiationResponse> {
+  return apiFetch<ClaimNegotiationResponse>(`/v1/driver/negotiations/${negotiationId}/claim`, {
+    method: "POST",
+  });
+}
+
+export function leaveDriverNegotiation(negotiationId: string): Promise<LeaveNegotiationResponse> {
+  return apiFetch<LeaveNegotiationResponse>(`/v1/driver/negotiations/${negotiationId}/leave`, {
+    method: "POST",
   });
 }

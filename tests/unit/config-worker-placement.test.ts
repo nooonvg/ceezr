@@ -41,6 +41,9 @@ function productionSourceWithout(): Record<string, string | undefined> {
     // حرفاً — وإلّا وقعَ سقوطُ كلِّ حالةٍ عليهِ لا على موضعِ المهامِّ المُختبَرِ.
     // (اسمُ الدالّةِ «بلا» يعني بلا `RUN_WORKER_IN_GATEWAY` وحدَه.)
     RUN_ADMIN_IN_GATEWAY: "false",
+    // `ADR 0286` — عنوانُ التطبيقِ شرطُ إقلاعِ سطحِ miniapp الافتراضيِّ، فيُعلَن هنا
+    // لنفسِ سببِ بقيةِ الإعلاناتِ: ليقعَ السقوطُ على المُختبَرِ وحدَهُ لا على غيرِهِ.
+    MINIAPP_URL: "https://app.example.com",
   };
 }
 

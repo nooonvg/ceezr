@@ -294,6 +294,24 @@ describeIf("قدرةُ المدينةِ تجمعُ التوثيقَ والاشت
 
   it("١٣) قدرةٌ مُعطَّلةٌ لا تُعَدُّ: القدرةُ إعلانُ السائقِ لا افتراضُ النظامِ", async () => {
     const payload = await quote(RIDER_TELEGRAM_ID, ORIGIN, DESTINATION);
+    // تشخيصُ التلوثِ لحظةَ الإخفاقِ: مَن أعلنَ التوصيلَ في مدينةِ هذا
+    // الاختبارِ؟ (هويةٌ ومدىً ومدينةُ القدرةِ) — لا بعدَ نهايةِ الحزمةِ حيث
+    // يتغيّرُ المشهدُ. المدينةُ الفعليةُ لا المفترضةُ، وdc.city_id لا
+    // مدينةِ السائقِ.
+    if ((payload.served_services ?? []).includes("delivery")) {
+      const polluters = await sql`
+        select u.telegram_id::text as tg, u.full_name, dc.city_id::text as cap_city,
+               dc.service, dc.is_enabled, d.verification_status::text as verif,
+               s.status::text as sub
+          from driver_capabilities dc
+          join drivers d on d.id = dc.driver_id
+          join users u on u.id = d.user_id
+          left join subscriptions s on s.driver_id = d.id
+         where dc.service = 'delivery'::service_type and dc.is_enabled
+           and d.verification_status = 'verified'::verification_status
+           and s.status in ('trialing', 'active')`;
+      console.error(`QUOTE_POLLUTERS city=${String(cityId)} rows=${JSON.stringify(polluters)}`);
+    }
     expect(payload.served_services).not.toContain("delivery");
   });
 

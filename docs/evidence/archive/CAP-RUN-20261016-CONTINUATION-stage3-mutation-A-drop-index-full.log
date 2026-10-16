@@ -1,0 +1,38 @@
+bun test v1.4.2 (744846f84)
+
+tests/integration/i1-concurrent-engagement-races.test.ts:
+(pass) I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة > ١ — سائقٌ واحدٌ يطالبُ طلبَينِ مختلفَينِ معًا: إسنادٌ واحدٌ وخاسرٌ نظيفٌ DRIVER_HAS_ACTIVE_ORDER [97.43ms]
+(pass) I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة > ٢ — طلبٌ واحدٌ بسائقَينِ معًا: إسنادٌ واحدٌ وخاسرٌ صريحٌ ولا ثاني [27.96ms]
+392 |       // واحدةٌ تنجحُ وواحدةٌ تصطدمُ بالفهرسِ (23505 **باسمِ القيدِ نفسِهِ**) — الجدارُ
+393 |       // الأخيرُ يعملُ حتى لو أفلتَ الكاتبُ من كلِّ حارسٍ في الدوالِّ. هذا الاختبارُ هو
+394 |       // الذي يفشلُ بإزالةِ الفهرسِ في تجربةِ الإزالةِ الموثَّقةِ في أدلةِ المرحلةِ 3.
+395 |       const fulfilled = [r1, r2].filter((r) => r.ok);
+396 |       const rejected = [r1, r2].filter((r) => !r.ok);
+397 |       expect(fulfilled).toHaveLength(1);
+                              ^
+error: expect(received).toHaveLength(expected)
+
+Expected length: 1
+Received length: 2
+
+      at <anonymous> (/home/user/workspace/ceezr/tests/integration/i1-concurrent-engagement-races.test.ts:397:25)
+(fail) I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة > ٣ — جدارُ القاعدةِ نفسِهِ: كتابتانِ مباشرتانِ متزامنتانِ للسائقِ نفسِهِ تصطدمُ بالفهرسِ [10.59ms]
+416 |   });
+417 | 
+418 |   it("٤ — بعدَ الحملِ: استعلاماتٌ مستقلةٌ — صفرُ التزاماتٍ مزدوجةٍ في القاعدةِ كلِّها", async () => {
+419 |     // استعلامٌ مستقلٌّ عن مساراتِ الاختبارِ نفسِها: المجموعةُ الكاملةُ من القاعدةِ،
+420 |     // فورَ انتهاءِ السباقاتِ وقبلَ أيِّ تنظيفٍ — لا مخالفةً عابرةً تُخفيها نهايةٌ نظيفة.
+421 |     expect(await engagedDuplicates()).toBe(0);
+                                            ^
+error: expect(received).toBe(expected)
+
+Expected: 0
+Received: 1
+
+      at <anonymous> (/home/user/workspace/ceezr/tests/integration/i1-concurrent-engagement-races.test.ts:421:39)
+(fail) I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة > ٤ — بعدَ الحملِ: استعلاماتٌ مستقلةٌ — صفرُ التزاماتٍ مزدوجةٍ في القاعدةِ كلِّها [0.60ms]
+
+ 2 pass
+ 2 fail
+ 164 expect() calls
+Ran 4 tests across 1 file. [254.00ms]

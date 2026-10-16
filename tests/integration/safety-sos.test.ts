@@ -3,6 +3,12 @@
  * فريق الإسناد. لا يوجد Telegram فعلي هنا؛ الناشر المزدوج يثبت أثر الإرسال فقط.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+
+/** اختباراتُ هذا الملفِّ تشتغلُ على I/O قاعدةٍ حقيقيّةٍ فتبلغُ تحتَ حملِ
+ * الحزمةِ المتسلسلةِ أكثرَ من المهلةِ الافتراضيةِ (5ث). مهلةٌ صريحةٌ لبطءِ
+ * العملِ المشروعِ لا لتغطيةِ عطلٍ: الفشلُ يظلُّ فشلًا بعدَ المهلةِ. */
+const slowIt = (name: string, fn: () => Promise<void> | void) => it(name, fn, 30_000);
+
 import { deliverSafetyIncidents } from "../../apps/workers/src/jobs/deliver-safety-incidents.ts";
 import { PortFailureError } from "../../packages/application/ports/index.ts";
 import type { SafetyCardPublisher } from "../../packages/application/safety/ports.ts";
@@ -74,6 +80,14 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table notification_outbox, safety_incident_deliveries, safety_incidents, order_offers, orders,
+        driver_availability, drivers, riders, users restart identity cascade
+    `;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -86,7 +100,9 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
     await createFixture();
     trigger = createTriggerSosPort(sql);
     resolution = createSafetyResolutionPort(sql);
-  });
+    // مهلةُ الخطافِ نفسِه: truncate + fixture تحتَ حملِ الحزمةِ يتخطى الخمسَ
+    // ثوانٍ الافتراضيةَ للخطافاتِ (slowIt لا يغطّي الخطافاتِ).
+  }, 30_000);
 
   /**
    * الانحصار الذي كان: المطالبة تمسح المدن كلّها بترتيب `created_at`، فصفٌّ في
@@ -94,7 +110,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
    * فيسقط الشوط كلّه — واستغاثةُ جدّة المهيّأة تماماً لا تُسلَّم أبداً. حقلٌ فارغ
    * في مدينةٍ غير مفعّلة كان يكفي لتعطيل مسار الاستغاثة في المنصّة كلّها.
    */
-  it("صفٌّ أقدم في مدينةٍ بلا مجموعة تصعيد لا يمنع تسليم استغاثة جدّة", async () => {
+  slowIt("صفٌّ أقدم في مدينةٍ بلا مجموعة تصعيد لا يمنع تسليم استغاثة جدّة", async () => {
     const poisonCity = await sql<{ id: string }[]>`
       select id from cities where code = 'MKK' and telegram_escalation_group_id is null
     `;
@@ -183,7 +199,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
     expect(poisonRow[0]?.attempts).toBe(0);
   });
 
-  it("ضغطتا SOS متزامنتان تنشئان حادثاً واحداً وoutbox واحداً", async () => {
+  slowIt("ضغطتا SOS متزامنتان تنشئان حادثاً واحداً وoutbox واحداً", async () => {
     const results = await Promise.all([
       trigger.trigger({
         orderId,
@@ -218,7 +234,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
     expect(Number(persisted[0]?.deliveries)).toBe(1);
   });
 
-  it("فشل تيليجرام مرة لا يفقد الحادث ثم تسلمه المحاولة التالية مرة واحدة", async () => {
+  slowIt("فشل تيليجرام مرة لا يفقد الحادث ثم تسلمه المحاولة التالية مرة واحدة", async () => {
     const opened = await trigger.trigger({
       orderId,
       actorTelegramId: RIDER_TELEGRAM_ID,
@@ -281,7 +297,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
    * `safety_incident` خلافاً لأصنافِ الرحلةِ والبثِّ وإشعاراتِ الاشتراكِ. شوهِدَ
    * حيّاً على البيئةِ التجريبيّةِ: صفٌّ عالقٌ منذُ 2026-09-30 03:06 UTC.
    */
-  it("حجزُ استغاثةٍ متروكٌ بعدَ مهلتِه يُستردُّ ويُسلَّمُ مرّةً واحدةً (D-39)", async () => {
+  slowIt("حجزُ استغاثةٍ متروكٌ بعدَ مهلتِه يُستردُّ ويُسلَّمُ مرّةً واحدةً (D-39)", async () => {
     const opened = await trigger.trigger({
       orderId,
       actorTelegramId: RIDER_TELEGRAM_ID,
@@ -336,7 +352,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
     expect(published).toEqual([orderId]);
   });
 
-  it("إغلاقان متزامنان بعد الاستلام يسجلان قراراً واحداً فقط", async () => {
+  slowIt("إغلاقان متزامنان بعد الاستلام يسجلان قراراً واحداً فقط", async () => {
     const opened = await trigger.trigger({
       orderId,
       actorTelegramId: RIDER_TELEGRAM_ID,
@@ -388,7 +404,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
     }
   });
 
-  it("قرار إنسان بالحجب يستدعي مسار الإدارة القائم ويحفظ من اتخذه", async () => {
+  slowIt("قرار إنسان بالحجب يستدعي مسار الإدارة القائم ويحفظ من اتخذه", async () => {
     const opened = await trigger.trigger({
       orderId,
       actorTelegramId: RIDER_TELEGRAM_ID,
@@ -422,7 +438,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
    * العامُّ يُكتَبُ في `notification_outbox` بلا كشفِ السببِ الداخليِّ.
    */
   describe("`PD-021` — سبب داخلي إلزامي ورسالة حالة عامّة", () => {
-    it("يرفض الإغلاق بلا سبب داخلي", async () => {
+    slowIt("يرفض الإغلاق بلا سبب داخلي", async () => {
       const opened = await trigger.trigger({
         orderId,
         actorTelegramId: RIDER_TELEGRAM_ID,
@@ -451,7 +467,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
       expect(incident[0]?.decision_reason).toBe("resolved");
     });
 
-    it("يكتب الإشعار العام للمبلّغ في notification_outbox بلا كشف السبب الداخلي", async () => {
+    slowIt("يكتب الإشعار العام للمبلّغ في notification_outbox بلا كشف السبب الداخلي", async () => {
       const opened = await trigger.trigger({
         orderId,
         actorTelegramId: RIDER_TELEGRAM_ID,
@@ -485,7 +501,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
       expect(JSON.stringify(payload)).not.toContain("false_report");
     });
 
-    it("يكتب سبب القرار في audit_log", async () => {
+    slowIt("يكتب سبب القرار في audit_log", async () => {
       const opened = await trigger.trigger({
         orderId,
         actorTelegramId: RIDER_TELEGRAM_ID,
@@ -536,7 +552,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
       return id;
     }
 
-    it("يُقيَّدُ البلاغُ بلا طلبٍ بمدينةِ الحسابِ ويُودَعُ تسليمُه في المعاملةِ نفسِها", async () => {
+    slowIt("يُقيَّدُ البلاغُ بلا طلبٍ بمدينةِ الحسابِ ويُودَعُ تسليمُه في المعاملةِ نفسِها", async () => {
       const actorId = await createOrderlessRider();
       const triggered = await trigger.trigger({
         orderId: null,
@@ -584,7 +600,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
       expect(Number(rows[0]?.outbox)).toBe(1);
     });
 
-    it("ضغطتانِ متزامنتانِ بلا طلبٍ تنشئانِ حادثاً واحداً وoutbox واحداً", async () => {
+    slowIt("ضغطتانِ متزامنتانِ بلا طلبٍ تنشئانِ حادثاً واحداً وoutbox واحداً", async () => {
       await createOrderlessRider();
       const results = await Promise.all([
         trigger.trigger({
@@ -619,7 +635,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
      * ويبقى `sending` أبداً — بلاغُ استغاثةٍ يُدفَنُ بصمتٍ. و`left join` يُصلِحُه،
      * وهذا الاختبارُ يفشلُ حرفاً إن عادَ الوصلُ الداخليُّ.
      */
-    it("تُسلَّمُ بطاقةُ بلاغٍ بلا طلبٍ بـ`orderId: null` ولا تعلَقُ في `sending`", async () => {
+    slowIt("تُسلَّمُ بطاقةُ بلاغٍ بلا طلبٍ بـ`orderId: null` ولا تعلَقُ في `sending`", async () => {
       await createOrderlessRider();
       const triggered = await trigger.trigger({
         orderId: null,
@@ -653,7 +669,7 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
       expect(row[0]).toEqual({ status: "delivered", attempts: 1, message_id: "552" });
     });
 
-    it("يُعلِنُ حَكَمُ السطحِ أصلاً `NO_ORDER` بلا حقولِ نافذةٍ ويُفصِحُ خمسةَ رموزٍ", async () => {
+    slowIt("يُعلِنُ حَكَمُ السطحِ أصلاً `NO_ORDER` بلا حقولِ نافذةٍ ويُفصِحُ خمسةَ رموزٍ", async () => {
       await createOrderlessRider();
       const rows = await sql<
         {

@@ -935,8 +935,19 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // ثمّ 179 و 1588 بالجدولةِ الحقيقيّة (WR-06 ج): ثماني عشرةَ حالةً في `wr-06-scheduled-dispatch.test.ts`.
     // ثمّ 180 و 1604 بانتهاءِ البحث (WR-22 · ADR 0276): ستَّ عشرةَ حالةً في `wr-22-search-expiry.test.ts`.
     // ثمّ 181 و 1614 بإغلاقِ بطاقةِ الإسناد (WR-22 · ADR 0278): عشرُ حالاتٍ في `wr-22-escalation-card-close.test.ts`.
-    expect(SKIP_REGISTRY).toHaveLength(181);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1614);
+    // زيادةٌ (CAP-20261016 · ADR 0286): والآنَ 188 و 1625 بمخرجاتِ فرعِ السعةِ — سبعةُ ملفاتٍ:
+    // عشرُ حالاتٍ في `notification-outbox-undeliverable-state`، وسبعٌ في `notification-outbox-claim-undeliverable-guard`،
+    // وسبعٌ في `notification-outbox-mark-undeliverable`، وثلاثٌ في `emergency-contact-read`، وثمانٍ في `account-recovery`،
+    // وواحدةٌ في `telegram-outage-miniapp`، وسبعٌ في `payment-provider-outage` (49 حالةً).
+    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 3 · I1): والآنَ 189 و 1629 — أربعُ حالاتٍ في
+    // `i1-concurrent-engagement-races.test.ts` (سباقاتُ التزامنِ الحقيقيِّ لا تُقاسُ إلا على قاعدةٍ حقيقيّةٍ —
+    // خطوتُها المسمّاةُ في وظيفةِ PostgreSQL الحقيقيِّ في ci.yml).
+    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 4 · D8): والآنَ 190 و1632 — ثلاثُ
+    // حالاتٍ في `d8-outbox-gate-per-recipient.test.ts`: بوابةُ الالتقاطِ التسلسليُّ
+    // على المستلِمِ وإعادةُ الازدحامِ أحكامُ قاعدةٍ (claim/requeue) لا تُقاسُ إلا
+    // على PostgreSQL حقيقيٍّ — خطوتُها في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
+    expect(SKIP_REGISTRY).toHaveLength(190);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1632);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {

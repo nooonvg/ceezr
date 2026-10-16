@@ -38,6 +38,8 @@ const FAKE_SECRETS = {
   RIDER_BOT_TOKEN: "2222222:fake-rider-bot-token-DDDDDDDDDDDD",
   TELEGRAM_WEBHOOK_SECRET: "fake-webhook-secret-EEEEEEEEEEEEEEEE",
   BOOTSTRAP_ADMIN_TELEGRAM_ID: "999999999",
+  // `ADR 0286` — سطحُ miniapp افتراضًا، وعنوانُ التطبيقِ شرطُ إقلاعِه.
+  MINIAPP_URL: "https://fake-miniapp.example.com",
   // F5-04 / ADR 0063: إعلانٌ إلزاميٌّ في الإنتاج، وهذه البيئةُ إنتاجيّةٌ. وبلا
   // سطرِه يسقط الإقلاعُ على شرطٍ آخرَ فيصير المُختبَرُ غيرَ ما كُتِب له.
   RUN_WORKER_IN_GATEWAY: "false",

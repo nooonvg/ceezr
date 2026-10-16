@@ -1,0 +1,131 @@
+{
+  "t": "2026-10-15T01:16:05.688Z",
+  "s": 433,
+  "gen": "gen1",
+  "phase": "drain",
+  "target": 0,
+  "concurrency": 0,
+  "peakConcurrency": 6,
+  "riders_busy": 0,
+  "drivers": {
+    "idle": 996,
+    "standby": 4
+  },
+  "gateway_down": false,
+  "outages": 0,
+  "http": {
+    "total": 4325,
+    "ok": 4325,
+    "non2xx": 0,
+    "netErr": 0,
+    "timeouts": 0,
+    "refused": 0,
+    "retried": 0,
+    "inflight": 0,
+    "peakInflight": 100,
+    "n": 4325,
+    "p50": 102.7,
+    "p95": 145.6,
+    "p99": 163.6
+  },
+  "http_window": {
+    "n": 0,
+    "rps": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0
+  },
+  "scenarios": {
+    "group": {
+      "started": 16,
+      "ok": 4,
+      "fail": 12,
+      "reasons": {
+        "order_not_created_45s": 8,
+        "no_claim_registered": 4
+      },
+      "e2e": {
+        "n": 4,
+        "p50": 212063.7,
+        "p95": 238274.8,
+        "p99": 238274.8
+      }
+    },
+    "group_dup_claim": {
+      "started": 2,
+      "ok": 0,
+      "fail": 2,
+      "reasons": {
+        "order_not_created_45s": 2
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    },
+    "group_overfill": {
+      "started": 6,
+      "ok": 0,
+      "fail": 6,
+      "reasons": {
+        "order_not_created_45s": 3,
+        "no_claim_registered": 3
+      },
+      "e2e": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0
+      }
+    }
+  },
+  "biz": {
+    "createToOrder": {
+      "n": 11,
+      "p50": 15406.4,
+      "p95": 23165.6,
+      "p99": 23165.6
+    },
+    "orderToOfferSeen": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "offerSeenToAccept": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "acceptToMatched": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0
+    },
+    "groupCardWait": {
+      "n": 11,
+      "p50": 99423.7,
+      "p95": 224787.5,
+      "p99": 224787.5
+    },
+    "offersSeen": 85,
+    "offersAcceptedSent": 0,
+    "offersRejectedSent": 0,
+    "offersIgnored": 0,
+    "offersWhileBusy": 85,
+    "acceptLost": 0,
+    "duplicateUpdatesSent": 67
+  },
+  "tracked_orders": 0,
+  "mock_cursor": 54577,
+  "mock_poll_failures": 0,
+  "errors": {
+    "group_sel_buttons_not_seen": 2
+  },
+  "outages_detail": [],
+  "ended_with_running": 0
+}

@@ -117,6 +117,13 @@ describeIf("مسار التوصيل الكامل على قاعدة حقيقية"
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, order_offers, orders,
+                             subscriptions, driver_capabilities, driver_availability,
+                             drivers, riders, users restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -286,30 +293,21 @@ describeIf("مسار التوصيل الكامل على قاعدة حقيقية"
     // منذ BUG-004 يُكتَبُ صفُّ إشعارِ العرضِ في معاملةِ open_offer_round ويُسلَّمُ من عاملٍ،
     // فنُفرّغُهُ هنا كما يفعلُ العاملُ قبل التحقّق من وصولِهِ.
     await drainNotificationOutbox(sql, capturing(driverSent));
-    expect(JSON.stringify(driverSent.map((m) => m.markup))).toContain(`offer:accept:${order?.id}`);
+    // `ADR 0286` — البطاقةُ إشعارٌ بلا زرِّ قبولٍ: القبولُ قرارُ تطبيقٍ لا محادثةٍ،
+    // فتُوجدُ البطاقةُ نصًّا وبطاقتُها بلا زرِّ `offer:` أصلًا.
+    const offerCard = driverSent.find((m) => (m.text ?? "").includes("الخدمة:"));
+    expect(offerCard).toBeDefined();
+    expect(JSON.stringify(offerCard?.markup ?? null)).not.toContain("offer:");
 
     // 5) القبول ذرّي عبر claim_ride: الطلب matched والعرض accepted
     driverSent.length = 0;
-    await post("driver", callback(COURIER_CHAT, `offer:accept:${order?.id}`));
-    /**
-     * وهذا المسار — بخلاف النقل — له مقصدٌ بإحداثية، فتُثبَت النقطتان معاً
-     * ويُثبَت تمايزهما: قبل المرحلة ١٢ كانت الاحتياطية نصّاً واحداً لكلتيهما،
-     * فيقرأ المندوب سطرين متطابقين. الآن لكلٍّ إحداثيته.
-     */
-    const acceptTexts = driverSent.filter((m) => m.location === undefined).map((m) => m.text);
-    expect(acceptTexts).toHaveLength(2);
-    expect(acceptTexts[0]).toBe(ar("driver.offer_accepted"));
-    const tripCard = acceptTexts[1] ?? "";
-    expect(tripCard).toContain(ar("driver.trip_header"));
-    expect(tripCard).toContain(ar("driver.trip_leg_to_pickup"));
-    expect(tripCard).toContain(PICKUP.latitude.toFixed(4));
-    expect(tripCard).toContain(DROPOFF.latitude.toFixed(4));
-    expect(tripCard).not.toContain(ar("driver.trip_destination_unset"));
-
-    // الدبّوس على الانطلاق لا على المقصد: مرحلته الآن إلى نقطة الاستلام
-    const pins = driverSent.filter((m) => m.location !== undefined);
-    expect(pins).toHaveLength(1);
-    expect(pins[0]?.location).toEqual(PICKUP);
+    // القبولُ عبرَ القلبِ الذرّيِّ في القاعدةِ (`claim_ride`) — عينُ ما تستدعيه
+    // بوابةُ التطبيقِ من مسارِ القبولِ، بلا زرِّ بوتٍ (ADR 0286).
+    await sql`select claim_ride(${order?.id ?? ""}::uuid, ${courierId}::uuid)`;
+    // `ADR 0286`: سطحُ السائقِ بعدَ القبولِ هوَ التطبيقُ — فلا رسائلَ عملٍ في
+    // بوتِه، والإشعارُ المُودَعُ هوَ إشعارُ الراكبِ برحلتِه (`rider_trip_notice`)
+    // في الصادرِ، وتسليمُهُ عملُ العاملِ لا عملَ هذا القياسِ.
+    expect(driverSent).toHaveLength(0);
 
     const afterClaim = await sql<{ status: string; assigned_driver_id: string | null }[]>`
       select status, assigned_driver_id from orders where id = ${order?.id ?? ""}

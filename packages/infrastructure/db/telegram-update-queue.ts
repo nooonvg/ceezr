@@ -62,6 +62,16 @@ export interface TelegramUpdateQueue {
   finish(job: JobLease, delivered: boolean, errorCode?: string): Promise<boolean>;
   /** موتٌ نهائيٌّ صريحٌ للوظيفةِ الفاشلةِ التي لن تُقبلَ أبداً. */
   abandon(job: JobLease, errorCode?: string): Promise<boolean>;
+  /**
+   * CAP-RUN-20261015 / D2 — التقاطٌ مقيَّدٌ ببوتٍ واحد (لتوزيعِ المساراتِ بين البوتين). اختياريٌّ:
+   * طابورٌ لا يوفّرُه يُستعمَلُ `claim()` العامُّ كما كان.
+   */
+  claimFor?(bot: string): Promise<{ job: ClaimedTelegramUpdateJob | null }>;
+  /**
+   * CAP-RUN-20261015 / D3 — تجديدُ إيجارِ وظائفَ ما زالت محجوزةً بالرمزِ نفسِه (تنتظرُ مسارَها).
+   * يعيدُ عددَ المجدَّد. اختياريٌّ.
+   */
+  renew?(jobs: readonly JobLease[]): Promise<number>;
 }
 
 function envelopeOf(value: unknown, name: string): Record<string, unknown> {
@@ -105,6 +115,40 @@ export function createPostgresTelegramUpdateQueue(
           maxAttempts: Number(delivery.max_attempts),
         } satisfies ClaimedTelegramUpdateJob,
       };
+    },
+
+    claimFor: async (bot: string) => {
+      const rows = await sql<{ result: unknown }[]>`
+        select claim_telegram_update_job_for_bot(${leaseTimeout}, ${maxAttempts}, ${bot}) as result
+      `;
+      const row = envelopeOf(rows[0]?.result, "claim_telegram_update_job_for_bot");
+      if (row.ok !== true) throw new Error(String(row.error ?? "UNKNOWN"));
+      const delivery = row.delivery as Record<string, unknown> | null;
+      if (delivery == null) return { job: null };
+      const payload = delivery.payload;
+      return {
+        job: {
+          bot: String(delivery.bot),
+          updateId: Number(delivery.update_id),
+          payload:
+            typeof payload === "object" && payload !== null
+              ? (payload as Record<string, unknown>)
+              : {},
+          claimToken: String(delivery.claim_token),
+          attempts: Number(delivery.attempts),
+          maxAttempts: Number(delivery.max_attempts),
+        } satisfies ClaimedTelegramUpdateJob,
+      };
+    },
+
+    renew: async (jobs) => {
+      if (jobs.length === 0) return 0;
+      const rows = await sql<{ n: number }[]>`
+        select renew_telegram_update_leases(
+          ${jobs.map((j) => j.bot)}::text[], ${jobs.map((j) => j.updateId)}::bigint[], ${jobs.map((j) => j.claimToken)}::uuid[]
+        ) as n
+      `;
+      return Number(rows[0]?.n ?? 0);
     },
 
     finish: async (job, delivered, errorCode) => {

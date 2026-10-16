@@ -74,6 +74,9 @@ services:
       RIDER_BOT_TOKEN: fake-rider-bot-token
       TELEGRAM_WEBHOOK_SECRET: chaos-webhook-secret-32chars-min-padding
       BOOTSTRAP_ADMIN_TELEGRAM_ID: "100000001"
+      # `ADR 0286` — سطحُ miniapp افتراضيًّا، وعنوانُ التطبيقِ شرطُ إقلاعِه (نطاقٌ
+      # محجوزٌ لا يُخاطَبُ فعليًّا في هذه الرصةِ المعزولةِ).
+      MINIAPP_URL: https://miniapp.invalid
       TELEGRAM_TRANSPORT: silent
       SESSION_STORE: redis
       PROCESS_TOPOLOGY: multi-process

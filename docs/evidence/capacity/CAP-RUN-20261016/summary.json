@@ -1,0 +1,56 @@
+{
+  "run": "CAP-RUN-20261016",
+  "branch": "work/miniapp-capacity-20261016",
+  "date": "2026-10-16",
+  "note": "تنفيذ جزئي: البوابات لم تجتز، والتقرير النهائي مصحح وفق مراجعة مستقلة",
+  "gates": {
+    "ARCH-01_02_03": "NOT PROVEN — isolate experiments returned empty orders; support = sequential tests",
+    "D7": "FAIL — 7 min no readiness without self-recovery; final recovery was manual (designer killed gateway at min 45)",
+    "I1": "PASS — multi-accepted=0, assignment conflicts=0 (measured); third criterion via generator metric + schema constraints",
+    "D8": "MEASUREMENT ONLY — queue backlog 3910 at 30 msg/s",
+    "R1": "FAIL as isolation proof — path C experiments returned empty results",
+    "LOAD-01": "FAIL — 1000 concurrency: 1.4% verified (50→98%, 100→67%, 750→36%, 1000→1.4%)",
+    "SOAK-01": "FAIL — continuity broken at min 38",
+    "GROUP-01": "FAIL — 15/15 groups not proven; unregistered evidence partial (255 total, ID-range caveat)",
+    "INTEGRITY-01": "PASS — criteria 1-2 measured 0; criterion 3 via generator + schema",
+    "GEN-01": "PASS (with documented drop incident)",
+    "EVIDENCE-01": "FAIL — edge-cases.json/before-after.json not found; source-match not proven",
+    "CI-01": "FAIL — sequential 1558/1558 green; CI's actual parallel path polluted"
+  },
+  "load_curve": {
+    "50": 0.98,
+    "100": 0.67,
+    "750": 0.36,
+    "1000": 0.014
+  },
+  "soak60": {
+    "scenarios": 33626,
+    "verified": 312,
+    "networkErrors": 32771,
+    "http5xx": 605,
+    "effectiveLoadMin": 38
+  },
+  "path_b": {
+    "webhook2xx": 5190,
+    "webhook429": 0,
+    "queueBacklog": 3910,
+    "latencyMeasurement": "INVALID (cursor issue, documented)"
+  },
+  "tests": {
+    "files": 181,
+    "tests": 1558,
+    "passed": 1558,
+    "failed": 0,
+    "mode": "sequential only"
+  },
+  "rebuild_notes": {
+    "load-config.gen1.json": "manually rebuilt for this round",
+    "git-diff.patch": "generated from unstaged changes at build time — not authoritative",
+    "source-revisions.json": "generated before final commit"
+  },
+  "security": {
+    "secret_scan": "0 leaks",
+    "production": "untouched",
+    "main": "not merged"
+  }
+}

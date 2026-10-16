@@ -1,0 +1,148 @@
+{
+  "generator": {
+    "GEN_ID": "gen1",
+    "BASE": "http://127.0.0.1:54300",
+    "MOCK": "http://127.0.0.1:58090",
+    "N_DRIVERS": 1000,
+    "N_RIDERS": 1000,
+    "SEED": false,
+    "PROFILE": [
+      {
+        "name": "base50",
+        "sec": 300,
+        "conc": 50
+      },
+      {
+        "name": "ramp100",
+        "sec": 120,
+        "conc": 100
+      },
+      {
+        "name": "ramp250",
+        "sec": 120,
+        "conc": 250
+      },
+      {
+        "name": "ramp500",
+        "sec": 120,
+        "conc": 500
+      },
+      {
+        "name": "ramp750",
+        "sec": 120,
+        "conc": 750
+      },
+      {
+        "name": "peak1000",
+        "sec": 600,
+        "conc": 1000
+      },
+      {
+        "name": "recover150",
+        "sec": 2220,
+        "conc": 150
+      }
+    ],
+    "MIX": {
+      "ride": 0.47,
+      "delivery": 0.38,
+      "group": 0.15
+    },
+    "MATCH_WAIT_MS": 120000,
+    "cities": {
+      "JED": {
+        "center": {
+          "lat": 21.5433,
+          "lng": 39.1728
+        },
+        "role": "core",
+        "idx": 1,
+        "drivers": [
+          160,
+          100
+        ],
+        "riders": 250
+      },
+      "MKK": {
+        "center": {
+          "lat": 21.4225,
+          "lng": 39.8262
+        },
+        "role": "core",
+        "idx": 2,
+        "drivers": [
+          120,
+          80
+        ],
+        "riders": 200
+      },
+      "RUH": {
+        "center": {
+          "lat": 24.7136,
+          "lng": 46.6753
+        },
+        "role": "core",
+        "idx": 3,
+        "drivers": [
+          150,
+          90
+        ],
+        "riders": 250
+      },
+      "TIF": {
+        "center": {
+          "lat": 21.2703,
+          "lng": 40.4158
+        },
+        "role": "group",
+        "idx": 4,
+        "drivers": [
+          150,
+          0
+        ],
+        "riders": 150
+      },
+      "MED": {
+        "center": {
+          "lat": 24.4672,
+          "lng": 39.6111
+        },
+        "role": "group",
+        "idx": 5,
+        "drivers": [
+          150,
+          0
+        ],
+        "riders": 150
+      }
+    },
+    "driver_offer_policy": {
+      "accept": 0.85,
+      "reject": 0.08,
+      "ignore": 0.07
+    },
+    "offer_source": "telegram-mock inbox only"
+  },
+  "run_env_non_secret": {
+    "NODE_ENV": "production",
+    "PORT": "54300",
+    "DATABASE_URL": "postgres://postgres@127.0.0.1:55432/ceezr_cap_20261015",
+    "SUPABASE_URL": "https://supabase-unused.invalid",
+    "SUPABASE_SERVICE_ROLE_KEY": "<redacted>",
+    "UPSTASH_REDIS_REST_URL": "http://127.0.0.1:58081",
+    "BOOTSTRAP_ADMIN_TELEGRAM_ID": "100000001",
+    "TELEGRAM_TRANSPORT": "real",
+    "SESSION_STORE": "redis",
+    "PROCESS_TOPOLOGY": "single-process",
+    "RUN_WORKER_IN_GATEWAY": "true",
+    "RUN_ADMIN_IN_GATEWAY": "false",
+    "TRANSLATION_PROVIDER": "none",
+    "ROUTING_PROVIDER": "none",
+    "SERVICE_INSTANCE_ID": "cap-gateway-1",
+    "TELEGRAM_DRAIN_LANES": "32",
+    "MOCK_TELEGRAM_URL": "http://127.0.0.1:58090"
+  },
+  "chaos_plan": null,
+  "soak_round": "r05-soak60-chaos",
+  "note": "PROFILE مجموعه 3600ث من load.start؛ البذر/التهيئة خارج الجولة. التزامن = سيناريوهات نشطة متزامنة، لا عدد الحسابات المزروعة."
+}

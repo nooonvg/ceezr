@@ -228,6 +228,16 @@ describeIf("النقل اللحظي على قاعدة حقيقية — المر�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table tracking_sessions, agent_outcomes, agent_decisions, audit_log,
+                             attendance_log, ratings, support_tickets,
+                             unsubscribed_claims, unsubscribed_negotiations, order_offers, orders,
+                             subscriptions, driver_capabilities, driver_availability,
+                             admin_sessions, admin_login_codes,
+                             drivers, riders, users restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -371,6 +381,30 @@ describeIf("النقل اللحظي على قاعدة حقيقية — المر�
     return { tripId, riderId };
   }
 
+  async function seedUnassignedTrip(chat: number): Promise<void> {
+    const fullName = `راكب ${chat}`;
+    const phone = `+9665${chat}`;
+    const users = await sql<{ id: string }[]>`
+      insert into users (city_id, telegram_id, full_name, phone, language_code, role)
+      values (${cityId}, ${chat}::bigint, ${fullName}, ${phone}, 'ar', 'rider')
+      returning id
+    `;
+    const userId = users[0]?.id;
+    if (userId === undefined) throw new Error("تعذّر إنشاء مستخدم الراكب");
+    const riders = await sql<{ id: string }[]>`
+      insert into riders (city_id, user_id) values (${cityId}, ${userId}::uuid) returning id
+    `;
+    const riderId = riders[0]?.id;
+    if (riderId === undefined) throw new Error("تعذّر إنشاء الراكب");
+    await sql`
+      insert into orders (city_id, rider_id, service, status, pickup, dropoff,
+                         pickup_label, dropoff_label)
+      values (${cityId}, ${riderId}::uuid, 'transport', 'searching',
+              st_point(39.1751, 21.5471)::geography, st_point(39.1901, 21.5601)::geography,
+              'الحرم', 'المطار')
+    `;
+  }
+
   it("رسالة موقعٍ واحدة تفتح جلسة تتبّع في القاعدة", async () => {
     /**
      * هذا هو إغلاق R-15. قبله كانت `handleLocation` تكتب الموقع القانوني ولا
@@ -441,9 +475,9 @@ describeIf("النقل اللحظي على قاعدة حقيقية — المر�
     const driverId = await registerDriver();
     const mine = await seedAssignedTrip(driverId, RIDER_CHAT);
     // راكبٌ آخر في نفس المدينة بلا إسناد: وجوده هو الاختبار — لا يُدفع إليه شيء.
-    await seedAssignedTrip(driverId, OTHER_RIDER_CHAT);
-    await sql`update orders set assigned_driver_id = null, status = 'searching'
-               where rider_id <> ${mine.riderId}::uuid`;
+    // I1 (ADR 0286): لا يُبذر التزامٌ ثانٍ للسائقِ نفسِه حتى للحظةٍ — فيُزرعُ
+    // طلبُ الراكبِ الآخرِ باحثًا بلا سائقٍ من الأصلِ، لا مُسنَدًا ثم يُفكُّ.
+    await seedUnassignedTrip(OTHER_RIDER_CHAT);
 
     await post("driver", location(DRIVER_CHAT, JEDDAH));
 

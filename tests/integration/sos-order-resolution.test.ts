@@ -20,6 +20,10 @@
  *   لا يُرَدُّ. ورمزُ `NO_ACTIVE_ORDER` يبقى في مجالِ الأسبابِ ولا يُنشَرُ.
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+
+/** I/O قاعدةٍ حقيقيّةٍ تحتَ حملِ الحزمةِ — مهلةٌ صريحةٌ لا تغطيةَ عطلٍ. */
+const slowIt = (name: string, fn: () => Promise<void> | void) => it(name, fn, 30_000);
+
 import type { SafetyRole } from "../../packages/application/safety/ports.ts";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import { createTriggerSosPort } from "../../packages/infrastructure/safety/safety-adapters.ts";
@@ -165,6 +169,14 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table notification_outbox, safety_incident_deliveries, safety_incidents, order_offers,
+        orders, driver_availability, drivers, riders, users restart identity cascade
+    `;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -182,14 +194,14 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
       where city_id = ${cityId}::uuid and key = 'sos_post_ride_window_minutes'
     `;
     trigger = createTriggerSosPort(sql);
-  });
+  }, 30_000);
 
   /**
    * الانحصارُ الذي كانَ: الحوارُ يقرأُ الطلبَ قبلَ النّداءِ، فإخفاقُ القراءةِ
    * يُسقِطُ الاستغاثةَ. وههنا يُثبَتُ البديلُ: بلا مُعرِّفٍ أصلاً، يُنسَبُ الحادثُ
    * إلى طلبِ المُبلِّغِ القائمِ.
    */
-  it("راكبٌ بلا مُعرِّفٍ: يُنسَبُ الحادثُ إلى طلبِه القائمِ", async () => {
+  slowIt("راكبٌ بلا مُعرِّفٍ: يُنسَبُ الحادثُ إلى طلبِه القائمِ", async () => {
     const order = await makeOrder({ status: "matched", minutesAgo: 5, assigned: true });
     const result = await trigger.trigger({
       orderId: null,
@@ -206,7 +218,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * `searching` طلبٌ قائمٌ للرّاكبِ: هوَ في انتظارِ سائقٍ ولمّا يُلغِ، وقد يكونُ
    * في أخطرِ لحظةٍ. استثناؤه كانَ سيُصمِتُ استغاثةً كاملةً.
    */
-  it("راكبٌ في `searching` وحدَه: الاستغاثةُ تُقبَلُ لا تُرفَضُ", async () => {
+  slowIt("راكبٌ في `searching` وحدَه: الاستغاثةُ تُقبَلُ لا تُرفَضُ", async () => {
     const order = await makeOrder({ status: "searching", minutesAgo: 3, assigned: false });
     const result = await trigger.trigger({
       orderId: null,
@@ -223,7 +235,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * تعدُّدُ الطلباتِ القائمةِ حالٌ قائمةٌ لا نظريّةٌ. والأحدثُ هوَ الرحلةُ التي
    * فيها الرّاكبُ الآنَ؛ والأقدمُ قد يكونُ طلباً منسيّاً في `searching`.
    */
-  it("طلبانِ قائمانِ: يُختارُ الأحدثُ لا الأقدمُ", async () => {
+  slowIt("طلبانِ قائمانِ: يُختارُ الأحدثُ لا الأقدمُ", async () => {
     const older = await makeOrder({ status: "searching", minutesAgo: 90, assigned: false });
     const newer = await makeOrder({ status: "matched", minutesAgo: 2, assigned: true });
     const result = await trigger.trigger({
@@ -246,7 +258,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * **يُقبَلُ بلاغاً بلا طلبٍ** (`F12-03` · `ADR 0145`): الطارئُ لا يشترطُ رحلةً،
    * وغيابُ الرحلةِ معلومةٌ صادقةٌ لا فراغٌ يُملأُ بأقربِ طلبٍ.
    */
-  it("رحلةٌ منتهيةٌ منذُ ساعتَينِ: بلاغٌ بلا طلبٍ لا نسبةٌ إليها", async () => {
+  slowIt("رحلةٌ منتهيةٌ منذُ ساعتَينِ: بلاغٌ بلا طلبٍ لا نسبةٌ إليها", async () => {
     await makeOrder({ status: "completed", minutesAgo: 120, assigned: true });
     const result = await trigger.trigger({
       orderId: null,
@@ -265,7 +277,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * يقعُ للراكبِ قد يقعُ **بعدَ** أن يُنهيَ السائقُ الرحلةَ في شاشتِه — ثمَّ
    * يُنزِلُه في مكانٍ آخرَ أو يتبعُه. فرفضُ النداءِ هنا أسوأُ من غيابِ الزرِّ.
    */
-  it("رحلةٌ انتهتْ داخلَ النافذةِ: الاستغاثةُ تُقبَلُ وتُنسَبُ إلى طلبِها", async () => {
+  slowIt("رحلةٌ انتهتْ داخلَ النافذةِ: الاستغاثةُ تُقبَلُ وتُنسَبُ إلى طلبِها", async () => {
     const order = await makeOrder({ status: "completed", minutesAgo: 5, assigned: true });
     const result = await trigger.trigger({
       orderId: null,
@@ -284,7 +296,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * `F12-03` لا يعودُ الحدُّ بابَ رفضٍ بل بابَ **تحوُّلٍ**: البلاغُ يُقبَلُ بلا
    * طلبٍ. ولو تسامحَ الحدُّ لظهرَ ههنا `order_id` غيرَ فارغٍ فسقطَت الحالةُ.
    */
-  it("رحلةٌ انتهتْ بعدَ النافذةِ بدقيقةٍ: البلاغُ يُقبَلُ بلا نسبةٍ إليها", async () => {
+  slowIt("رحلةٌ انتهتْ بعدَ النافذةِ بدقيقةٍ: البلاغُ يُقبَلُ بلا نسبةٍ إليها", async () => {
     await makeOrder({ status: "completed", minutesAgo: 31, assigned: true });
     const result = await trigger.trigger({
       orderId: null,
@@ -301,7 +313,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * النافذةُ **إعدادٌ بمدينةِ الطلبِ** لا ثابتٌ في الشِّفرةِ (القاعدة 0.3). ولو كانَ
    * الثلاثونَ محفوراً لمرَّ هذا الاختبارُ وسابقُه جميعاً وهوَ كاذبٌ.
    */
-  it("إعدادُ المدينةِ يُطَاعُ: توسيعُ النافذةِ يقلبُ الحكمَ بلا تغييرِ شِفرةٍ", async () => {
+  slowIt("إعدادُ المدينةِ يُطَاعُ: توسيعُ النافذةِ يقلبُ الحكمَ بلا تغييرِ شِفرةٍ", async () => {
     await sql`
       update platform_settings set value = '90'::jsonb
       where city_id = ${cityId}::uuid and key = 'sos_post_ride_window_minutes'
@@ -319,7 +331,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
   });
 
   /** السّائقُ يُسأَلُ عن التزامٍ قائمٍ عليه: `matched`/`in_progress` لا `searching`. */
-  it("سائقٌ مُسنَدٌ إليه `in_progress`: يُنسَبُ الحادثُ إلى طلبِه", async () => {
+  slowIt("سائقٌ مُسنَدٌ إليه `in_progress`: يُنسَبُ الحادثُ إلى طلبِه", async () => {
     const order = await makeOrder({ status: "in_progress", minutesAgo: 4, assigned: true });
     const result = await trigger.trigger({
       orderId: null,
@@ -339,7 +351,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * الدّورِ لظهرَ `order_id` غيرَ فارغٍ وسقطَت الحالةُ. وبعدَ `F12-03` يصيرُ
    * البلاغُ بلا طلبٍ بمدينةِ **حسابِ السائقِ** لا بمدينةِ طلبٍ ليسَ له.
    */
-  it("`searching` لا يُعَدُّ التزاماً على سائقٍ: بلاغٌ بلا طلبٍ لا نسبةٌ إليه", async () => {
+  slowIt("`searching` لا يُعَدُّ التزاماً على سائقٍ: بلاغٌ بلا طلبٍ لا نسبةٌ إليه", async () => {
     await makeOrder({ status: "searching", minutesAgo: 6, assigned: false });
     const result = await trigger.trigger({
       orderId: null,
@@ -358,7 +370,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
   });
 
   /** مسارُ المُعرِّفِ الصّريحِ باقٍ كما كانَ: العودةُ لا تكسرُ مُنادياً قديماً. */
-  it("مُعرِّفٌ صريحٌ يملكُه الرّاكبُ: يُقبَلُ كما كانَ قبلَ F8-05", async () => {
+  slowIt("مُعرِّفٌ صريحٌ يملكُه الرّاكبُ: يُقبَلُ كما كانَ قبلَ F8-05", async () => {
     const order = await makeOrder({ status: "matched", minutesAgo: 5, assigned: true });
     const result = await trigger.trigger({
       orderId: order,
@@ -372,7 +384,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
   });
 
   /** ومُعرِّفٌ صريحٌ لا يملكُه المُنادي يُرَدُّ: الملكيّةُ حكمٌ مكتوبٌ لا ضمنيٌّ. */
-  it("مُعرِّفٌ صريحٌ لطلبِ غيرِه: `ORDER_NOT_OWNED`", async () => {
+  slowIt("مُعرِّفٌ صريحٌ لطلبِ غيرِه: `ORDER_NOT_OWNED`", async () => {
     const order = await makeOrder({ status: "matched", minutesAgo: 5, assigned: true });
     const result = await trigger.trigger({
       orderId: order,
@@ -389,7 +401,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
    * الدّورُ صارَ يختارُ فرعَ الحلِّ، فرُفِعَ حكمُه إلى أوّلِ الدالّةِ. وههنا
    * يُثبَتُ التّرتيبُ: دورٌ باطلٌ يُرَدُّ قبلَ أن يُسأَلَ عن وجودِ المُبلِّغِ.
    */
-  it("دورٌ باطلٌ يُرَدُّ قبلَ البحثِ عن المُبلِّغِ", async () => {
+  slowIt("دورٌ باطلٌ يُرَدُّ قبلَ البحثِ عن المُبلِّغِ", async () => {
     const result = await trigger.trigger({
       orderId: null,
       actorTelegramId: "999999999",
@@ -402,7 +414,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
   });
 
   /** ونافذةُ المنعِ باقيةٌ في مسارِ الحلِّ: ضغطتانِ = حادثٌ واحدٌ وصفٌّ واحدٌ. */
-  it("ضغطتانِ بلا مُعرِّفٍ: حادثٌ واحدٌ وصفُّ تسليمٍ واحدٌ", async () => {
+  slowIt("ضغطتانِ بلا مُعرِّفٍ: حادثٌ واحدٌ وصفُّ تسليمٍ واحدٌ", async () => {
     await makeOrder({ status: "matched", minutesAgo: 5, assigned: true });
     const results = await Promise.all([
       trigger.trigger({

@@ -40,6 +40,8 @@ function productionSourceWithout(): Record<string, string | undefined> {
     // موضعُ المهامِّ يُعلَن ههنا كي يقع السقوطُ على المُختبَرِ لا على غيرِه
     // (ADR 0063) — والعكسُ مفعولٌ في `config-worker-placement.test.ts`.
     RUN_WORKER_IN_GATEWAY: "false",
+    // `ADR 0286` — عنوانُ التطبيقِ شرطُ إقلاعِ سطحِ miniapp الافتراضيِّ.
+    MINIAPP_URL: "https://app.example.com",
   };
 }
 

@@ -173,22 +173,16 @@ export function createOfferPublisher(
           lines.push(tr("driver.offer_card_notes", { notes: notification.notes }));
         }
         const text = lines.join("\n");
-        const keyboard: Keyboard = {
-          kind: "inline",
-          rows: [
-            [
-              {
-                label: tr("driver.offer_accept_button"),
-                data: `offer:accept:${notification.orderId}`,
-              },
-              {
-                label: tr("driver.offer_reject_button"),
-                data: `offer:reject:${notification.offerId}`,
-              },
-            ],
-            ...(options.miniAppUrl === undefined || options.miniAppUrl === null
-              ? []
-              : [
+        // `ADR 0286` — البطاقةُ إشعارٌ وزرُّ تطبيقٍ لا زرَّ عملٍ: القبولُ والرفضُ في
+        // لوحِ عروضِ التطبيقِ حيثُ الجلسةُ الموقَّعةُ وملكيّةُ القرارِ. لا يُنفَّذُ
+        // قرارٌ تجاريٌّ من المحادثةِ، ولا يعودُ زرُّ `offer:` إلى بطاقةٍ جديدةٍ.
+        const keyboard: Keyboard =
+          options.miniAppUrl === undefined || options.miniAppUrl === null
+            ? // وضعُ `legacy` الاختباريُّ: بطاقةٌ بلا زرٍّ — لا زرَّ عملٍ يعودُ إليها.
+              { kind: "inline", rows: [] }
+            : {
+                kind: "inline",
+                rows: [
                   [
                     {
                       label: tr("miniapp.offer_button"),
@@ -199,9 +193,17 @@ export function createOfferPublisher(
                       }),
                     },
                   ],
-                ]),
-          ],
-        };
+                  [
+                    {
+                      label: tr("miniapp.offers_button"),
+                      webAppUrl: miniAppUrl(options.miniAppUrl, {
+                        audience: "driver",
+                        screen: "offers",
+                      }),
+                    },
+                  ],
+                ],
+              };
         // `LOC-TRUST-01` — «فتح موقع الالتقاط/الوجهة»: الرابطُ الأصليُّ إن صلحَ وإلّا من النقطة.
         const pickupUrl = places === undefined ? null : openUrlFor(places.pickup);
         const dropoffUrl =

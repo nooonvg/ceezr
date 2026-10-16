@@ -113,6 +113,14 @@ describeIf("دورةُ الشهر المجاني للسائق على قاعدة 
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table subscription_notices, notification_outbox, agent_outcomes, agent_decisions, audit_log,
+                             attendance_log, order_offers, orders, subscriptions,
+                             driver_capabilities, driver_availability, drivers, riders, users
+                       restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -278,10 +286,12 @@ describeIf("دورةُ الشهر المجاني للسائق على قاعدة 
     `;
     expect(offers).toHaveLength(1);
     expect(offers[0]?.driver_id).toBe(driverId);
-    const offerMessage = driverSent.find((m) =>
-      JSON.stringify(m.markup ?? {}).includes("offer:accept:"),
-    );
+    // `ADR 0286` — بطاقةُ العرضِ إشعارٌ لا زرَّ عملٍ: لا يُنفَّذُ قرارٌ تجاريٌّ
+    // من المحادثةِ. وفي وضعِ `legacy` الاختباريِّ بلا `miniAppUrl` لا زرَّ أصلًا —
+    // فالمقصودُ: البطاقةُ وصلت، وبلا زرِّ `offer:` يعودُ إليها.
+    const offerMessage = driverSent.find((m) => (m.text ?? "").includes("الخدمة:"));
     expect(offerMessage).toBeDefined();
+    expect(JSON.stringify(offerMessage?.markup ?? {})).not.toContain("offer:");
   });
 
   it("انتهاءُ التجربة: صفٌّ منتهٍ، وإشعارٌ واحدٌ لا أكثر، ولو دار العاملُ مرّتين", async () => {

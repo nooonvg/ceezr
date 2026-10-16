@@ -89,6 +89,11 @@ const benchEnv: Record<string, string> = {
   // بيدِه ولا يمرُّ بنقطةِ دخولِ البوّابةِ، فسطحُ الإدارةِ غيرُ مُركَّبٍ فيه في
   // الحالَين. والإعلانُ يمنع أن يُقرأ غيابُه سهواً فيُقلَب يوماً (F5-08).
   RUN_ADMIN_IN_GATEWAY: "false",
+  // ADR 0286: الافتراضيُّ صارَ miniapp — ووضعُهُ يُلزمُ MINIAPP_URL،
+  // فالمقعدُ المعماريُّ يُعلنُهُ صراحةً (قيمةُ اختبارٍ لا إنتاج) ليبقى
+  // عقدُ البيئةِ مُلبّى بعدَ تغييرِ الافتراضيّ.
+  BOT_SURFACE_MODE: "miniapp",
+  MINIAPP_URL: "https://miniapp.bench-test.local",
 };
 
 const config = loadConfig(benchEnv);

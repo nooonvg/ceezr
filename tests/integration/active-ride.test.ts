@@ -24,7 +24,7 @@
  * ــ `RLS` يُقاسُ وجوداً لا أثراً: الاتصالُ بمالكِ القاعدةِ وهوَ يتخطّاه.
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import {
   type ActiveCityHandle,
@@ -205,6 +205,13 @@ beforeAll(async () => {
   `;
   if (driver === undefined) throw new Error("تعذّر زرعُ السائقِ");
   driverId = driver.id;
+});
+
+beforeEach(async () => {
+  if (DATABASE_URL === undefined) return;
+  // I1 (ADR 0286): فهرسُ الالتزامِ الواحدِ للسائقِ يرفضُ بذرَ التزامٍ ثانٍ لسائقٍ
+  // لا يزالُ التزامُ اختبارٍ سابقٍ حيًّا — فتُنهى التزاماتُ هذا الملفِّ قبلَ كلِّ اختبارٍ.
+  await sql`update orders set status = 'completed', completed_at = now() where idempotency_key like 'active-ride:%' and is_driver_engaged_order_status(status)`;
 });
 
 afterAll(async () => {

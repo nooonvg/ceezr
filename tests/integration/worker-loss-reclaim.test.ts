@@ -251,6 +251,14 @@ describeIf("فقدانُ عمليّةِ عاملٍ حقيقيّةٍ — F11-02",
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table notification_outbox, order_offers, orders, driver_availability,
+        drivers, riders, users restart identity cascade
+    `;
+
     for (const c of children) c.kill("SIGKILL");
     server?.stop(true);
     for (const t of savedTimeouts) {

@@ -10,6 +10,12 @@
  */
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
+
+/** اختباراتُ هذا الملفِّ تشتغلُ على I/O قاعدةٍ حقيقيّةٍ فتبلغُ تحتَ حملِ
+ * الحزمةِ المتسلسلةِ أكثرَ من المهلةِ الافتراضيةِ (5ث). مهلةٌ صريحةٌ لبطءِ
+ * العملِ المشروعِ لا لتغطيةِ عطلٍ: الفشلُ يظلُّ فشلًا بعدَ المهلةِ. */
+const slowIt = (name: string, fn: () => Promise<void> | void) => it(name, fn, 30_000);
+
 import { buildWorkerContainer, MAX_JOB_CONCURRENCY } from "../../apps/workers/src/container.ts";
 import { createJobRunner, type JobLogger } from "../../apps/workers/src/runner.ts";
 import type { ExpiryWarningSender } from "../../packages/application/subscription/expire-subscriptions.ts";
@@ -80,6 +86,14 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, ratings, support_tickets,
+                             unsubscribed_claims, unsubscribed_negotiations, order_offers,
+                             orders, subscriptions, driver_capabilities, driver_availability,
+                             drivers, riders, users restart identity cascade`;
+
     await lockSql.end({ timeout: 5 });
     await sql.end({ timeout: 5 });
   });
@@ -121,7 +135,7 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
       riderOut: { send: async () => true },
       identifyingDriver: { sendReturningId: async () => "1" },
     });
-  });
+  }, 30_000);
 
   /** سائق حقيقي بصفوف users + drivers، ليست بيانات وهمية بل نفس ما ينشئه البوت. */
   async function makeDriver(
@@ -161,7 +175,7 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     return new Map(outcomes.map((o) => [o.name, o.detail ?? ""]));
   }
 
-  it("يجمع مهامّ المدينة المفعَّلة والمهامّ العامّة معاً بأسماء ظاهرة", async () => {
+  slowIt("يجمع مهامّ المدينة المفعَّلة والمهامّ العامّة معاً بأسماء ظاهرة", async () => {
     const jobs = await container.jobs();
     const names = jobs.map((job) => job.name);
 
@@ -174,7 +188,7 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     expect(jobs.every((job) => job.everySeconds > 0)).toBe(true);
   });
 
-  it("لا يبني مهامّ مدينة لمدينة غير مفعَّلة، ويبقي المهامّ العامّة", async () => {
+  slowIt("لا يبني مهامّ مدينة لمدينة غير مفعَّلة، ويبقي المهامّ العامّة", async () => {
     // «لا مدينةَ مفعَّلة» شرطٌ على الجدولِ كلِّه: إطفاءُ مدينةِ السيناريو وحدَها
     // كان يكفي حين كانت مدينةٌ واحدةٌ نشطةً، ولا يكفي في إطلاقِ خمسِ مدن.
     await sql`update cities set is_active = false`;
@@ -198,7 +212,7 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     expect(log.lines.some((line) => line.includes("worker.no_active_cities"))).toBe(true);
   });
 
-  it("يُنهي اشتراكاً استحقّ الانتهاء ويكتب سطر تدقيق، ولا يمسّ اشتراكاً سارياً", async () => {
+  slowIt("يُنهي اشتراكاً استحقّ الانتهاء ويكتب سطر تدقيق، ولا يمسّ اشتراكاً سارياً", async () => {
     const due = await makeDriver(DRIVER_TELEGRAM, "ar");
     const live = await makeDriver(STALE_DRIVER_TELEGRAM, "ar");
 
@@ -227,31 +241,34 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     expect(audit.length).toBe(1);
   });
 
-  it("يُحذّر سائقاً يقترب انتهاء اشتراكه برسالة بلغته، ولا يكرّر التحذير في الشوط التالي", async () => {
-    const soon = await makeDriver(DRIVER_TELEGRAM, "ur");
-    await sql`
+  slowIt(
+    "يُحذّر سائقاً يقترب انتهاء اشتراكه برسالة بلغته، ولا يكرّر التحذير في الشوط التالي",
+    async () => {
+      const soon = await makeDriver(DRIVER_TELEGRAM, "ur");
+      await sql`
       insert into subscriptions (city_id, driver_id, plan, status, current_period_end, price_amount)
       values (${cityId}, ${soon.driverId}, 'transport', 'active', now() + interval '1 day', 400)
     `;
 
-    const first = await runAll();
-    expect(first.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=1 warned=1 failed=0");
-    expect(warnings.length).toBe(1);
-    expect(warnings[0]?.chatId).toBe(String(DRIVER_TELEGRAM));
-    // اللغة المسجَّلة أردية، فالرسالة يجب أن تكون أردية لا عربية.
-    expect(warnings[0]?.text).toContain("سبسکرپشن");
+      const first = await runAll();
+      expect(first.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=1 warned=1 failed=0");
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]?.chatId).toBe(String(DRIVER_TELEGRAM));
+      // اللغة المسجَّلة أردية، فالرسالة يجب أن تكون أردية لا عربية.
+      expect(warnings[0]?.text).toContain("سبسکرپشن");
 
-    const warned = await sql<{ action: string }[]>`
+      const warned = await sql<{ action: string }[]>`
       select action from audit_log where action = 'subscription.expiry_warned'
     `;
-    expect(warned.length).toBe(1);
+      expect(warned.length).toBe(1);
 
-    const second = await runAll();
-    expect(second.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=0 warned=0 failed=0");
-    expect(warnings.length).toBe(1);
-  });
+      const second = await runAll();
+      expect(second.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=0 warned=0 failed=0");
+      expect(warnings.length).toBe(1);
+    },
+  );
 
-  it("يُطفئ توفّراً بائتاً ولا يمسّ سائقاً في رحلة قائمة، ثم لا يجد ما يُطفئه", async () => {
+  slowIt("يُطفئ توفّراً بائتاً ولا يمسّ سائقاً في رحلة قائمة، ثم لا يجد ما يُطفئه", async () => {
     const stale = await makeDriver(DRIVER_TELEGRAM, "ar");
     const busy = await makeDriver(STALE_DRIVER_TELEGRAM, "ar");
 
@@ -298,7 +315,7 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     expect(second.get(`cleanup-stale:${cityId}`)).toBe("deactivated=0 staleMinutes=180");
   });
 
-  it("يقرأ مهلة البياتة من إعدادات المدينة لا من رقم في الكود", async () => {
+  slowIt("يقرأ مهلة البياتة من إعدادات المدينة لا من رقم في الكود", async () => {
     const driver = await makeDriver(DRIVER_TELEGRAM, "ar");
     await sql`
       insert into driver_availability (city_id, driver_id, is_available, changed_at)
@@ -318,28 +335,31 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
     expect(after.get(`cleanup-stale:${cityId}`)).toBe("deactivated=1 staleMinutes=60");
   });
 
-  it("يقرأ أيام التحذير من إعدادات المدينة: يومان لا يريان اشتراكاً ينتهي بعد خمسة", async () => {
-    const driver = await makeDriver(DRIVER_TELEGRAM, "ar");
-    await sql`
+  slowIt(
+    "يقرأ أيام التحذير من إعدادات المدينة: يومان لا يريان اشتراكاً ينتهي بعد خمسة",
+    async () => {
+      const driver = await makeDriver(DRIVER_TELEGRAM, "ar");
+      await sql`
       insert into subscriptions (city_id, driver_id, plan, status, current_period_end, price_amount)
       values (${cityId}, ${driver.driverId}, 'transport', 'active', now() + interval '5 days', 400)
     `;
 
-    const before = await runAll();
-    expect(before.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=0 warned=0 failed=0");
-    expect(warnings.length).toBe(0);
+      const before = await runAll();
+      expect(before.get(`warn-expiring:${cityId}`)).toBe("days=2 examined=0 warned=0 failed=0");
+      expect(warnings.length).toBe(0);
 
-    await sql`
+      await sql`
       update platform_settings set value = '7'
        where city_id = ${cityId} and key = 'subscription_expiry_warning_days'
     `;
 
-    const after = await runAll();
-    expect(after.get(`warn-expiring:${cityId}`)).toBe("days=7 examined=1 warned=1 failed=0");
-    expect(warnings.length).toBe(1);
-  });
+      const after = await runAll();
+      expect(after.get(`warn-expiring:${cityId}`)).toBe("days=7 examined=1 warned=1 failed=0");
+      expect(warnings.length).toBe(1);
+    },
+  );
 
-  it("كل المهامّ تعمل على قاعدة فارغة بلا عطل وبتقارير صفرية", async () => {
+  slowIt("كل المهامّ تعمل على قاعدة فارغة بلا عطل وبتقارير صفرية", async () => {
     const details = await runAll();
 
     expect(details.get("expire-subscriptions")).toBe("expired=0");

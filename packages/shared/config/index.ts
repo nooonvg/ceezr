@@ -323,9 +323,11 @@ export const TELEGRAM_TRANSPORT_NAMES = ["real", "silent"] as const;
 export type TelegramTransportName = (typeof TELEGRAM_TRANSPORT_NAMES)[number];
 
 /**
- * أوضاعُ سطحِ البوتِ (`ADR 0213`). الافتراضُ عند الغيابِ `legacy`: بيئةٌ لا تعرفُ أصلَ التطبيقِ
- * لا تستطيعُ أن تبنيَ زرَّه، فالافتراضُ الآمنُ هو السلوكُ الذي لا يحتاجُه. والإنتاجُ يُعلِنُ
- * `miniapp` صراحةً في `render.yaml`.
+ * أوضاعُ سطحِ البوتِ (`ADR 0213` · `ADR 0286`). الافتراضُ عند الغيابِ `miniapp`:
+ * هو سطحَ المنتجِ الوحيدَ في التشغيلِ الفعليّ، فلا بيئةٌ تعملُ بالحوارِ القديمِ إلا
+ * بِعَلمٍ صريحٍ. و`legacy` **مسارُ اختبارِ توافقٍ معزولٌ فقط** (`ADR 0286`):
+ * يُرفضُ في `NODE_ENV=production` رفضاً قاطعاً، ولا يُقبلُ خارجها إلّا مع
+ * `BOT_SURFACE_TEST_LEGACY=1` صريحاً — فلا يعودُ الوضعُ القديمُ بالسهوِ ولا بالضبطِ العرضيّ.
  */
 export const BOT_SURFACE_MODE_NAMES = ["legacy", "miniapp"] as const;
 
@@ -803,7 +805,7 @@ export function tryLoadConfig(
     );
   }
 
-  const rawBotSurfaceMode = (source.BOT_SURFACE_MODE ?? "legacy").trim().toLowerCase();
+  const rawBotSurfaceMode = (source.BOT_SURFACE_MODE ?? "miniapp").trim().toLowerCase();
   if (!(BOT_SURFACE_MODE_NAMES as readonly string[]).includes(rawBotSurfaceMode)) {
     return err(
       new InvalidEnvVarError(
@@ -811,6 +813,22 @@ export function tryLoadConfig(
         `المتاح: ${BOT_SURFACE_MODE_NAMES.join(", ")} — وردت: ${rawBotSurfaceMode}`,
       ),
     );
+  }
+  // `ADR 0286` — لا واجهةَ بوتٍ في تشغيلٍ فعليّ: `legacy` مسارُ اختبارِ توافقٍ معزول.
+  // في الإنتاج يُرفضُ مطلقاً؛ وخارجَه لا يُقبلُ إلا بعلمٍ صريحٍ من اختبارٍ لا من سهوٍ.
+  if (rawBotSurfaceMode === "legacy") {
+    const testLegacyOptIn = (source.BOT_SURFACE_TEST_LEGACY ?? "").trim().toLowerCase() === "1";
+    if (env === "production" || !testLegacyOptIn) {
+      return err(
+        new InvalidEnvVarError(
+          "BOT_SURFACE_MODE",
+          "وضعُ `legacy` مسارُ اختبارِ توافقٍ معزولٌ فقط (`ADR 0286`): Mini App هو سطحُ المنتجِ الوحيد. " +
+            (env === "production"
+              ? "وهو مرفوضٌ في الإنتاجِ رفضاً قاطعاً."
+              : "ويُفعَّلُ خارجَ الإنتاجِ بـ`BOT_SURFACE_TEST_LEGACY=1` صريحاً فقط."),
+        ),
+      );
+    }
   }
   let miniAppUrl: string | null = null;
   if (!isBlank(source.MINIAPP_URL)) {

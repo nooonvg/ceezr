@@ -1,0 +1,476 @@
+{
+  "run": "CAP-RUN-20261015",
+  "soak_round": "r05-soak60-chaos",
+  "verdict": "يحتاج إصلاحاً إضافياً",
+  "window": {
+    "load_start": "2026-10-15T02:41:18.333Z",
+    "load_end": "2026-10-15T03:41:18.966Z",
+    "drain_end": "2026-10-15T03:45:10.998Z",
+    "load_minutes": 60
+  },
+  "post_load_drain_complete_at": "2026-10-15T04:08:11Z",
+  "gateway_outages": [
+    {
+      "from": "2026-10-15T02:49:18.271Z",
+      "to": "2026-10-15T02:53:10.213Z",
+      "ms": 231942
+    },
+    {
+      "from": "2026-10-15T03:05:18.121Z",
+      "to": "2026-10-15T03:05:23.584Z",
+      "ms": 5463
+    },
+    {
+      "from": "2026-10-15T03:26:22.763Z",
+      "to": "2026-10-15T03:26:23.393Z",
+      "ms": 630
+    },
+    {
+      "from": "2026-10-15T03:37:18.101Z",
+      "to": "2026-10-15T03:37:21.735Z",
+      "ms": 3634
+    }
+  ],
+  "gateway_outage_total_s": 241.7,
+  "concurrency": {
+    "target_peak": 1000,
+    "measured_peak_scenarios": 1000,
+    "measured_peak_http_inflight": 742
+  },
+  "accounts": {
+    "seeded_drivers": 1000,
+    "seeded_riders": 1000,
+    "active_drivers_sent_updates": 819,
+    "active_riders_sent_updates": 1000,
+    "drivers_assigned_orders": 304,
+    "groups_configured": 15,
+    "groups_with_traffic": 4
+  },
+  "orders": {
+    "delivery": {
+      "created": 259,
+      "completed": 73,
+      "cancelled": 16,
+      "open_after_run": 170
+    },
+    "group": {
+      "created": 172,
+      "completed": 33,
+      "cancelled": 35,
+      "open_after_run": 104
+    },
+    "ride": {
+      "created": 524,
+      "completed": 90,
+      "cancelled": 106,
+      "open_after_run": 328
+    }
+  },
+  "order_to_accept_s": {
+    "n": 422,
+    "p50": 8.2,
+    "p95": 27.1,
+    "p99": 39.4,
+    "max": 43.309843
+  },
+  "offers": {
+    "db_by_status": [
+      {
+        "status": "rejected",
+        "n": 57
+      },
+      {
+        "status": "pending",
+        "n": 5
+      },
+      {
+        "status": "cancelled",
+        "n": 1687
+      },
+      {
+        "status": "accepted",
+        "n": 423
+      },
+      {
+        "status": "expired",
+        "n": 1617
+      }
+    ],
+    "db_created": 3789,
+    "delivered_in_mock": 3742,
+    "delivered_ratio": 98.8,
+    "create_to_mock_s": {
+      "n": 3742,
+      "p50": 3.3,
+      "p95": 10.7,
+      "p99": 26.2,
+      "max": 269.062
+    }
+  },
+  "outbox": {
+    "created": 5999,
+    "delivered": 5944,
+    "dead_abandoned": 49,
+    "undeliverable": 6,
+    "open_now": 0,
+    "delivered_late_gt30s": 166,
+    "delivered_late_gt60s": 39,
+    "created_per_s": 1.666,
+    "delivered_per_s": 1.651
+  },
+  "outbox_deliver_lag_s": {
+    "n": 6038,
+    "p50": 4.5,
+    "p95": 19.6,
+    "p99": 53.6,
+    "max": 245.168272
+  },
+  "telegram_updates": {
+    "by_bot_status_at_load_end": {
+      "driver_done": 15556,
+      "rider_claimed": 32,
+      "rider_done": 36267,
+      "rider_pending": 12353
+    },
+    "completion_lag_s": {
+      "driver": {
+        "n": 15556,
+        "p50": 3.8,
+        "p95": 16,
+        "p99": 27.4,
+        "max": 243.390706
+      },
+      "rider": {
+        "n": 36267,
+        "p50": 1272.4,
+        "p95": 1365.3,
+        "p99": 1379.3,
+        "max": 1627.081842
+      }
+    },
+    "shed_429_queue_saturated": 36667
+  },
+  "mock": {
+    "calls_total_incl_pre_load": 115762,
+    "accepted": 108995,
+    "rejected_429": 6767,
+    "rate_per_s_by_bot_in_window": {
+      "rider": 12.67,
+      "driver": 6.66
+    },
+    "soft_violations_private_1ps": 2719
+  },
+  "http": {
+    "total": 104689,
+    "ok": 67934,
+    "non2xx": 36749,
+    "netErr": 6,
+    "timeouts": 0,
+    "refused": 2,
+    "retried": 88,
+    "inflight": 0,
+    "peakInflight": 742,
+    "n": 104683,
+    "p50": 26.9,
+    "p95": 1055.9,
+    "p99": 2387.3
+  },
+  "scenarios": {
+    "started": 21946,
+    "ok": 193,
+    "by_type": {
+      "ride_cancel_searching": {
+        "started": 800,
+        "ok": 4,
+        "fail": 796
+      },
+      "delivery": {
+        "started": 5720,
+        "ok": 54,
+        "fail": 5666
+      },
+      "group": {
+        "started": 4066,
+        "ok": 27,
+        "fail": 4039
+      },
+      "delivery_cancel_searching": {
+        "started": 653,
+        "ok": 5,
+        "fail": 648
+      },
+      "ride": {
+        "started": 7027,
+        "ok": 70,
+        "fail": 6957
+      },
+      "delivery_dup_complete": {
+        "started": 300,
+        "ok": 9,
+        "fail": 291
+      },
+      "delivery_cancel_matched": {
+        "started": 466,
+        "ok": 6,
+        "fail": 460
+      },
+      "delivery_cancel_in_progress": {
+        "started": 223,
+        "ok": 0,
+        "fail": 223
+      },
+      "ride_dup_complete": {
+        "started": 401,
+        "ok": 1,
+        "fail": 400
+      },
+      "ride_cancel_matched": {
+        "started": 594,
+        "ok": 2,
+        "fail": 592
+      },
+      "group_overfill": {
+        "started": 456,
+        "ok": 3,
+        "fail": 453
+      },
+      "ride_cancel_in_progress": {
+        "started": 289,
+        "ok": 2,
+        "fail": 287
+      },
+      "ride_dup_create": {
+        "started": 378,
+        "ok": 3,
+        "fail": 375
+      },
+      "group_dup_claim": {
+        "started": 278,
+        "ok": 3,
+        "fail": 275
+      },
+      "delivery_dup_create": {
+        "started": 295,
+        "ok": 4,
+        "fail": 291
+      }
+    }
+  },
+  "integrity": {
+    "orders_with_two_accepted_offers": 0,
+    "drivers_with_two_active_orders_now": 138,
+    "outbox_stuck_sending_gt_5min_now": 0
+  },
+  "groups": {
+    "negotiations_by_status": [
+      {
+        "status": "cancelled",
+        "n": 340
+      },
+      {
+        "status": "exhausted",
+        "n": 29
+      },
+      {
+        "status": "agreed",
+        "n": 37
+      }
+    ],
+    "negotiations_over_3_claims": 0,
+    "duplicate_claims_same_driver": 0
+  },
+  "faults": [
+    {
+      "at_min": 8,
+      "action": "pg_terminate_backends",
+      "recovered": false,
+      "ready_after_ms": null,
+      "error": null,
+      "verdict": "FAIL: انهارت عملية البوابة (TypeError غير ملتقط في postgres.js nextWrite) وبقيت متوقفة حتى إعادة التشغيل اليدوية 02:53:10 (انقطاع 231.9ث كما رصده المولّد). العيب D7 غير مُصلَح."
+    },
+    {
+      "at_min": 14,
+      "action": "db_lock_delay",
+      "recovered": true,
+      "ready_after_ms": 603,
+      "error": null,
+      "verdict": null
+    },
+    {
+      "at_min": 20,
+      "action": "gateway_kill9_restart",
+      "recovered": true,
+      "ready_after_ms": 1,
+      "error": "SystemError: kill() failed: EPERM: Operation not permitted",
+      "verdict": "TOOL_FAILURE: لم يُنفَّذ القتل (EPERM لأن pgrep طابق غلاف sudo المملوك لـroot). البوابة لم تُقتل؛ «recovered» هنا لا معنى له. أُعيدت الخطوة في الدقيقة 24."
+    },
+    {
+      "at_min": 24,
+      "action": "gateway_kill9_restart",
+      "recovered": true,
+      "ready_after_ms": 532,
+      "error": null,
+      "verdict": null
+    },
+    {
+      "at_min": 27,
+      "action": "redis_pause",
+      "recovered": true,
+      "ready_after_ms": 1,
+      "error": null,
+      "verdict": null
+    },
+    {
+      "at_min": 33,
+      "action": "shim_kill_restart",
+      "recovered": true,
+      "ready_after_ms": 1,
+      "error": null,
+      "verdict": null
+    },
+    {
+      "at_min": 38,
+      "action": "pg_restart",
+      "recovered": true,
+      "ready_after_ms": 259,
+      "error": null,
+      "verdict": null
+    },
+    {
+      "at_min": 45,
+      "action": "gateway_graceful_restart",
+      "recovered": true,
+      "ready_after_ms": 306,
+      "error": null,
+      "verdict": null
+    },
+    {
+      "at_min": 52,
+      "action": "redis_restart_persisted",
+      "recovered": true,
+      "ready_after_ms": 3,
+      "error": null,
+      "verdict": null
+    },
+    {
+      "at_min": 56,
+      "action": "gateway_kill9_restart",
+      "recovered": true,
+      "ready_after_ms": 295,
+      "error": null,
+      "verdict": null
+    }
+  ],
+  "edge_cases": {
+    "pass": 20,
+    "fail": 0,
+    "not_verified": 0
+  },
+  "gates": [
+    {
+      "gate": "لا فقد غير مفسر للطلبات أو تحديثات Telegram أو الإشعارات",
+      "status": "PASS",
+      "evidence": "تحديثات: كل وظيفة إما done أو ما زالت في الطابور حتى صُرّفت (2026-10-15T04:08:11Z). 0 وظيفة dead. 36667 رفض 429 قبل استهلاك update_id (تأجيل لا فقد بحسب ADR 0054). صندوق الإشعارات: 5999 أُنشئ = 5944 سُلّم + 49 ABANDONED (الطلب أُغلق قبل التسليم، مفسَّر) + 6 TELEGRAM_DELIVERY_NOT_REQUIRED + 0 مفتوح."
+    },
+    {
+      "gate": "لا ازدواج غير مسموح في قبول الطلب أو إكمال الرحلة",
+      "status": "FAIL",
+      "evidence": "طلبات بعرضين مقبولين: 0، ومطالبات قروب مكررة: 0، والإكمال المزدوج يُرفض (A4). لكن 138 سائقاً يحملون طلبين نشطين معاً (I1) — إسناد مزدوج للسائق غير مسموح منطقياً."
+    },
+    {
+      "gate": "لا حالات عالقة بلا مسار استعادة معروف",
+      "status": "FAIL",
+      "evidence": "outbox عالق في sending>5د: 0؛ الوظائف المطالَبة تُستعاد بانتهاء الإيجار. لكن 602 طلباً من الجولة بقيت searching/matched/in_progress بعد توقف أطرافها، ولا مؤقت آلي لها (R3) — المسار يدوي فقط."
+    },
+    {
+      "gate": "لا أخطاء غير مفسرة في سجلات التطبيق",
+      "status": "FAIL",
+      "evidence": "كل فئات الأخطاء صُنّفت وفُسّرت (انظر «تصنيف السجلات»)، إلا أن انهيار D7 خطأ غير ملتقط أسقط العملية — مفسَّر السبب لكنه غير معالَج."
+    },
+    {
+      "gate": "نجاح اختبارات الوظائف والسباقات وإعادة التشغيل",
+      "status": "FAIL (السباقات والتكرار PASS؛ إعادة التشغيل FAIL بسبب D7)",
+      "evidence": "الحالات الحدّية: 20 نجح، 0 فشل، 0 لم يُتحقق. اختبارات الوحدة/التكامل/الأنواع: نجحت. إعادة التشغيل: 10 أعطال محقونة؛ 8 استعادت، 1 انهيار (D7)، 1 لم يُنفَّذ (عيب أداة)."
+    },
+    {
+      "gate": "إكمال 60 دقيقة من الحمل دون تجمّد المولد",
+      "status": "PASS",
+      "evidence": "المولّد: load.start 02:41:18.333 → load.end-phase 03:41:18.966، تقارير المولّد كل 10ث بلا فجوة، وصرّف الجاري حتى 03:45:10.998. (البوابة انقطعت 241.7ث إجمالاً — مذكور منفصلاً.)"
+    },
+    {
+      "gate": "تحقيق هدف التزامن وقياسه فعلياً، أو توثيق الحد المادي",
+      "status": "FAIL (الحد موثَّق)",
+      "evidence": "الذروة المقيسة 1000 سيناريو متزامن و742 طلب HTTP متزامن؛ لكن النظام لم يستوعبها: 36667 رفض 429 وتأخر تحديث الزبون p50 1272.4ث. الحد: R1 (~11.7 وظيفة زبون/ث) + 2 vCPU."
+    },
+    {
+      "gate": "إثبات تحسن تسليم الإشعارات بعد الإصلاح بأرقام مقارنة",
+      "status": "PASS",
+      "evidence": "العروض الواصلة 0.5%→99.6%، زمن العرض p50 18ث→2.8ث، تأخر تحديث السائق p50 171ث→5ث (B0→B2، حمل متطابق)."
+    },
+    {
+      "gate": "لا ادعاء بأن النظام اجتاز اختباراً لم ينفذه",
+      "status": "PASS",
+      "evidence": "خطوة الحقن الفاشلة (الدقيقة 20) مُعلَنة ولم تُحسب؛ مجموعات القروب العشرون لم تتحقق ومُعلَنة؛ KYC/start_trial بالـSQL مُعلَن."
+    },
+    {
+      "gate": "1,000 سائق و1,000 زبون و20 قروباً على الأقل",
+      "status": "FAIL (جزئياً)",
+      "evidence": "مزروع: 1000 سائق و1000 زبون. نشط فعلياً: 819 سائقاً و1000 زبوناً أرسلوا تحديثات. القروبات المهيأة 15 (5 مدن × 3) لا 20، ونشط منها 4 فقط (قروبات TIF/MED حيث يوجد سائقون مشتركون خارج الخدمة)."
+    }
+  ],
+  "before_after": [
+    {
+      "round": "r01-before-pr558",
+      "orders": 587,
+      "completed": 3,
+      "offers_delivered_pct": 0.5,
+      "offer_create_to_mock_p50_s": 18,
+      "update_lag_p50_s": {
+        "driver": 171.2,
+        "rider": 196.3
+      },
+      "scenarios_ok": 4,
+      "scenarios_started": 1387
+    },
+    {
+      "round": "r02-after-fixes",
+      "orders": 367,
+      "completed": 26,
+      "offers_delivered_pct": 99,
+      "offer_create_to_mock_p50_s": 3.1,
+      "update_lag_p50_s": {
+        "driver": 39.3,
+        "rider": 210.3
+      },
+      "scenarios_ok": 28,
+      "scenarios_started": 1541
+    },
+    {
+      "round": "r03-after-d6",
+      "orders": 460,
+      "completed": 91,
+      "offers_delivered_pct": 99.6,
+      "offer_create_to_mock_p50_s": 2.8,
+      "update_lag_p50_s": {
+        "driver": 5,
+        "rider": 118.5
+      },
+      "scenarios_ok": 97,
+      "scenarios_started": 1605
+    },
+    {
+      "round": "r04-after-d6-lanes64",
+      "orders": 421,
+      "completed": 71,
+      "offers_delivered_pct": 99.1,
+      "offer_create_to_mock_p50_s": 2.2,
+      "update_lag_p50_s": {
+        "driver": 4.8,
+        "rider": 77.5
+      },
+      "scenarios_ok": 78,
+      "scenarios_started": 1560
+    }
+  ],
+  "not_production_evidence": "كل ما سبق محلي (2 vCPU، محاكي Telegram)؛ لا يُعمَّم على الإنتاج."
+}

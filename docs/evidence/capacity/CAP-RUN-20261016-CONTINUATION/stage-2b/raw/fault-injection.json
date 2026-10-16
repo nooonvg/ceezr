@@ -1,0 +1,43 @@
+{
+  "plan": [
+    {
+      "at_min": 0,
+      "action": "pg_restart"
+    }
+  ],
+  "soak_start": "2026-10-16T12:46:17.445Z",
+  "results": [
+    {
+      "at_min": 0,
+      "action": "pg_restart",
+      "started_at": "2026-10-16T12:46:17.471Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 1302,
+        "outbox_dead": 26930
+      },
+      "result": {
+        "code": 0,
+        "out": "waiting for server to shut down.... done\nserver stopped\nwaiting for server to start.... done\nserver started\n"
+      },
+      "pgReadyCheck": {
+        "code": 0,
+        "out": "127.0.0.1:55432 - accepting connections\n"
+      },
+      "action_ms": 269,
+      "ready_after_ms": 12,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 1302,
+        "outbox_dead": 26935
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "started_at": "2026-10-16T11:48:04.338Z",
+  "total": 5163,
+  "accepted": 5163,
+  "rejected_429": 0,
+  "by_method": {
+    "sendMessage": 5163
+  },
+  "by_bot": {
+    "rider": 2612,
+    "driver": 2551
+  },
+  "soft_violations_private_1ps": 31,
+  "soft_violations_group_20pm": 0,
+  "unknown_token": 0,
+  "unparsable_body": 0,
+  "seq": 5163,
+  "at": "2026-10-16T11:51:29.375Z"
+}

@@ -1,0 +1,11 @@
+{
+  "branch": "work/miniapp-capacity-20261016",
+  "code_state": "dirty (stage-2b changes, this commit)",
+  "run_dir": "/srv/ceezr-cap-20261016/runs/phase2b-r3",
+  "official_run": "r3 (r1: قتل الخلفيات أثبت الصمود لكن القبول اصطدم 503 قبل إضافة إعادة المحاولة؛ r2: خطأ تسمية متغير أسقط السجل قبل expB.end — كلتاهما محفوظتان)",
+  "identity_blocks": { "rider_expA": [10400000, 10400000], "rider_expB": [10400050, 10400050], "driver_expA": [11400000, 11400000], "driver_expB": [11400050, 11400050] },
+  "isolation": "netns ceezrsbx2 (lo only), PG18 :55432, Redis :56379, gateway :54300",
+  "isolation_assert": "ISOLATION_OK",
+  "gateway_pid": 5393,
+  "bun": "1.4.2"
+}

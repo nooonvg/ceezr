@@ -1,0 +1,17 @@
+{
+  "purpose": "البيئة المعزولة لجولات CAP-RUN-20261016-CONTINUATION — لا بيانات إنتاج",
+  "postgres": "PG18 داخل netns ceezrsbx2 على 127.0.0.1:55432 (trust داخل الشبكة المنعزلة فقط)",
+  "databases": {
+    "ceezr_cap_20261016": "قاعدة القدرة الحية (269 هجرة، مقياس svc.sh assert: ISOLATION_OK) — أثر حادثة TRUNCATE وقت وقوعها: إفراغ الجداول المشاركة (بياناتي لا بنيوي)؛ لقطة الإغلاق: users=14 · orders=7 · drivers=8 · riders=6 · offers=7 · outbox=1 · audit=4 · subs=1 · tg_jobs=30669 — بقايا مرحلة 3 (مسبار وتجارب) لا بيانات عمل",
+    "ceezr_i1_mut": "قاعدة طفرة مؤقتة للمرحلة 3 (269 هجرة) — عُلَّت عليها دورة الطفرة والانحدار الخماسي بأكواد خروج مقيسة"
+  },
+  "redis": "127.0.0.1:56379 داخل netns",
+  "services": {
+    "telegram-mock": 58090,
+    "shim": 58081,
+    "gateway": "54300 (v1phase خلفها عمال خلفيون يقرؤون القاعدة)"
+  },
+  "svc_assert": "bash deploy/capacity-run/svc.sh assert → ISOLATION_OK pg=/srv/ceezr-cap-20261016/pg redis=/srv/ceezr-cap-20261016/redis netns=ceezrsbx2(lo-only)",
+  "no_production_access": true,
+  "incident": "TRUNCATE على القاعدة الحية أثناء تشغيل driver-single-engaged-order.test.ts (قبل استقرار التصميم) — موثق في stage-3/RESULT.md؛ الدرس: ملفات TRUNCATE على قاعدة طفرة فقط؛ أثر D8: خط الأساس ببذر متحكم به يُعرّف في المرحلة 4"
+}

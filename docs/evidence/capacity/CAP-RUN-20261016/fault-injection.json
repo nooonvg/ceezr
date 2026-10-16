@@ -1,0 +1,296 @@
+{
+  "plan": [
+    {
+      "at_min": 8,
+      "action": "pg_terminate_backends"
+    },
+    {
+      "at_min": 14,
+      "action": "db_lock_delay",
+      "arg": 8
+    },
+    {
+      "at_min": 20,
+      "action": "gateway_kill9_restart",
+      "arg": 5
+    },
+    {
+      "at_min": 27,
+      "action": "redis_pause",
+      "arg": 10
+    },
+    {
+      "at_min": 33,
+      "action": "shim_kill_restart",
+      "arg": 5
+    },
+    {
+      "at_min": 38,
+      "action": "pg_restart"
+    },
+    {
+      "at_min": 45,
+      "action": "gateway_graceful_restart"
+    },
+    {
+      "at_min": 52,
+      "action": "redis_restart_persisted"
+    },
+    {
+      "at_min": 56,
+      "action": "gateway_kill9_restart",
+      "arg": 3
+    }
+  ],
+  "soak_start": "2026-10-16T04:36:10.000Z",
+  "results": [
+    {
+      "at_min": 8,
+      "action": "pg_terminate_backends",
+      "started_at": "2026-10-16T04:44:10.003Z",
+      "before": {
+        "outbox_sending": 1,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 17160
+      },
+      "result": {
+        "n": 23
+      },
+      "action_ms": 183,
+      "ready_after_ms": 263,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 1,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 17171
+      }
+    },
+    {
+      "at_min": 14,
+      "action": "db_lock_delay",
+      "arg": 8,
+      "started_at": "2026-10-16T04:50:10.002Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 17360
+      },
+      "result": {
+        "held_s": 8
+      },
+      "action_ms": 8065,
+      "ready_after_ms": 8,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 17372
+      }
+    },
+    {
+      "at_min": 20,
+      "action": "gateway_kill9_restart",
+      "arg": 5,
+      "started_at": "2026-10-16T04:56:10.002Z",
+      "before": {
+        "outbox_sending": 2,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 17550
+      },
+      "killed": [
+        25923
+      ],
+      "restart": {
+        "code": 0,
+        "out": "ISOLATION_OK pg=/srv/ceezr-cap-20261016/pg redis=/srv/ceezr-cap-20261016/redis netns=ceezrsbx2(lo-only)\n"
+      },
+      "action_ms": 5725,
+      "ready_after_ms": 860,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 3,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 17623
+      }
+    },
+    {
+      "at_min": 27,
+      "action": "redis_pause",
+      "arg": 10,
+      "started_at": "2026-10-16T05:03:10.001Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 18130
+      },
+      "result": {
+        "code": 0,
+        "out": "OK\n"
+      },
+      "action_ms": 10107,
+      "ready_after_ms": 1,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 18249
+      }
+    },
+    {
+      "at_min": 33,
+      "action": "shim_kill_restart",
+      "arg": 5,
+      "started_at": "2026-10-16T05:09:10.001Z",
+      "before": {
+        "outbox_sending": 1,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 18690
+      },
+      "result": {
+        "code": 0,
+        "out": ""
+      },
+      "restart": {
+        "code": 0,
+        "out": ""
+      },
+      "action_ms": 5300,
+      "ready_after_ms": 1,
+      "recovered": true,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 18765
+      }
+    },
+    {
+      "at_min": 38,
+      "action": "pg_restart",
+      "started_at": "2026-10-16T05:14:10.001Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 19087
+      },
+      "result": {
+        "code": 1,
+        "out": "waiting for server to shut down.... done\nserver stopped\nwaiting for server to start.... stopped waiting\n/bin/sh: 1: cannot create /srv/ceezr-cap-20261016/logs/pg.log: Directory nonexistent\npg_ctl: could not start server\nExamine the log output.\n"
+      },
+      "action_ms": 662,
+      "ready_after_ms": null,
+      "recovered": false,
+      "after_60s": {
+        "error": "connect ECONNREFUSED 127.0.0.1:55432"
+      }
+    },
+    {
+      "at_min": 45,
+      "action": "gateway_graceful_restart",
+      "started_at": "2026-10-16T05:21:10.002Z",
+      "before": {
+        "error": "connect ECONNREFUSED 127.0.0.1:55432"
+      },
+      "graceful_exit_ms": 19583,
+      "restart": {
+        "code": 1,
+        "out": "ISOLATION_FAIL pg: ''\n"
+      },
+      "action_ms": 19801,
+      "ready_after_ms": null,
+      "recovered": false,
+      "after_60s": {
+        "error": "connect ECONNREFUSED 127.0.0.1:55432"
+      }
+    },
+    {
+      "at_min": 52,
+      "action": "redis_restart_persisted",
+      "started_at": "2026-10-16T05:28:10.003Z",
+      "before": {
+        "error": "connect ECONNREFUSED 127.0.0.1:55432"
+      },
+      "shutdown": {
+        "code": 0,
+        "out": ""
+      },
+      "restart": {
+        "code": 1,
+        "out": "\n*** FATAL CONFIG FILE ERROR (Redis 8.0.5) ***\nCan't open the log file: No such file or directory\n"
+      },
+      "action_ms": 1050,
+      "ready_after_ms": null,
+      "recovered": false,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 19087
+      }
+    },
+    {
+      "at_min": 56,
+      "action": "gateway_kill9_restart",
+      "arg": 3,
+      "started_at": "2026-10-16T05:32:10.002Z",
+      "before": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 19087
+      },
+      "killed": [],
+      "restart": {
+        "code": 1,
+        "out": "ISOLATION_FAIL redis dir: ''\n"
+      },
+      "action_ms": 3364,
+      "ready_after_ms": null,
+      "recovered": false,
+      "after_60s": {
+        "outbox_sending": 0,
+        "outbox_sending_over_5m": 0,
+        "jobs_claimed": 0,
+        "jobs_claimed_over_60s": 0,
+        "jobs_dead": 0,
+        "outbox_dead": 19087
+      }
+    }
+  ]
+}

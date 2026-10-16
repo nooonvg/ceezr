@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import postgres from "postgres";
+import { ensureActiveCity, restoreCityBaseline } from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const describeIf = DATABASE_URL === undefined ? describe.skip : describe;
@@ -9,13 +10,24 @@ const sql = postgres(DATABASE_URL ?? "postgres://postgres:postgres@localhost:543
 describeIf("F12-10 — امتثال PDPL: أساسُ المعالجةِ وحقوقُ أصحابِ البياناتِ", () => {
   let cityId: string;
   let userId: string;
+  /** مقبضُ المدينةِ للردِّ في afterAll — عقدُ المعينِ كاملًا لا نصفُه. */
+  let cityHandle: Awaited<ReturnType<typeof ensureActiveCity>> | undefined;
 
   beforeAll(async () => {
-    // الحصول على مدينةٍ ومستخدمٍ موجودَين
-    const city = await sql`select id from cities limit 1`;
-    cityId = city[0]?.id as string;
-    const user = await sql`select id from users limit 1`;
-    userId = user[0]?.id as string;
+    // مدينةٌ مفعّلةٌ عبرَ المعينِ الموحّدِ (لا اقتباسُ «أوّلِ مدينةٍ» — ترتيبُ
+    // التشغيلِ المتوازي يُخلي الجداولِ فلا ضمانَ لوجودِ صفٍّ). انظر
+    // tests/support/active-city.ts: الاقتباسُ العشوائيُّ أخضرٌ زائفٌ رهنُ الترتيب.
+    const city = await ensureActiveCity(sql);
+    cityHandle = city;
+    cityId = city.cityId;
+    // مستخدمٌ خاصٌّ بهذا الملفِّ — لا اقتباسُ «أوّلِ مستخدمٍ»: الملفّاتُ المتوازيةُ
+    // تقتلعُ users في beforeEach فأيُّ اقتباسٍ عشوائيٍّ UNDEFINED_VALUE عندَ التزامنِ
+    // (قياسُ الجولةِ: CI يُسقطُ هذا الملفَّ وحدَهُ في الحزمةِ المتوازيةِ).
+    const inserted = await sql`
+      insert into users (city_id, telegram_id, full_name, role)
+      values (${cityId}::uuid, ${991_500_010}::bigint, 'فاحصُ PDPL', 'rider')
+      returning id`;
+    userId = inserted[0]?.id as string;
   });
 
   it("لا يُسمَحُ بنشاطٍ بلا أساسِ معالجةٍ أو غيرِ نشطٍ", async () => {
@@ -276,5 +288,12 @@ describeIf("F12-10 — امتثال PDPL: أساسُ المعالجةِ وحقو
     expect(closed[0]?.status).toBe("fulfilled");
     expect(closed[0]?.completed_at).not.toBeNull();
     expect(closed[0]?.result_summary).toBe("تمَّ تسليمُ البياناتِ");
+  });
+
+  afterAll(async () => {
+    // عقدُ المعينِ كاملًا: التفعيلُ في beforeAll والردُّ إلى الحالةِ الأصلِ هنا.
+    // حارسُ check-integration-city-precondition يُسقطُ من ينادي أحدَهما دونَ الآخر.
+    await restoreCityBaseline(sql, cityHandle);
+    await sql.end();
   });
 });

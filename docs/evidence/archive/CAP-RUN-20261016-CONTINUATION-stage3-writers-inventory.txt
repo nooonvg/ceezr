@@ -1,0 +1,44 @@
+== functions mentioning assigned_driver_id (prokind=f) ==
+active_ride_snapshot | guarded=false | mentions=917
+cancel_order_by_rider | guarded=false | mentions=1948
+claim_ride | guarded=true | mentions=600
+complete_ride | guarded=false | mentions=662
+completed_ride_summary | guarded=false | mentions=952
+deactivate_stale_availability | guarded=false | mentions=507
+driver_active_job | guarded=false | mentions=1156
+driver_activity_entries | guarded=false | mentions=2438
+driver_activity_summary | guarded=false | mentions=1625
+driver_cannot_complete | guarded=false | mentions=747
+driver_complete_ride | guarded=false | mentions=509
+driver_mark_arrived | guarded=false | mentions=639
+driver_start_ride | guarded=false | mentions=780
+enqueue_driver_location_reminders | guarded=false | mentions=1139
+enqueue_scheduled_reminders | guarded=false | mentions=1335
+erase_my_account | guarded=false | mentions=6604
+expire_stale_searching_orders | guarded=false | mentions=742
+export_my_data | guarded=false | mentions=2784
+generate_authority_data_package | guarded=false | mentions=1549
+get_order_languages | guarded=false | mentions=466
+open_support_ticket | guarded=false | mentions=2691
+order_chat_party | guarded=false | mentions=499
+order_stall_state | guarded=false | mentions=353
+ride_search_state | guarded=false | mentions=866
+rider_decide_candidate | guarded=true | mentions=627
+rider_ride_detail | guarded=false | mentions=1007
+settle_unsubscribed_negotiation | guarded=true | mentions=1867
+sos_surface_state | guarded=false | mentions=1121
+start_ride | guarded=false | mentions=702
+submit_rating_with_tags | guarded=false | mentions=1837
+tracking_link_view | guarded=false | mentions=330
+trigger_sos | guarded=false | mentions=1372
+trigger_sos | guarded=false | mentions=1222
+update_driver_city | guarded=false | mentions=759
+== functions INSERTing assigned_driver_id ==
+== functions setting protected statuses ==
+claim_ride
+rider_decide_candidate
+settle_unsubscribed_negotiation
+start_ride
+== triggers on orders ==
+orders_set_updated_at | CREATE TRIGGER orders_set_updated_at BEFORE UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+== rules on orders ==

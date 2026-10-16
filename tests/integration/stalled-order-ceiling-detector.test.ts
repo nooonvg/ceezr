@@ -9,7 +9,7 @@
  * الحاكم: docs/adr/0216-ceiling-exceeded-detector.md
  */
 
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import {
   type ActiveCityHandle,
@@ -38,6 +38,7 @@ let sql: Sql;
 let cityHandle: ActiveCityHandle | undefined;
 let cityId = "";
 let riderId = "";
+let secondDriverUserId = "";
 let driverId = "";
 
 beforeAll(async () => {
@@ -45,6 +46,32 @@ beforeAll(async () => {
   sql = createSql({ connectionString: DATABASE_URL });
 
   cityHandle = await ensureActiveCity(sql, { prior: cityHandle });
+  // تعافي ذاتيّ: مخلّفاتُ جولةٍ سابقةٍ (اختبارٌ فشل قبل تنظيفِه) لا تُسقِطُ
+  // هذا الملفَ إلى الأبد — تُفكُّ إسناداتُها ثم تُحذفُ قبلَ البذرِ.
+  await sql`
+    update orders set assigned_driver_id = null, status = 'cancelled'
+     where assigned_driver_id in (
+       select id from drivers where user_id in (
+         select id from users where telegram_id in (900_000_501, 900_000_502)))`;
+  await sql`
+    delete from order_offers where order_id in (
+      select id from orders where rider_id in (
+        select id from riders where user_id in (
+          select id from users where telegram_id in (900_000_501, 900_000_502))))`;
+  await sql`
+    delete from orders where rider_id in (
+      select id from riders where user_id in (
+        select id from users where telegram_id in (900_000_501, 900_000_502)))`;
+  await sql`
+    delete from drivers where user_id in (
+      select id from users where telegram_id in (900_000_501, 900_000_502))`;
+  await sql`
+    delete from riders where user_id in (
+      select id from users where telegram_id in (900_000_501, 900_000_502))`;
+  await sql`
+    delete from audit_log where actor_user_id in (
+      select id from users where telegram_id in (900_000_501, 900_000_502))`;
+  await sql`delete from users where telegram_id in (900_000_501, 900_000_502)`;
   cityId = cityHandle.cityId;
 
   const [riderUser] = await sql<{ id: string }[]>`
@@ -74,7 +101,22 @@ beforeAll(async () => {
   driverId = driver.id;
 });
 
+beforeEach(async () => {
+  if (DATABASE_URL === undefined || riderId === "") return;
+  // I1 (ADR 0286): فهرسُ الالتزامِ الواحدِ يرفضُ التزامًا ثانيًا لسائقٍ لا يزالُ
+  // التزامُ اختبارٍ سابقٍ حيًّا — فتُنهى التزاماتُ هذا الملفِّ قبلَ كلِّ اختبارٍ.
+  await sql`update orders set status = 'completed', completed_at = now()
+             where rider_id = ${riderId}::uuid and is_driver_engaged_order_status(status)`;
+});
+
 afterAll(async () => {
+  if (DATABASE_URL !== undefined && secondDriverUserId !== "") {
+    // أوّلاً: فكُّ إسنادِ طلباتِه (قيدُ FK) ثم حذفُ السائقِ فالمستخدمِ.
+    await sql`update orders set assigned_driver_id = null, status = 'cancelled'
+               where assigned_driver_id in (select id from drivers where user_id = ${secondDriverUserId}::uuid)`;
+    await sql`delete from drivers where user_id = ${secondDriverUserId}::uuid`;
+    await sql`delete from users where id = ${secondDriverUserId}::uuid`;
+  }
   if (DATABASE_URL === undefined) return;
   if (riderId !== "") {
     await sql`delete from orders where rider_id = ${riderId}`;
@@ -89,13 +131,16 @@ afterAll(async () => {
   }
 });
 
-async function createOrder(startedMinutesAgo: number): Promise<string> {
+async function createOrder(
+  startedMinutesAgo: number,
+  targetDriverId: string = driverId,
+): Promise<string> {
   const [order] = await sql<{ id: string }[]>`
     insert into orders (city_id, rider_id, service, status, pickup, assigned_driver_id, started_at)
     values (
       ${cityId}, ${riderId}, 'transport', 'in_progress',
       st_setsrid(st_makepoint(39.1925, 21.4858), 4326),
-      ${driverId},
+      ${targetDriverId},
       now() - (${startedMinutesAgo}::integer || ' minutes')::interval
     )
     returning id
@@ -138,8 +183,23 @@ describeIf("F12-20 — كاشفُ تجاوزِ السقفِ", () => {
   });
 
   it("يُرتِّبُ الأطولَ عمراً أوّلاً", async () => {
+    // I1 (ADR 0286): لا التزامَينِ لسائقٍ واحدٍ — فالطلبُ الأطولُ لسائقٍ ثانٍ.
+    const secondTelegramId = 900_500_000 + Math.floor(Math.random() * 100_000);
+    const secondDriverUser = await sql<{ id: string }[]>`
+      insert into users (city_id, telegram_id, role, full_name, phone)
+      values (${cityId}, ${secondTelegramId}, 'driver', 'سائقُ سقفٍ ثانٍ', '+966500000502')
+      returning id`;
+    const secondUserId = secondDriverUser[0]?.id;
+    if (secondUserId === undefined) throw new Error("SECOND_DRIVER_USER_MISSING");
+    secondDriverUserId = secondUserId;
+    const secondDriver = await sql<{ id: string }[]>`
+      insert into drivers (city_id, user_id, verification_status)
+      values (${cityId}, ${secondUserId}, 'verified'::verification_status)
+      returning id`;
+    const secondDriverId = secondDriver[0]?.id;
+    if (secondDriverId === undefined) throw new Error("SECOND_DRIVER_MISSING");
     const shortOrder = await createOrder(730);
-    const longOrder = await createOrder(800);
+    const longOrder = await createOrder(800, secondDriverId);
     const rows = await sql<Row[]>`
       select * from detect_ceiling_exceeded_orders(${cityId}::uuid, 100)
     `;

@@ -215,6 +215,14 @@ function spawnGateway(instanceId: string): GatewayHandle {
       SESSION_STORE: "redis",
       RUN_WORKER_IN_GATEWAY: "false",
       RUN_ADMIN_IN_GATEWAY: "false",
+      // ADR 0286: الافتراضيُّ صارَ miniapp ويُلزمُ MINIAPP_URL —
+      // وبدونِهِ تنهارُ البوّابةُ عندَ تحميلِ التهيئةِ ولا يُجيبُ /ready أبدًا.
+      // ADR 0286: في وضع miniapp لا عملَ تجاريًّا في المحادثةِ إطلاقًا — وهذا
+      // الاختبارُ يقيسُ دورةَ الرحلةِ عبرَ حوارِ البوتِ (المسارُ القديمُ)،
+      // فإثباتُهُ يقتضي الوضعَ القديمَ صراحةً؛ والافتراضيُّ صارَ miniapp.
+      BOT_SURFACE_MODE: "legacy",
+      BOT_SURFACE_TEST_LEGACY: "1",
+      MINIAPP_URL: "https://miniapp.real-redis-test.local",
       TRANSLATION_PROVIDER: "none",
       ROUTING_PROVIDER: "none",
       SERVICE_INSTANCE_ID: instanceId,

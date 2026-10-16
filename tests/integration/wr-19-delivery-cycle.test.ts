@@ -98,6 +98,14 @@ describeIf("WR-19 — دورةُ التوصيلِ كاملةً على قاعدة
   });
 
   afterAll(async () => {
+    // تنظيفُ بياناتِ آخرِ اختبارٍ: الـbeforeEach يقتلعُ كلَّ شيءٍ قبلَ كلِّ
+    // اختبارٍ لكن لا شيءَ يقتلعُه بعدَ الأخيرِ — فيبقى سائقُ التوصيلِ (وغيرُه)
+    // يلوّثُ الملفاتَ التاليةَ (quote ترى `delivery` في خدماتِ المدينةِ).
+    await sql`
+      truncate table agent_outcomes, agent_decisions, audit_log, attendance_log,
+                             order_message_reads, order_messages, notification_outbox,
+                             order_offers, orders, subscriptions, driver_capabilities,
+                             driver_availability, drivers, riders, users restart identity cascade`;
     if (previousWindow !== null) {
       await sql`
         update platform_settings set value = ${sql.json(previousWindow as never)}
@@ -239,10 +247,16 @@ describeIf("WR-19 — دورةُ التوصيلِ كاملةً على قاعدة
     expect(offers.map((o) => o.driver_id)).toEqual([courierId]);
     expect(offers.map((o) => o.driver_id)).not.toContain(transportId);
     await drainNotificationOutbox(sql, capturing(driverSent));
-    const card = driverSent.find((m) =>
-      JSON.stringify(m.markup ?? null).includes(`offer:accept:${orderId}`),
+    // `ADR 0286` — البطاقةُ إشعارٌ لا زرَّ قبولٍ في البوتِ: الاكتشافُ والقبولُ في
+    // لوحِ عروضِ التطبيقِ، وفي وضعِ `legacy` الاختباريِّ بلا زرٍّ أصلًا. فتُوجدُ
+    // البطاقةُ نصًّا، وبطاقتُها بلا زرِّ `offer:` يعودُ إليها.
+    const card = driverSent.find(
+      (m) =>
+        (m.text ?? "").includes(translate("ar", "driver.offer_card_service_delivery")) ||
+        (m.text ?? "").includes("الخدمة:"),
     );
     expect(card).toBeDefined();
+    expect(JSON.stringify(card?.markup ?? null)).not.toContain("offer:");
     expect(card?.text ?? "").not.toMatch(/undefined|null/);
     // `WR-08`: البطاقةُ تقولُ الخدمة (سقطَت من حمولةِ المُطالِبِ منذُ 2026-09-21 وأُعيدَت في
     // `20261012200100`)، وبلا مبلغٍ تقولُ إنَّ الاتّفاقَ في المحادثة (`WR-05`).

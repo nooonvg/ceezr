@@ -32,6 +32,7 @@ const FAKE_ENV: Record<string, string> = {
   RIDER_BOT_TOKEN: "2222222:fake-rider-token-padding-padding-padding",
   TELEGRAM_WEBHOOK_SECRET: "fake-webhook-secret-with-enough-length-padding",
   BOOTSTRAP_ADMIN_TELEGRAM_ID: "999999999",
+  MINIAPP_URL: "https://app.example.com",
   // إعلانٌ إلزاميٌّ في الإنتاجِ منذ `F5-04` (ADR 0063). و`false` ههنا مقصودةٌ:
   // المُختبَرُ مسارُ الإشارةِ إلى الخروجِ، وعاملٌ مضمَّنٌ كان سيفتح تجمّعَ اتصالاتٍ
   // ثانياً على قاعدةٍ لا وجودَ لها فيُبطئَ الإغلاقَ بما ليس منه.

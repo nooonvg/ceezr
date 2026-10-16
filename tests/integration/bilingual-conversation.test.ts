@@ -156,6 +156,14 @@ describeIf("محادثة بلغتين عبر الترجمة على قاعدة ح
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, ratings, support_tickets,
+                             unsubscribed_claims, unsubscribed_negotiations, order_offers,
+                             orders, subscriptions, driver_capabilities, driver_availability,
+                             drivers, riders, users restart identity cascade`;
+
     await container.close();
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });

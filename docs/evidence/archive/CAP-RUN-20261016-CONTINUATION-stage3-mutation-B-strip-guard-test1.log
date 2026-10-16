@@ -1,0 +1,40 @@
+bun test v1.4.2 (744846f84)
+
+tests/integration/i1-concurrent-engagement-races.test.ts:
+822 |   }
+823 | 
+824 |   function ErrorResponse(x) {
+825 |     if (query) {
+826 |       (query.cursorFn || query.describeFirst) && write(Sync)
+827 |       errorResponse = Errors.postgres(parseError(x))
+                                   ^
+PostgresError: duplicate key value violates unique constraint "orders_one_engaged_order_per_driver"
+ severity_local: "ERROR",
+   severity: "ERROR",
+     detail: "Key (assigned_driver_id)=(b09fd596-3bfb-4f6d-97bc-e2e948d4986f) already exists.",
+      where: "SQL statement \"update orders\n     set status = 'matched', assigned_driver_id = p_driver_id, matched_at = v_now\n   where id = p_order_id\"\nPL/pgSQL function claim_ride(uuid,uuid) line 141 at SQL statement",
+ schema_name: "public",
+ table_name: "orders",
+ constraint_name: "orders_one_engaged_order_per_driver",
+       file: "nbtinsert.c",
+    routine: "_bt_check_unique",
+       code: "23505"
+
+      at ErrorResponse (/home/user/workspace/ceezr/node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/connection.js:827:30)
+      at handle (/home/user/workspace/ceezr/node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/connection.js:500:7)
+      at data (/home/user/workspace/ceezr/node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/connection.js:336:9)
+      at emit (node:events:100:22)
+      at addChunk (internal:streams/readable:267:47)
+      at readableAddChunkPushByteMode (internal:streams/readable:245:18)
+      at data (node:net:633:72)
+      at cachedError (/home/user/workspace/ceezr/node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/query.js:170:27)
+      at new Query (/home/user/workspace/ceezr/node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/query.js:36:24)
+      at sql (/home/user/workspace/ceezr/node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/index.js:112:15)
+      at claimOn (/home/user/workspace/ceezr/tests/integration/i1-concurrent-engagement-races.test.ts:143:24)
+      at /home/user/workspace/ceezr/tests/integration/i1-concurrent-engagement-races.test.ts:308:30
+(fail) I1 — سائقٌ واحدٌ لا التزامَين: سباقاتٌ متزامنةٌ على قاعدةٍ حقيقيّة > ١ — سائقٌ واحدٌ يطالبُ طلبَينِ مختلفَينِ معًا: إسنادٌ واحدٌ وخاسرٌ نظيفٌ DRIVER_HAS_ACTIVE_ORDER [36.55ms]
+
+ 0 pass
+ 3 filtered out
+ 1 fail
+Ran 1 test across 1 file. [147.00ms]

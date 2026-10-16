@@ -1,0 +1,5 @@
+{"step":"session","status":201,"hasToken":true}
+{"step":"accept-first","status":200,"body":{"ok":true,"order_id":"d3e8d826-e805-4afe-b5d2-0b79a93debda","matched_at":"2026-10-16T19:26:56.243Z","pending_rider":false,"seconds_left":null}}
+{"step":"accept-second","status":409,"body":{"ok":false,"error":"DRIVER_HAS_ACTIVE_ORDER"}}
+{"step":"db-after","orders":[{"status":"matched","assigned":"3d395a4d-c97c-49ec-adf2-f5ca6848933d"},{"status":"searching","assigned":null}],"duplicates":0}
+{"step":"VERDICT","pass":true}

@@ -41,19 +41,22 @@ function capturingSender(captured: {
   };
 }
 
-describe("createOfferPublisher — زرُّ الرفضِ يحملُ offerId، ويُرجعُ معرّفَ الرسالةِ (BUG-003 + BUG-004)", () => {
-  it("زرُّ الرفضِ بياناتُه `offer:reject:<offerId>` لا `offer:reject:<orderId>`، ويُرجعُ معرّفَ الرسالةِ", async () => {
+describe("createOfferPublisher — البطاقةُ إشعارٌ وزرُّ تطبيقٍ لا زرَّ عملٍ، ويُرجعُ معرّفَ الرسالةِ (BUG-004 · ADR 0286)", () => {
+  it("مع `miniAppUrl` ⇒ زرّا تطبيقٍ (العرضُ واللوحُ) ولا زرَّ عملٍ واحدًا في المحادثةِ، ويُرجعُ معرّفَ الرسالةِ", async () => {
     const captured: { keyboard: Keyboard | null; messageId: string | null; text: string | null } = {
       keyboard: null,
       messageId: "msg-42",
       text: null,
     };
-    const publisher = createOfferPublisher(fakeSql(), capturingSender(captured));
+    const publisher = createOfferPublisher(fakeSql(), capturingSender(captured), {
+      miniAppUrl: "https://app.example.com",
+    });
 
-    // offerId ≠ orderId عمداً — ليثبتَ الاختبارُ أنَّ الزرَّ يأخذُ offerId لا orderId.
+    // offerId ≠ orderId عمداً — ليثبتَ الاختبارُ أنَّ زرَّ التطبيقِ يستهدفُ العرضَ بذاتِهِ.
     const notification: OfferNotification = {
       orderId: "order-1" as OrderId,
-      offerId: "offer-xyz" as OfferId,
+      // معرِّفٌ بصيغةِ uuid كما في القاعدةِ — رمزُ الهدفِ لا يقبلُ غيرَها.
+      offerId: "0193f0aa-1f3c-7b2e-9a0d-2b6c8e4f1a55" as OfferId,
       driverId: "drv-1" as DriverId,
       distanceKm: 2.3 as DistanceKm,
       expiresInSeconds: 30,
@@ -76,22 +79,41 @@ describe("createOfferPublisher — زرُّ الرفضِ يحملُ offerId، و
     if (keyboard === null) return;
     expect(keyboard.kind).toBe("inline");
     if (keyboard.kind !== "inline") return;
-    const row = keyboard.rows[0];
-    expect(row).toBeDefined();
-    if (row === undefined) return;
-    expect(row).toHaveLength(2);
-    const acceptButton = row[0];
-    const rejectButton = row[1];
-    expect(acceptButton).toBeDefined();
-    expect(rejectButton).toBeDefined();
-    if (acceptButton === undefined || rejectButton === undefined) return;
+    const flat = keyboard.rows.flat();
+    // `ADR 0286` — لا قرارَ تجاريًّا من المحادثةِ: لا زرَّ رجوعٍ واحدًا يحملُ `offer:`.
+    expect(flat.some((b) => b.data?.startsWith("offer:"))).toBe(false);
+    // وزرّا التطبيقِ: واحدٌ يستهدفُ العرضَ بذاتِهِ وواحدٌ يستهدفُ اللوحَ.
+    const webApp = flat.filter((b) => b.webAppUrl !== undefined);
+    expect(webApp).toHaveLength(2);
+    expect(webApp[0]?.webAppUrl).toContain("open=offer_0193f0aa-1f3c-7b2e-9a0d-2b6c8e4f1a55");
+    expect(webApp[1]?.webAppUrl).toContain("offers");
+  });
 
-    // القبولُ لم يُمَسَّ — ما زالَ يحمِلُ orderId كما كان.
-    expect(acceptButton.data).toBe("offer:accept:order-1");
-    // الرفضُ صارَ يحمِلُ offerId — لا orderId. هذا هو صميمُ BUG-003.
-    expect(rejectButton.data).toBe("offer:reject:offer-xyz");
-    // والضمانُ الحاسمُ: لو ظلَّ الناشرُ يرسلُ orderId لفشلَ هذا التوكيدُ.
-    expect(rejectButton.data).not.toContain("order-1");
+  it("بلا `miniAppUrl` (وضعُ اختبارِ التوافقِ المعزولُ) ⇒ بطاقةٌ بلا زرِّ عملٍ واحدٍ — فلا يعودُ `offer:` إلى البطاقةِ", async () => {
+    const captured: { keyboard: Keyboard | null; messageId: string | null; text: string | null } = {
+      keyboard: null,
+      messageId: "msg-42",
+      text: null,
+    };
+    const publisher = createOfferPublisher(fakeSql(), capturingSender(captured));
+
+    const result = await publisher.publishOffer({
+      orderId: "order-1" as OrderId,
+      offerId: "offer-xyz" as OfferId,
+      driverId: "drv-1" as DriverId,
+      distanceKm: 2.3 as DistanceKm,
+      expiresInSeconds: 30,
+      service: "transport",
+      pickupLabel: null,
+      dropoffLabel: null,
+      notes: null,
+    });
+
+    expect(isOk(result)).toBe(true);
+    const keyboard = captured.keyboard;
+    if (keyboard === null || keyboard.kind !== "inline") throw new Error("لوحةٌ غيرُ مضمَّنة");
+    // لا زرَّ عملٍ في المحادثةِ أصلًا — البطاقةُ إشعارٌ وحدَه.
+    expect(keyboard.rows.flat().filter((b) => b.data !== undefined)).toHaveLength(0);
   });
 
   it("سائقٌ غيرُ موجودٍ يُرجَعُ خطأً دائمًا (DRIVER_CONTACT_NOT_FOUND) — لا يُعالَجُ بإعادةِ الإرسال", async () => {

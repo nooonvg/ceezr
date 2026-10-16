@@ -65,6 +65,7 @@ function baseSource(overrides: Record<string, string | undefined>) {
     RIDER_BOT_TOKEN: "654321:rider",
     TELEGRAM_WEBHOOK_SECRET: "abcdefghijklmnopqrstuvwxyz0123456789abcd",
     BOOTSTRAP_ADMIN_TELEGRAM_ID: "123456789",
+    MINIAPP_URL: "https://app.example.com",
     RUN_WORKER_IN_GATEWAY: "false",
     RUN_ADMIN_IN_GATEWAY: "false",
     SESSION_STORE: "redis",

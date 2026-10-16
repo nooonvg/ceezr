@@ -570,7 +570,11 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
              and o.assigned_driver_id is null
              -- WR-09: لا جولةَ جديدةَ والراكبُ يقرّرُ في مرشَّحٍ حيّ.
              and (o.candidate_expires_at is null or o.candidate_expires_at <= now())
-           order by o.created_at asc
+           -- D8 (CAP-RUN-20261015): الترتيب بـcreated_at وحده جعل الطلباتِ المستنفِدةَ دوراتِها
+           -- (تبقى searching حتى يلغيها الراكب) تملأ نافذةَ الـlimit في كلّ شوط فلا يُفحَص طلبٌ جديد
+           -- أبداً («examined=50 rebroadcast=0 exhausted=50»). تقديمُ الدورة الأدنى ترتيبٌ لا فتوى:
+           -- لا يُستبعَد أحد، والحكمُ بالاستنفاد يبقى في المجال (hasExhaustedBroadcastRounds).
+           order by o.broadcast_round asc, o.created_at asc
            limit ${limit}
         `;
         return rows.map((row) => ({

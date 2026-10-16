@@ -25,6 +25,11 @@ describe.skipIf(skip)("F12-05 — التقييمُ المتبادلُ: منظو�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate ratings, audit_log, orders, drivers, riders, users cascade`;
+
     if (cityHandle !== undefined) await restoreCityBaseline(sql, cityHandle);
     if (sql !== undefined) await sql.end();
   });

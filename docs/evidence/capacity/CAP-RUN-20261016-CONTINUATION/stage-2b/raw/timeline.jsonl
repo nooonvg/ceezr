@@ -1,0 +1,4 @@
+{"t":"2026-10-16T12:46:17.470Z","minute":0,"source":"chaos","event":"chaos.start","plan":[{"at_min":0,"action":"pg_restart"}]}
+{"t":"2026-10-16T12:46:17.507Z","minute":0,"source":"chaos","event":"fault.start","action":"pg_restart"}
+{"t":"2026-10-16T12:46:17.753Z","minute":0.01,"source":"chaos","event":"fault.end","action":"pg_restart","recovered":true,"ready_after_ms":12,"error":null,"killed":null}
+{"t":"2026-10-16T12:47:17.803Z","minute":1.01,"source":"chaos","event":"chaos.end"}

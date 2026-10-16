@@ -3823,6 +3823,41 @@ a.sys__action {
 }
 
 /*
+ * `ADR 0286` — قسمُ دوراتِ القروبِ المفتوحةِ في لوحِ السائقِ: عنوانٌ كعنوانِ اللوحِ،
+ * وقائمةٌ كقائمةِ العروضِ، وبطاقةُ دورةٍ كبطاقةِ عرضٍ (حدٌّ جانبيٌّ بلونِ العلامةِ،
+ * ومسافةٌ على يسارِ الأزرارِ المباشرةِ لا فراغَ مفاجئاً).
+ */
+.dof__negotiations {
+  margin: 0;
+}
+
+.dof__negotiations-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: var(--fw-medium);
+}
+
+.dof__negotiations-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dof__negotiations-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--w-line);
+  border-inline-start: 4px solid var(--ui-brand);
+  border-radius: var(--r-lg);
+  background: var(--w-surface);
+}
+
+/*
  * `MSG-COLOR-01` — لونُ بطاقةِ العرضِ بحسبِ الخدمةِ (طلبُ المالكِ): التوصيلُ أصفرُ، والنقلُ
  * أخضرُ، والشهريُّ مستقبلاً ورديٌّ فاتحٌ. خلفيّةٌ فاتحةٌ وحدٌّ جانبيٌّ أغمقُ، والنصُّ يبقى بلونِ
  * السمةِ فوقَ مزيجٍ شفّافٍ — فيُقرأُ في الوضعَينِ الفاتحِ والداكنِ.

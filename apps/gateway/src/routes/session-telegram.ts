@@ -177,12 +177,18 @@ export function createSessionTelegramRoutes(deps: SessionTelegramDependencies): 
     }
 
     // الردُّ لا يعيد شيئاً من `initData`، ولا الاسمَ ولا اللغةَ: رمزٌ وانتهاءٌ فقط،
-    // ومعرّفُ مستخدمِ تيليجرامَ الذي يعرفه العميلُ عن نفسِه أصلاً.
+    // ومعرّفُ مستخدمِ تيليجرامَ الذي يعرفه العميلُ عن نفسِه أصلاً — إلا `start_param`:
+    // فهو هدفُ هبوطٍ موقَّعٌ من تيليجرامَ نفسِهِ (لا ضميمةٌ خام) يقرؤه التطبيقُ للتموجيهِ
+    // حينَ فُتِحَ برابطِ `startapp` من بطاقةِ قروبٍ (`ADR 0286`) — تموجيهٌ لا هويةٌ ولا
+    // صلاحيةً: الهويّةُ من التوقيعِ وحده.
     const embedded = await bootstrapReads(deps.bootstrap, result.value.session.accessToken);
     return c.json(
       {
         ok: true,
         ...embedded,
+        ...(result.value.proof.startParam === undefined
+          ? {}
+          : { startParam: result.value.proof.startParam }),
         accessToken: result.value.session.accessToken,
         tokenType: result.value.session.tokenType,
         expiresAtMs: result.value.session.expiresAtMs,

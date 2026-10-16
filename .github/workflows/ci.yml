@@ -1335,6 +1335,17 @@ jobs:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
         run: bun test tests/integration/audit-trail-authority.test.ts
 
+      # `I1` (ADR 0286) — قيدُ الإسنادِ الأحاديِّ كاختبارِ انحدارٍ محميٍّ في مسارِ CI
+      # نفسِه: سباقاتٌ متزامنةٌ حقيقيّةٌ بتداخلٍ مُثبَتٍ بقفلِ تحكُّمٍ (يُعدُّ المحجوبانِ
+      # من مساراتِ الاختبارِ نفسِها بمعرّفِ الجلسةِ — لا بنمطٍ نصيٍّ)، وهويّاتُ الملفِ
+      # معزولةٌ بتنقيةٍ موجّهةٍ (لا truncate عامّاً يزاحم الملفاتِ المتوازيةَ — درسُ
+      # المرحلةِ 9). وبإزالةِ الفهرسِ أو حارسِ claim_ride يفشلُ عمدًا (أدلةُ المرحلةِ 3
+      # من CAP-RUN-20261016-CONTINUATION).
+      - name: سباقاتُ الإسنادِ الأحاديِّ المتزامنةُ على PostgreSQL حقيقيٍّ (I1)
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
+        run: bun test tests/integration/i1-concurrent-engagement-races.test.ts
+
       # `F8-06`: أطوارُ دورةِ حياةِ الدفعِ (نجاحٌ · فشلٌ · معلّقٌ · مكرّرٌ · استرجاعٌ ·
       # تناقضٌ) **يُشغِّلُها المحرِّكُ** لا الحاجزُ الساكنُ. وخطوةٌ باسمِها كي يُقرأَ
       # حُكمُها مفرَداً لا مُبتلَعاً في حزمةٍ من خمسٍ وخمسينَ.

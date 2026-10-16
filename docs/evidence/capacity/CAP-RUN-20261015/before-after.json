@@ -1,0 +1,455 @@
+{
+  "profile": "warm 60s@50 ثم steady 480s@150 (متطابق في كل الجولات)",
+  "rounds": [
+    {
+      "round": "r01-before-pr558",
+      "code": [
+        "7b0f877818566ad1b4e0c798c09800162bb9e15e"
+      ],
+      "code_dir": [
+        "/srv/ceezr-cap-20261015/pr558"
+      ],
+      "window": {
+        "load_start": "2026-10-15T01:22:36.456Z",
+        "load_end": "2026-10-15T01:31:36.552Z",
+        "drain_end": "2026-10-15T01:34:09.569Z",
+        "load_minutes": 9
+      },
+      "orders_created_db": 587,
+      "orders_by_status_db": {
+        "cancelled": 95,
+        "searching": 487,
+        "completed": 3,
+        "in_progress": 2
+      },
+      "orders_completed_db": 3,
+      "order_to_accept_s_db": {
+        "n": 5,
+        "p50": 26.1,
+        "p95": 44.2,
+        "p99": 44.2,
+        "max": 44.193931
+      },
+      "offers_created_db": 5777,
+      "offers_delivered_mock": 28,
+      "offers_delivered_pct": 0.5,
+      "offer_create_to_mock_s": {
+        "n": 28,
+        "p50": 18,
+        "p95": 36.4,
+        "p99": 36.4,
+        "max": 36.389
+      },
+      "outbox_deliver_lag_s": {
+        "n": 48,
+        "p50": 36.4,
+        "p95": 684.4,
+        "p99": 684.4,
+        "max": 684.405339
+      },
+      "update_completion_lag_s": {
+        "driver": {
+          "n": 1989,
+          "p50": 171.2,
+          "p95": 409.2,
+          "p99": 445.6,
+          "max": 459.605705
+        },
+        "rider": {
+          "n": 4025,
+          "p50": 196.3,
+          "p95": 421.4,
+          "p99": 448.2,
+          "max": 459.558613
+        }
+      },
+      "mock_msgs_per_s": {
+        "rider": 7.54,
+        "driver": 3.8
+      },
+      "mock_429": 6,
+      "scenarios_started": 1387,
+      "scenarios_ok": 4,
+      "scenario_fail_reasons": {
+        "order_not_created_45s": 1220,
+        "no_match_within_wait": 132,
+        "not_in_progress_matched": 2,
+        "not_completed_in_progress": 1,
+        "no_claim_registered": 21,
+        "cancel_not_applied_searching": 6,
+        "duplicate_active_order": 1
+      },
+      "http": {
+        "total": 10691,
+        "ok": 10691,
+        "non2xx": 0,
+        "netErr": 0,
+        "timeouts": 0,
+        "p50": 5.9,
+        "p95": 54.1,
+        "p99": 68.3
+      },
+      "integrity": {
+        "orders_with_two_accepted_offers": 0,
+        "drivers_with_two_active_orders_now": 0,
+        "outbox_stuck_sending_gt_5min_now": 0
+      },
+      "groups": {
+        "negotiations_by_status": [
+          {
+            "status": "collecting",
+            "n": 6
+          },
+          {
+            "status": "cancelled",
+            "n": 533
+          }
+        ],
+        "negotiations_over_3_claims": 0,
+        "duplicate_claims_same_driver": 0
+      }
+    },
+    {
+      "round": "r02-after-fixes",
+      "code": [
+        "7b0f877818566ad1b4e0c798c09800162bb9e15e"
+      ],
+      "code_dir": [
+        "/home/user/workspace/ceezr"
+      ],
+      "window": {
+        "load_start": "2026-10-15T01:48:02.651Z",
+        "load_end": "2026-10-15T01:57:02.736Z",
+        "drain_end": "2026-10-15T01:58:43.746Z",
+        "load_minutes": 9
+      },
+      "orders_created_db": 367,
+      "orders_by_status_db": {
+        "cancelled": 10,
+        "completed": 26,
+        "in_progress": 43,
+        "matched": 92,
+        "searching": 196
+      },
+      "orders_completed_db": 26,
+      "order_to_accept_s_db": {
+        "n": 165,
+        "p50": 38.2,
+        "p95": 44.8,
+        "p99": 45,
+        "max": 44.989468
+      },
+      "offers_created_db": 2104,
+      "offers_delivered_mock": 2082,
+      "offers_delivered_pct": 99,
+      "offer_create_to_mock_s": {
+        "n": 2082,
+        "p50": 3.1,
+        "p95": 10.5,
+        "p99": 14.9,
+        "max": 15.035
+      },
+      "outbox_deliver_lag_s": {
+        "n": 2771,
+        "p50": 4,
+        "p95": 22.2,
+        "p99": 55.4,
+        "max": 73.131795
+      },
+      "update_completion_lag_s": {
+        "driver": {
+          "n": 4264,
+          "p50": 39.3,
+          "p95": 49.1,
+          "p99": 52.8,
+          "max": 63.213434
+        },
+        "rider": {
+          "n": 2590,
+          "p50": 210.3,
+          "p95": 397.8,
+          "p99": 414.6,
+          "max": 427.606261
+        }
+      },
+      "mock_msgs_per_s": {
+        "driver": 12.65,
+        "rider": 6.57
+      },
+      "mock_429": 926,
+      "scenarios_started": 1541,
+      "scenarios_ok": 28,
+      "scenario_fail_reasons": {
+        "order_not_created_45s": 1412,
+        "not_completed_in_progress": 6,
+        "not_in_progress_matched": 43,
+        "no_match_within_wait": 30,
+        "cancel_not_applied_searching": 2,
+        "cancel_after_match_matched": 3,
+        "agree_not_matched_searching": 17
+      },
+      "http": {
+        "total": 13667,
+        "ok": 13667,
+        "non2xx": 0,
+        "netErr": 0,
+        "timeouts": 0,
+        "p50": 5,
+        "p95": 60.8,
+        "p99": 72.4
+      },
+      "integrity": {
+        "orders_with_two_accepted_offers": 0,
+        "drivers_with_two_active_orders_now": 31,
+        "outbox_stuck_sending_gt_5min_now": 0
+      },
+      "groups": {
+        "negotiations_by_status": [
+          {
+            "status": "negotiating",
+            "n": 10
+          },
+          {
+            "status": "collecting",
+            "n": 40
+          },
+          {
+            "status": "cancelled",
+            "n": 157
+          },
+          {
+            "status": "exhausted",
+            "n": 3
+          },
+          {
+            "status": "agreed",
+            "n": 3
+          }
+        ],
+        "negotiations_over_3_claims": 0,
+        "duplicate_claims_same_driver": 0
+      }
+    },
+    {
+      "round": "r03-after-d6",
+      "code": [
+        "7b0f877818566ad1b4e0c798c09800162bb9e15e"
+      ],
+      "code_dir": [
+        "/home/user/workspace/ceezr"
+      ],
+      "window": {
+        "load_start": "2026-10-15T02:09:15.089Z",
+        "load_end": "2026-10-15T02:18:15.177Z",
+        "drain_end": "2026-10-15T02:21:35.201Z",
+        "load_minutes": 9
+      },
+      "orders_created_db": 460,
+      "orders_by_status_db": {
+        "cancelled": 14,
+        "completed": 91,
+        "matched": 237,
+        "searching": 118
+      },
+      "orders_completed_db": 91,
+      "order_to_accept_s_db": {
+        "n": 306,
+        "p50": 8.2,
+        "p95": 17.4,
+        "p99": 20.3,
+        "max": 24.409379
+      },
+      "offers_created_db": 2820,
+      "offers_delivered_mock": 2810,
+      "offers_delivered_pct": 99.6,
+      "offer_create_to_mock_s": {
+        "n": 2810,
+        "p50": 2.8,
+        "p95": 10.1,
+        "p99": 12.9,
+        "max": 16.312
+      },
+      "outbox_deliver_lag_s": {
+        "n": 3673,
+        "p50": 3.9,
+        "p95": 16.3,
+        "p99": 28.5,
+        "max": 79.216094
+      },
+      "update_completion_lag_s": {
+        "driver": {
+          "n": 4112,
+          "p50": 5,
+          "p95": 9.4,
+          "p99": 11.8,
+          "max": 17.915
+        },
+        "rider": {
+          "n": 6460,
+          "p50": 118.5,
+          "p95": 204.5,
+          "p99": 216.5,
+          "max": 242.126904
+        }
+      },
+      "mock_msgs_per_s": {
+        "rider": 13.14,
+        "driver": 12.54
+      },
+      "mock_429": 961,
+      "scenarios_started": 1605,
+      "scenarios_ok": 97,
+      "scenario_fail_reasons": {
+        "order_not_created_45s": 1460,
+        "cancel_status_matched": 8,
+        "agree_not_matched_searching": 35,
+        "no_match_within_wait": 1,
+        "cancel_after_match_matched": 3,
+        "cancel_not_applied_searching": 1
+      },
+      "http": {
+        "total": 13564,
+        "ok": 13564,
+        "non2xx": 0,
+        "netErr": 0,
+        "timeouts": 0,
+        "p50": 3.7,
+        "p95": 60.8,
+        "p99": 72.4
+      },
+      "integrity": {
+        "orders_with_two_accepted_offers": 0,
+        "drivers_with_two_active_orders_now": 59,
+        "outbox_stuck_sending_gt_5min_now": 0
+      },
+      "groups": {
+        "negotiations_by_status": [
+          {
+            "status": "collecting",
+            "n": 65
+          },
+          {
+            "status": "cancelled",
+            "n": 117
+          },
+          {
+            "status": "agreed",
+            "n": 35
+          }
+        ],
+        "negotiations_over_3_claims": 0,
+        "duplicate_claims_same_driver": 0
+      }
+    },
+    {
+      "round": "r04-after-d6-lanes64",
+      "code": [
+        "7b0f877818566ad1b4e0c798c09800162bb9e15e"
+      ],
+      "code_dir": [
+        "/home/user/workspace/ceezr"
+      ],
+      "window": {
+        "load_start": "2026-10-15T02:25:11.465Z",
+        "load_end": "2026-10-15T02:34:11.562Z",
+        "drain_end": "2026-10-15T02:38:11.592Z",
+        "load_minutes": 9
+      },
+      "orders_created_db": 421,
+      "orders_by_status_db": {
+        "cancelled": 10,
+        "completed": 71,
+        "matched": 222,
+        "searching": 118
+      },
+      "orders_completed_db": 71,
+      "order_to_accept_s_db": {
+        "n": 258,
+        "p50": 7,
+        "p95": 14.2,
+        "p99": 17,
+        "max": 22.769698
+      },
+      "offers_created_db": 2264,
+      "offers_delivered_mock": 2244,
+      "offers_delivered_pct": 99.1,
+      "offer_create_to_mock_s": {
+        "n": 2244,
+        "p50": 2.2,
+        "p95": 9.7,
+        "p99": 14.8,
+        "max": 15.743
+      },
+      "outbox_deliver_lag_s": {
+        "n": 3187,
+        "p50": 3.4,
+        "p95": 14.3,
+        "p99": 30.4,
+        "max": 37.289376
+      },
+      "update_completion_lag_s": {
+        "driver": {
+          "n": 4011,
+          "p50": 4.8,
+          "p95": 9.8,
+          "p99": 12,
+          "max": 15.804367
+        },
+        "rider": {
+          "n": 6288,
+          "p50": 77.5,
+          "p95": 121.1,
+          "p99": 199.6,
+          "max": 276.396785
+        }
+      },
+      "mock_msgs_per_s": {
+        "rider": 12.07,
+        "driver": 10.91
+      },
+      "mock_429": 1216,
+      "scenarios_started": 1560,
+      "scenarios_ok": 78,
+      "scenario_fail_reasons": {
+        "order_not_created_45s": 1431,
+        "agree_not_matched_searching": 41,
+        "cancel_status_matched": 5,
+        "no_match_within_wait": 1,
+        "cancel_after_match_matched": 3
+      },
+      "http": {
+        "total": 13290,
+        "ok": 13290,
+        "non2xx": 0,
+        "netErr": 0,
+        "timeouts": 0,
+        "p50": 3.5,
+        "p95": 64.4,
+        "p99": 76.7
+      },
+      "integrity": {
+        "orders_with_two_accepted_offers": 0,
+        "drivers_with_two_active_orders_now": 103,
+        "outbox_stuck_sending_gt_5min_now": 0
+      },
+      "groups": {
+        "negotiations_by_status": [
+          {
+            "status": "collecting",
+            "n": 91
+          },
+          {
+            "status": "cancelled",
+            "n": 133
+          },
+          {
+            "status": "agreed",
+            "n": 41
+          }
+        ],
+        "negotiations_over_3_claims": 0,
+        "duplicate_claims_same_driver": 0
+      }
+    }
+  ]
+}
