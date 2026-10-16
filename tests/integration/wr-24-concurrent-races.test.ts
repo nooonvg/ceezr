@@ -467,6 +467,12 @@ describeIf("WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقي
           (r) => r[0]?.r as Json,
         ),
       ]);
+      // تشخيصُ حالتِ «كلاهما فشل» (تحتَ الحملِ): أسبابُ الرفضِ لا تُبتلع.
+      if (bot.ok !== true && group.ok !== true) {
+        console.error(
+          "WR24_7A_BOTH_FAILED bot=" + JSON.stringify(bot) + " group=" + JSON.stringify(group),
+        );
+      }
       expect([bot.ok, group.ok].filter((ok) => ok === true)).toHaveLength(1);
       const state = await settled(orderId);
       expect(state.status).toBe("matched");

@@ -25,6 +25,10 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+
+/** قتلُ خلفياتِ القاعدةِ وتعافيها خمسَ جولاتٍ — I/O ثقيلٌ تحتَ حملِ الحزمةِ. */
+const slowIt = (name: string, fn: () => Promise<void> | void) => it(name, fn, 60_000);
+
 import { createSql } from "../../packages/infrastructure/db/client.ts";
 import { reserveFreePort } from "../support/free-port.ts";
 
@@ -165,7 +169,7 @@ describeIf("D7 — صمودُ البوابةِ تحتَ قتلِ خلفياتِ 
     if (killer !== null) await killer.end({ timeout: 2000 });
   });
 
-  it("قتلُ خلفياتِ البوابةِ خمسَ جولاتٍ: العمليّةُ نفسُها تعيشُ وتستعيدُ جاهزيتَها في مهلةٍ", async () => {
+  slowIt("قتلُ خلفياتِ البوابةِ خمسَ جولاتٍ: العمليّةُ نفسُها تعيشُ وتستعيدُ جاهزيتَها في مهلةٍ", async () => {
     if (gateway === null || killer === null) throw new Error("التمهيدُ لم يكتمل");
     expect(gateway.child.exitCode).toBeNull();
     // جاهزيةٌ قبلَ أولِ جولةٍ — القاعدةُ تعملُ والاستعلامُ الحقيقيُّ يمرُّ.
