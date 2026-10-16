@@ -60,6 +60,12 @@ describeIf("نطاقُ تحذير قربِ الانتهاء", () => {
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table audit_log, subscriptions, driver_capabilities, driver_availability,
+                             drivers, riders, users restart identity cascade`;
+
     await sql.end({ timeout: 5 });
   });
 
@@ -68,7 +74,8 @@ describeIf("نطاقُ تحذير قربِ الانتهاء", () => {
                              drivers, riders, users restart identity cascade`;
   });
 
-  it("الدالّةُ تُعيد اشتراكاتِ المدينة المطلوبة وحدَها", async () => {
+  
+it("الدالّةُ تُعيد اشتراكاتِ المدينة المطلوبة وحدَها", async () => {
     const inJeddah = await seedExpiring(jeddah, 610_001);
     await seedExpiring(riyadh, 610_002);
 

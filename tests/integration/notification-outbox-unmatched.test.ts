@@ -178,6 +178,15 @@ describeIf("إخطارا صاحبِ الطلبِ العالقِ في صندوق�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table notification_outbox, unsubscribed_claims, unsubscribed_negotiations,
+        support_tickets, subscriptions, audit_log, order_offers, orders, driver_availability,
+        drivers, riders, users restart identity cascade
+    `;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -191,7 +200,8 @@ describeIf("إخطارا صاحبِ الطلبِ العالقِ في صندوق�
     await createFixture();
   });
 
-  it("فتحُ الدورةِ الأولى يُودِعُ صفًّا واحدًا في معاملتِها — ولا أثرَ صادرٌ فيها", async () => {
+  
+it("فتحُ الدورةِ الأولى يُودِعُ صفًّا واحدًا في معاملتِها — ولا أثرَ صادرٌ فيها", async () => {
     const sent: Sent[] = [];
     const opened = await openCycle();
     expect(opened.ok).toBe(true);

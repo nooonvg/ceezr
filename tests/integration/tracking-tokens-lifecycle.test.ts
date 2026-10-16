@@ -70,6 +70,13 @@ describeIf("§4.2 — دورةُ حياة رموز التتبّع على قاع�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table trip_tracking_tokens, tracking_sessions, audit_log, attendance_log,
+                             order_offers, orders, driver_availability, driver_capabilities,
+                             drivers, riders, users restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -82,7 +89,8 @@ describeIf("§4.2 — دورةُ حياة رموز التتبّع على قاع�
     ids = await seed();
   });
 
-  /** راكبٌ بلغةٍ غيرِ العربية (لنُثبت أنّ اللغة تُقرأ لا تُفترض)، وسائقٌ، وطلبٌ يبحث. */
+  
+/** راكبٌ بلغةٍ غيرِ العربية (لنُثبت أنّ اللغة تُقرأ لا تُفترض)، وسائقٌ، وطلبٌ يبحث. */
   async function seed(): Promise<{ riderId: string; driverId: string; orderId: string }> {
     const riderUsers = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, full_name, phone, language_code, role)

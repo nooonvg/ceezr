@@ -200,6 +200,15 @@ describeIf("آليّةُ بلاغِ المفقودِ على PostgreSQL حقيق�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table notification_outbox, unsubscribed_claims, unsubscribed_negotiations,
+        support_tickets, subscriptions, audit_log, order_offers, orders, driver_availability,
+        drivers, riders, users restart identity cascade
+    `;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -213,7 +222,8 @@ describeIf("آليّةُ بلاغِ المفقودِ على PostgreSQL حقيق�
     await createFixture();
   });
 
-  it("تذكرةُ المفقودِ تُفتَحُ بلا طلبٍ — عقدُ F3-08 المحفوظُ، ولا ردَّ ORDER_REQUIRED", async () => {
+  
+it("تذكرةُ المفقودِ تُفتَحُ بلا طلبٍ — عقدُ F3-08 المحفوظُ، ولا ردَّ ORDER_REQUIRED", async () => {
     const opened = await openTicket({ telegramId: RIDER_TELEGRAM });
     expect(opened.ok).toBe(true);
     expect(opened.reference).toMatch(/^WSL-[0-9]{6,}$/);

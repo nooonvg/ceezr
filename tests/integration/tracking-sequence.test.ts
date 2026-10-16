@@ -102,6 +102,16 @@ describeIf("ترتيبُ أحداثِ التتبُّعِ على PostgreSQL حق�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table tracking_sessions, agent_outcomes, agent_decisions, audit_log,
+                             attendance_log, ratings, support_tickets,
+                             unsubscribed_claims, unsubscribed_negotiations, order_offers, orders,
+                             subscriptions, driver_capabilities, driver_availability,
+                             admin_sessions, admin_login_codes,
+                             drivers, riders, users restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -153,7 +163,8 @@ describeIf("ترتيبُ أحداثِ التتبُّعِ على PostgreSQL حق�
     );
   });
 
-  /**
+  
+/**
    * سائقٌ موثَّقٌ وداخلُ الخدمةِ. والزرعُ بالكتابةِ المباشرةِ لا بحوارِ التسجيلِ
    * كاملاً: مقصدُ هذا الملفِّ ميكانيكا الرقمِ، وحوارُ التسجيلِ مقيسٌ في
    * `tracking-realtime` و`registration`. والإتاحةُ بـ`record_attendance` لأنَّها

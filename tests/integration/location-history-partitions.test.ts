@@ -102,6 +102,13 @@ describeIf("F7-03 — أثرُ الموقعِ المقسَّمُ على PostgreS
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table tracking_sessions, attendance_log, driver_availability,
+                             driver_capabilities, subscriptions, drivers, users
+                             restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -121,7 +128,8 @@ describeIf("F7-03 — أثرُ الموقعِ المقسَّمُ على PostgreS
     cityHandle = await ensureActiveCity(sql, { prior: cityHandle });
   });
 
-  async function seedDriver(chat: number): Promise<string> {
+  
+async function seedDriver(chat: number): Promise<string> {
     const users = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, full_name, phone, language_code, role)
       values (${cityId}, ${chat}::bigint, ${`سائق ${chat}`}, ${`+9665${chat}`}, 'ar', 'driver')

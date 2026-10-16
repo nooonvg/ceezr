@@ -122,6 +122,14 @@ describeIf("notification_outbox على PostgreSQL فعلية (BUG-004)", () => {
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table notification_outbox, order_offers, orders, driver_availability,
+        drivers, riders, users restart identity cascade
+    `;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -134,7 +142,8 @@ describeIf("notification_outbox على PostgreSQL فعلية (BUG-004)", () => {
     await createFixture();
   });
 
-  it("فتحُ الدورةِ يكتبُ العرضَ وصفَّ الإشعارِ في معاملةٍ واحدةٍ", async () => {
+  
+it("فتحُ الدورةِ يكتبُ العرضَ وصفَّ الإشعارِ في معاملةٍ واحدةٍ", async () => {
     const offerId = await openRound();
 
     // العرضُ موجودٌ، وصفُّ الإشعارِ موجودٌ معه في نفسِ المعاملة — لا نافذةُ سباقٍ

@@ -57,6 +57,12 @@ describeIf("ظهور اقتراح الطبقة في صفحة النزاعات", 
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, support_tickets,
+                             riders, users restart identity cascade`;
+
     await sql.end({ timeout: 5 });
   });
 
@@ -88,7 +94,8 @@ describeIf("ظهور اقتراح الطبقة في صفحة النزاعات", 
     ticketId = created;
   });
 
-  it("بلا طبقة مفعّلة: التذكرة تظهر والخلية فارغة ولا تنكسر الصفحة", async () => {
+  
+it("بلا طبقة مفعّلة: التذكرة تظهر والخلية فارغة ولا تنكسر الصفحة", async () => {
     const rows = await listDisputes(sql, cityId, null, LIMIT);
 
     expect(rows.length).toBe(1);

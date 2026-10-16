@@ -89,6 +89,14 @@ describeIf("I1 · حارسُ الإسنادِ في قرارِ المرشَّحِ
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log,
+                             unsubscribed_claims, unsubscribed_negotiations, order_offers, orders,
+                             subscriptions, driver_capabilities, driver_availability, drivers,
+                             riders, users restart identity cascade`;
+
     await restoreWindow();
     await sql.end({ timeout: 5 });
   });
@@ -154,7 +162,8 @@ describeIf("I1 · حارسُ الإسنادِ في قرارِ المرشَّحِ
     }
   });
 
-  it("١ — قرارُ الراكبِ بقبولِ مرشَّحٍ ملتزمٍ: رفضٌ نظيفٌ وتحريرُ المرشَّحِ لا تعليقٌ", async () => {
+  
+it("١ — قرارُ الراكبِ بقبولِ مرشَّحٍ ملتزمٍ: رفضٌ نظيفٌ وتحريرُ المرشَّحِ لا تعليقٌ", async () => {
     // التزامُ السائقِ القائمُ: إسنادٌ مشروعٌ للطلبِ الأولِ عبرَ مسارِ القرارِ نفسِهِ.
     const orders = await sql<{ id: string }[]>`
       select id::text from orders where status = 'searching' order by created_at

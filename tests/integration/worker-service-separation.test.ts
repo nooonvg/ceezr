@@ -185,6 +185,9 @@ describeIf("فصلُ العامل عن البوابة على قاعدةٍ حقي
 
   afterAll(async () => {
     await restoreCityBaseline(sql, cityHandle);
+    // تنظيفٌ نهائي (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9):
+    // لا شيء كان يمسح job_heartbeats بعد آخر اختبار فيبقى أثرٌ للملفات المتوازية.
+    await sql`truncate table job_heartbeats`;
     await sql.end({ timeout: 5 });
   });
 
@@ -195,6 +198,7 @@ describeIf("فصلُ العامل عن البوابة على قاعدةٍ حقي
     await sql`truncate table job_heartbeats`;
     expect(await heartbeatCount()).toBe(0);
   });
+
 
   /**
    * الضابطُ الموجبُ. لولاه لصارت الحالةُ التاليةُ توكيداً بلا معنى: «لم يظهر صفٌّ»

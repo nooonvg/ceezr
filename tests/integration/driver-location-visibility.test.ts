@@ -125,6 +125,13 @@ describeIf("ظهور السائق بلا موقع، ووحدة مصدر التو
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, order_offers, orders,
+                             subscriptions, driver_capabilities, driver_availability,
+                             drivers, riders, users restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -149,7 +156,8 @@ describeIf("ظهور السائق بلا موقع، ووحدة مصدر التو
     });
   });
 
-  /** مدير حقيقي في القاعدة: `admin_set_driver_verification` ترفض غير المدير. */
+  
+/** مدير حقيقي في القاعدة: `admin_set_driver_verification` ترفض غير المدير. */
   async function admin(): Promise<string> {
     const rows = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, full_name, role)

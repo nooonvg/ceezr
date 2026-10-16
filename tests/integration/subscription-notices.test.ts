@@ -141,6 +141,14 @@ describeIf("إشعارات دورة حياة الاشتراك على PostgreSQL 
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table subscription_notices, notification_outbox, subscription_invoices,
+        subscriptions, drivers, riders, users, audit_log restart identity cascade
+    `;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -158,7 +166,8 @@ describeIf("إشعارات دورة حياة الاشتراك على PostgreSQL 
     notices = createSubscriptionNoticeDeliveryPort(sql);
   });
 
-  it("انتهاءُ التجربة يُنتج إشعاراً واحداً لا يتكرّر في الدورة التالية", async () => {
+  
+it("انتهاءُ التجربة يُنتج إشعاراً واحداً لا يتكرّر في الدورة التالية", async () => {
     await seedSubscription({ status: "trialing" });
     await sql`
       update subscriptions set trial_ends_at = now() - interval '1 minute' where driver_id = ${driverId}::uuid

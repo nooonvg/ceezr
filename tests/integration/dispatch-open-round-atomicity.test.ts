@@ -92,6 +92,13 @@ describeIf("ذرّيّةُ فتحِ دورةِ البثّ — BUG-005", () => {
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log,
+                             order_offers, orders, subscriptions, driver_capabilities,
+                             driver_availability, drivers, riders, users restart identity cascade`;
+
     await sql.end({ timeout: 5 });
   });
 
@@ -144,7 +151,8 @@ describeIf("ذرّيّةُ فتحِ دورةِ البثّ — BUG-005", () => {
     orderId = created as OrderId;
   });
 
-  it("١ — طلبٌ باحثٌ: تُفتَح الدورةُ وتُكتَب العروضُ ويرتفعُ الرقمُ درجةً واحدة", async () => {
+  
+it("١ — طلبٌ باحثٌ: تُفتَح الدورةُ وتُكتَب العروضُ ويرتفعُ الرقمُ درجةً واحدة", async () => {
     const writer = createOfferWriter(sql);
     const opened = await writer.openRound(input(1, driverIds));
 

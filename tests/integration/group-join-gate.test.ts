@@ -122,6 +122,13 @@ describeIf("بوّابةُ دخولِ قروبِ غيرِ المشتركينَ �
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table group_memberships, unsubscribed_claims,
+                             unsubscribed_negotiations, subscriptions, driver_capabilities,
+                             driver_availability, drivers, riders, users restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -146,7 +153,8 @@ describeIf("بوّابةُ دخولِ قروبِ غيرِ المشتركينَ �
     });
   });
 
-  it("سائقٌ موثَّقٌ في مدينةِ القروبِ: قبولٌ + صفُّ عضويّةٍ بلا سببٍ", async () => {
+  
+it("سائقٌ موثَّقٌ في مدينةِ القروبِ: قبولٌ + صفُّ عضويّةٍ بلا سببٍ", async () => {
     const seeded = await seedVerifiedDriver(320_101);
     const response = await post("driver", joinRequest(UNSUB_GROUP, 320_101));
     expect(response.status).toBe(200);

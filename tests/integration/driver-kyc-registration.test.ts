@@ -131,6 +131,13 @@ describeIf("تسجيل السائق: الملفّ التوثيقي", () => {
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, ratings,
+                             order_offers, orders, subscriptions, driver_capabilities,
+                             driver_availability, drivers, riders, users restart identity cascade`;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -155,7 +162,8 @@ describeIf("تسجيل السائق: الملفّ التوثيقي", () => {
     });
   });
 
-  it("لا يُنشئ سائقاً عند اختيار الخدمة بل يسأل عن المركبة", async () => {
+  
+it("لا يُنشئ سائقاً عند اختيار الخدمة بل يسأل عن المركبة", async () => {
     // هذا هو العطب المُبلَّغ عنه: هنا بالضبط كان يُكتب صفّ سائق بلا مركبة ولا هوية
     await upToService(DRIVER_CHAT, "+966500000260");
 

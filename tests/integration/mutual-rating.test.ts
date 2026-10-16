@@ -25,6 +25,11 @@ describe.skipIf(skip)("F12-05 — التقييمُ المتبادلُ: منظو�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate ratings, audit_log, orders, drivers, riders, users cascade`;
+
     if (cityHandle !== undefined) await restoreCityBaseline(sql, cityHandle);
     if (sql !== undefined) await sql.end();
   });
@@ -33,7 +38,8 @@ describe.skipIf(skip)("F12-05 — التقييمُ المتبادلُ: منظو�
     await sql`truncate ratings, audit_log, orders, drivers, riders, users cascade`;
   });
 
-  async function seedUser(telegramId: string, role: string, fullName: string): Promise<string> {
+  
+async function seedUser(telegramId: string, role: string, fullName: string): Promise<string> {
     const [row] = await sql<{ id: string }[]>`
       insert into users (city_id, telegram_id, role, full_name, phone)
       values (${cityId}, ${telegramId}, ${role}, ${fullName}, '+966500000999')

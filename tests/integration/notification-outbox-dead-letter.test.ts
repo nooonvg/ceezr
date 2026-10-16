@@ -123,6 +123,14 @@ describeIf("طابورُ الموتى في صندوقِ الصادرِ على Po
   }, 60_000);
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`
+      truncate table notification_outbox, order_offers, orders, driver_availability,
+        drivers, riders, users restart identity cascade
+    `;
+
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
   });
@@ -138,6 +146,7 @@ describeIf("طابورُ الموتى في صندوقِ الصادرِ على Po
     `;
     await createFixture();
   }, 60_000);
+
 
   it("الإخفاقُ دونَ السقفِ يُعيدُ الصفَّ pending ويحفظُ آخرَ خطأٍ", async () => {
     const outbox = createNotificationOutboxPort(sql);

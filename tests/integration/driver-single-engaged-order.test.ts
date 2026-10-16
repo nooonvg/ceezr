@@ -83,6 +83,13 @@ describeIf("I1 · سائقٌ واحدٌ لا يحملُ التزاماً ثان�
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log,
+                             order_offers, orders, subscriptions, driver_capabilities,
+                             driver_availability, drivers, riders, users restart identity cascade`;
+
     await sql.end({ timeout: 5 });
   });
 
@@ -143,7 +150,8 @@ describeIf("I1 · سائقٌ واحدٌ لا يحملُ التزاماً ثان�
     }
   });
 
-  it("١ — التزامٌ ثانٍ للسائقِ نفسِهِ يُردُّ صراحةً بـDRIVER_HAS_ACTIVE_ORDER", async () => {
+  
+it("١ — التزامٌ ثانٍ للسائقِ نفسِهِ يُردُّ صراحةً بـDRIVER_HAS_ACTIVE_ORDER", async () => {
     const rpc = createDispatchRpc(sql);
 
     const first = await rpc.claimRide(orderA, driverId);

@@ -151,6 +151,13 @@ describeIf("المرحلة ٨ — عمر موقع السائق في الإسنا
   });
 
   afterAll(async () => {
+    // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
+    // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, order_offers, orders,
+                             subscriptions, driver_capabilities, driver_availability,
+                             drivers, riders, users restart identity cascade`;
+
     // إعادة الإعداد إلى المبذور: تركُه مُفعّلاً يجعل تشغيلاً لاحقاً يبدأ بحَرَسٍ
     // شغّله اختبارٌ لا مالك، وهو أسوأ من ألّا يُختبَر
     await setMaxAge(0);
@@ -188,7 +195,8 @@ describeIf("المرحلة ٨ — عمر موقع السائق في الإسنا
     });
   });
 
-  /** ضبط الحدّ في `platform_settings` — لا ثابتٌ في الكود ولا حقنٌ في الحاوية. */
+  
+/** ضبط الحدّ في `platform_settings` — لا ثابتٌ في الكود ولا حقنٌ في الحاوية. */
   async function setMaxAge(seconds: number): Promise<void> {
     // `${text}::jsonb` يجعل السائق يُلفّف النصّ ثانيةً فيُخزَّن jsonb من نوع
     // `string` مع value_type='number' — تلويثٌ صامت للقاعدة المشتركة. النمط
