@@ -18,8 +18,11 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { buildContainer } from "../../apps/gateway/src/container.ts";
 import { createServer } from "../../apps/gateway/src/server.ts";
+import { createRiderTripNoticeHandler } from "../../packages/application/dispatch/deliver-rider-trip-notice.ts";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import { createCityDirectory } from "../../packages/infrastructure/geo/city-directory.ts";
+import { createRiderTripFactsReader } from "../../packages/infrastructure/notification/rider-trip-facts.ts";
+import { asIdentifyingSender } from "../../packages/infrastructure/notification/telegram-api-sender.ts";
 import type { AppConfig } from "../../packages/shared/config/index.ts";
 import { LAUNCH_CITY_CODES } from "../../scripts/activate-launch-cities.ts";
 import { testConfig } from "../support/config.ts";
@@ -28,7 +31,7 @@ import { capturing, type SentMessage } from "../support/telegram-capture.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const WEBHOOK_SECRET = "five-cities-secret";
-const TRACKING_BASE = "https://track.five-cities.test/t";
+const MINIAPP_URL_IN_TEST = "https://miniapp.five-cities.test";
 const ADMIN_TELEGRAM_ID = 977_000_001;
 
 /**
@@ -64,7 +67,7 @@ const config: AppConfig = testConfig({
   port: 3988,
   telegramWebhookSecret: WEBHOOK_SECRET,
   bootstrapAdminTelegramId: String(ADMIN_TELEGRAM_ID),
-  trackingTokenBaseUrl: TRACKING_BASE,
+  trackingTokenBaseUrl: "https://track.five-cities.test/t",
 });
 
 let sql: Sql;
@@ -543,6 +546,16 @@ describeIf("إطلاقُ المدنِ الخمسِ معاً على قاعدةٍ 
       // القبولُ عبرَ القلبِ الذرّيِّ في القاعدةِ (`claim_ride`) — عينُ ما تستدعيه
       // بوابةُ التطبيقِ من مسارِ القبولِ، بلا زرِّ بوتٍ (ADR 0286).
       await sql`select claim_ride(${orderId}::uuid, ${driverId}::uuid)`;
+      // إشعارُ الراكبِ بالإسنادِ كما يودعُهُ مسارُ قبولِ التطبيقِ (ADR 0286:
+      // البوتُ قناةُ إشعاراتٍ) ثمّ تسليمُهُ عبرَ معالجِ الصادرِ الحقيقيِّ.
+      await sql`select enqueue_rider_trip_notice(${orderId}::uuid, 'MATCHED')`;
+      await drainNotificationOutbox(sql, capturing(riderSent), {
+        rider_trip_notice: createRiderTripNoticeHandler({
+          facts: createRiderTripFactsReader(sql),
+          sender: asIdentifyingSender(capturing(riderSent)),
+          miniAppUrl: MINIAPP_URL_IN_TEST,
+        }),
+      });
 
       const order = await sql<
         { status: string; assigned_driver_id: string | null; city_id: string }[]
@@ -558,11 +571,22 @@ describeIf("إطلاقُ المدنِ الخمسِ معاً على قاعدةٍ 
       `;
       expect(offer[0]?.status).toBe("accepted");
 
-      // §4.2: الراكبُ أُخطر بلغته ومعه رابطُ تتبّعٍ حقيقيّ.
+      // §4.2 كما صارَ في المنتجِ (ADR 0286): الراكبُ أُخطر بلغتِهِ، وتابعُ موقعِ
+      // سائقِهِ منَ التطبيقِ — زرُّ `web_app` على شاشةِ الرحلةِ (open=ride_<id>)
+      // بديلَ رابطِ التتبّعِ القديمِ الذي كانَ يُلصقُ بنصِّ رسالةِ البوتِ.
       const toRider = riderSent.filter((sent) => sent.chatId === String(city.riderChat));
       expect(toRider.length).toBeGreaterThan(0);
-      expect(toRider.map((sent) => sent.text).join("\n")).toContain(TRACKING_BASE);
+      expect(toRider.map((sent) => JSON.stringify(sent.markup ?? null)).join("\n")).toContain(
+        `open=ride_${orderId}`,
+      );
 
+      // إصدارُ رمزِ التتبّعِ كما يُصدرُهُ حوارُ الراكبِ (ADR 0286: الرمزُ آليةُ
+      // رابطِ التتبّعِ القابلِ للمشاركةِ — إصدارُهُ لم يعُدْ أثرًا جانبيًّا لرسالةِ
+      // البوتِ بل خطوةً صريحةً).
+      const tokenIssued = await sql<{ result: { ok: boolean; error?: string } }[]>`
+        select issue_tracking_token(${orderId}::uuid, ${city.riderChat}::bigint, ${Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("")}) as result
+      `;
+      expect(tokenIssued[0]?.result?.ok).toBe(true);
       // والرمزُ محفوظٌ بمدينةِ الطلبِ لا بمدينةٍ سواها.
       const token = await sql<{ city_id: string; created_by: string; revoked_at: Date | null }[]>`
         select city_id, created_by::text as created_by, revoked_at

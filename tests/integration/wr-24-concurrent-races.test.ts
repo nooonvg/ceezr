@@ -79,6 +79,13 @@ describeIf("WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقي
     offered: readonly string[],
     expiresIn = "45 seconds",
   ): Promise<{ orderId: string; offers: Map<string, string> }> {
+    // `I1` (`ADR 0286`): السائقُ لا يحملُ التزامًا ثانيًا — وجولاتُ هذا الملفِ
+    // وجولاتُ من سبقَهُ تُبقي السائقَ الفائزَ مشغولًا. فتُنهى التزاماتُ السائقينَ
+    // المعروضينَ قبلَ كلِّ جولةٍ — هذا هو إتمامُ رحلاتِهم لا تعطيلُ الحارسِ.
+    await sql`
+      update orders set status = 'completed', completed_at = now()
+       where assigned_driver_id = any(${offered}::uuid[])
+         and is_driver_engaged_order_status(status)`;
     const orderId = (
       await sql<{ id: string }[]>`
         insert into orders (city_id, rider_id, service, status, pickup)

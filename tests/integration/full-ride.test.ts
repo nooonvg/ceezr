@@ -325,26 +325,11 @@ describeIf("المسار الكامل على قاعدة حقيقية", () => {
     // القبولُ عبرَ القلبِ الذرّيِّ في القاعدةِ (`claim_ride`) — عينُ ما تستدعيه
     // بوابةُ التطبيقِ من مسارِ القبولِ، بلا زرِّ بوتٍ (ADR 0286).
     await sql`select claim_ride(${order?.id ?? ""}::uuid, ${driverId}::uuid)`;
-    /**
-     * القبول صار يُنتج ثلاث رسائل لا واحدة: نصّ القبول، ثمّ بطاقة الرحلة، ثمّ
-     * دبّوس الموقع. وهذا هو مقصد المرحلة ١٢: السائق كان يُؤمَر بالتوجّه «إلى نقطة
-     * الانطلاق» بلا إحداثية ولا اسم. فتُثبَت البطاقة والدبّوس هنا صراحةً — لا
-     * يُتساهَل في وجودهما — كي لا يعود الصمت خِلسةً.
-     */
-    const acceptTexts = driverSent.filter((m) => m.location === undefined).map((m) => m.text);
-    expect(acceptTexts).toHaveLength(2);
-    expect(acceptTexts[0]).toBe(ar("driver.offer_accepted"));
-    const tripCard = acceptTexts[1] ?? "";
-    expect(tripCard).toContain(ar("driver.trip_header"));
-    expect(tripCard).toContain(ar("driver.trip_leg_to_pickup"));
-    // لا اسم لنقطة الانطلاق في هذا الطلب، فتُذكَر إحداثيتها لا نصٌّ مبهم
-    expect(tripCard).toContain(PICKUP.latitude.toFixed(4));
-    // ولا مقصد محدَّد في هذا المسار، فيُقال ذلك صراحةً بدل ادّعاء وجهة
-    expect(tripCard).toContain(ar("driver.trip_destination_unset"));
-
-    const pins = driverSent.filter((m) => m.location !== undefined);
-    expect(pins).toHaveLength(1);
-    expect(pins[0]?.location).toEqual(PICKUP);
+    // `ADR 0286`: سطحُ السائقِ بعدَ القبولِ هوَ التطبيقُ — لا رسائلَ عملٍ في بوتِه
+    // (لا نصَّ قبولٍ ولا بطاقةَ رحلةٍ ولا دبّوسَ موقعٍ): مقصدُ المرحلةِ ١٢ —
+    // توجيهُ السائقِ إلى نقطةِ الانطلاقِ — صارَ شاشةَ رحلةِ التطبيقِ، وواجهتُها
+    // تُقاسُ في اختباراتِ التطبيقِ المصغَّرِ لا في مسارِ البوتِ.
+    expect(driverSent).toHaveLength(0);
 
     const afterClaim = await sql<{ status: string; assigned_driver_id: string | null }[]>`
       select status, assigned_driver_id from orders where id = ${order?.id ?? ""}
@@ -377,7 +362,10 @@ describeIf("المسار الكامل على قاعدة حقيقية", () => {
     };
     expect(counter("waslah_dispatch_requests_total")).toBe(1);
     expect(counter("waslah_dispatch_offers_sent_total")).toBe(1);
-    expect(counter("waslah_dispatch_offers_accepted_total")).toBe(1);
+    // `ADR 0286` — مقياسُ القبولِ (`offers_accepted_total`) يُحرِّكُهُ غلافُ
+    // مراقبةِ مسارِ مطالبةِ البوتِ لا القلبُ الذرّيُّ في القاعدةِ؛ وبقبولِ
+    // البوتِ إلى العدمِ صارَ قياسُهُ منَ مسارِ التطبيقِ — وهذه فجوةٌ تُرصَدُ
+    // في تقريرِ الجولةِ (R1 يقيسُ بالقاعدةِ لا بالمقياسِ).
   });
 
   it("لا يبثّ على سائق غير متاح، ويبقى الطلب في البحث بلا عرض", async () => {
@@ -447,14 +435,13 @@ describeIf("المسار الكامل على قاعدة حقيقية", () => {
     expect(firstClaim.length + secondClaim.length).toBeGreaterThan(0);
 
     // بصرف النظر عن ترتيب الوصول: ظافرٌ واحد ومحرومٌ واحد، لا أكثر ولا أقل.
-    const texts = driverSent.filter((m) => m.location === undefined).map((m) => m.text);
-    // ظافرٌ واحد (قبول + بطاقة) ومحرومٌ واحد (الطلب أُخِذ)
-    expect(texts).toHaveLength(3);
-    expect(texts.filter((t) => t === ar("driver.offer_accepted"))).toHaveLength(1);
-    expect(texts.filter((t) => t === ar("driver.offer_taken"))).toHaveLength(1);
-    // البطاقة تُرسَل للظافر وحده: لا رؤية عبر الرحلات (المرحلة ١)
-    expect(texts.filter((t) => t.includes(ar("driver.trip_header")))).toHaveLength(1);
-    expect(driverSent.filter((m) => m.location !== undefined)).toHaveLength(1);
+    // `ADR 0286`: رسائلُ القبولِ والبطاقةِ والمحرومِ كانت مسارَ بوتٍ — الآنَ
+    // الحكمُ على نتيجةِ المطالباتِ نفسِها وعلى القاعدةِ: ظافرٌ واحدٌ صريحٌ،
+    // والخاسرُ ردُّهُ نامٌّ (`ORDER_NOT_CLAIMABLE`) لا صمتٌ.
+    expect(driverSent).toHaveLength(0);
+    const claimResults = [firstClaim, secondClaim] as { claimed?: Record<string, unknown> }[][];
+    expect(claimResults.filter((rows) => rows[0]?.claimed?.ok === true)).toHaveLength(1);
+    expect(claimResults.filter((rows) => rows[0]?.claimed?.ok === false)).toHaveLength(1);
 
     const finalOffers = await sql<{ driver_id: string; status: string }[]>`
       select driver_id, status from order_offers
