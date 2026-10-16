@@ -3,7 +3,7 @@ import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts"
 import { asIdentifyingSender } from "../../packages/infrastructure/notification/telegram-api-sender.ts";
 import { createOfferPublisher } from "../../packages/infrastructure/notification/telegram-driver-notifier.ts";
 import type { DriverId, OfferId } from "../../packages/shared/kernel/index.ts";
-import { ensureActiveCity } from "../support/active-city.ts";
+import { ensureActiveCity, restoreCityBaseline } from "../support/active-city.ts";
 import { asOrderId } from "../support/in-memory-ports.ts";
 import { capturing, type SentMessage } from "../support/telegram-capture.ts";
 
@@ -28,11 +28,12 @@ const MINIAPP_BASE = "https://miniapp.cap-test.local";
 let sql: Sql;
 let driverId = "";
 let driverUserId = "";
+let cityHandle: Awaited<ReturnType<typeof ensureActiveCity>> | null = null;
 
 beforeAll(async () => {
   if (DATABASE_URL === undefined) return;
   sql = createSql({ connectionString: DATABASE_URL });
-  const cityHandle = await ensureActiveCity(sql);
+  cityHandle = await ensureActiveCity(sql);
   const cityId = cityHandle.cityId;
   const [driverUser] = await sql<{ id: string }[]>`
     insert into users (city_id, telegram_id, role, full_name, phone, language_code)
@@ -50,6 +51,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   if (DATABASE_URL === undefined) return;
+  if (cityHandle !== null) await restoreCityBaseline(sql, cityHandle);
   if (driverId !== "") await sql`delete from drivers where id = ${driverId}`;
   if (driverUserId !== "") {
     await sql`delete from audit_log where actor_user_id = ${driverUserId}`;
