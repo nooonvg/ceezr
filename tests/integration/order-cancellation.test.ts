@@ -143,9 +143,15 @@ describeIf("إلغاء الطلب: أي طلب أُلغي، ومن عَلِم ب
   });
 
   afterAll(async () => {
+    // تنظيفُ بياناتِ آخرِ اختبارٍ: الـbeforeEach يقتلعُ كلَّ شيءٍ قبلَ كلِّ
+    // اختبارٍ لكن لا شيءَ يقتلعُه بعدَ الأخيرِ — فيبقى سائقُ التوصيلِ المبذورُ
+    // (270098) يعلنُ المدينةَ خادمةً للتوصيلِ فيفشلُ quote اللاحقُ.
+    await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, ratings,
+                             order_offers, orders, subscriptions, driver_capabilities,
+                             driver_availability, drivers, riders, users restart identity cascade`;
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
-  });
+  }, 30_000);
 
   beforeEach(async () => {
     await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, ratings,

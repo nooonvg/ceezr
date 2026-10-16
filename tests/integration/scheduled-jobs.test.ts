@@ -127,7 +127,7 @@ describeIf("مشغّل الجوبات المركزي على قاعدة حقيق�
       riderOut: { send: async () => true },
       identifyingDriver: { sendReturningId: async () => "1" },
     });
-  });
+  }, 30_000);
 
   /** سائق حقيقي بصفوف users + drivers، ليست بيانات وهمية بل نفس ما ينشئه البوت. */
   async function makeDriver(

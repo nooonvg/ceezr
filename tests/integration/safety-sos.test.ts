@@ -92,7 +92,9 @@ describeIf("SOS safety outbox على PostgreSQL فعلية", () => {
     await createFixture();
     trigger = createTriggerSosPort(sql);
     resolution = createSafetyResolutionPort(sql);
-  });
+    // مهلةُ الخطافِ نفسِه: truncate + fixture تحتَ حملِ الحزمةِ يتخطى الخمسَ
+    // ثوانٍ الافتراضيةَ للخطافاتِ (slowIt لا يغطّي الخطافاتِ).
+  }, 30_000);
 
   /**
    * الانحصار الذي كان: المطالبة تمسح المدن كلّها بترتيب `created_at`، فصفٌّ في
