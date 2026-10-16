@@ -316,11 +316,15 @@ describeIf("المسار الكامل على قاعدة حقيقية", () => {
     );
     expect(offerMessage).toBeDefined();
     expect(offerMessage?.chatId).toBe(String(DRIVER_CHAT));
-    expect(JSON.stringify(offerMessage?.markup)).toContain(`offer:accept:${order?.id}`);
+    // `ADR 0286` — البطاقةُ إشعارٌ لا زرَّ قبولٍ: قرارُ القبولِ في لوحِ عروضِ
+    // التطبيقِ، فالبطاقةُ موجودةٌ نصًّا وبطاقتُها بلا زرِّ `offer:` أصلًا.
+    expect(JSON.stringify(offerMessage?.markup)).not.toContain("offer:");
 
     // 4) القبول يمرّ عبر claim_ride فيصير الطلب matched والعرض accepted
     driverSent.length = 0;
-    await post("driver", callback(DRIVER_CHAT, `offer:accept:${order?.id}`));
+    // القبولُ عبرَ القلبِ الذرّيِّ في القاعدةِ (`claim_ride`) — عينُ ما تستدعيه
+    // بوابةُ التطبيقِ من مسارِ القبولِ، بلا زرِّ بوتٍ (ADR 0286).
+    await sql`select claim_ride(${order?.id ?? ""}::uuid, ${driverId}::uuid)`;
     /**
      * القبول صار يُنتج ثلاث رسائل لا واحدة: نصّ القبول، ثمّ بطاقة الرحلة، ثمّ
      * دبّوس الموقع. وهذا هو مقصد المرحلة ١٢: السائق كان يُؤمَر بالتوجّه «إلى نقطة
@@ -434,12 +438,13 @@ describeIf("المسار الكامل على قاعدة حقيقية", () => {
     driverSent.length = 0;
     // تنافس فعلي لا تتابعي: الطلبان ينطلقان معاً ويصلان للقاعدة متداخلين.
     // الذرّية مسؤولية claim_ride في القاعدة، لا ترتيب الاستدعاء في الاختبار.
-    const [firstResponse, secondResponse] = await Promise.all([
-      post("driver", callback(DRIVER_CHAT, `offer:accept:${orderId}`)),
-      post("driver", callback(secondChat, `offer:accept:${orderId}`)),
+    // القبولُ المتنافسُ عبرَ القلبِ الذرّيِّ نفسِه (`claim_ride`) من طرفينِ معاً —
+    // الذرّيةُ حكمُ القاعدةِ لا ترتيبَ الاستدعاءِ (ADR 0286: لا زرَّ بوتٍ).
+    const [firstClaim, secondClaim] = await Promise.all([
+      sql`select claim_ride(${orderId}::uuid, ${firstDriver}::uuid) as claimed`,
+      sql`select claim_ride(${orderId}::uuid, ${secondDriver}::uuid) as claimed`,
     ]);
-    expect(firstResponse.status).toBe(200);
-    expect(secondResponse.status).toBe(200);
+    expect(firstClaim.length + secondClaim.length).toBeGreaterThan(0);
 
     // بصرف النظر عن ترتيب الوصول: ظافرٌ واحد ومحرومٌ واحد، لا أكثر ولا أقل.
     const texts = driverSent.filter((m) => m.location === undefined).map((m) => m.text);

@@ -286,11 +286,17 @@ describeIf("مسار التوصيل الكامل على قاعدة حقيقية"
     // منذ BUG-004 يُكتَبُ صفُّ إشعارِ العرضِ في معاملةِ open_offer_round ويُسلَّمُ من عاملٍ،
     // فنُفرّغُهُ هنا كما يفعلُ العاملُ قبل التحقّق من وصولِهِ.
     await drainNotificationOutbox(sql, capturing(driverSent));
-    expect(JSON.stringify(driverSent.map((m) => m.markup))).toContain(`offer:accept:${order?.id}`);
+    // `ADR 0286` — البطاقةُ إشعارٌ بلا زرِّ قبولٍ: القبولُ قرارُ تطبيقٍ لا محادثةٍ،
+    // فتُوجدُ البطاقةُ نصًّا وبطاقتُها بلا زرِّ `offer:` أصلًا.
+    const offerCard = driverSent.find((m) => (m.text ?? "").includes("الخدمة:"));
+    expect(offerCard).toBeDefined();
+    expect(JSON.stringify(offerCard?.markup ?? null)).not.toContain("offer:");
 
     // 5) القبول ذرّي عبر claim_ride: الطلب matched والعرض accepted
     driverSent.length = 0;
-    await post("driver", callback(COURIER_CHAT, `offer:accept:${order?.id}`));
+    // القبولُ عبرَ القلبِ الذرّيِّ في القاعدةِ (`claim_ride`) — عينُ ما تستدعيه
+    // بوابةُ التطبيقِ من مسارِ القبولِ، بلا زرِّ بوتٍ (ADR 0286).
+    await sql`select claim_ride(${order?.id ?? ""}::uuid, ${courierId}::uuid)`;
     /**
      * وهذا المسار — بخلاف النقل — له مقصدٌ بإحداثية، فتُثبَت النقطتان معاً
      * ويُثبَت تمايزهما: قبل المرحلة ١٢ كانت الاحتياطية نصّاً واحداً لكلتيهما،

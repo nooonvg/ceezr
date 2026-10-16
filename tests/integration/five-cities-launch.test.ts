@@ -495,14 +495,20 @@ describeIf("إطلاقُ المدنِ الخمسِ معاً على قاعدةٍ 
 
     // وكلُّ سائقٍ أُخطر بطلبِ مدينتِه لا بطلبِ مدينةٍ أخرى.
     for (const city of cities) {
-      const own = orderIds.get(city.code) ?? "";
       const foreign = cities.filter((other) => other.code !== city.code).map((other) => other.code);
       const mine = driverSent.filter((sent) => sent.chatId === String(city.driverChat));
       const payload = JSON.stringify(mine);
-      expect(payload).toContain(`offer:accept:${own}`);
+      // `ADR 0286` — البطاقةُ إشعارٌ بلا زرِّ قبولٍ؛ ما يُميّزُ بطاقةَ مدينةٍ
+      // إحداثيّةُ التقاطِها في رابطِ الموقعِ، فالمسافَةُ حاضرٌ لا زرَّ قرارٍ.
+      expect(payload).toContain(
+        `q=${CITY_FIXTURES[city.code].pickup.latitude},${CITY_FIXTURES[city.code].pickup.longitude}`,
+      );
       for (const code of foreign) {
-        expect(payload).not.toContain(`offer:accept:${orderIds.get(code) ?? "؟"}`);
+        expect(payload).not.toContain(
+          `q=${CITY_FIXTURES[code].pickup.latitude},${CITY_FIXTURES[code].pickup.longitude}`,
+        );
       }
+      expect(payload).not.toContain("offer:");
     }
   });
 
@@ -534,8 +540,9 @@ describeIf("إطلاقُ المدنِ الخمسِ معاً على قاعدةٍ 
       const orderId = await requestRide(city);
 
       riderSent.length = 0;
-      const response = await post("driver", callback(city.driverChat, `offer:accept:${orderId}`));
-      expect(response.status).toBe(200);
+      // القبولُ عبرَ القلبِ الذرّيِّ في القاعدةِ (`claim_ride`) — عينُ ما تستدعيه
+      // بوابةُ التطبيقِ من مسارِ القبولِ، بلا زرِّ بوتٍ (ADR 0286).
+      await sql`select claim_ride(${orderId}::uuid, ${driverId}::uuid)`;
 
       const order = await sql<
         { status: string; assigned_driver_id: string | null; city_id: string }[]
