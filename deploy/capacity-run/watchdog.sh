@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# CAP-RUN-20261015 — مشرف إعادة تشغيل يحاكي سياسة Render (إعادة العملية المنهارة تلقائيًا).
+# CAP-RUN-20261016 — مشرف إعادة تشغيل يحاكي سياسة Render (إعادة العملية المنهارة تلقائيًا).
 # إن غابت عملية البوابة 15ث متصلة (ولا يوجد pids/gateway.hold) يُعاد تشغيلها ويُسجَّل الحدث في timeline.jsonl.
-HERE=$(cd "$(dirname "$0")" && pwd); B=/srv/ceezr-cap-20261015; : "${RUN_DIR:?}"
+HERE=$(cd "$(dirname "$0")" && pwd); B=/srv/ceezr-cap-20261016; : "${RUN_DIR:?}"
 down=0
 while [ ! -f "$B/pids/watchdog.stop" ]; do
   if sudo -n ip netns exec ceezrsbx pgrep -f "[a]pps/gateway/src/index.ts" >/dev/null; then down=0

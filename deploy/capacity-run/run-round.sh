@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# CAP-RUN-20261015 — تشغيل جولة واحدة في مجلد فريد: مراقب + (اختياري) منسّق أعطال + مولّد، كلها منفصلة.
+# CAP-RUN-20261016 — تشغيل جولة واحدة في مجلد فريد: مراقب + (اختياري) منسّق أعطال + مولّد، كلها منفصلة.
 #   ROUND=r03-soak60 PROFILE='[...]' [CHAOS=1] [CODE_DIR=...] [MARKS=10,20,..] ./run-round.sh
 set -eu
-HERE=$(cd "$(dirname "$0")" && pwd); B=/srv/ceezr-cap-20261015
+HERE=$(cd "$(dirname "$0")" && pwd); B=/srv/ceezr-cap-20261016
 : "${ROUND:?}"; : "${PROFILE:?}"
 export RUN_DIR=$B/runs/$ROUND
 [ -e "$RUN_DIR" ] && { echo "RUN_DIR exists: $RUN_DIR (لا خلط بين الجولات)"; exit 1; }

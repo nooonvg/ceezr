@@ -1,4 +1,4 @@
-# CEEZR — برنامج السعة القصوى والموثوقية · الجولة CAP-RUN-20261015
+# CEEZR — برنامج السعة القصوى والموثوقية · الجولة CAP-RUN-20261016
 
 > **نطاق الحكم:** هذا التقرير يخص بيئة اختبار محلية معزولة على مضيف واحد (2 vCPU، 7GB). كل الأرقام أدناه مأخوذة من قاعدة PostgreSQL المعزولة، ومن سجلات البوابة، ومن سجل محاكي Telegram، ومن مولّد الحمل. **لا شيء هنا يقيس قدرة الإنتاج**، ولا يصح نقل أي رقم إلى الإنتاج دون جولة على بنية مماثلة له.
 
@@ -28,7 +28,7 @@
 | الشبكة | netns `ceezrsbx` بواجهة `lo` فقط ولا مسار افتراضي | `environment.json` → `isolation` |
 | Telegram | المحاكي على `127.0.0.1:58090`. حارس egress داخل العملية يحوّل `api.telegram.org` إلى المحاكي ويحجب غير المحلي: **blocked=0، redirected=30,576** | `egress-blocked.jsonl`، `gateway.log` |
 | اختبار صريح لعدم الوصول | `curl https://api.telegram.org` و`http://1.1.1.1` من داخل netns: فشل اتصال (الحالة E4) | `edge-cases.json`، `environment.json` |
-| PostgreSQL | عنقود مستقل `/srv/ceezr-cap-20261015/pg` على 55432/loopback، وGUC `ceezr.run_marker`. قواعد `ceezr_cap_20261015` و`ceezr_cap_test_20261015` و`ceezr_cap_test_pre_d4` | `environment.json` |
+| PostgreSQL | عنقود مستقل `/srv/ceezr-cap-20261016/pg` على 55432/loopback، وGUC `ceezr.run_marker`. قواعد `ceezr_cap_20261016` و`ceezr_cap_test_20261016` و`ceezr_cap_test_pre_d4` | `environment.json` |
 | Redis | مثيل مستقل على 56379/loopback بمجلد خاص | `environment.json` |
 | الأسرار | توكنات وأسرار مولَّدة للجولة في `secrets.env` (600). لم تُطبع، وفحص الحزمة والفرق: **0 ظهور** | `secret-scan.json` |
 | الإنتاج | لم يُلمس: لا نشر، ولا دمج في `main`، ولا إعدادات إنتاج، ولا بيانات حقيقية | `source-revisions.json` |
@@ -42,7 +42,7 @@
 ## الشفرة المختبرة
 
 - **الشفرة الأساسية:** PR #558 (`sandbox/soak-fixes` @ `7b0f877`) هي خط الأساس B0، شُغّلت من worktree منفصل.
-- **التعديلات:** على فرع محلي جديد `sandbox/capacity-reliability-20261015` فوق نفس الـSHA. لم يُدمج شيء، ولم يُحذف عمل قائم.
+- **التعديلات:** على فرع محلي جديد `sandbox/capacity-reliability-20261016` فوق نفس الـSHA. لم يُدمج شيء، ولم يُحذف عمل قائم.
 
 ## الأعطال المكتشفة والإصلاحات
 
@@ -51,9 +51,9 @@
 | المعرّف | العطل (مقيس) | السبب الجذري | الإصلاح | الاختبار |
 |---|---|---|---|---|
 | D1 | جولة الدرينر المبتورة بالميزانية لا تُستأنف إلا مع webhook تالٍ. تحت الحمل يتراكم الطابور 171ث | `drainOnce` يعود عند انتهاء الميزانية بلا إعادة جدولة | إعادة جولة فورية عبر `setImmediate` عند `truncated` | `tests/unit/telegram-update-drainer-truncated-rerun.test.ts` |
-| D2 | بوت واحد يحتكر المطالبة ويجوّع الآخر | مطالبة FIFO عامة عبر البوتين | مطالبة عادلة لكل بوت (مهاجرة `20261015000100`) | `tests/unit/telegram-update-drainer-fairness-lease.test.ts` |
+| D2 | بوت واحد يحتكر المطالبة ويجوّع الآخر | مطالبة FIFO عامة عبر البوتين | مطالبة عادلة لكل بوت (مهاجرة `20261016000100`) | `tests/unit/telegram-update-drainer-fairness-lease.test.ts` |
 | D3 | وظيفة أطول من مدة الإيجار تُطالَب مرتين ← معالجة مزدوجة | لا تجديد للإيجار | تجديد الإيجار أثناء المعالجة | `tests/integration/telegram-drain-lease-renewal.test.ts` (معالج 1.6ث مقابل إيجار 1ث) |
-| D4 | خطوات الحوار تُعالَج بغير ترتيبها (إعادات خارج الترتيب) ← فشل تسجيل 31 سائقاً و11 زبوناً | المطالبة تتجاهل ترتيب المستخدم الواحد | عمود `lane_key` مولَّد + فهرس. لا تُطالَب وظيفة ما دامت لنفس المستخدم وظيفة أقدم معلّقة أو مطالَبة (مهاجرة `20261015000200`) | `tests/integration/telegram-jobs-lane-order.test.ts` (يفشل على `ceezr_cap_test_pre_d4`) |
+| D4 | خطوات الحوار تُعالَج بغير ترتيبها (إعادات خارج الترتيب) ← فشل تسجيل 31 سائقاً و11 زبوناً | المطالبة تتجاهل ترتيب المستخدم الواحد | عمود `lane_key` مولَّد + فهرس. لا تُطالَب وظيفة ما دامت لنفس المستخدم وظيفة أقدم معلّقة أو مطالَبة (مهاجرة `20261016000200`) | `tests/integration/telegram-jobs-lane-order.test.ts` (يفشل على `ceezr_cap_test_pre_d4`) |
 | D5 | بعد D4 تنتظر خطوة المستخدم التالية جولة لاحقة | الجولة لا تُعاد بعد إنجاز وظيفة تفتح ممر المستخدم | إعادة فورية إن أنجزت الجولة وظيفة واحدة على الأقل | `tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts` (قبل: Expected 8 Received 1) |
 | D6 | بوتا السائق والزبون يتقاسمان دلو إرسال عاماً واحداً (25/ث، حصة معلوماتية 20) | مفتاح الدلو العام ثابت `"bot"` | مفتاح لكل توكن: `bot-<sha256[0..16]>` (`outboundBucketKeyOfToken`) في حاويتي البوابة والعمال | `tests/unit/outbound-global-bucket-per-bot.test.ts` (قبل: Export not found) |
 | N1 | استنزاف صندوق الإشعارات تسلسلي: 0.5% من العروض تصل | دورة استنزاف واحدة تسلسلية | استنزاف متزامن: `NOTIFICATION_DRAIN_LANES=8`، ميزانية 8ث، حد 2000 مطالبة | `tests/unit/notification-outbox-concurrent-drain.test.ts` (القديم: 8/100) |

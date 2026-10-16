@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""CAP-RUN-20261015 — مقارنة جولات متماثلة الحمل من round-metrics.json → before-after.json"""
+"""CAP-RUN-20261016 — مقارنة جولات متماثلة الحمل من round-metrics.json → before-after.json"""
 import json, sys
-B = "/srv/ceezr-cap-20261015/runs"
+B = "/srv/ceezr-cap-20261016/runs"
 def row(r):
     d = json.load(open(f"{B}/{r}/round-metrics.json"))
     g = d["generator"] or {}

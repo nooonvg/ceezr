@@ -1,6 +1,6 @@
 /* biome-ignore-all lint/style/noNonNullAssertion: أداة اختبار محلية */
 /**
- * CAP-RUN-20261015 — محاكي Bot API لتيليجرام كخادم HTTP مستقل على loopback.
+ * CAP-RUN-20261016 — محاكي Bot API لتيليجرام كخادم HTTP مستقل على loopback.
  *
  * - يستقبل كل نداء `POST /bot<token>/<method>` تُعيد البوابة توجيهه إليه عبر حارس الخروج
  *   (`telegram-egress-guard.ts`). لا يتصل بالإنترنت أبدًا.

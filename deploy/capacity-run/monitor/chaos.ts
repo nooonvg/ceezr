@@ -1,6 +1,6 @@
 /* biome-ignore-all lint/style/noNonNullAssertion: أداة حقن أعطال تجريبية */
 /**
- * CAP-RUN-20261015 — منسّقُ حقنِ الأعطال (عمليةٌ مستقلةٌ عن البوابةِ والمولّد).
+ * CAP-RUN-20261016 — منسّقُ حقنِ الأعطال (عمليةٌ مستقلةٌ عن البوابةِ والمولّد).
  * جدولٌ زمنيٌّ ثابت (CHAOS_PLAN بالدقائق من SOAK_START_MS). كل حقنٍ يُسجَّل: البدء، الانتهاء،
  * زمن عودة /ready، وحالة الطوابير بعد 60ث (sending/claimed العالقة). لا spawnSync: كل أمر خارجي
  * Bun.spawn بمهلة، فلا يتجمد المنسّق إن تعطل أمر.
@@ -13,8 +13,8 @@ const EV = `${RUN_DIR}/evidence`;
 const HERE = new URL(".", import.meta.url).pathname;
 const SVC = `${HERE}../svc.sh`;
 const START = Number(process.env.SOAK_START_MS ?? Date.now());
-const B = "/srv/ceezr-cap-20261015";
-const DB = "postgres://postgres@127.0.0.1:55432/ceezr_cap_20261015";
+const B = "/srv/ceezr-cap-20261016";
+const DB = "postgres://postgres@127.0.0.1:55432/ceezr_cap_20261016";
 type Step = { at_min: number; action: string; arg?: number };
 const PLAN: Step[] = JSON.parse(
   process.env.CHAOS_PLAN ??

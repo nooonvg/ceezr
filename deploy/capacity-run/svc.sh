@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# CAP-RUN-20261015 — مدير خدمات الجولة. كل عملية تعمل داخل netns «ceezrsbx» (loopback فقط).
+# CAP-RUN-20261016 — مدير خدمات الجولة. كل عملية تعمل داخل netns «ceezrsbx» (loopback فقط).
 #   ./svc.sh infra|mock|shim|gateway|worker-stop|stop-gateway|kill-gateway|status|assert|stop-all
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd); REPO=$(cd "$HERE/../.." && pwd)
-RUN_ID=ceezr-cap-20261015; B=${RUN_BASE:-/srv/$RUN_ID}; NSX=$B/bin/nsx
+RUN_ID=ceezr-cap-20261016; B=${RUN_BASE:-/srv/$RUN_ID}; NSX=$B/bin/nsx
 export RUN_DIR=${RUN_DIR:-$B/runs/current}
 mkdir -p "$B/pids" "$RUN_DIR/evidence"
-PSQL="$NSX psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261015 -tAX"
+PSQL="$NSX psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -tAX"
 assert_isolation() {
   # 1) نحن نتحدث إلى عنقود هذه الجولة حصرًا
   local got; got=$($PSQL -c "select current_setting('data_directory')||'|'||current_setting('ceezr.run_marker')||'|'||current_database()" 2>/dev/null)
-  [ "$got" = "$B/pg|$RUN_ID|ceezr_cap_20261015" ] || { echo "ISOLATION_FAIL pg: '$got'"; return 1; }
+  [ "$got" = "$B/pg|$RUN_ID|ceezr_cap_20261016" ] || { echo "ISOLATION_FAIL pg: '$got'"; return 1; }
   # 2) Redis هذه الجولة
   local rd; rd=$($NSX redis-cli -p 56379 config get dir 2>/dev/null | tail -1)
   [ "$rd" = "$B/redis" ] || { echo "ISOLATION_FAIL redis dir: '$rd'"; return 1; }

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""CAP-RUN-20261015 — يبني summary.json ويملأ report.md من ملفات الأدلة (لا أرقام منسوخة يدوياً إلا ما يُقرأ هنا)."""
+"""CAP-RUN-20261016 — يبني summary.json ويملأ report.md من ملفات الأدلة (لا أرقام منسوخة يدوياً إلا ما يُقرأ هنا)."""
 import json, os, re, sys, subprocess, hashlib
 
 OUT = sys.argv[1]
-B = "/srv/ceezr-cap-20261015"
+B = "/srv/ceezr-cap-20261016"
 S = f"{B}/runs/r05-soak60-chaos"
 HERE = os.path.dirname(os.path.abspath(__file__))
 J = lambda p: json.load(open(p))
-P = f"{B}/bin/nsx psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261015 -X -tA -c"
+P = f"{B}/bin/nsx psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -X -tA -c"
 q = lambda s: subprocess.run(f'{P} "{s}"', shell=True, capture_output=True, text=True).stdout.strip()
 
 rm = J(f"{S}/round-metrics.json")
@@ -74,7 +74,7 @@ gates[4] = ("نجاح اختبارات الوظائف والسباقات وإع�
             f"الحالات الحدّية: {edge_pass} نجح، {edge_fail} فشل، {edge_nv} لم يُتحقق. اختبارات الوحدة/التكامل/الأنواع: {'نجحت' if tests_ok else 'انظر test-results.txt'}. إعادة التشغيل: 10 أعطال محقونة؛ 8 استعادت، 1 انهيار (D7)، 1 لم يُنفَّذ (عيب أداة).")
 
 summary = {
- "run": "CAP-RUN-20261015", "soak_round": "r05-soak60-chaos",
+ "run": "CAP-RUN-20261016", "soak_round": "r05-soak60-chaos",
  "verdict": "يحتاج إصلاحاً إضافياً",
  "window": rm["window"], "post_load_drain_complete_at": drain_end,
  "gateway_outages": outs, "gateway_outage_total_s": round(sum(o["ms"] for o in outs) / 1000, 1),

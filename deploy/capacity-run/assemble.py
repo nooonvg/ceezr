@@ -32,7 +32,7 @@ for k in ['SOAK_TABLE', 'GATES', 'EDGE', 'TESTS']:
     t = t.replace('{{' + k + '}}', f[k])
 t = t.replace('{{ANSWERS}}', ans)
 import re
-t = re.sub(r'PATH=\S+ ', 'PATH=$PATH ', t).replace('/srv/ceezr-cap-20261015/bin/nsx', '$B/bin/nsx')
+t = re.sub(r'PATH=\S+ ', 'PATH=$PATH ', t).replace('/srv/ceezr-cap-20261016/bin/nsx', '$B/bin/nsx')
 assert '{{' not in t
 open(OUT + '/report.md', 'w').write(t)
 print(len(t))

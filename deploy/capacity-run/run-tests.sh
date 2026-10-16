@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# CAP-RUN-20261015 — تشغيل الاختبارات وحفظ الأوامر ومخرجاتها الفعلية في test-results.txt
-B=/srv/ceezr-cap-20261015; R=/home/user/workspace/ceezr; OUT=$B/test-results.txt; export PATH=$HOME/.bun/bin:$PATH
+# CAP-RUN-20261016 — تشغيل الاختبارات وحفظ الأوامر ومخرجاتها الفعلية في test-results.txt
+B=/srv/ceezr-cap-20261016; R=/home/user/workspace/ceezr; OUT=$B/test-results.txt; export PATH=$HOME/.bun/bin:$PATH
 cd $R
 run() { echo; echo "================================================================"; echo "\$ $*"; echo "# at $(date -u +%FT%TZ)"; echo "----------------------------------------------------------------"; "$@" 2>&1; echo "# exit=$?"; }
-TDB=postgres://postgres@127.0.0.1:55432/ceezr_cap_test_20261015
+TDB=postgres://postgres@127.0.0.1:55432/ceezr_cap_test_20261016
 PRE=postgres://postgres@127.0.0.1:55432/ceezr_cap_test_pre_d4
 {
-echo "CAP-RUN-20261015 test-results — repo $(git rev-parse HEAD) + working tree (branch $(git rev-parse --abbrev-ref HEAD))"
+echo "CAP-RUN-20261016 test-results — repo $(git rev-parse HEAD) + working tree (branch $(git rev-parse --abbrev-ref HEAD))"
 echo "## 0) إعادة إنتاج الأعطال على شفرة PR #558 قبل الإصلاح (نسخ الاختبارات الجديدة مؤقتاً إلى $B/pr558 ثم حذف النسخ) — يجب أن تفشل"
 NEWT="tests/unit/telegram-update-drainer-truncated-rerun.test.ts tests/unit/telegram-update-drainer-fairness-lease.test.ts tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts tests/unit/outbound-global-bucket-per-bot.test.ts tests/unit/notification-outbox-concurrent-drain.test.ts"
 for t in $NEWT; do cp $R/$t $B/pr558/$t; done

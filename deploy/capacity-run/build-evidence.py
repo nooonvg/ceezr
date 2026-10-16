@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""CAP-RUN-20261015 — تجميع حزمة الأدلة النهائية في مجلد فريد.
+"""CAP-RUN-20261016 — تجميع حزمة الأدلة النهائية في مجلد فريد.
    python3 build-evidence.py SOAK_ROUND OUT_DIR
 لا يطبع ولا ينسخ أي سر: run.env يُنسخ بمفاتيح غير سرية فقط، وsecrets.env لا يُقرأ إلا لفحص عدم التسرّب."""
 import hashlib, json, os, shutil, subprocess, sys, glob
 
-B = "/srv/ceezr-cap-20261015"
+B = "/srv/ceezr-cap-20261016"
 REPO = "/home/user/workspace/ceezr"
 HERE = f"{REPO}/deploy/capacity-run"
 soak, out = sys.argv[1], sys.argv[2]
@@ -62,7 +62,7 @@ nsx = f"{B}/bin/nsx"
 env = {
     "host": {"os": sh(". /etc/os-release; echo $PRETTY_NAME"), "kernel": sh("uname -r"), "cpus": os.cpu_count(), "mem": sh("free -h | awk '/Mem/{print $2}'"), "disk": sh("df -h / | tail -1")},
     "versions": {"node": sh("node -v"), "bun": sh(f"{os.path.expanduser('~')}/.bun/bin/bun -v"), "postgres": sh(f"{nsx} psql -h 127.0.0.1 -p 55432 -U postgres -tAc 'select version()'"),
-                 "postgis": sh(f"{nsx} psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261015 -tAc 'select postgis_lib_version()'"), "redis": sh("redis-server --version")},
+                 "postgis": sh(f"{nsx} psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -tAc 'select postgis_lib_version()'"), "redis": sh("redis-server --version")},
     "isolation": {
         "netns": "ceezrsbx", "netns_links": sh("sudo -n ip netns exec ceezrsbx ip -o link | awk '{print $2}'"),
         "netns_routes": sh("sudo -n ip netns exec ceezrsbx ip route") or "(none)",
@@ -86,12 +86,12 @@ src = {
     "work_branch": g("git rev-parse --abbrev-ref HEAD"), "work_head_sha": g("git rev-parse HEAD"),
     "baseline_worktree_for_B0": f"{B}/pr558 @ " + sh(f"cd {B}/pr558 && git rev-parse HEAD"),
     "changed_files": g("git status --short").splitlines(),
-    "migrations_added": sorted(os.path.basename(p) for p in glob.glob(f"{REPO}/supabase/migrations/20261015*")),
+    "migrations_added": sorted(os.path.basename(p) for p in glob.glob(f"{REPO}/supabase/migrations/20261016*")),
 }
 json.dump(src, open(f"{out}/source-revisions.json", "w"), ensure_ascii=False, indent=2)
 
 # ── git-diff.patch (تعديلات + ملفات جديدة، بلا lock) ──
-patch = g("git add -N deploy/capacity-run supabase/migrations/20261015000100_cap_run_telegram_drain_fairness_lease_renewal.sql supabase/migrations/20261015000200_cap_run_telegram_jobs_lane_order.sql tests/integration/telegram-drain-lease-renewal.test.ts tests/integration/telegram-jobs-lane-order.test.ts tests/unit/notification-outbox-concurrent-drain.test.ts tests/unit/outbound-global-bucket-per-bot.test.ts tests/unit/telegram-update-drainer-fairness-lease.test.ts tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts tests/unit/telegram-update-drainer-truncated-rerun.test.ts tests/integration/redispatch-exhausted-starvation.test.ts && git diff -- . ':(exclude)docker/upstash-rest-shim/bun.lock'")
+patch = g("git add -N deploy/capacity-run supabase/migrations/20261016000100_cap_run_telegram_drain_fairness_lease_renewal.sql supabase/migrations/20261016000200_cap_run_telegram_jobs_lane_order.sql tests/integration/telegram-drain-lease-renewal.test.ts tests/integration/telegram-jobs-lane-order.test.ts tests/unit/notification-outbox-concurrent-drain.test.ts tests/unit/outbound-global-bucket-per-bot.test.ts tests/unit/telegram-update-drainer-fairness-lease.test.ts tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts tests/unit/telegram-update-drainer-truncated-rerun.test.ts tests/integration/redispatch-exhausted-starvation.test.ts && git diff -- . ':(exclude)docker/upstash-rest-shim/bun.lock'")
 open(f"{out}/git-diff.patch", "w").write(patch + "\n")
 # فحص الأسرار: القيم الفعلية لا تُطبع، يُسجَّل العدد فقط
 leaks = {}

@@ -16,7 +16,7 @@
 - netns `ceezrsbx` فيه `lo` فقط ولا مسار.
 - `curl` إلى `api.telegram.org` و`1.1.1.1` يفشل (E4 و`environment.json`).
 - حارس egress داخل العملية: blocked=0، وredirected=30,576.
-- عنقود PostgreSQL وRedis مستقلان على loopback، وفي القاعدة `run_marker=ceezr-cap-20261015`.
+- عنقود PostgreSQL وRedis مستقلان على loopback، وفي القاعدة `run_marker=ceezr-cap-20261016`.
 - أسرار الجولة مولَّدة لها، وفحص الحزمة والفرق: 0 ظهور.
 
 **ما لم يحدث:** لم تُستخدم أي بيانات أو أسرار أو عناوين إنتاج، ولم يحدث أي دمج أو نشر.
@@ -130,7 +130,7 @@
 
 ### 13. ما التغييرات التي أجريتها، وما الملفات والاختبارات التي تثبت صحتها؟
 
-**مكان التغييرات:** الفرع المحلي `sandbox/capacity-reliability-20261015` فوق `7b0f877`. الفرق الكامل في `git-diff.patch`.
+**مكان التغييرات:** الفرع المحلي `sandbox/capacity-reliability-20261016` فوق `7b0f877`. الفرق الكامل في `git-diff.patch`.
 
 **الملفات المعدَّلة:**
 - `apps/gateway/src/background/telegram-update-drainer.ts`
@@ -145,8 +145,8 @@
 - `tests/unit/ops-egress-01.test.ts`: توقع 2→3 مطالبات بسبب D5، وهو موثَّق.
 
 **المهاجرتان:**
-- `supabase/migrations/20261015000100_cap_run_telegram_drain_fairness_lease_renewal.sql`
-- `supabase/migrations/20261015000200_cap_run_telegram_jobs_lane_order.sql`
+- `supabase/migrations/20261016000100_cap_run_telegram_drain_fairness_lease_renewal.sql`
+- `supabase/migrations/20261016000200_cap_run_telegram_jobs_lane_order.sql`
 
 **الاختبارات الجديدة:**
 - **وحدة (5):**
