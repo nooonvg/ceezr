@@ -369,7 +369,8 @@
     "docs/evidence/capacity/sandbox-soak-01-20261015/report_30min.json",
     "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
     "docs/roadmap/execution/STATUS.md",
-    "docs/work-packets/cap-20261016-continuation.json"
+    "docs/work-packets/cap-20261016-continuation.json",
+    "docs/evidence/archive/CAP-RUN-20261016-CONTINUATION-stage3-ci-local-full-chain.log"
   ],
   "decision": "لا دمج في main ولا نشر إنتاجي ضمن هذه الجولات؛ بيئة الاختبار المعزولة ceezrsbx2 فقط؛ كل دفعة تحمل الكود والاختبارات والتوثيق وتحديث الخارطة والحالة والحزمة والدليل معًا (DEC-25 وADR 0262).",
   "tests": [
