@@ -41,6 +41,7 @@
 
 import type { TelegramUpdateQueue } from "../../../../packages/infrastructure/db/telegram-update-queue.ts";
 import { TELEGRAM_JOB_CONSUMER_CONCURRENCY } from "../../../../packages/shared/config/domain-ingress.ts";
+import { MIN_DRAINER_LEASE_RENEW_MS } from "../../../../packages/shared/kernel/index.ts";
 import type { BotKind, UpdateHandler } from "../routes/telegram-webhook.ts";
 
 export interface TelegramUpdateDrainDeps {
@@ -207,7 +208,7 @@ async function drainConcurrently(
   const inflight = new Set<Promise<void>>();
   // D3: كلُّ محجوزٍ لم يُختَم بعدُ (ينتظرُ مسارَه أو يُعالَج) يُجدَّدُ إيجارُه دوريًّا.
   const held = new Map<string, { bot: string; updateId: number; claimToken: string }>();
-  const renewEvery = Math.max(250, deps.leaseRenewEveryMs ?? 10_000);
+  const renewEvery = Math.max(MIN_DRAINER_LEASE_RENEW_MS, deps.leaseRenewEveryMs ?? 10_000);
   const renewTimer =
     deps.queue.renew === undefined
       ? null

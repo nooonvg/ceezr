@@ -8,6 +8,7 @@
   ],
   "implementation": [
     "apps/gateway/src/",
+    "apps/gateway/src/background/telegram-update-drainer.ts",
     "apps/gateway/src/rate-limit/policy.ts",
     "apps/gateway/src/routes/negotiations.ts",
     "apps/gateway/src/server.ts",
@@ -42,6 +43,7 @@
     "packages/shared/i18n/ar.json",
     "packages/shared/i18n/en.json",
     "packages/shared/i18n/ur.json",
+    "packages/shared/kernel/index.ts",
     "scripts/lib/active-ride-contract.ts",
     "scripts/lib/docs-budget-baseline.json",
     "scripts/lib/skip-registry.ts",
@@ -157,7 +159,7 @@
     "tests/unit/telegram-update-drainer-lane-unblock-rerun.test.ts",
     "tests/unit/telegram-update-drainer-truncated-rerun.test.ts"
   ],
-  "state": "قيد التنفيذ — المرحلة 9: الحزمة المتوازية 58→28، وPR #559 قاس CI الفعلي فكان أحمر بخمس وظائف؛ أصلحت الأربع السريعة (تنسيق/patches/MINIAPP_URL) ثم شخّصت وظيفة Redis جذريًا (ADR 0286: miniapp يمنع الحوار التجاري — الاختبارات تقيس المسار القديم) وأصلحتها بlegacy+TEST_LEGACY فصارت حزمة real-redis خضراء محلّيًا 27/27؛ وحُدثت ROADMAP-MASTER. المتبقي بند عميق واحد: عزل بيانات الحزمة المتوازية (test:integration)",
+  "state": "قيد التنفيذ — المرحلة 9: CI عبر PR #559 انتقل من 5 وظائف حمراء إلى اثنتين: أصلحت Redis (legacy+TEST_LEGACY — real-redis 27/27 محلّيًا) وroadmap (ROADMAP-MASTER) وF5-06 (patches في Dockerfiles) وF9-03 (MINIAPP_URL)؛ وverify كشف حرفيًّا محظورًا في المستنزف (250) فنُقل إلى packages/shared/kernel؛ المتبقي: الحزمة المتوازية test:integration (عزل بيانات الملفات المتنازعة)",
   "roadmap": "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
   "affected_docs": [
     "README.md",
