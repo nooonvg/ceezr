@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "bun:test";
 import postgres from "postgres";
+import { ensureActiveCity } from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const describeIf = DATABASE_URL === undefined ? describe.skip : describe;
@@ -11,11 +12,19 @@ describeIf("F12-10 — امتثال PDPL: أساسُ المعالجةِ وحقو
   let userId: string;
 
   beforeAll(async () => {
-    // الحصول على مدينةٍ ومستخدمٍ موجودَين
-    const city = await sql`select id from cities limit 1`;
-    cityId = city[0]?.id as string;
-    const user = await sql`select id from users limit 1`;
-    userId = user[0]?.id as string;
+    // مدينةٌ مفعّلةٌ عبرَ المعينِ الموحّدِ (لا اقتباسُ «أوّلِ مدينةٍ» — ترتيبُ
+    // التشغيلِ المتوازي يُخلي الجداولِ فلا ضمانَ لوجودِ صفٍّ). انظر
+    // tests/support/active-city.ts: الاقتباسُ العشوائيُّ أخضرٌ زائفٌ رهنُ الترتيب.
+    const city = await ensureActiveCity(sql);
+    cityId = city.cityId;
+    // مستخدمٌ خاصٌّ بهذا الملفِّ — لا اقتباسُ «أوّلِ مستخدمٍ»: الملفّاتُ المتوازيةُ
+    // تقتلعُ users في beforeEach فأيُّ اقتباسٍ عشوائيٍّ UNDEFINED_VALUE عندَ التزامنِ
+    // (قياسُ الجولةِ: CI يُسقطُ هذا الملفَّ وحدَهُ في الحزمةِ المتوازيةِ).
+    const inserted = await sql`
+      insert into users (city_id, telegram_id, full_name, role)
+      values (${cityId}::uuid, ${991_500_010}::bigint, 'فاحصُ PDPL', 'rider')
+      returning id`;
+    userId = inserted[0]?.id as string;
   });
 
   it("لا يُسمَحُ بنشاطٍ بلا أساسِ معالجةٍ أو غيرِ نشطٍ", async () => {
