@@ -40,8 +40,10 @@
  */
 
 import type { TelegramUpdateQueue } from "../../../../packages/infrastructure/db/telegram-update-queue.ts";
-import { TELEGRAM_JOB_CONSUMER_CONCURRENCY } from "../../../../packages/shared/config/domain-ingress.ts";
-import { MIN_DRAINER_LEASE_RENEW_MS } from "../../../../packages/shared/kernel/index.ts";
+import {
+  MIN_DRAINER_LEASE_RENEW_MS,
+  TELEGRAM_JOB_CONSUMER_CONCURRENCY,
+} from "../../../../packages/shared/config/domain-ingress.ts";
 import type { BotKind, UpdateHandler } from "../routes/telegram-webhook.ts";
 
 export interface TelegramUpdateDrainDeps {

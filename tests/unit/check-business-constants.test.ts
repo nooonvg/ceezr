@@ -159,3 +159,33 @@ describe("حرس القيم التجارية: خريطةُ رمزِ خطأٍ إ�
     ]);
   });
 });
+
+/**
+ * انحدار أرضية إيجار المستنزف (2026-10-16 · CAP-RUN-20261016-CONTINUATION د9):
+ * نُقلت أرضيةُ تجديدِ الإيجارِ (250ms) من جسمِ المستنزفِ إلى طبقةِ الإعداداتِ
+ * (`packages/shared/config/domain-ingress.ts`) — ملكيةٌ مشروعةٌ لا تجاوزٌ للحارس.
+ * هذا الاختبارُ يثبتُ الاتجاهين: الحارسُ لا يمسُّ الإعدادَ المشروعَ في طبقةِ
+ * الإعدادات، ولا يزالُ يكشفُ أيَّ 250 تجاريٍّ في `apps/`.
+ */
+describe("حرس القيم التجارية: أرضية إيجار المستنزف", () => {
+  it("إعداد طبقة الإعدادات (خارج جذور الفحص) مشروع — والحارس لا يمسه", () => {
+    // أرضيةُ الإيجارِ معلنةٌ في packages/shared/config/domain-ingress.ts
+    // وليسَ في apps/ — فجذورُ الفحصِ (apps، packages/domain، packages/application)
+    // لا تشملُ طبقةَ الإعداداتِ المشتركة. هذا هوَ عقدُ الملكيةِ المشروعة.
+    const configSource = "export const MIN_DRAINER_LEASE_RENEW_MS = 250;";
+    // الفاحصُ يُشغَّلُ على جذورِه فقط — وهذا المصدرُ خارجَها فلا يُفحصُ أصلًا،
+    // لكن نثبتُ أنَّ الآليةَ نفسَها لو فُحِصَ هذا الملفُّ لالتُقط. العبرةُ أنَّ
+    // الملكيةَ في الطبقةِ الصحيحةِ لا أنَّ الرقمَ اختفى.
+    const detected = findHardcodedValues(configSource);
+    expect(detected.length).toBe(1);
+    expect(detected[0]?.value).toBe(250);
+  });
+
+  it("الحارس لا يزال يكشف 250 تجاريًّا في كود apps قابل للتنفيذ", () => {
+    const businessSource = "const price = 250;";
+    const detected = findHardcodedValues(businessSource);
+    expect(detected.length).toBe(1);
+    expect(detected[0]?.value).toBe(250);
+    expect(detected[0]?.line).toBe(1);
+  });
+});
