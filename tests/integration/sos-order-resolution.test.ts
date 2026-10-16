@@ -186,7 +186,7 @@ describeIf("حلُّ الطلبِ داخلَ trigger_sos (F8-05 · ADR 0077)", (
       where city_id = ${cityId}::uuid and key = 'sos_post_ride_window_minutes'
     `;
     trigger = createTriggerSosPort(sql);
-, 30_000);
+  }, 30_000);
 
   /**
    * الانحصارُ الذي كانَ: الحوارُ يقرأُ الطلبَ قبلَ النّداءِ، فإخفاقُ القراءةِ
