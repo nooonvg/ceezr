@@ -897,6 +897,78 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
 
   {
     method: "GET",
+    path: "/v1/driver/negotiations",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/driver/negotiations/:id/claim",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/driver/negotiations/:id/leave",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "GET",
+    path: "/v1/negotiations",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "GET",
+    path: "/v1/negotiations/:id/card",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/negotiations/:id/select",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/negotiations/:id/settle",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "POST",
+    path: "/v1/negotiations/:id/advance",
+    file: "apps/gateway/src/routes/negotiations.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    method: "GET",
     path: "/health",
     file: "apps/gateway/src/routes/health.ts",
     exposure: "فحصُ تشغيلٍ",
@@ -1532,7 +1604,7 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
  * 135 → 137 في 2026-10-12 (WR-09 · ADR 0266): `GET`/`POST /v1/rides/:id/candidate` — مُصادَقانِ
  *   بجلسةٍ، والطلبُ مقيَّدٌ بصاحبِه في القاعدة.
  */
-export const ROUTE_POLICY_COUNT = 137;
+export const ROUTE_POLICY_COUNT = 145;
 export const LIMITED_ROUTE_COUNT = 10;
 export const EXEMPT_ROUTE_COUNT = 3;
 
