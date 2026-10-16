@@ -1,0 +1,69 @@
+{
+  "id": "cap-20261016-miniapp-first",
+  "goal": "تكليف تنفيذي لجولة سعة وموثوقية: فرض Mini App منتجًا وحيدًا (البوت دخول وإشعارات فقط)، إصلاح D7 وI1 وR1 وD8، وقياس الحمل على المسارات منفصلة بأدلة من قاعدة البيانات لا من 2xx.",
+  "canonical_source": [
+    "docs/adr/0286-miniapp-first-bot-entry-notifications-only.md",
+    "docs/evidence/capacity/CAP-RUN-20261015/report.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/container.ts",
+    "apps/gateway/src/index.ts",
+    "packages/application/bots/miniapp-surface.ts",
+    "packages/application/bots/negotiation-cards.ts",
+    "packages/shared/miniapp-link/index.ts",
+    "packages/infrastructure/notification/telegram-client.ts",
+    "packages/infrastructure/notification/telegram-negotiation-notifier.ts",
+    "packages/infrastructure/identity/telegram-init-data.ts",
+    "apps/gateway/src/routes/session-telegram.ts",
+    "apps/miniapp/src/identity/boot.ts",
+    "apps/miniapp/src/routing/RoleRouter.tsx",
+    "apps/miniapp/src/surfaces/driver/offers/OffersScreen.tsx",
+    "apps/miniapp/src/surfaces/driver/offers/NegotiationPanel.tsx",
+    "apps/miniapp/src/surfaces/driver/offers/negotiation-api.ts",
+    "packages/application/driver/driver-offers.ts",
+    "packages/application/driver/offer-ports.ts",
+    "packages/infrastructure/driver/driver-offers-store.ts",
+    "apps/gateway/src/routes/driver-offers.ts",
+    "apps/miniapp/src/surfaces/driver/offers/offers-view.ts",
+    "packages/shared/i18n/miniapp/ar.json",
+    "packages/shared/i18n/miniapp/en.json",
+    "packages/shared/i18n/miniapp/ur.json",
+    "supabase/migrations/20261016120000_i1_driver_single_engaged_order.sql",
+    "supabase/migrations/20261016120100_i1_engaged_order_index.sql",
+    "supabase/migrations/20261016120300_cap_run_telegram_jobs_lane_index.sql",
+    "scripts/lib/rollback-registry.ts",
+    "patches/postgres@3.4.9.patch",
+    "package.json",
+    "deploy/capacity-run/load/lib.ts",
+    "deploy/capacity-run/load/miniapp-load.ts",
+    "deploy/capacity-run/load/telegram-load.ts",
+    "deploy/capacity-run/load/isolate.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/adr/0286-miniapp-first-bot-entry-notifications-only.md",
+    "README.md",
+    "AGENTS.md",
+    "docs/MASTER_DIRECTIVE.md",
+    "docs/roadmap/execution/STATUS.md"
+  ],
+  "decision": "الفرض على مستوى الضبط والقاعدة لا الواجهة: غياب MINIAPP_URL يوقف الإقلاع في وضع miniapp، وفهرس جزئي فريد يمنع الالتزام الثاني للسائق مهما أفلت أي مسار، وحارس في كل كاتب إسناد يرد DRIVER_HAS_ACTIVE_ORDER نظيفًا. حمل القياس ثلاثة مسارات مفككة المقاييس، والنجاح حكم القاعدة.",
+  "tests": [
+    "bun test tests/unit/",
+    "bun test tests/integration/driver-single-engaged-order.test.ts",
+    "bun test tests/integration/i1-decide-settle-guards.test.ts",
+    "bun test tests/integration/postgres-terminate-survival.test.ts",
+    "bun test tests/unit/postgres-nextwrite-guard.test.ts",
+    "bun test tests/integration/redispatch-exhausted-starvation.test.ts",
+    "bun test tests/integration/telegram-drain-lease-renewal.test.ts tests/integration/telegram-jobs-lane-order.test.ts"
+  ],
+  "evidence": "docs/evidence/capacity/CAP-RUN-20261016/ — الجولة الكاملة بتقريرها و SHA256SUMS.",
+  "constraints": [
+    "لا قاعدة إنتاج ولا Render ولا بيانات مستخدمين حقيقيين ولا تيليجرام حقيقي",
+    "لا نشر ولا دمج في main",
+    "لا طباعة أسرار أو جلسات أو initData أو رموز بوت",
+    "legacy مسار اختبار توافق معزول فقط ومرفوض في الإنتاج دائمًا"
+  ],
+  "limitations": "انهيار D7 لم يُعَد إنتاجه في هذه البيئة (عاصفة 96 قتلة/1239 استعلامًا نجت) — الرقعة مبررة بدليل الجولة السابقة فقط. مولّد الحمل القديم capacity.ts لم يُحذف بعد: بديله يثبت في الجولة ثم يُزال بعد تتبع المراجع."
+}
