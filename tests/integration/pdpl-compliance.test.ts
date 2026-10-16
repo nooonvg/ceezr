@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from "bun:test";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import postgres from "postgres";
-import { ensureActiveCity } from "../support/active-city.ts";
+import { ensureActiveCity, restoreCityBaseline } from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 const describeIf = DATABASE_URL === undefined ? describe.skip : describe;
@@ -10,12 +10,15 @@ const sql = postgres(DATABASE_URL ?? "postgres://postgres:postgres@localhost:543
 describeIf("F12-10 — امتثال PDPL: أساسُ المعالجةِ وحقوقُ أصحابِ البياناتِ", () => {
   let cityId: string;
   let userId: string;
+  /** مقبضُ المدينةِ للردِّ في afterAll — عقدُ المعينِ كاملًا لا نصفُه. */
+  let cityHandle: Awaited<ReturnType<typeof ensureActiveCity>> | undefined;
 
   beforeAll(async () => {
     // مدينةٌ مفعّلةٌ عبرَ المعينِ الموحّدِ (لا اقتباسُ «أوّلِ مدينةٍ» — ترتيبُ
     // التشغيلِ المتوازي يُخلي الجداولِ فلا ضمانَ لوجودِ صفٍّ). انظر
     // tests/support/active-city.ts: الاقتباسُ العشوائيُّ أخضرٌ زائفٌ رهنُ الترتيب.
     const city = await ensureActiveCity(sql);
+    cityHandle = city;
     cityId = city.cityId;
     // مستخدمٌ خاصٌّ بهذا الملفِّ — لا اقتباسُ «أوّلِ مستخدمٍ»: الملفّاتُ المتوازيةُ
     // تقتلعُ users في beforeEach فأيُّ اقتباسٍ عشوائيٍّ UNDEFINED_VALUE عندَ التزامنِ
@@ -285,5 +288,12 @@ describeIf("F12-10 — امتثال PDPL: أساسُ المعالجةِ وحقو
     expect(closed[0]?.status).toBe("fulfilled");
     expect(closed[0]?.completed_at).not.toBeNull();
     expect(closed[0]?.result_summary).toBe("تمَّ تسليمُ البياناتِ");
+  });
+
+  afterAll(async () => {
+    // عقدُ المعينِ كاملًا: التفعيلُ في beforeAll والردُّ إلى الحالةِ الأصلِ هنا.
+    // حارسُ check-integration-city-precondition يُسقطُ من ينادي أحدَهما دونَ الآخر.
+    await restoreCityBaseline(sql, cityHandle);
+    await sql.end();
   });
 });
