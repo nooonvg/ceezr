@@ -39,7 +39,11 @@
  * لم يفرُغ فيُرصَدُ طولُ الطابورِ لا يُكتَم.
  */
 
-import type { TelegramUpdateQueue } from "../../../../packages/infrastructure/db/telegram-update-queue.ts";
+import type {
+  PendingUpdateReplies,
+  TelegramUpdateEffectLedger,
+  TelegramUpdateQueue,
+} from "../../../../packages/infrastructure/db/telegram-update-queue.ts";
 import {
   MIN_DRAINER_LEASE_RENEW_MS,
   TELEGRAM_JOB_CONSUMER_CONCURRENCY,
@@ -169,6 +173,14 @@ export async function drainTelegramUpdateJobsOnce(
  */
 async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob): Promise<boolean> {
   const lease = { bot: job.bot, updateId: job.updateId, claimToken: job.claimToken };
+  const ledger = deps.queue.ledger;
+  if (
+    ledger !== undefined &&
+    deps.handler.prepare !== undefined &&
+    deps.handler.deliver !== undefined
+  ) {
+    return processDurably(deps, job, lease, ledger);
+  }
   try {
     const handled = await deps.handler.handle(job.bot as BotKind, job.payload);
     const sealed = await deps.queue.finish(lease, handled, handled ? undefined : "NOT_HANDLED");
@@ -189,6 +201,155 @@ async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob)
     });
     return false;
   }
+}
+
+/**
+ * S5 (ADR 0288) — المسارُ الدائمُ: (١) إعادةٌ بعدَ ختمٍ ⇒ لا أثرَ ثانٍ، تُتمُّ الوظيفةُ؛
+ * (٢) الأثرُ وحسابُ الردودِ؛ (٣) ختمُ الأثرِ + نيّةِ الردِّ + إتمامِ الوظيفةِ ذرّيًّا —
+ * إخفاقُه يُبقي الوظيفةَ غيرَ مُتمّةٍ (لا نجاحَ يُسجَّلُ قبلَ الالتزامِ)؛ (٤) إرسالٌ فوريٌّ
+ * مِن المؤشرِ ثم ختمُه — رفضُه يُجدوِلُ الردَّ وحدَه للمُرسِلِ الخلفيِّ ولا يمسُّ الوظيفةَ.
+ */
+async function processDurably(
+  deps: TelegramUpdateDrainDeps,
+  job: ClaimedJob,
+  lease: { bot: string; updateId: number; claimToken: string },
+  ledger: TelegramUpdateEffectLedger,
+): Promise<boolean> {
+  const bot = job.bot as BotKind;
+  try {
+    if (await ledger.effectRecorded(job.bot, job.updateId)) {
+      const replay = await ledger.recordEffect(lease, []);
+      deps.log?.("telegram.drainer.effect_replay_skipped", {
+        bot: job.bot,
+        updateId: job.updateId,
+        sealed: replay.ok,
+      });
+      return replay.ok;
+    }
+    const prepared = await (deps.handler.prepare as NonNullable<UpdateHandler["prepare"]>)(
+      bot,
+      job.payload,
+    );
+    if (!prepared.handled) {
+      await deps.queue.finish(lease, false, "NOT_HANDLED").catch(() => {});
+      deps.log?.("telegram.drainer.stamp_failed", {
+        bot: job.bot,
+        updateId: job.updateId,
+        handled: false,
+      });
+      return false;
+    }
+    const recorded = await ledger.recordEffect(lease, prepared.replies);
+    if (!recorded.ok) {
+      deps.log?.("telegram.drainer.effect_record_failed", {
+        bot: job.bot,
+        updateId: job.updateId,
+        error: recorded.error,
+      });
+      return false;
+    }
+    if (recorded.replyToken !== null) {
+      await sendRepliesFrom(deps, ledger, {
+        bot: job.bot,
+        updateId: job.updateId,
+        replies: prepared.replies,
+        repliesSent: 0,
+        replyToken: recorded.replyToken,
+        attempts: 0,
+      });
+    }
+    return true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    await deps.queue.finish(lease, false, message).catch(() => {});
+    deps.log?.("telegram.drainer.job_error", {
+      bot: job.bot,
+      updateId: job.updateId,
+      error: message,
+    });
+    return false;
+  }
+}
+
+/** إرسالُ ردودِ وظيفةٍ من مؤشرِها ثم ختمُ المحاولةِ — للمسارِ الفوريِّ والخلفيِّ معًا. */
+async function sendRepliesFrom(
+  deps: TelegramUpdateDrainDeps,
+  ledger: TelegramUpdateEffectLedger,
+  pending: PendingUpdateReplies,
+): Promise<string | null> {
+  const deliver = deps.handler.deliver as NonNullable<UpdateHandler["deliver"]>;
+  let result: Awaited<ReturnType<typeof deliver>>;
+  try {
+    result = await deliver(pending.bot as BotKind, pending.replies, pending.repliesSent);
+  } catch (error) {
+    result = {
+      sent: pending.repliesSent,
+      error: {
+        message: error instanceof Error ? error.message : String(error),
+        retryAfterSec: null,
+      },
+    };
+  }
+  const outcome = await ledger
+    .finishReplies(
+      pending.bot,
+      pending.updateId,
+      pending.replyToken,
+      result.sent,
+      result.error?.message ?? null,
+      result.error?.retryAfterSec ?? null,
+    )
+    .catch((error: unknown) => {
+      // إخفاقُ الختمِ يُبقي الردَّ `sending`؛ ينقضي إيجارُه فيلتقطُه المُرسِلُ الخلفيُّ
+      // (وقد يُعيدُ ما قبلَه تيليجرامُ — «مرةً على الأقلِّ»، ADR 0288).
+      deps.log?.("telegram.replies.finish_failed", {
+        bot: pending.bot,
+        updateId: pending.updateId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    });
+  if (result.error !== null) {
+    deps.log?.("telegram.replies.deferred", {
+      bot: pending.bot,
+      updateId: pending.updateId,
+      sent: result.sent,
+      total: pending.replies.length,
+      outcome,
+      retryAfterSec: result.error.retryAfterSec,
+    });
+  }
+  return outcome;
+}
+
+/** إيجارُ إرسالِ الردِّ: بعدَه يُعدُّ حائزُه ميتًا فيُستردُّ الردُّ. */
+export const TELEGRAM_REPLY_LEASE_SECONDS = 60;
+
+/**
+ * S5 — المُرسِلُ الخلفيُّ لردودِ الحوارِ المؤجّلةِ: يلتقطُ المستحقَّ (بعدَ تراجعِه) والمحمولَ
+ * الذي ماتَ حائزُه (إعادةُ تشغيلٍ)، ويُكملُ كلًّا من مؤشرِه. لا يمسُّ الأثرَ التجاريَّ.
+ */
+export async function drainTelegramUpdateRepliesOnce(
+  deps: TelegramUpdateDrainDeps,
+  limit = 20,
+): Promise<{ readonly claimed: number; readonly done: number }> {
+  const ledger = deps.queue.ledger;
+  if (ledger === undefined || deps.handler.deliver === undefined) return { claimed: 0, done: 0 };
+  let pending: readonly PendingUpdateReplies[];
+  try {
+    pending = await ledger.claimReplies(limit, TELEGRAM_REPLY_LEASE_SECONDS);
+  } catch (error) {
+    deps.log?.("telegram.replies.claim_failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { claimed: 0, done: 0 };
+  }
+  let done = 0;
+  // بالتسلسلِ: الالتقاطُ رتّبَ المساراتِ، والإرسالُ محكومٌ بدلاءِ البوتِ أصلًا.
+  for (const item of pending) {
+    if ((await sendRepliesFrom(deps, ledger, item)) === "done") done += 1;
+  }
+  return { claimed: pending.length, done };
 }
 
 type ClaimedJob = NonNullable<Awaited<ReturnType<TelegramUpdateQueue["claim"]>>["job"]>;
@@ -314,7 +475,12 @@ export interface StartDrainerOptions {
   /** فترةُ التكرارِ بين الأشواطِ، مللي ثانية. */
   readonly intervalMs: number;
   readonly clock?: { setInterval: typeof setInterval; clearInterval: typeof clearInterval };
+  /** S5 — فترةُ مُرسِلِ الردودِ المؤجّلةِ (افتراضيًّا `TELEGRAM_REPLY_DRAIN_INTERVAL_MS`). */
+  readonly replyIntervalMs?: number;
 }
+
+/** S5 (ADR 0288) — فترةُ التقاطِ الردودِ المؤجّلةِ: أقصرُ تراجعٍ ثانيتان. */
+export const TELEGRAM_REPLY_DRAIN_INTERVAL_MS = 2_000;
 
 /**
  * يُشغّلُ الدرينرَ دوريّاً في الخلفيةِ مع مانعِ تداخلٍ: إن طالَ شوطٌ عن فترةِ
@@ -375,6 +541,26 @@ export function startTelegramUpdateDrainer(
     void tick();
   }, options.intervalMs) as ReturnType<typeof setInterval>;
 
+  // S5 (ADR 0288) — مؤقّتُ الردودِ المؤجّلةِ مستقلٌّ عن أشواطِ الوظائفِ: التراجعُ يبدأُ
+  // من ثانيتين، فلا ينتظرُ ردٌّ مستحقٌّ شبكةَ الأمانِ (10ث). وبلا دفترٍ لا مؤقّتَ أصلًا.
+  let replying = false;
+  const replyTimer =
+    deps.queue.ledger === undefined || deps.handler.deliver === undefined
+      ? null
+      : (setInterval(() => {
+          if (replying || stopped) return;
+          replying = true;
+          void drainTelegramUpdateRepliesOnce(deps)
+            .then((report) => {
+              if (report.claimed > 0) deps.log?.("telegram.replies.sweep_completed", { ...report });
+            })
+            .finally(() => {
+              replying = false;
+            });
+        }, options.replyIntervalMs ?? TELEGRAM_REPLY_DRAIN_INTERVAL_MS) as ReturnType<
+          typeof setInterval
+        >);
+
   return {
     kick: () => {
       if (stopped) return;
@@ -388,6 +574,10 @@ export function startTelegramUpdateDrainer(
       stopped = true;
       if (timer !== null) clearInterval(timer);
       timer = null;
+      if (replyTimer !== null) clearInterval(replyTimer);
+      while (replying) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
       // إن كان شوطٌ جارٍ، انتظرْه. لا نُهملُ وظيفةً محجوزةً.
       while (running) {
         await new Promise((resolve) => setTimeout(resolve, 10));
