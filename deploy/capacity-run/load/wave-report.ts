@@ -20,6 +20,8 @@ interface Outcome {
   orderCreatedAt?: number;
   offerFoundAt?: number;
   assignedToOtherDriver?: string;
+  rider?: number;
+  driver?: number;
 }
 
 function readJsonl(path: string): Record<string, unknown>[] {
@@ -156,6 +158,48 @@ function main() {
     ratio5xx <= 0.005,
   );
   g("G8", "تعثر قراءة لوح العروض", String(unreadable), "= 0", unreadable === 0);
+
+  /**
+   * `LOAD-01` §4 — إثباتُ الهويّاتِ والتزامنِ الفعليِّ من أحداثِ المولّدِ لا من
+   * التصريحِ: الموجةَ تُدَّعى على N متزامنةٍ فهيّ تُثبِتُ (أ) أنّ هوياتِ
+   * السيناريوهاتِ كلَّها فريدةٌ (راكبٌ وسائقٌ لكلِّ سيناريو — 2N هويةً لا
+   * إعادةَ استخدامٍ تخفّفُ الحملَ زورًا)، و(ب) أنّ ذروةَ السيناريوهاتِ
+   * المتزامنةِ الفعليةِ بلغتِ الهدفَ فعلًا (لا موجةً ادّعت 250 وجرت 30).
+   */
+  const uniqueRiders = new Set(outcomes.map((o) => o.rider).filter((v) => v !== undefined)).size;
+  const uniqueDrivers = new Set(outcomes.map((o) => o.driver).filter((v) => v !== undefined)).size;
+  g(
+    "I1-identities",
+    "هويات فريدة من أحداث المولد (راكب + سائق لكل سيناريو)",
+    `riders ${uniqueRiders}/${total} · drivers ${uniqueDrivers}/${total}`,
+    `= ${total} + ${total}`,
+    uniqueRiders === total && uniqueDrivers === total,
+  );
+  // استقرارُ البوابةِ جزءٌ من الحكمِ لا ملاحظةً جانبيّةً: انهيارٌ أخفاهُ إعادةُ
+  // تشغيلٍ تلقائيّةٌ يُسقِطُ الموجةَ كلَّها — فالمقياسُ أُجريَ على نسخةٍ غيرَ
+  // التي بدأتْ. الدليلُ ملفُّ الخرقِ الذي يكتبُه finish-wave.sh (gateway-stability-fail.txt).
+  const gatewayRestarted = existsSync(`${EV}/gateway-stability-fail.txt`);
+  g(
+    "GW-STABILITY",
+    "البوابة نفس العملية عبر الموجة (لا انهيار خفي)",
+    gatewayRestarted ? "restarted" : "stable",
+    "stable",
+    !gatewayRestarted,
+  );
+
+  const genStart = events.find((e) => e.event === "gen.start") as
+    | { profile?: { conc: number }[] }
+    | undefined;
+  const targetConc = Math.max(0, ...(genStart?.profile ?? []).map((ph) => ph.conc ?? 0));
+  const peakScenarios = Math.max(0, ...loadRows.map((r) => Number(r.peakScenarios ?? 0)));
+  // §4 حرفيًّا: الذروةُ ≥ N لا «قريبًا من N» — لا تسامحَ مخترَعًا.
+  g(
+    "CONC-peak",
+    "ذروة السيناريوهات المتزامنة الفعلية من لقطات المولد",
+    `peak ${peakScenarios} / target ${targetConc}`,
+    `≥ ${targetConc}`,
+    targetConc > 0 && peakScenarios >= targetConc,
+  );
 
   const lat2 = latencyRows.at(-1) ?? null;
   const lat = (lat2 ?? {}) as unknown as Record<string, { p95: number; p99: number }>;

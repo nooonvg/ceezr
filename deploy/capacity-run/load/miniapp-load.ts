@@ -536,6 +536,13 @@ async function runScenario(index: number, closeAt: number): Promise<ScenarioOutc
   // `LOAD-01` — الغلافُ يرفقُ الارتباطَ بالمآلِ أيًّا كانَ موضعُ الخروجِ: لا
   // خروجَ مبكرًا يُفلتُ منَ الربطِ (هذا عينُ ما أضاعَ أسبابَ فشلِ الجولةِ
   // التاريخيةِ: مآلٌ بلا معرّفاتٍ لا يُشخَّصُ منَ القاعدةِ).
+  //
+  // عدُّ السيناريو **منَ الانطلاقِ** لا من نجاحِ الالتحاقِ: البروتوكولُ §1/§4
+  // يُعرّفُ وحدةَ الحملِ بالسيناريو المُطلَقِ (الجلسةُ والرحلةُ دورتُه)؛ والعدادُ
+  // القديمُ كانَ يُنهي ما لم يُبدَأ (فاشلُ الالتحاقِ يُنقصُ بلا زيادةٍ سابقةٍ)
+  // فيَنخفضُ الذروةُ زورًا وتَفقدُ لقطةُ «التزامنِ الفعليِّ» دلالتَها. البدايةُ
+  // هنا والنهايةُ عندَ المآلِ في الغلافِ — توازنٌ مضمونٌ لكلِّ مخرجٍ.
+  rec.scenarioStart(`launch-${index}`);
   const corr: ScenarioCorr = { index };
   const outcome = await runScenarioSteps(corr, closeAt);
   return outcomeWithCorr(outcome, corr);
@@ -558,7 +565,6 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
     return { kind: "undecided", reason: "driver_onboarding_failed" };
   }
   corr.driverTelegramId = driver.telegramId;
-  rec.scenarioStart(String(rider.telegramId));
   const startedAt = Date.now();
   // `LOAD-01` — رمزُ جلسةِ السائقِ يُرفَعُ قبلَ try ليصحَّ تنظيفُهُ في finally:
   // السائقُ الذي أنهى سيناريوهُ لا يبقى «متاحًا» في الحوضِ إلى الأبدِ.

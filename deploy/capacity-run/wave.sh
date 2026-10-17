@@ -20,7 +20,18 @@ export RUN_DIR GATEWAY_URL=${GATEWAY_URL:-http://127.0.0.1:54300} GEN_ID=${GEN_I
 for kv in "$@"; do export "$kv"; done
 export RIDER_SEQ_START=$((6200000+WAVEIDX*100000)) DRIVER_SEQ_START=$((8200000+WAVEIDX*100000))
 echo "{\"t\":\"$(date -Is)\",\"event\":\"round.start\",\"round\":\"$ROUND\",\"profile\":$PROFILE,\"drain_sec\":$DRAIN,\"code_sha\":\"$(git -C "$REPO" rev-parse HEAD)\",\"code_dirty\":$(git -C "$REPO" status --porcelain | grep -c .)}" > "$RUN_DIR/evidence/timeline.jsonl"
-bun run "$HERE/load/db-audit.ts" --phase=pre > "$RUN_DIR/evidence/db-audit-pre.out" 2>&1 || echo "pre-audit nonzero"
+# هويةُ البوابةِ **قبلَ** الموجةِ: انهيارُها أثناءَ الموجةِ وإعادةُ تشغيلها
+# تلقائيًّا (المشرفُ) لا يجوزُ أن يمرَّ صامتًا فيُحسَبَ استقرارًا زائفًا —
+# يُدوَّنُ رقمُ عمليّتِها ويُتحقَّقُ منهُ عندَ الختامِ (finish-wave.sh).
+GWPID=$(ps -eo pid=,args= | awk '/apps\/gateway\/src\/index\.ts/ && /bun/ && !/awk/ {print $1}' | tail -1)
+echo "$GWPID" > "$RUN_DIR/evidence/gateway.pid"
+echo "{\"t\":\"$(date -Is)\",\"event\":\"gateway.pid\",\"pid\":\"$GWPID\"}" >> "$RUN_DIR/evidence/timeline.jsonl"
+# التدقيقُ القبليَّ بوابةٌ لا زينة: فشلُه يُجهضُ الموجةَ قبلَ حقنِ أيِّ حملٍ —
+# تشغيلُ موجةٍ على قاعدةٍ غيرِ نظيفةٍ يفسدُ القياسَ ويدّعي النجاحَ زورًا.
+if ! bun run "$HERE/load/db-audit.ts" --phase=pre > "$RUN_DIR/evidence/db-audit-pre.out" 2>&1; then
+  echo "PRE-AUDIT FAILED — أُجهضت الموجة قبل الحقن (راجع db-audit-pre.out)" >&2
+  exit 1
+fi
 setsid bun run "$HERE/load/miniapp-load.ts" > "$RUN_DIR/gen.out" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/gen.pid"
 echo "started round=$ROUND pid=$(cat "$RUN_DIR/gen.pid")"

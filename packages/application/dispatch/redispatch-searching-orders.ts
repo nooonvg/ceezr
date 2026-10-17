@@ -27,6 +27,7 @@
  *   الدوريّ بمُشتَرِكٍ على حدث «تغيّرت مجموعة المؤهّلين» — والدالّة نفسها تبقى.
  */
 
+import { parseCitySettings } from "../../domain/policy/entity.ts";
 import type { CityId, OrderId } from "../../shared/kernel/index.ts";
 import { ok, type Result } from "../../shared/result/index.ts";
 import type { PortFailureError } from "../ports/index.ts";
@@ -58,6 +59,18 @@ export interface SearchingOrderFinder {
   findSearching(
     cityId: CityId,
     limit: number,
+    /**
+     * نافذة عادلة (LOAD-01 · موجة 250 المقيسة 2026-10-17): حدُّ دوراتِ البثّ
+     * الأقصى **للمدينة** كما يقرؤه المجالُ من الإعدادات — يمرَّر من المستدعي لا
+     * يُقرأ في SQL، فالبابُ لا يملك السياسةَ بل ينفّذ معيارَ من يملكها. بهذا:
+     * الطلباتُ المستنفدةُ (الدورة ≥ الحدّ) لا تدخلُ النافذةَ إلا بفضلِ سعتِها فلا
+     * تحتكرُها (عيبُ D8 القديم)، وغيرُ المستنفدةِ يُقدَّمُ بالأقدمِ أولًا (created_at) لا بالدورةِ
+     * الأدنى — فالطلبُ القديمُ الذي أُهدرت دورتُه الأولى على مستلِمٍ لم يقبل
+     * لا يتجوّعُ خلفَ تدفقِ الطلباتِ الجديدةِ طوالَ نافذةِ الحقن (قيس: 36 طلباً
+     * ذاتَ سائقٍ مؤهّلٍ لم تُخدم في 120ث لأنّ ترتيبَ الدورةِ الأدنى قدّم كلَّ
+     * جديدٍ عليها). غيابُ المعامل = السلوكُ القائمُ حرفيًا (توافقٌ خلفيّ).
+     */
+    opts?: { readonly maxBroadcastRounds?: number },
   ): Promise<Result<readonly SearchingOrderRef[], PortFailureError>>;
 }
 
@@ -99,7 +112,19 @@ export async function redispatchSearchingOrders(
   cityId: CityId,
   deps: RedispatchDependencies,
 ): Promise<Result<RedispatchReport, PortFailureError>> {
-  const found = await deps.finder.findSearching(cityId, deps.limit);
+  /**
+   * قراءةُ حدِّ الدوراتِ الأقصى للمدينةِ من مصدرِ المجالِ نفسِه (الإعداداتُ التي
+   * يقرؤها `matchOrder` لكلِّ طلب) — قراءةٌ واحدةٌ في رأسِ الشوطِ لا لكلِّ طلبٍ.
+   * تعذّرَتِ القراءةُ أو فشلَ التفسير؟ النافذةُ القائمةُ دونَ تغييرٍ (السلوكُ
+   * المتحفّظُ لا فشلٌ صامتٌ يوقفُ إعادةَ العرضِ عن المدينةِ كلِّها).
+   */
+  let fairWindow: { readonly maxBroadcastRounds: number } | undefined;
+  const rawSettings = await deps.broadcast.settings.findByCity(cityId);
+  if (rawSettings.ok) {
+    const parsed = parseCitySettings(cityId, rawSettings.value);
+    if (parsed.ok) fairWindow = { maxBroadcastRounds: parsed.value.maxBroadcastRounds };
+  }
+  const found = await deps.finder.findSearching(cityId, deps.limit, fairWindow);
   if (!found.ok) return found;
 
   const rebroadcast: OrderId[] = [];

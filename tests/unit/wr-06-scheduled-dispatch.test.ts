@@ -82,7 +82,12 @@ function fakeBroadcast(seen: string[]) {
     },
     offers: {},
     candidates: {},
-    settings: {},
+    // واجهةُ الإعداداتِ كاملةً في العقدِ: اختبارُ الوحدةِ يعلنُ «الإعداداتُ
+    // غيرُ متاحةٍ» صراحةً (ok=false) فتسلكُ الحالةُ القائمةُ — لا استثناءً
+    // يبتلعهُ الإنتاجُ.
+    settings: {
+      findByCity: async () => ({ ok: false, error: { code: "SETTINGS_UNAVAILABLE" } }),
+    },
     clock: { now: () => new Date() },
     offerWriter: {},
   } as unknown as Parameters<typeof releaseScheduledOrders>[1]["broadcast"];
