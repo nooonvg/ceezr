@@ -195,6 +195,10 @@ import {
   createSupportAdvicePublisher,
   createTicketAdvisor,
 } from "./agent-advisor.ts";
+import {
+  createImmediateRedispatchScheduler,
+  IMMEDIATE_REDISPATCH_DEBOUNCE_MS,
+} from "./background/immediate-redispatch.ts";
 import { createDriverBot, grammyTelegramSender, type TelegramSender } from "./bots/driver/index.ts";
 import { createRiderBot } from "./bots/rider/index.ts";
 import { counterpartNotifier } from "./bots/shared/counterpart-notifier.ts";
@@ -888,8 +892,16 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    * محاولةِ إعادةِ العرض لا يجوز أن يُظهر له «عطلٌ تقنيّ» عن عملٍ نجح — والأرضيّةُ
    * الدوريّة في العامل تُدرك ما فات بعد ثوانٍ.
    */
-  const redispatchDeps = {
-    onDriverBecameDispatchable: async (cityId: CityId): Promise<void> => {
+  /**
+   * `LOAD-01` (الدفعةُ الرابعةُ) — إعادةُ العرضِ الفوريّةُ **تُجدوَلُ ولا تُنتظرُ
+   * في مسارِ الطلبِ**: أولُ موقعٍ لسائقٍ متاحٍ كانَ يحجبُ ردَّ `POST
+   * /v1/driver/location` حتى تكتملَ مطابقةُ طلباتِ المدينةِ (قيسَ: وسيطُ 10.4ث
+   * وأقصى 17.9ث تحتَ 50 متزامنًا فماتتْ مهلةُ العميلِ 15ث) — والجدولةُ الخلفيّةُ
+   * المخفوضةُ للمدينةِ (ثانيتانِ + مانعُ تداخلٍ) في `background/immediate-redispatch.ts`
+   * تُبقي الاستجابةَ للكتابةِ والبثِّ وحدهما، والدوريّةَ (20ث) أرضًا صلبةً.
+   */
+  const immediateRedispatchScheduler = createImmediateRedispatchScheduler({
+    run: async (cityId) => {
       const report = await redispatchSearchingOrders(cityId, {
         finder: createSearchingOrderFinder(sql),
         broadcast: matching,
@@ -897,6 +909,21 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         log,
       });
       if (!report.ok) log("redispatch.immediate_failed", { cityId, detail: report.error.detail });
+    },
+    debounceMs: IMMEDIATE_REDISPATCH_DEBOUNCE_MS,
+    now: () => Date.now(),
+    schedule: (fn) => setTimeout(fn, 0),
+    log,
+  });
+
+  const redispatchDeps = {
+    /**
+     * `LOAD-01` — جدولةٌ لا حجبٌ: يعودُ فورًا، والشوطُ الخلفيُّ المخفوضُ للمدينةِ
+     * (المعرَّفُ أعلاه) هوَ الذي يعملُ. عقدُ الخطوةِ الخامسةِ في حالةِ الاستخدامِ
+     * («إعادةُ العرضِ بعدَ الكتابةِ») قائمٌ — لكنهُ غيرُ حاجبٍ للردِّ.
+     */
+    onDriverBecameDispatchable: async (cityId: CityId): Promise<void> => {
+      immediateRedispatchScheduler.trigger(cityId);
     },
   };
 
