@@ -169,6 +169,7 @@ function ev(event: string, data: Record<string, unknown> = {}) {
  *  مفكّكانِ — فلا يُخلطانِ في مقياسٍ واحدٍ. */
 async function call(path: string, init: Parameters<typeof http>[1] = {}): Promise<HttpResult> {
   rec.httpStart();
+  const callStartedAt = performance.now();
   try {
     const result = await http(path, init);
     rec.httpEnd(result);
@@ -179,9 +180,11 @@ async function call(path: string, init: Parameters<typeof http>[1] = {}): Promis
       status: 0,
       ok: false,
       is429: false,
-      elapsedMs: 0,
+      // الزمنُ الحقيقيُّ للفشلِ لا الصفرُ — الفشلُ الصفريُّ لهُ مدةٌ تُقاسُ.
+      elapsedMs: performance.now() - callStartedAt,
       body: null,
       networkError: error instanceof Error ? error.name : "network",
+      requestId: null,
     });
     throw error;
   }
@@ -637,9 +640,18 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
         accuracyMeters: 10,
       },
       timeoutMs: 15_000,
+      headers: {
+        "x-cap-corr": `sc:${corr.index}`,
+      },
     });
     if (!location.ok) {
-      return { kind: "rejected", reason: `location:${location.status}` };
+      // `LOAD-01` — الفشلُ الصفريُّ ليسَ جنسًا واحدًا: انتهاءُ مهلةٍ (TimeoutError)
+      // غيرُ رفضِ اتصالٍ (TypeError) غيرُ خطأٍ خامدٍ. يُسجَّلُ الجنسُ والمدةُ معًا
+      // في الدليلِ الخامِ حتى يُحكَمَ على المهلةِ منَ الطبقتينِ لا منَ العميلِ وحده.
+      return {
+        kind: "rejected",
+        reason: `location:${location.status}/${location.networkError ?? "?"}/${Math.round(location.elapsedMs)}ms${location.requestId ? `@${location.requestId}` : ""}`,
+      };
     }
 
     // ٤) اكتشافُ العرضِ منَ الواجهةِ لا منَ القاعدةِ.

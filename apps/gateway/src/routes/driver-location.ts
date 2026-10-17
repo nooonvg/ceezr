@@ -182,8 +182,27 @@ async function authenticate(
 export function createDriverLocationRoutes(deps: DriverLocationDependencies): Hono {
   const app = new Hono();
 
-  app.post("/v1/driver/location", async (c) => {
+  /**
+   * `LOAD-01` — توقيتاتُ أطوارِ الطلبِ الواحدِ: يُقاسُ كلُّ طورٍ (الإثباتُ، حدُّ
+   * المعدّلِ، قراءةُ السائقِ، الكتابةُ) على حدةٍ، ويُرسَلُ سطرٌ واحدٌ عندَ خروجِ
+   * المعالجِ — نجاحًا أو رفضًا أو استثناءً — عبرَ `driver_location.served`.
+   * الربطُ بمعرّفِ الطلبِ ليسَ ههنا: سياقُ الارتباطِ المحمولُ (`F1-08` · `F8-01`)
+   * يُلحقُ المعرّفَ بكلِّ سطرٍ يُصدِرُهُ المُصدِرُ الوحيدُ، فيُقارَنَ زمنُ العميلِ
+   * بأطوارِ الخادمِ للطلبِ نفسِهِ من غيرِ قراءةِ رأسٍ واردٍ (القاعدةُ `ADR 0043`).
+   */
+  interface DriverLocationPhaseTimings {
+    authMs?: number;
+    limitMs?: number;
+    lookupMs?: number;
+    ingestMs?: number;
+    /** مفتاحُ الربطِ مع دليلِ المولّدِ وقاعدةِ البياناتِ — معرّفٌ داخليٌّ لا هويّةَ شخصية. */
+    driverId?: string;
+  }
+
+  const serve = async (c: Context, timings: DriverLocationPhaseTimings): Promise<Response> => {
+    const authStartedAt = performance.now();
     const auth = await authenticate(c, deps);
+    timings.authMs = Math.round(performance.now() - authStartedAt);
     if ("response" in auth) return auth.response;
     const directory = deps.drivers;
     const ingest = deps.ingest;
@@ -201,8 +220,10 @@ export function createDriverLocationRoutes(deps: DriverLocationDependencies): Ho
      * وعميلٌ يُرَدُّ ولا يُخبَرُ متى يعودُ يُعيدُ فوراً. صارَ من
      * `../rate-limit/guard.ts` (`SEC-07` · ADR 0139).
      */
+    const limitStartedAt = performance.now();
     const decision = await deps.limits?.perDriver.hit(`driver-location:${auth.viewer.sessionId}`);
     const exceeded = rateLimitRejection(c, decision);
+    timings.limitMs = Math.round(performance.now() - limitStartedAt);
     if (exceeded !== null) return exceeded;
 
     const declaredLength = Number(c.req.header("content-length") ?? Number.NaN);
@@ -226,10 +247,14 @@ export function createDriverLocationRoutes(deps: DriverLocationDependencies): Ho
      * مَن لا صفَّ سائقٍ له لا يكتبُ موقعَ سائقٍ. ولا يُقرأُ دورٌ من الطلبِ، ولا
      * يُرقّى مجهولٌ إلى سائقٍ عندَ الشكِّ.
      */
+    const lookupStartedAt = performance.now();
     const found = await directory.findByTelegramId(auth.viewer.telegramUserId);
+    timings.lookupMs = Math.round(performance.now() - lookupStartedAt);
     if (!found.ok) return rejected(c, "DRIVER_LOOKUP_FAILED", 503);
     if (found.value === null) return rejected(c, "DRIVER_NOT_REGISTERED", 404);
+    timings.driverId = found.value.id;
 
+    const ingestStartedAt = performance.now();
     const result = await updateDriverLocation(
       {
         driver: found.value,
@@ -243,6 +268,7 @@ export function createDriverLocationRoutes(deps: DriverLocationDependencies): Ho
       },
       ingest,
     );
+    timings.ingestMs = Math.round(performance.now() - ingestStartedAt);
 
     if (!result.ok) {
       const status = INGEST_ERROR_STATUS[result.error.reason];
@@ -272,6 +298,31 @@ export function createDriverLocationRoutes(deps: DriverLocationDependencies): Ho
       recordedAtMs: result.value.recordedAtMs,
       dispatchable: result.value.becameLive,
     });
+  };
+
+  app.post("/v1/driver/location", async (c) => {
+    const startedAt = performance.now();
+    const timings: DriverLocationPhaseTimings = {};
+    let response: Response | undefined;
+    try {
+      response = await serve(c, timings);
+      return response;
+    } finally {
+      /**
+       * سطرٌ واحدٌ لكلِّ طلبٍ — نجاحًا ورفضًا واستثناءً — بلا قراءةِ رأسٍ من
+       * العميلِ وبلا أثرٍ في الجوابِ. وعطلُ التسجيلِ نفسِهِ لا يُسقِطُ الطلبَ:
+       * القياسُ لا يعطّلُ ما يقيسُهُ.
+       */
+      try {
+        deps.log?.("driver_location.served", {
+          status: response?.status ?? null,
+          totalMs: Math.round(performance.now() - startedAt),
+          ...timings,
+        });
+      } catch {
+        /* القياسُ لا يُسقِطُ ما يقيسُهُ. */
+      }
+    }
   });
 
   return app;
