@@ -558,8 +558,18 @@ export function createExpireOffersRpc(sql: Sql): ExpireOffersRpcPort {
  */
 export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
   return {
-    findSearching: (cityId: CityId, limit: number) =>
+    findSearching: (
+      cityId: CityId,
+      limit: number,
+      opts?: { readonly maxBroadcastRounds?: number },
+    ) =>
       guard("orders.findSearching", async (): Promise<readonly SearchingOrderRef[]> => {
+        const fairWindow =
+          opts !== undefined &&
+          opts.maxBroadcastRounds !== undefined &&
+          Number.isFinite(opts.maxBroadcastRounds) &&
+          opts.maxBroadcastRounds >= 1;
+        const maxRounds = opts?.maxBroadcastRounds ?? 0;
         const rows = await sql<{ id: string; city_id: string; waiting_seconds: string | number }[]>`
           select o.id      as id,
                  o.city_id as city_id,
@@ -570,11 +580,27 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
              and o.assigned_driver_id is null
              -- WR-09: لا جولةَ جديدةَ والراكبُ يقرّرُ في مرشَّحٍ حيّ.
              and (o.candidate_expires_at is null or o.candidate_expires_at <= now())
+             -- النافذة العادلة (LOAD-01 · 2026-10-17): حين يمرر المستدعي حد الدورات
+             -- الأقصى — قراءة من إعدادات المدينة في المجال لا قيمة هنا — تُقدَّم
+             -- الطلبات غير المستنفدة بالأقدم أولا، والمستنفدة (الدورة >= الحد) لا
+             -- تدخل النافذة إلا بفضل سعتها: فلا تحتكرها (عيب D8) ولا يُحرم رصدها
+             -- (تبقى مصنفة exhausted عند المجال متى فُحصت). والقيمة تمر من الخارج
+             -- فليس هنا سياسة مملوكة: الباب ينفذ معيار من يملك الحكم
+             -- (hasExhaustedBroadcastRounds والقيمة من parseCitySettings عند المستدعي).
+             -- والأقدم أولا هو ما يمنع تجويع القديم خلف تدفق الجديد: قيس في موجة
+             -- 250 أن 36 طلبا ذا سائق مؤهل متاح لم تخدم في 120ث لأن ترتيب الدورة
+             -- الأدنى (إصلاح D8) قدم كل طلب جديد عليها في كل شوط.
+             -- غياب المعامل = السلوك القائم حرفيا (توافق خلفي يحفظ انحدار D8).
            -- D8 (CAP-RUN-20261015): الترتيب بـcreated_at وحده جعل الطلباتِ المستنفِدةَ دوراتِها
            -- (تبقى searching حتى يلغيها الراكب) تملأ نافذةَ الـlimit في كلّ شوط فلا يُفحَص طلبٌ جديد
            -- أبداً («examined=50 rebroadcast=0 exhausted=50»). تقديمُ الدورة الأدنى ترتيبٌ لا فتوى:
            -- لا يُستبعَد أحد، والحكمُ بالاستنفاد يبقى في المجال (hasExhaustedBroadcastRounds).
-           order by o.broadcast_round asc, o.created_at asc
+           order by
+             ${
+               fairWindow
+                 ? sql`(o.broadcast_round >= ${maxRounds}) asc, o.created_at asc`
+                 : sql`o.broadcast_round asc, o.created_at asc`
+             }
            limit ${limit}
         `;
         return rows.map((row) => ({

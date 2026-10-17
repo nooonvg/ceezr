@@ -196,6 +196,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/redispatch-fair-window.test.ts",
+    suites: ["النافذة العادلة لإعادة العرض — انحدار جدار المطابقة (موجة 250)"],
+    skipped: 3,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "انحدارُ جدارِ المطابقةِ (موجة 250): الترتيبُ والتجويعُ بينَ الطلباتِ الباحثةِ لا يُثبَتُ إلا على PostgreSQL حقيقي بالهجرات مطبَّقة — نافذةُ الشوطِ ومصنَّفاتُ العرضِ سلوكُ المحرّكِ لا سلوكُ محاكٍ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجراتِ مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً.",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/redispatch-exhausted-starvation.test.ts",
     suites: ["D8 redispatch starvation by exhausted searching orders"],
     skipped: 1,

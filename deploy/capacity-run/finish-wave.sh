@@ -24,7 +24,19 @@ cp "$SEAT/runs/current/evidence/telegram-mock.jsonl" "$RUN_DIR/evidence/telegram
 set -a; . "$HERE/config/run.env"; . "$SEAT/secrets.env"; set +a
 export RUN_DIR GATEWAY_URL=${GATEWAY_URL:-http://127.0.0.1:54300} GEN_ID=${GEN_ID:-genA}
 bun run "$HERE/load/db-audit.ts" --phase=post > "$RUN_DIR/evidence/db-audit-post.out" 2>&1
+# استقرارُ البوابةِ عبرَ الموجةِ: الرقمُ المُدوَّنُ في wave.sh (gateway.pid) هو
+# المعيارُ — تغيّرُهُ يعني انهيارًا أخفاهُ إعادةُ تشغيلٍ تلقائيّةٌ، فيُسجَّلُ
+# خرقًا في الأدلةِ (gate-fail) لا استقرارًا.
+GWPID_NOW=$(ps -eo pid=,args= | awk '/apps\/gateway\/src\/index\.ts/ && /bun/ && !/awk/ {print $1}' | tail -1)
+GWPID_RECORDED=$(cat "$RUN_DIR/evidence/gateway.pid" 2>/dev/null || echo missing)
+if [ "$GWPID_NOW" != "$GWPID_RECORDED" ]; then
+  echo "GATE-FAIL gateway-stability: pid recorded=$GWPID_RECORDED now=$GWPID_NOW" | tee "$RUN_DIR/evidence/gateway-stability-fail.txt"
+fi
+# رمزُ خروجِ التقريرِ **يُحفَظ** لا يُبتلَعُ: موجةٌ فاشلةٌ تعيدُ فشلَها لمن
+# استدعاها (run-wave.sh وسلسلةُ الجولاتِ) — وإلا مرَّت الموجةُ الفاشلةُ صامتةً
+# وخُلِّطَت بالجولاتِ اللاحقةِ.
 bun run "$HERE/load/wave-report.ts" > "$RUN_DIR/evidence/wave-report.json" 2> "$RUN_DIR/evidence/wave-report.err"
+REPORT_RC=$?
 python3 -c "
 import json
 r = json.load(open('$RUN_DIR/evidence/wave-report.json'))
@@ -34,3 +46,4 @@ for x in r['gates']:
 for x in r['perf']:
     if not x['pass']: print('  PERF FAIL', x['id'], x['value'], 'limit', x['limit'])
 "
+exit $REPORT_RC
