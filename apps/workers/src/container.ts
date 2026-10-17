@@ -193,6 +193,7 @@ import { deliverSafetyIncidents } from "./jobs/deliver-safety-incidents.ts";
 import { deliverSubscriptionNotices } from "./jobs/deliver-subscription-notices.ts";
 import { detectCeilingExceededOrders } from "./jobs/detect-ceiling-exceeded.ts";
 import { detectStalledOrders } from "./jobs/detect-stalled-orders.ts";
+import { sweepDecidedOfferNotifications } from "./jobs/sweep-decided-offer-notifications.ts";
 import { expireOffers } from "./jobs/expire-offers.ts";
 import { expireSubscriptions, warnExpiringSoon } from "./jobs/expire-subscriptions.ts";
 import { expireTrackingTokens } from "./jobs/expire-tracking-tokens.ts";
@@ -220,6 +221,12 @@ export const WORKER_SETTINGS_REMEMBER_MS = 60_000;
 /** تواتر كل مهمّة بالثواني. تقنيّة لا تجارية: لا تُقرأ من platform_settings. */
 export const JOB_INTERVALS = {
   expireOffers: 60,
+  /**
+   * `LOAD-01 Recovery` — كنسُّ العروضِ المحسومةِ من طابورِ الإشعاراتِ جملةً: أسرعُ
+   * من انقضاءِ مهلةِ العرضِ (٤٥ث) بمرتينِ، فلا يقعدُ صفٌّ محسومٌ في الطابورِ
+   * حتى تكسرَ بوابةَ P7 (أقدمُ معلّقٍ ≤ ١٢٠ث).
+   */
+  sweepDecidedOffers: 15,
   rotateNegotiations: 60,
   cleanupStale: 1800,
   expireSubscriptions: 900,
@@ -1513,6 +1520,18 @@ export function buildWorkerContainer(
       }
 
       const global: JobDefinition[] = [
+        {
+          // `LOAD-01 Recovery` — كنسٌّ عالميٌّ (لا مدينةَ بعينِها): الدالّةُ تنظرُ
+          // الطابورَ كلَّهُ. عطلُهُ لا يفتحُ رابطًا ولا يُبطِلُ إشعارًا حيًّا —
+          // الصفوفُ تعودُ إلى انتظارِ المعالجِ كما كانَ (أبطأُ لا مكسورٌ).
+          name: "sweep-decided-offers",
+          everySeconds: JOB_INTERVALS.sweepDecidedOffers,
+          run: async () => {
+            const report = await sweepDecidedOfferNotifications(sql);
+            if (!report.ok) throw new Error(report.error.detail);
+            return `swept=${report.value.swept}`;
+          },
+        },
         ...(cityIds.length === 0
           ? []
           : [
