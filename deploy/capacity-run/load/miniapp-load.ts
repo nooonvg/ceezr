@@ -51,7 +51,8 @@ mkdirSync(`${RUN_DIR}/evidence`, { recursive: true });
 
 const RIDER_BOT_TOKEN = process.env.RIDER_BOT_TOKEN ?? "";
 const DRIVER_BOT_TOKEN = process.env.DRIVER_BOT_TOKEN ?? "";
-if (RIDER_BOT_TOKEN === "" || DRIVER_BOT_TOKEN === "") {
+// حارسُ التشغيلِ المباشرِ فقط — الاستيرادُ للاختبارِ لا يُخرجُ من العمليةِ
+if (import.meta.main && (RIDER_BOT_TOKEN === "" || DRIVER_BOT_TOKEN === "")) {
   console.error("✖ عيّن RIDER_BOT_TOKEN وDRIVER_BOT_TOKEN من بيئةِ الجولةِ.");
   process.exit(1);
 }
@@ -150,9 +151,54 @@ async function seedDriverViaApp(): Promise<DriverOnboardingRecord | null> {
 
 const JED = { lat: 21.4858, lng: 39.1925 };
 
-interface ScenarioOutcome {
+export interface ScenarioOutcome {
   readonly kind: "verified" | "rejected" | "undecided";
   readonly reason?: string;
+  /**
+   * `LOAD-01` — ربطُ السيناريو بصفوفِ القاعدةِ: التشخيصُ منَ الأحداثِ وحدها
+   * مستحيلٌ بلا هذهِ الحقولِ (الجولةُ التاريخيةُ خسرت أسبابَ 78 فشلًا لأنها
+   * بلا معرّفاتِ ارتباطٍ). لا تُسجَّلُ الجلساتُ ولا الأسرارُ — الهوياتُ فقط.
+   */
+  readonly index?: number;
+  readonly riderTelegramId?: number;
+  readonly driverTelegramId?: number;
+  readonly orderId?: string;
+  readonly orderCreatedAt?: number;
+  readonly offerWaitStartAt?: number;
+  readonly offerWaitMs?: number;
+  readonly offerPolls?: {
+    readonly count: number;
+    readonly readFailures: number;
+    readonly targetSeen: boolean;
+    readonly lastStatus: number | string;
+    readonly lastBoardOffers: number | null;
+  };
+}
+
+/**
+ * تصنيفُ انتظارِ العرضِ من إحصاءاتِ الاستطلاعِ — دالةٌ نقيةٌ تُختبرُ سلوكيًا:
+ * فشلُ قراءةِ اللوحِ كلهُ صنفٌ مستقلٌ (`unreadable`) لا يُخلطُ بغيابِ العرضِ،
+ * والقراءاتُ الناجحةُ مع غيابِ الهدفِ = `not_found` (يُشخَّص سببُه من القاعدة).
+ */
+export function classifyOfferWait(stats: {
+  count: number;
+  readFailures: number;
+}): "unreadable" | "not_found" | "no_polls" {
+  if (stats.count === 0) return "no_polls";
+  if (stats.readFailures === stats.count) return "unreadable";
+  return "not_found";
+}
+
+/** الحالةُ المشتركةُ التي يملؤها السيناريو كلما توافرَ حقلاً — يُرفقُ بالمآلِ. */
+export interface ScenarioCorr {
+  index: number;
+  riderTelegramId?: number;
+  driverTelegramId?: number;
+  orderId?: string;
+  orderCreatedAt?: number;
+  offerWaitStartAt?: number;
+  offerWaitMs?: number;
+  offerPolls?: ScenarioOutcome["offerPolls"];
 }
 
 async function exchangeSession(
@@ -195,17 +241,33 @@ async function cachedSession(
   return result;
 }
 
+/**
+ * `LOAD-01` — فشلُ قراءةِ اللوحِ ليس غيابَ عرضٍ: الاستطلاعُ الفاشلُ (شبكةٌ أو
+ * مهلةٌ أو جسمٌ غيرُ صالحٍ) يُحسَبُ قراءةً فاشلةً لا «عدمَ وجودٍ»، وإلا خُطئَ
+ * التشخيصَ ووُسِّعَتِ المهلةُ لعلّةِ قراءةٍ لا لعلّةِ توزيعٍ.
+ */
 async function driverFindOffer(
   token: string,
   orderId: string,
   waitMs: number,
+  corr: ScenarioCorr,
 ): Promise<{ offerId: string | null; error?: string }> {
   const deadline = Date.now() + waitMs;
+  let polls = 0;
+  let readFailures = 0;
+  let targetSeen = false;
+  let lastStatus: number | string = "none";
+  let lastBoardOffers: number | null = null;
+  corr.offerWaitStartAt = Date.now();
+  corr.offerWaitMs = waitMs;
   for (;;) {
     const board = await call("/v1/driver/offers", { token, timeoutMs: 15_000 });
+    polls += 1;
+    lastStatus = board.ok ? board.status : (board.networkError ?? board.status);
     if (board.ok && board.body !== null) {
       const offers = board.body.offers;
       if (Array.isArray(offers)) {
+        lastBoardOffers = offers.length;
         const match = offers.find(
           (offer) =>
             typeof offer === "object" &&
@@ -213,10 +275,30 @@ async function driverFindOffer(
             (offer as Record<string, unknown>).order_id === orderId,
         ) as Record<string, unknown> | undefined;
         const offerId = match?.offer_id ?? match?.id;
-        if (typeof offerId === "string") return { offerId };
+        if (typeof offerId === "string") {
+          corr.offerPolls = {
+            count: polls,
+            readFailures,
+            targetSeen: true,
+            lastStatus,
+            lastBoardOffers,
+          };
+          return { offerId };
+        }
+        if (match !== undefined) targetSeen = true; // ظهرَ الطلبُ بلا معرّفِ عرضٍ صالحٍ
+      } else {
+        readFailures += 1; // جسمٌ غيرُ صالحٍ: قراءةٌ فاشلةٌ لا غيابَ عرضٍ
       }
+    } else {
+      readFailures += 1;
     }
     if (Date.now() >= deadline) {
+      corr.offerPolls = { count: polls, readFailures, targetSeen, lastStatus, lastBoardOffers };
+      if (readFailures === polls) {
+        // كلُّ الاستطلاعاتِ فشلت: اللوحُ غيرُ مقروءٍ — صنفٌ مستقلٌّ لا يُخلطُ
+        // بغيابِ العرضِ، وتوسيعُ المهلةِ هنا يخفي العلةَ لا يعالجُها.
+        return { offerId: null, error: "offer_board_unreadable" };
+      }
       return { offerId: null, error: "offer_not_found_in_time" };
     }
     await sleep(POLL_MS);
@@ -240,15 +322,47 @@ async function riderDecideCandidate(
   return { decided: true };
 }
 
+/**
+ * ربطُ المآلِ بالارتباطِ — نقيةٌ تُختبرُ: الخروجُ المبكرُ (ارتباطٌ جزئي) والاستثناءُ
+ * (مآلٌ بلا سببٍ مفصلٍ) كلاهما يخرجُ بالمعرّفاتِ المتوفرةِ لا بلا شيءٍ.
+ */
+export function outcomeWithCorr(outcome: ScenarioOutcome, corr: ScenarioCorr): ScenarioOutcome {
+  return {
+    ...outcome,
+    index: corr.index,
+    ...(corr.riderTelegramId === undefined ? {} : { riderTelegramId: corr.riderTelegramId }),
+    ...(corr.driverTelegramId === undefined ? {} : { driverTelegramId: corr.driverTelegramId }),
+    ...(corr.orderId === undefined ? {} : { orderId: corr.orderId }),
+    ...(corr.orderCreatedAt === undefined ? {} : { orderCreatedAt: corr.orderCreatedAt }),
+    ...(corr.offerWaitStartAt === undefined ? {} : { offerWaitStartAt: corr.offerWaitStartAt }),
+    ...(corr.offerWaitMs === undefined ? {} : { offerWaitMs: corr.offerWaitMs }),
+    ...(corr.offerPolls === undefined ? {} : { offerPolls: corr.offerPolls }),
+  };
+}
+
 async function runScenario(index: number): Promise<ScenarioOutcome> {
+  // `LOAD-01` — الغلافُ يرفقُ الارتباطَ بالمآلِ أيًّا كانَ موضعُ الخروجِ: لا
+  // خروجَ مبكرًا يُفلتُ منَ الربطِ (هذا عينُ ما أضاعَ أسبابَ فشلِ الجولةِ
+  // التاريخيةِ: مآلٌ بلا معرّفاتٍ لا يُشخَّصُ منَ القاعدةِ).
+  const corr: ScenarioCorr = { index };
+  const outcome = await runScenarioSteps(corr);
+  return outcomeWithCorr(outcome, corr);
+}
+
+async function runScenarioSteps(corr: ScenarioCorr): Promise<ScenarioOutcome> {
   const rider = await seedRider();
+  corr.riderTelegramId = rider.telegramId;
   // تجهيزُ السائقِ منَ التطبيقِ (لا حوارَ بوتٍ) — فشلُهُ يُسجَّلُ لا يُخفى
   const driver = await seedDriverViaApp();
   if (driver === null) {
     return { kind: "undecided", reason: "driver_onboarding_failed" };
   }
+  corr.driverTelegramId = driver.telegramId;
   rec.scenarioStart(String(rider.telegramId));
   const startedAt = Date.now();
+  // `LOAD-01` — رمزُ جلسةِ السائقِ يُرفَعُ قبلَ try ليصحَّ تنظيفُهُ في finally:
+  // السائقُ الذي أنهى سيناريوهُ لا يبقى «متاحًا» في الحوضِ إلى الأبدِ.
+  let driverToken: string | null = null;
   try {
     // ١) الهويةُ — تحققٌ موقَّعٌ حقيقيٌّ لكلٍّ منَ الطرفينِ.
     const riderSession = await cachedSession(RIDER_BOT_TOKEN, rider.telegramId);
@@ -259,6 +373,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     if (driverSession.token === null) {
       return { kind: "undecided", reason: `driver_session:${driverSession.error}` };
     }
+    driverToken = driverSession.token;
 
     // نقطةُ الالتقاطِ ثابتةٌ للرحلةِ والسائقِ معًا: السائقُ ينتظرُ قربَها
     // (±110م) فيكونُ أقربَ من أيِّ سائقٍ مزروعٍ بعيدًا عنها — المطابقةُ على
@@ -268,7 +383,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       lng: JED.lng + rnd(-0.01, 0.01),
     };
     // ٢) إنشاءُ الرحلةِ عبرَ واجهةِ المنتجِ.
-    const idempotencyKey = `cap-${GEN_ID}-${T0}-${index}`;
+    const idempotencyKey = `cap-${GEN_ID}-${T0}-${corr.index}`;
     const create = await call("/v1/rides", {
       method: "POST",
       token: riderSession.token,
@@ -295,6 +410,8 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     if (typeof orderId !== "string") {
       return { kind: "undecided", reason: "no_order_id" };
     }
+    corr.orderId = orderId;
+    corr.orderCreatedAt = Date.now();
 
     // ٣) السائقُ متاحٌ ويرسلُ موقعَهُ — وههنا يُطلقُ الإرسالُ الفوريُّ.
     const availability = await call("/v1/driver/availability", {
@@ -321,7 +438,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     }
 
     // ٤) اكتشافُ العرضِ منَ الواجهةِ لا منَ القاعدةِ.
-    const found = await driverFindOffer(driverSession.token, orderId, MATCH_WAIT_MS);
+    const found = await driverFindOffer(driverSession.token, orderId, MATCH_WAIT_MS, corr);
     if (found.offerId === null) {
       return { kind: "undecided", reason: `offer:${found.error ?? "?"}` };
     }
@@ -344,7 +461,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
 
     // قرارُ المرشَّحِ إن كانَ الطلبُ في نافذةِ اختيارِ الراكبِ.
     const driverId = driver.driverId;
-    if (driverId === undefined) return { kind: "undecided", reason: "driver_row_missing" };
+    if (driverId === null) return { kind: "undecided", reason: "driver_row_missing" };
     const candidate = await call(`/v1/rides/${orderId}/candidate`, {
       token: riderSession.token,
       timeoutMs: 15_000,
@@ -396,8 +513,31 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       reason: error instanceof Error ? error.message.slice(0, 120) : "exception",
     };
   } finally {
+    // تنظيفُ نهايةِ السيناريو: السائقُ يغدو غيرَ متاحٍ — وإلا تراكمَ في الحوضِ
+    // مئاتُ السائقينَ الخاملينَ المتاحينَ (`LOAD-01` التشخيصُ: هذا عينُ ما أفقدَ
+    // سائقَ السيناريو مقعدَهُ بينَ أقربِ خمسةٍ مرشحينَ في الجولاتِ المتأخرةِ،
+    // فبقيتِ الطلباتُ تبحثُ بلا وصولٍ أبدًا) — التنظيفُ أفضلُ جهدٍ لا يُفشلُ
+    // السيناريو: فشلُهُ يُسجَّلُ حدثًا لا يغيّرُ المآلَ.
+    if (driverToken !== null) {
+      try {
+        const cleanup = await call("/v1/driver/availability", {
+          method: "POST",
+          token: driverToken,
+          body: { is_available: false },
+          timeoutMs: 15_000,
+        });
+        if (!cleanup.ok) {
+          ev("driver.cleanup_failed", {
+            index: corr.index,
+            status: cleanup.networkError ?? cleanup.status,
+          });
+        }
+      } catch {
+        ev("driver.cleanup_failed", { index: corr.index, status: "exception" });
+      }
+    }
     ev("scenario.end", {
-      index,
+      index: corr.index,
       rider: rider.telegramId,
       driver: driver.telegramId,
       elapsedMs: Date.now() - startedAt,
@@ -450,6 +590,17 @@ async function main() {
       ev("scenario.outcome", {
         kind: outcome.kind,
         ...(outcome.reason === undefined ? {} : { reason: outcome.reason }),
+        // `LOAD-01` — الارتباطُ الكاملُ في الحدثِ نفسِهِ (لا رموزَ جلساتٍ).
+        ...(outcome.index === undefined ? {} : { index: outcome.index }),
+        ...(outcome.riderTelegramId === undefined ? {} : { rider: outcome.riderTelegramId }),
+        ...(outcome.driverTelegramId === undefined ? {} : { driver: outcome.driverTelegramId }),
+        ...(outcome.orderId === undefined ? {} : { orderId: outcome.orderId }),
+        ...(outcome.orderCreatedAt === undefined ? {} : { orderCreatedAt: outcome.orderCreatedAt }),
+        ...(outcome.offerWaitStartAt === undefined
+          ? {}
+          : { offerWaitStartAt: outcome.offerWaitStartAt }),
+        ...(outcome.offerWaitMs === undefined ? {} : { offerWaitMs: outcome.offerWaitMs }),
+        ...(outcome.offerPolls === undefined ? {} : { offerPolls: outcome.offerPolls }),
       });
     };
     while (Date.now() < stopAt) {
