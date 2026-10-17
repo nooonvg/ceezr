@@ -377,7 +377,7 @@ async function deliverClaimed(
   // الطابورِ بموعدِ الفتحةِ القادمةِ (نافذةُ المحادثةِ) بلا محاولةٍ مُحتسَبةٍ،
   // والمسارُ يتفرّغُ لصفٍّ آخرَ لمحادثةٍ باردةٍ — هذا هوَ صونُ عملِ المساراتِ.
   if (handled.value.failure === "OutboundCongestionError" && handled.value.messageId === null) {
-      const requeued = await deps.outbox.requeue({
+    const requeued = await deps.outbox.requeue({
       deliveryId: delivery.deliveryId,
       claimToken: delivery.claimToken,
       retryAfterMs: 1_000,
@@ -535,8 +535,7 @@ export async function deliverNotificationsConcurrently(
 ): Promise<Result<ConcurrentDrainOutcome, PortFailureError>> {
   const now = options.now ?? (() => Date.now());
   const sleep =
-    options.sleep ??
-    ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+    options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const lanes = Math.max(1, Math.floor(options.lanes));
   const started = now();
   let claimed = 0;
