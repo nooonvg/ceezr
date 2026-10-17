@@ -232,22 +232,62 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
     expect(f.st.sent.length).toBe(0);
   });
 
-  // `LOAD-01` (الدفعةُ الخامسةُ) — انحدارُ الاحتفاظِ بالازدحامِ داخلَ الشوطِ:
-  // إشعاراتُ رحلةٍ متجمعةٌ لمحادثةٍ واحدةٍ (نافذةُ المحادثةِ رسالةٌ في الثانيةِ)
-  // كانَ ازدحامُها يُعيدُ كلَّ صفٍّ لدورةِ التشغيلِ القادمةِ (10ث) فتحتاجُ الرحلةُ
-  // ثلاثَ دوراتٍ؛ العقدُ الجديدُ: يعادُ المحاولةُ عندَ الفتحةِ (ثانيةٍ) داخلَ
-  // الشوطِ نفسِهِ فتُسلَّمُ كلُّها في شوطٍ واحدٍ — بلا إعادةِ اصطفافٍ ولا محاولةٍ
-  // محسوبةٍ إضافيةٍ.
-  test("D8/الاحتفاظ: إشعاراتٌ متجمعةٌ لمحادثةٍ واحدةٍ تُسلَّمُ في شوطٍ واحدٍ عندَ الفتحةِ", async () => {
-    const rows: Row[] = [1, 2, 3].map((i) => ({
-      id: `n${i}`,
-      kind: "rider_trip_notice",
-      payload: { order_id: "o1", chat_id: "chat-A" },
-    }));
-    const f = fakeOutbox(rows);
+  // `LOAD-01` (الدفعةُ الخامسةُ) — انحدارُ الانتظارِ الذكيِّ عندَ فراغِ الطابورِ:
+  // صفُّ الازدحامِ يُعادُ اصطفافًا بموعدِ فتحتِهِ (ثانيةٍ) — والشوطُ الذي كانَ
+  // ينكسرُ عندَ أولِ طابورٍ فارغٍ ينتظرُ حتى موعدِ الفتحةِ ويلتقطُ الصفوفَ
+  // المستحقةَ داخلَ الشوطِ نفسِهِ، فتُسلَّمُ إشعاراتُ الرحلةِ المتجمعةُ لمحادثةٍ
+  // واحدةٍ في شوطٍ واحدٍ لا في ثلاثِ دوراتِ تشغيلٍ.
+  test("D8/الانتظارُ الذكيُّ: إشعاراتٌ متجمعةٌ لمحادثةٍ واحدةٍ تُسلَّمُ في شوطٍ واحدٍ عندَ الفتحاتِ", async () => {
     let clock = 1_000;
+    const rows: { id: string; dueAt: number }[] = [
+      { id: "n1", dueAt: 0 },
+      { id: "n2", dueAt: 0 },
+      { id: "n3", dueAt: 0 },
+    ];
+    const st = {
+      claims: 0,
+      finished: new Set<string>(),
+      requeued: [] as string[],
+    };
     const lastSentAt = new Map<string, number>();
     const sentLog: { id: string; at: number }[] = [];
+    const port: NotificationOutboxPort = {
+      finishViaBoard: async () => ok({ ok: true, outcome: "delivered" }),
+      requeueSignalWait: async () => ok({ ok: true, outcome: null }),
+      claim: async () => {
+        st.claims += 1;
+        const due = rows.filter((r) => r.dueAt <= clock);
+        if (due.length === 0) return ok({ delivery: null });
+        const r = due[0];
+        if (r === undefined) return ok({ delivery: null });
+        rows.splice(rows.indexOf(r), 1);
+        const d: OutboxDelivery = {
+          deliveryId: r.id,
+          kind: "rider_trip_notice",
+          cityId: "c" as never,
+          claimToken: `t-${r.id}`,
+          attempts: 1,
+          maxAttempts: 5,
+          batchLimit: 8,
+          requestId: null,
+          payload: { order_id: "o1", chat_id: "chat-A" },
+        };
+        return ok({ delivery: d });
+      },
+      finish: async ({ deliveryId }) => {
+        st.finished.add(deliveryId);
+        return ok({ ok: true, outcome: "delivered" });
+      },
+      abandon: async () => ok(true),
+      undeliverable: async () => ok(true),
+      requeue: async ({ deliveryId }) => {
+        st.requeued.push(deliveryId);
+        const r = rows.find((x) => x.id === deliveryId);
+        if (r !== undefined) r.dueAt = clock + 1_000;
+        else rows.push({ id: deliveryId, dueAt: clock + 1_000 });
+        return ok(true);
+      },
+    };
     const windowed = async (d: OutboxDelivery) => {
       const chat = String(d.payload.chat_id);
       const last = lastSentAt.get(chat);
@@ -259,11 +299,11 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
       return ok({ abandon: false, messageId: `m-${d.deliveryId}`, failure: null });
     };
     const r = await deliverNotificationsConcurrently(
-      { outbox: f.port, handlers: { rider_trip_notice: windowed } },
+      { outbox: port, handlers: { rider_trip_notice: windowed } },
       {
         lanes: 4,
-        budgetMs: 5_000,
-        maxClaims: 10,
+        budgetMs: 8_000,
+        maxClaims: 50,
         now: () => clock,
         sleep: async (ms) => {
           clock += ms;
@@ -271,11 +311,10 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
       },
     );
     expect(r.ok).toBe(true);
-    // الثلاثةُ سُلِّمَتْ في الشوطِ نفسِهِ وبالترتيبِ — لا إعادةَ اصطفافٍ إطلاقاً
+    // الثلاثةُ سُلِّمَتْ في الشوطِ نفسِهِ وبالترتيبِ — عبرَ إعادةِ الاصطفافِ والالتقاطَ
+    // عندَ الاستحقاقِ لا الاحتفاظَ بالصفوفِ
     expect(sentLog.map((x) => x.id)).toEqual(["n1", "n2", "n3"]);
-    expect(f.st.requeued).toEqual([]);
-    // كلُّ صفٍّ قُبِضَ مرةً واحدةً (الصواميلُ الفارغةُ للطابورِ انتظارٌ لا التقاطٌ)
-    expect(f.st.claims).toBeGreaterThanOrEqual(3);
+    expect([...st.finished]).toEqual(["n1", "n2", "n3"]);
     // الفتحاتُ احتُرِمَت: كلُّ إرسالٍ بعدَ ثانيةٍ كاملةٍ من سابقهِ للمحادثةِ نفسِها
     const gap = (a: number, b: number): number => {
       const first = sentLog[a];
@@ -287,7 +326,7 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
     expect(gap(1, 2)).toBeGreaterThanOrEqual(1_000);
   });
 
-  test("D8/الاحتفاظ: ما لم تُفتَحِ الفتحةُ داخلَ الميزانيةِ يُغسَلُ للطابورِ بالعقدِ القديمِ", async () => {
+  test("D8/الانتظارُ الذكيُّ: ما لم تُفتَحِ الفتحةُ داخلَ الميزانيةِ يُعادُ للطابورِ كما كانَ", async () => {
     const f = fakeOutbox(offers(1));
     let clock = 1_000;
     const congested = async () =>
@@ -307,8 +346,8 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
     expect(r.ok).toBe(true);
     // الميزانيةُ انتهت قبلَ الفتحةِ: الصفُّ يعودُ للطابورِ (إعادةُ اصطفافٍ بموعدِ
     // ثانيةٍ) ويُحسَبُ فشلًا كما كانَ — لا تسليمَ ولا موتَ.
-    expect(f.st.requeued.length).toBe(1);
+    expect(f.st.requeued.length).toBeGreaterThanOrEqual(1);
     expect(f.st.sent.length).toBe(0);
-    if (r.ok) expect(r.value.failed).toBe(1);
+    if (r.ok) expect(r.value.failed).toBeGreaterThanOrEqual(1);
   });
 });
