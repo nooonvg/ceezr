@@ -267,7 +267,18 @@ export function withOutboundResilience(
   };
 
   /** انتظارُ فتحةٍ من الدلوِ بنطاقَيه. يُعيدُ سببَ العجزِ وموعدَ الفتحةِ القادمةِ.
-   * `D8`: ما لم يُتَح في مسارِ الإرسالِ لا يُنتظرُ داخلَ المسارِ. */
+   * `D8`: ما لم يُتَح في مسارِ الإرسالِ لا يُنتظرُ داخلَ المسارِ.
+   *
+   * `LOAD-01` (الدفعةُ الخامسةُ) — **فتحةُ المحادثةِ أولًا ثمَّ العالميُّ**:
+   * الدلوُ العالميُّ موردٌ مشتركٌ للبوتِ كلِّهِ (25/ث)، وفتحةُ المحادثةِ ملكُ
+   * محادثةٍ واحدةٍ (1/ث تتجدّدُ في ثانيةٍ). ولما كانَ الاقتناءُ يستهلكُ الفتحةَ
+   * عندَ المنحِ، كانَ اقتناءُ العالميِّ أولًا يُهدِرُ فتحةً مشتركةً في كلِّ ازدحامِ
+   * محادثةٍ: قياسُ موجةِ `r3-wave-50` الرسميةِ — 60% من فتحاتِ البوتِ هُدرتْ
+   * على محادثاتٍ مزدحمةٍ (12.5 رسالة/ث مُسلَّمةً من سقفِ 25/ث، وفي التصريفِ
+   * 1.6/ث) — والفتحةُ المُهدَرةُ لا تمنعُ شيئاً: رفضُ فتحةِ المحادثةِ هوَ ما
+   * يمنعُ الإرسالَ للمحادثةِ المزدحمةِ، فلا معنى لحرقِ نصيبِ البوتِ كلِّهِ معها.
+   * وبعكسِ الترتيبِ ينتقلُ الهدرُ إلى دلوِ المحادثةِ نفسِها: محدودٌ بمالكِهِ،
+   * يتجدّدُ في ثانيةٍ، فلا يمسُّ محادثةً أخرى ولا سقفَ البوتِ المشتركَ. */
   const awaitSlot = async (
     chatId: string,
     operation: OutboundOperation,
@@ -280,45 +291,44 @@ export function withOutboundResilience(
     // فيبقى للحرجِ متنفَّسٌ. ودلوُ المحادثةِ لا حِصّةَ فيه (فتحةٌ واحدةٌ لا تُقسَمُ).
     const bucketClass = bucketClassOfSendPriority(priority);
     for (;;) {
-      const globalSlot = await options.bucket.acquire(
-        "global",
-        options.bucketKey ?? "bot",
-        bucketClass,
-      );
-      if (!globalSlot.granted) {
-        if (waited + globalSlot.waitMs > budgetMs) {
-          return { reason: "ازدحامُ الدلوِ العالميِّ", retryAfterMs: globalSlot.waitMs };
+      const chatSlot = await options.bucket.acquire("chat", chatId, bucketClass);
+      if (!chatSlot.granted) {
+        if (waited + chatSlot.waitMs > budgetMs) {
+          return { reason: "ازدحامُ دلوِ المحادثةِ", retryAfterMs: chatSlot.waitMs };
         }
         options.onEvent?.({
           type: "backpressure",
           operation,
           chatId,
           attempt,
-          waitMs: globalSlot.waitMs,
-          detail: "global",
+          waitMs: chatSlot.waitMs,
+          detail: "chat",
         });
-        await sleep(globalSlot.waitMs);
-        waited += globalSlot.waitMs;
+        await sleep(chatSlot.waitMs);
+        waited += chatSlot.waitMs;
         continue;
       }
-      const chatSlot = await options.bucket.acquire("chat", chatId, bucketClass);
-      if (chatSlot.granted) return { reason: null, retryAfterMs: 0 };
-      // الفتحةُ العالميّةُ استُهلِكَت ولم تُستعمَل. مقصودٌ ومُحتسَبٌ: الاحتياطُ
-      // أن نُنفِقَ فتحةً من خمسٍ وعشرينَ لا أن نُرسِلَ إلى محادثةٍ تجاوزَت حدَّها
-      // فنستدعيَ `429` على البوتِ كلِّه.
-      if (waited + chatSlot.waitMs > budgetMs) {
-        return { reason: "ازدحامُ دلوِ المحادثةِ", retryAfterMs: chatSlot.waitMs };
+      const globalSlot = await options.bucket.acquire(
+        "global",
+        options.bucketKey ?? "bot",
+        bucketClass,
+      );
+      if (globalSlot.granted) return { reason: null, retryAfterMs: 0 };
+      // فتحةُ المحادثةِ استُهلِكَت ولم تُرسَلِ الرسالةُ: الهدرُ محدودٌ بمالكِهِ —
+      // يتجدّدُ في ثانيةٍ ولا يمسُّ محادثةً أخرى ولا سقفَ البوتِ المشتركَ.
+      if (waited + globalSlot.waitMs > budgetMs) {
+        return { reason: "ازدحامُ الدلوِ العالميِّ", retryAfterMs: globalSlot.waitMs };
       }
       options.onEvent?.({
         type: "backpressure",
         operation,
         chatId,
         attempt,
-        waitMs: chatSlot.waitMs,
-        detail: "chat",
+        waitMs: globalSlot.waitMs,
+        detail: "global",
       });
-      await sleep(chatSlot.waitMs);
-      waited += chatSlot.waitMs;
+      await sleep(globalSlot.waitMs);
+      waited += globalSlot.waitMs;
     }
   };
 
