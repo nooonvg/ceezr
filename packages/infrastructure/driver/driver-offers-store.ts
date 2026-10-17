@@ -289,7 +289,7 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
           insert into driver_offers_board_receipts (driver_id, offer_id, city_id, received_at)
           select dr.id, v.offer_id::uuid, dr.city_id, now()
           from (
-            select d.id from drivers d
+            select d.id, d.city_id from drivers d
             join users u on u.id = d.user_id
             where u.telegram_id = ${telegramId}::bigint
           ) dr

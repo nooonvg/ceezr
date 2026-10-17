@@ -425,6 +425,28 @@ async function driverFindOffer(
       const offers = board.body.offers;
       if (Array.isArray(offers)) {
         lastBoardOffers = offers.length;
+        // `LOAD-01` — إيصالُ اللوحِ المطبَّقِ: العميلُ يُقرُّ بما رأهُ بعدَ كلِّ
+        // تطبيقٍ (كما التطبيقُ الحقيقيُّ: `ackAppliedBoard` على كلِّ قراءةٍ لا على
+        // الإشارةِ وحدها) — تراكميٌّ صامتُ الفشلِ لا يُعطِّلُ الاستطلاعَ.
+        const seenIds = offers
+          .map((offer) => (offer as Record<string, unknown> | null)?.offer_id)
+          .filter((id): id is string => typeof id === "string");
+        if (seenIds.length > 0) {
+          void (async () => {
+            try {
+              const ack = await call("/v1/driver/offers/receipts", {
+                token,
+                method: "POST",
+                body: { offer_ids: seenIds.slice(0, 50) },
+                timeoutMs: 5_000,
+              });
+              if (ack.ok) socketStats.acks += 1;
+              else socketStats.ackFailures += 1;
+            } catch {
+              socketStats.ackFailures += 1;
+            }
+          })();
+        }
         const match = offers.find(
           (offer) =>
             typeof offer === "object" &&
