@@ -31,7 +31,12 @@ interface Snapshot {
   readonly availability: { available: number; total: number };
   readonly outbox: {
     byStatus: Record<string, number>;
-    byKind: Record<string, { total: number; delivered: number; pending: number }>;
+    byKind: Record<string, { total: number; delivered: number; pending: number; dead: number }>;
+    /** الجولاتُ المتراكمةُ عبرَ الجولاتِ — لا تُقرأ حكمًا على جولةٍ بعينِها. */
+    readonly byKindAllTime: Record<
+      string,
+      { total: number; delivered: number; pending: number; dead: number }
+    >;
     oldestPendingSec: number | null;
   };
   /** قياسُ قناةِ الإرسالِ من سجلِ المحاكي في نافذةِ الموجةِ — دليلُ سببِ P7
@@ -42,7 +47,21 @@ interface Snapshot {
 }
 
 async function snapshot(): Promise<Snapshot> {
-  const [orders, offers, avail, outbox, dups, byKindRows] = await Promise.all([
+  // نافذةُ الجولةِ: لحظةُ اللقطةِ القبليةِ — بمصدرٍ واحدٍ للفحصِ القبليِّ
+  // (byKind) والقياسِ بعديِّ (egress) لا مصدرينِ يفترقانِ فيُقرأُ التراكمُ
+  // المتراكمُ حكمًا على الجولةِ (خطأٌ كشفَهُ تحقيقُ الاستكمالِ: «delivered»
+  // كانَ يعدُّ صفوفَ الجولاتِ السابقةِ لأنَّ التنقيةَ بينَ الموجاتِ لا تمسُّ
+  // المُسلَّمَ منها ولا الميتَ).
+  let sinceMs: number | null = null;
+  if (existsSync(prePath)) {
+    try {
+      const pre = JSON.parse(readFileSync(prePath, "utf8")) as { snapshot: Snapshot };
+      sinceMs = Date.parse(pre.snapshot.at);
+    } catch {
+      sinceMs = null;
+    }
+  }
+  const [orders, offers, avail, outbox, dups, byKindRows, byKindAllRows] = await Promise.all([
     sql<
       { status: string; n: string }[]
     >`select status::text as status, count(*)::text as n from orders group by 1`,
@@ -61,10 +80,19 @@ async function snapshot(): Promise<Snapshot> {
          where assigned_driver_id is not null and is_driver_engaged_order_status(status)
          group by assigned_driver_id having count(*) > 1
       ) as d`,
-    sql<{ kind: string; total: string; delivered: string; pending: string }[]>`
+    sql<{ kind: string; total: string; delivered: string; pending: string; dead: string }[]>`
       select kind, count(*)::text as total,
              count(*) filter (where status = 'delivered')::text as delivered,
-             count(*) filter (where status = 'pending')::text as pending
+             count(*) filter (where status = 'pending')::text as pending,
+             count(*) filter (where status = 'dead')::text as dead
+        from notification_outbox
+        ${sql`where created_at >= ${sinceMs === null ? new Date(0) : new Date(sinceMs)}`}
+        group by 1`,
+    sql<{ kind: string; total: string; delivered: string; pending: string; dead: string }[]>`
+      select kind, count(*)::text as total,
+             count(*) filter (where status = 'delivered')::text as delivered,
+             count(*) filter (where status = 'pending')::text as pending,
+             count(*) filter (where status = 'dead')::text as dead
         from notification_outbox group by 1`,
   ]);
   const byStatus = (rows: { status: string; n: string }[]) =>
@@ -80,12 +108,24 @@ async function snapshot(): Promise<Snapshot> {
         total: Number(r.total),
         delivered: Number(r.delivered),
         pending: Number(r.pending),
+        dead: Number(r.dead),
+      },
+    ]),
+  );
+  const byKindAllTime = Object.fromEntries(
+    byKindAllRows.map((r) => [
+      r.kind,
+      {
+        total: Number(r.total),
+        delivered: Number(r.delivered),
+        pending: Number(r.pending),
+        dead: Number(r.dead),
       },
     ]),
   );
   // سجلُ المحاكي: عدُّ الإرسالياتِ في نافذةِ الموجةِ (بوسمِ الوقتِ لا قراءةِ كلِّ
   // الملفِّ) — يقرأُ آخرَ ما أمكنَهُ من الصفوفِ بكفاءةٍ (الملفُ حلقةٌ متراكمةٌ).
-  const egress = readMockEgress();
+  const egress = readMockEgress(sinceMs);
   return {
     at: new Date().toISOString(),
     ordersByStatus: byStatus(orders),
@@ -97,6 +137,7 @@ async function snapshot(): Promise<Snapshot> {
     outbox: {
       byStatus: byStatus(outbox),
       byKind,
+      byKindAllTime,
       oldestPendingSec: pendingOldest === null ? null : Math.round(Number(pendingOldest)),
     },
     egress,
@@ -110,18 +151,9 @@ async function snapshot(): Promise<Snapshot> {
  * القبليةِ إن وُجدَتْ) — القبولُ (200) والرفضُ (429) — دليلُ سببِ P7 من سجلِ
  * المزوّدِ لا من حدسٍ. الملفُّ حلقةٌ متراكمةٌ عبرَ الجولاتِ فيُرشَّحُ بالوقتِ.
  */
-function readMockEgress(): Snapshot["egress"] {
+function readMockEgress(sinceMs: number | null): Snapshot["egress"] {
   const path = `${EV}/telegram-mock.jsonl`;
   if (!existsSync(path)) return null;
-  let sinceMs: number | null = null;
-  if (existsSync(prePath)) {
-    try {
-      const pre = JSON.parse(readFileSync(prePath, "utf8")) as { snapshot: Snapshot };
-      sinceMs = Date.parse(pre.snapshot.at);
-    } catch {
-      sinceMs = null;
-    }
-  }
   const byBot: Record<string, { accepted: number; rejected: number }> = {};
   for (const line of readFileSync(path, "utf8").split("\n")) {
     if (line.trim() === "") continue;
