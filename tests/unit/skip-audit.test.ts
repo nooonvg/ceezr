@@ -949,8 +949,11 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 6 · LOAD-01): والآنَ 191 و1633 — حالةٌ واحدةٌ في
     // `outbox-claim-index.test.ts`: حراسةُ خطةِ الالتقاطِ العامةِ المعلمةِ (فهرسٌ لا فحصٌ كاملٌ)
     // سلوكُ مخطِّطِ PostgreSQL نفسِه — خطوتُها في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
-    expect(SKIP_REGISTRY).toHaveLength(191);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1633);
+    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 6-استكمال): والآنَ 192 و1636 — ثلاثُ حالاتٍ في
+    // `session-burst-real.test.ts`: جدارُ الجلسةِ المقيسُ (امتلاءُ مسلكِ Redis تحتَ انفجارِ المبادلاتِ)
+    // لا يُثبَتُ إلا على Redis حقيقيٍّ — خطوتُها في وظيفةِ «تكامل على Redis حقيقي».
+    expect(SKIP_REGISTRY).toHaveLength(192);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1636);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {
