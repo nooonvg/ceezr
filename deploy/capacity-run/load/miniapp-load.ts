@@ -27,7 +27,21 @@
  *
  * التشغيلُ: `RUN_DIR=… GEN_ID=genA bun run deploy/capacity-run/load/miniapp-load.ts`
  * يقرأُ: GATEWAY_URL · DATABASE_URL · RIDER_BOT_TOKEN · DRIVER_BOT_TOKEN ·
- * PROFILE (مراحلُ) · CITY (افتراضي JED) · SCENARIO_DEPTH (assign|full).
+ * PROFILE (مراحلُ) · CITY (افتراضي JED) · SCENARIO_DEPTH (assign|full) ·
+ * DRAIN_SEC (نافذةُ الختامِ الصارمةُ بعدَ نهايةِ الحقنِ — إلزاميةٌ > 0) ·
+ * ACCEPT_RETRY_MAX/ACCEPT_RETRY_BUDGET_MS (سقفا إعادةِ محاولةِ القبولِ عندَ 409 العابر).
+ *
+ * `LOAD-01` (عقدُ القياسِ):
+ * - **حدُّ إغلاقٍ صارمٌ:** كلُّ انتظارٍ داخلَ السيناريو محدودٌ بأقربِ مهلةٍ
+ *   خاصتهِ وبموعدِ إغلاقِ المرحلةِ معًا — لا `Promise.all` بلا سقفٍ؛ وتجاوزُ
+ *   الإغلاقِ مآلٌ مستقلٌّ `close_deadline` لا يُهملُ.
+ * - **409 العابرُ:** القبولُ يعيدُ المحاولةَ بحدٍّ وميزانيةٍ بعدَ إعادةِ قراءةِ
+ *   الحالةِ الفعليةِ (طلبٌ `searching` وعرضٌ `pending` لسائقِ السيناريو) — والتعارضُ
+ *   النهائيُّ (فائزٌ آخرُ أو انتهاءٌ) لا يُعادُ ولا يُحوَّلُ نجاحًا.
+ * - **السائقُ المسنَدُ فعليًّا:** الإسنادُ لغيرِ سائقِ السيناريو صنفٌ مستقلٌّ
+ *   `assigned_to_other_driver` يحملُ هويةَ الفائزِ الفعليِّ لا «لا إسنادَ».
+ * - **دورةُ حياةِ العرضِ:** لكلِّ سيناريو صفوفُ `order_offers` للطلبِ وطوابعُها
+ *   + إشعاراتُ البوابةِ (delivered_at) تُسجَّلُ حدثَ `scenario.offer_lifecycle`.
  */
 
 import { appendFileSync, mkdirSync } from "node:fs";
@@ -51,7 +65,8 @@ mkdirSync(`${RUN_DIR}/evidence`, { recursive: true });
 
 const RIDER_BOT_TOKEN = process.env.RIDER_BOT_TOKEN ?? "";
 const DRIVER_BOT_TOKEN = process.env.DRIVER_BOT_TOKEN ?? "";
-if (RIDER_BOT_TOKEN === "" || DRIVER_BOT_TOKEN === "") {
+// حارسُ التشغيلِ المباشرِ فقط — الاستيرادُ للاختبارِ لا يُخرجُ من العمليةِ
+if (import.meta.main && (RIDER_BOT_TOKEN === "" || DRIVER_BOT_TOKEN === "")) {
   console.error("✖ عيّن RIDER_BOT_TOKEN وDRIVER_BOT_TOKEN من بيئةِ الجولةِ.");
   process.exit(1);
 }
@@ -65,6 +80,65 @@ const DEPTH = process.env.SCENARIO_DEPTH === "assign" ? "assign" : "full";
 const MATCH_WAIT_MS = Number(process.env.MATCH_WAIT_MS ?? 120_000);
 const POLL_MS = 2_000;
 const IDEMPOTENCY_HEADER = "idempotency-key";
+
+/** `LOAD-01` — نافذةُ الختامِ الصارمةُ (ثانيةٌ) بعدَ نهايةِ حقنِ كلِّ مرحلةٍ:
+ *  لا انتظارَ بلا سقفٍ؛ صفرٌ أو غيابٌ يُرفَضُ صريحًا لأنَّ الجولةَ بلا حدٍّ ليست
+ *  قياسًا. يجبُ أن تسعَ أطولَ انتظارٍ مشروعٍ (MATCH_WAIT_MS) بهامشٍ. */
+const DRAIN_SEC = Number(process.env.DRAIN_SEC ?? 0);
+if (import.meta.main && (DRAIN_SEC * 1000 <= MATCH_WAIT_MS || DRAIN_SEC <= 0)) {
+  console.error("✖ عيّن DRAIN_SEC > MATCH_WAIT_MS/1000 لإغلاقٍ صارمٍ لا رمزيًّا.");
+  process.exit(1);
+}
+
+/** سقفا إعادةِ محاولةِ القبولِ عندَ 409 العابرِ (قفلُ `skip locked`): محاولاتٌ
+ *  محدودةٌ وميزانيةُ زمنٍ كليةٌ — لا إعادةً للمحاولةِ عندَ تعارضٍ نهائيٍّ. */
+const ACCEPT_RETRY_MAX = Number(process.env.ACCEPT_RETRY_MAX ?? 3);
+const ACCEPT_RETRY_BUDGET_MS = Number(process.env.ACCEPT_RETRY_BUDGET_MS ?? 15_000);
+
+/** أقربُ موعدٍ: مهلةُ الانتظارِ الذاتيةُ أو موعدُ إغلاقِ المرحلةِ — نقيةٌ تُختبرُ. */
+export function boundedDeadline(ownDeadlineMs: number, closeAtMs: number): number {
+  return Math.min(ownDeadlineMs, closeAtMs);
+}
+
+/** قرارُ إعادةِ محاولةِ القبولِ — نقيةٌ تُختبرُ: يُعادُ فقط عندَ 409 عابرٍ (قفلٌ
+ *  لحظيٌّ) والطلبُ ما يزالُ `searching` والعرضُ `pending` لسائقِ السيناريو،
+ *  ضمنَ عددِ المحاولاتِ والميزانيةِ. ما سوى ذلك قرارٌ نهائيٌّ لا يُعادُ ولا
+ *  يُحوَّلُ نجاحًا. */
+export interface AcceptRetryInput {
+  readonly httpStatus: number;
+  readonly code: string;
+  readonly orderStatus: string;
+  readonly offerStatus: string;
+  readonly attempt: number; // بدءًا من 1 (المحاولةُ الأولى لا «إعادةً»)
+  readonly elapsedMs: number;
+}
+export function acceptRetryDecision(
+  input: AcceptRetryInput,
+  opts: { max: number; budgetMs: number } = {
+    max: ACCEPT_RETRY_MAX,
+    budgetMs: ACCEPT_RETRY_BUDGET_MS,
+  },
+): { retry: boolean; final: string } {
+  const transientLock =
+    input.httpStatus === 409 &&
+    (input.code === "OFFER_TAKEN" || input.code === "ORDER_NOT_CLAIMABLE");
+  if (!transientLock) {
+    // فشلٌ آخرُ (شبكة/429/5xx/رفضٌ منطقيٌّ): قرارُه عندَ نداءِ القبولِ الأولِ —
+    // إعادةُ المحاولةِ العامةُ خارجَ نطاقِ هذهِ السياسةِ لا تُضافُ ضمنيًا.
+    return { retry: false, final: "non_transient" };
+  }
+  if (input.orderStatus !== "searching" || input.offerStatus !== "pending") {
+    return { retry: false, final: "conflict_final" };
+  }
+  if (input.attempt >= opts.max) return { retry: false, final: "attempts_exhausted" };
+  if (input.elapsedMs >= opts.budgetMs) return { retry: false, final: "budget_exhausted" };
+  return { retry: true, final: "" };
+}
+
+/** مهلةُ التأخيرِ التدريجيِّ بينَ محاولاتِ القبولِ (معَ jitter) — نقيةٌ تُختبرُ. */
+export function acceptRetryBackoffMs(attempt: number): number {
+  return 250 * 2 ** Math.max(0, attempt - 1) + Math.floor(Math.random() * 250);
+}
 
 const rec = new PathRecorder({ path: "miniapp_http", gen: GEN_ID });
 
@@ -84,6 +158,7 @@ async function call(path: string, init: Parameters<typeof http>[1] = {}): Promis
   try {
     const result = await http(path, init);
     rec.httpEnd(result);
+    rec.httpLatency(callLabel(path), result.elapsedMs);
     return result;
   } catch (error) {
     rec.httpEnd({
@@ -96,6 +171,21 @@ async function call(path: string, init: Parameters<typeof http>[1] = {}): Promis
     });
     throw error;
   }
+}
+
+/** تسميةُ النداءِ لمقياسِ زمنِ الاستجابةِ: المساراتُ الديناميكيةُ تُطبَّعُ
+ *  (معرّفُ العرض/الطلب/الخطوة) فتُجمعُ العيّناتُ في صنفٍ واحدٍ قابلٍ للحكمِ. */
+function callLabel(path: string): string {
+  return path
+    .replace(/\/v1\/rides\/[^/]+\/candidate/, "rides_candidate")
+    .replace(/\/v1\/driver\/offers\/[^/]+\/accept/, "driver_offer_accept")
+    .replace(/\/v1\/driver\/job\/[^/]+\/(arrived|start|complete)/, "driver_job_$1")
+    .replace(/^\/?v1\/driver\/offers$/, "driver_offers_board")
+    .replace(/^\/?v1\/driver\/availability$/, "driver_availability")
+    .replace(/^\/?v1\/driver\/location$/, "driver_location")
+    .replace(/^\/?v1\/rides$/, "rides_create")
+    .replace(/^\/?v1\/session\/telegram$/, "session_exchange")
+    .replace(/\d+/g, "N");
 }
 
 /* ───────── البذرُ (تأسيسُ هوياتٍ فقط — كلُّ أعمالٍ بعدها عبرَ HTTP) ───────── */
@@ -140,19 +230,72 @@ async function seedRider(): Promise<SeededUser> {
  * فالتحققُ منَ القاعدةِ (pending). خطواتُ المشرفِ (التوثيقُ والقدرةُ والتجربةُ)
  * موثقةٌ داخلَ المسارِ نفسِهِ بأنها فعلُ مشرفٍ لا فعلِ المستخدمِ.
  */
-async function seedDriverViaApp(): Promise<DriverOnboardingRecord | null> {
+async function seedDriverViaApp(): Promise<DriverOnboardingRecord> {
   driverSeq += 1;
-  const record = await onboardDriverViaApp({ telegramId: driverSeq, cityCode: CITY });
-  return record.ok ? record : null;
+  return onboardDriverViaApp({ telegramId: driverSeq, cityCode: CITY });
 }
 
 /* ───────── السيناريو ───────── */
 
 const JED = { lat: 21.4858, lng: 39.1925 };
 
-interface ScenarioOutcome {
+export interface ScenarioOutcome {
   readonly kind: "verified" | "rejected" | "undecided";
   readonly reason?: string;
+  /**
+   * `LOAD-01` — ربطُ السيناريو بصفوفِ القاعدةِ: التشخيصُ منَ الأحداثِ وحدها
+   * مستحيلٌ بلا هذهِ الحقولِ (الجولةُ التاريخيةُ خسرت أسبابَ 78 فشلًا لأنها
+   * بلا معرّفاتِ ارتباطٍ). لا تُسجَّلُ الجلساتُ ولا الأسرارُ — الهوياتُ فقط.
+   */
+  readonly index?: number;
+  readonly riderTelegramId?: number;
+  readonly driverTelegramId?: number;
+  readonly orderId?: string;
+  readonly orderCreatedAt?: number;
+  readonly offerWaitStartAt?: number;
+  readonly offerWaitMs?: number;
+  readonly offerPolls?: {
+    readonly count: number;
+    readonly readFailures: number;
+    readonly targetSeen: boolean;
+    readonly lastStatus: number | string;
+    readonly lastBoardOffers: number | null;
+  };
+  /** `LOAD-01` — عددُ محاولاتِ القبولِ (1 = بلا إعادةٍ) والفائزُ الفعليُّ إذا
+   *  أسندَ الطلبُ لغيرِ سائقِ السيناريو. */
+  readonly acceptAttempts?: number;
+  readonly assignedToOtherDriver?: string;
+  readonly offerFoundAt?: number;
+}
+
+/**
+ * تصنيفُ انتظارِ العرضِ من إحصاءاتِ الاستطلاعِ — دالةٌ نقيةٌ تُختبرُ سلوكيًا:
+ * فشلُ قراءةِ اللوحِ كلهُ صنفٌ مستقلٌ (`unreadable`) لا يُخلطُ بغيابِ العرضِ،
+ * والقراءاتُ الناجحةُ مع غيابِ الهدفِ = `not_found` (يُشخَّص سببُه من القاعدة).
+ */
+export function classifyOfferWait(stats: {
+  count: number;
+  readFailures: number;
+}): "unreadable" | "not_found" | "no_polls" {
+  if (stats.count === 0) return "no_polls";
+  if (stats.readFailures === stats.count) return "unreadable";
+  return "not_found";
+}
+
+/** الحالةُ المشتركةُ التي يملؤها السيناريو كلما توافرَ حقلاً — يُرفقُ بالمآلِ. */
+export interface ScenarioCorr {
+  index: number;
+  riderTelegramId?: number;
+  driverTelegramId?: number;
+  orderId?: string;
+  orderCreatedAt?: number;
+  offerWaitStartAt?: number;
+  offerWaitMs?: number;
+  offerPolls?: ScenarioOutcome["offerPolls"];
+  acceptAttempts?: number;
+  assignedToOtherDriver?: string;
+  /** `LOAD-01` — لحظةُ رؤيةِ العرضِ على اللوحِ (لقياسِ زمنِ التوزيعِ والاستلامِ). */
+  offerFoundAt?: number;
 }
 
 async function exchangeSession(
@@ -195,17 +338,35 @@ async function cachedSession(
   return result;
 }
 
+/**
+ * `LOAD-01` — فشلُ قراءةِ اللوحِ ليس غيابَ عرضٍ: الاستطلاعُ الفاشلُ (شبكةٌ أو
+ * مهلةٌ أو جسمٌ غيرُ صالحٍ) يُحسَبُ قراءةً فاشلةً لا «عدمَ وجودٍ»، وإلا خُطئَ
+ * التشخيصَ ووُسِّعَتِ المهلةُ لعلّةِ قراءةٍ لا لعلّةِ توزيعٍ.
+ */
 async function driverFindOffer(
   token: string,
   orderId: string,
   waitMs: number,
+  corr: ScenarioCorr,
+  closeAt: number,
 ): Promise<{ offerId: string | null; error?: string }> {
-  const deadline = Date.now() + waitMs;
+  // `LOAD-01` — الاستطلاعُ محدودٌ بمهلةٍ ذاتيةٍ وبموعدِ إغلاقِ المرحلةِ معًا.
+  const deadline = boundedDeadline(Date.now() + waitMs, closeAt);
+  let polls = 0;
+  let readFailures = 0;
+  let targetSeen = false;
+  let lastStatus: number | string = "none";
+  let lastBoardOffers: number | null = null;
+  corr.offerWaitStartAt = Date.now();
+  corr.offerWaitMs = waitMs;
   for (;;) {
     const board = await call("/v1/driver/offers", { token, timeoutMs: 15_000 });
+    polls += 1;
+    lastStatus = board.ok ? board.status : (board.networkError ?? board.status);
     if (board.ok && board.body !== null) {
       const offers = board.body.offers;
       if (Array.isArray(offers)) {
+        lastBoardOffers = offers.length;
         const match = offers.find(
           (offer) =>
             typeof offer === "object" &&
@@ -213,13 +374,38 @@ async function driverFindOffer(
             (offer as Record<string, unknown>).order_id === orderId,
         ) as Record<string, unknown> | undefined;
         const offerId = match?.offer_id ?? match?.id;
-        if (typeof offerId === "string") return { offerId };
+        if (typeof offerId === "string") {
+          corr.offerFoundAt = Date.now();
+          corr.offerPolls = {
+            count: polls,
+            readFailures,
+            targetSeen: true,
+            lastStatus,
+            lastBoardOffers,
+          };
+          return { offerId };
+        }
+        if (match !== undefined) targetSeen = true; // ظهرَ الطلبُ بلا معرّفِ عرضٍ صالحٍ
+      } else {
+        readFailures += 1; // جسمٌ غيرُ صالحٍ: قراءةٌ فاشلةٌ لا غيابَ عرضٍ
       }
+    } else {
+      readFailures += 1;
     }
     if (Date.now() >= deadline) {
+      corr.offerPolls = { count: polls, readFailures, targetSeen, lastStatus, lastBoardOffers };
+      if (readFailures === polls) {
+        // كلُّ الاستطلاعاتِ فشلت: اللوحُ غيرُ مقروءٍ — صنفٌ مستقلٌّ لا يُخلطُ
+        // بغيابِ العرضِ، وتوسيعُ المهلةِ هنا يخفي العلةَ لا يعالجُها.
+        return { offerId: null, error: "offer_board_unreadable" };
+      }
+      if (Date.now() >= closeAt) {
+        // نافذةُ الختامِ انتهت والسيناريو لم يكتمل — مآلٌ مستقلٌّ لا يُهملُ.
+        return { offerId: null, error: "close_deadline" };
+      }
       return { offerId: null, error: "offer_not_found_in_time" };
     }
-    await sleep(POLL_MS);
+    await sleep(Math.min(POLL_MS, Math.max(1, deadline - Date.now())));
   }
 }
 
@@ -240,15 +426,60 @@ async function riderDecideCandidate(
   return { decided: true };
 }
 
-async function runScenario(index: number): Promise<ScenarioOutcome> {
+/**
+ * ربطُ المآلِ بالارتباطِ — نقيةٌ تُختبرُ: الخروجُ المبكرُ (ارتباطٌ جزئي) والاستثناءُ
+ * (مآلٌ بلا سببٍ مفصلٍ) كلاهما يخرجُ بالمعرّفاتِ المتوفرةِ لا بلا شيءٍ.
+ */
+export function outcomeWithCorr(outcome: ScenarioOutcome, corr: ScenarioCorr): ScenarioOutcome {
+  return {
+    ...outcome,
+    index: corr.index,
+    ...(corr.riderTelegramId === undefined ? {} : { riderTelegramId: corr.riderTelegramId }),
+    ...(corr.driverTelegramId === undefined ? {} : { driverTelegramId: corr.driverTelegramId }),
+    ...(corr.orderId === undefined ? {} : { orderId: corr.orderId }),
+    ...(corr.orderCreatedAt === undefined ? {} : { orderCreatedAt: corr.orderCreatedAt }),
+    ...(corr.offerWaitStartAt === undefined ? {} : { offerWaitStartAt: corr.offerWaitStartAt }),
+    ...(corr.offerWaitMs === undefined ? {} : { offerWaitMs: corr.offerWaitMs }),
+    ...(corr.offerPolls === undefined ? {} : { offerPolls: corr.offerPolls }),
+    ...(corr.acceptAttempts === undefined ? {} : { acceptAttempts: corr.acceptAttempts }),
+    ...(corr.assignedToOtherDriver === undefined
+      ? {}
+      : { assignedToOtherDriver: corr.assignedToOtherDriver }),
+    ...(corr.offerFoundAt === undefined ? {} : { offerFoundAt: corr.offerFoundAt }),
+  };
+}
+
+async function runScenario(index: number, closeAt: number): Promise<ScenarioOutcome> {
+  // `LOAD-01` — الغلافُ يرفقُ الارتباطَ بالمآلِ أيًّا كانَ موضعُ الخروجِ: لا
+  // خروجَ مبكرًا يُفلتُ منَ الربطِ (هذا عينُ ما أضاعَ أسبابَ فشلِ الجولةِ
+  // التاريخيةِ: مآلٌ بلا معرّفاتٍ لا يُشخَّصُ منَ القاعدةِ).
+  const corr: ScenarioCorr = { index };
+  const outcome = await runScenarioSteps(corr, closeAt);
+  return outcomeWithCorr(outcome, corr);
+}
+
+async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<ScenarioOutcome> {
   const rider = await seedRider();
+  corr.riderTelegramId = rider.telegramId;
   // تجهيزُ السائقِ منَ التطبيقِ (لا حوارَ بوتٍ) — فشلُهُ يُسجَّلُ لا يُخفى
   const driver = await seedDriverViaApp();
-  if (driver === null) {
+  if (!driver.ok) {
+    // `LOAD-01` — فشلُ التجهيزِ يُسجَّل بخطواتِهِ لا يُخفى: سببُ الجولةِ الأولىِ
+    // الفاشلةِ (مدنٌ غيرُ مفعّلةٍ) ضاع لولا تشخيصُ الخطواتِ.
+    ev("driver.onboarding_failed", {
+      index: corr.index,
+      telegramId: driver.telegramId,
+      steps: driver.steps,
+    });
+    corr.driverTelegramId = driver.telegramId;
     return { kind: "undecided", reason: "driver_onboarding_failed" };
   }
+  corr.driverTelegramId = driver.telegramId;
   rec.scenarioStart(String(rider.telegramId));
   const startedAt = Date.now();
+  // `LOAD-01` — رمزُ جلسةِ السائقِ يُرفَعُ قبلَ try ليصحَّ تنظيفُهُ في finally:
+  // السائقُ الذي أنهى سيناريوهُ لا يبقى «متاحًا» في الحوضِ إلى الأبدِ.
+  let driverToken: string | null = null;
   try {
     // ١) الهويةُ — تحققٌ موقَّعٌ حقيقيٌّ لكلٍّ منَ الطرفينِ.
     const riderSession = await cachedSession(RIDER_BOT_TOKEN, rider.telegramId);
@@ -259,6 +490,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     if (driverSession.token === null) {
       return { kind: "undecided", reason: `driver_session:${driverSession.error}` };
     }
+    driverToken = driverSession.token;
 
     // نقطةُ الالتقاطِ ثابتةٌ للرحلةِ والسائقِ معًا: السائقُ ينتظرُ قربَها
     // (±110م) فيكونُ أقربَ من أيِّ سائقٍ مزروعٍ بعيدًا عنها — المطابقةُ على
@@ -268,7 +500,7 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       lng: JED.lng + rnd(-0.01, 0.01),
     };
     // ٢) إنشاءُ الرحلةِ عبرَ واجهةِ المنتجِ.
-    const idempotencyKey = `cap-${GEN_ID}-${T0}-${index}`;
+    const idempotencyKey = `cap-${GEN_ID}-${T0}-${corr.index}`;
     const create = await call("/v1/rides", {
       method: "POST",
       token: riderSession.token,
@@ -295,6 +527,8 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     if (typeof orderId !== "string") {
       return { kind: "undecided", reason: "no_order_id" };
     }
+    corr.orderId = orderId;
+    corr.orderCreatedAt = Date.now();
 
     // ٣) السائقُ متاحٌ ويرسلُ موقعَهُ — وههنا يُطلقُ الإرسالُ الفوريُّ.
     const availability = await call("/v1/driver/availability", {
@@ -321,30 +555,83 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
     }
 
     // ٤) اكتشافُ العرضِ منَ الواجهةِ لا منَ القاعدةِ.
-    const found = await driverFindOffer(driverSession.token, orderId, MATCH_WAIT_MS);
+    const found = await driverFindOffer(driverSession.token, orderId, MATCH_WAIT_MS, corr, closeAt);
     if (found.offerId === null) {
       return { kind: "undecided", reason: `offer:${found.error ?? "?"}` };
     }
 
-    // ٥) القبولُ — وقد تظهرُ نافذةُ قرارِ الراكبِ فتُفضّى منَ واجهةِ الراكبِ.
-    const accept = await call(`/v1/driver/offers/${found.offerId}/accept`, {
-      method: "POST",
-      token: driverSession.token,
-      timeoutMs: 20_000,
-    });
-    if (accept.is429) {
-      return { kind: "undecided", reason: "accept:429" };
-    }
-    if (!accept.ok) {
+    // ٥) القبولُ — `LOAD-01`: 409 العابرُ (تزاحمُ قفلِ `skip locked` المُثبتُ في
+    // الجولةِ التشخيصيةِ) يُعادُ محاولتُهُ بحدٍّ وميزانيةٍ بعدَ إعادةِ قراءةِ
+    // الحالةِ الفعليةِ؛ والتعارضُ النهائيُّ لا يُعادُ ولا يُحوَّلُ نجاحًا. وقد
+    // تظهرُ نافذةُ قرارِ الراكبِ فتُفضّى منَ واجهةِ الراكبِ.
+    const acceptStartedAt = Date.now();
+    let accept: HttpResult | null = null;
+    let acceptCode = "";
+    let acceptAttempt = 0;
+    for (;;) {
+      acceptAttempt += 1;
+      accept = await call(`/v1/driver/offers/${found.offerId}/accept`, {
+        method: "POST",
+        token: driverSession.token,
+        timeoutMs: 20_000,
+      });
+      if (accept.is429) {
+        corr.acceptAttempts = acceptAttempt;
+        return { kind: "undecided", reason: "accept:429" };
+      }
+      if (accept.ok) {
+        corr.acceptAttempts = acceptAttempt;
+        break;
+      }
       const body = accept.body as Record<string, unknown> | null;
       const rejection = body?.rejection as Record<string, unknown> | undefined;
-      const code = body?.error ?? rejection?.code ?? accept.status;
-      return { kind: "rejected", reason: `accept:${String(code)}` };
+      acceptCode = String(body?.error ?? rejection?.code ?? accept.status);
+      // إعادةُ قراءةِ الحالةِ الفعليةِ قبلَ قرارِ الإعادةِ — لا افتراضًا.
+      const [orderState, offerState] = await Promise.all([
+        orderStateSafe(orderId),
+        offerStateSafe(found.offerId),
+      ]);
+      const decision = acceptRetryDecision(
+        {
+          httpStatus: accept.status,
+          code: acceptCode,
+          orderStatus: orderState?.status ?? "unknown",
+          offerStatus: offerState?.status ?? "unknown",
+          attempt: acceptAttempt,
+          elapsedMs: Date.now() - acceptStartedAt,
+        },
+        { max: ACCEPT_RETRY_MAX, budgetMs: ACCEPT_RETRY_BUDGET_MS },
+      );
+      corr.acceptAttempts = acceptAttempt;
+      if (!decision.retry) {
+        ev("accept.retry_final", {
+          index: corr.index,
+          orderId,
+          code: acceptCode,
+          final: decision.final,
+          orderStatus: orderState?.status ?? "unknown",
+          offerStatus: offerState?.status ?? "unknown",
+          attempts: acceptAttempt,
+        });
+        return { kind: "rejected", reason: `accept:${acceptCode}` };
+      }
+      ev("accept.retry", {
+        index: corr.index,
+        orderId,
+        code: acceptCode,
+        attempt: acceptAttempt,
+        orderStatus: orderState?.status ?? "unknown",
+        offerStatus: offerState?.status ?? "unknown",
+      });
+      if (Date.now() >= closeAt) {
+        return { kind: "undecided", reason: "close_deadline" };
+      }
+      await sleep(acceptRetryBackoffMs(acceptAttempt));
     }
 
     // قرارُ المرشَّحِ إن كانَ الطلبُ في نافذةِ اختيارِ الراكبِ.
     const driverId = driver.driverId;
-    if (driverId === undefined) return { kind: "undecided", reason: "driver_row_missing" };
+    if (driverId === null) return { kind: "undecided", reason: "driver_row_missing" };
     const candidate = await call(`/v1/rides/${orderId}/candidate`, {
       token: riderSession.token,
       timeoutMs: 15_000,
@@ -356,13 +643,27 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       }
     }
 
-    // ٦) التحققُ منَ القاعدةِ: الإسنادُ وقعَ للسائقِ الصحيحِ — لا يكفي 2xx.
+    // ٦) التحققُ منَ القاعدةِ: الإسنادُ — للسائقِ الصحيحِ أو لفائزٍ آخرَ فعليٍّ
+    // (صنفٌ مستقلٌّ يحملُ هويةَ الفائزِ لا «لا إسنادَ»).
     const matched = await waitDb(
       orderId,
-      (state) => state.status === "matched" && state.assignedDriverId === driverId,
+      (state) => state.status === "matched",
       MATCH_WAIT_MS,
+      closeAt,
     );
     if (matched === null) {
+      return { kind: "undecided", reason: "no_match_in_db" };
+    }
+    const finalState = await orderStateSafe(orderId);
+    if (
+      finalState !== null &&
+      finalState.assignedDriverId !== null &&
+      finalState.assignedDriverId !== driverId
+    ) {
+      corr.assignedToOtherDriver = finalState.assignedDriverId;
+      return { kind: "rejected", reason: "assigned_to_other_driver" };
+    }
+    if (finalState === null || finalState.assignedDriverId !== driverId) {
       return { kind: "undecided", reason: "no_match_in_db" };
     }
 
@@ -381,8 +682,14 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
         return { kind: "undecided", reason: `job_${step}:${action.status}` };
       }
     }
-    const completed = await waitDb(orderId, (state) => state.status === "completed", MATCH_WAIT_MS);
+    const completed = await waitDb(
+      orderId,
+      (state) => state.status === "completed",
+      MATCH_WAIT_MS,
+      closeAt,
+    );
     if (completed === null) {
+      if (Date.now() >= closeAt) return { kind: "undecided", reason: "close_deadline" };
       return { kind: "undecided", reason: "no_completion_in_db" };
     }
     return { kind: "verified" };
@@ -396,8 +703,41 @@ async function runScenario(index: number): Promise<ScenarioOutcome> {
       reason: error instanceof Error ? error.message.slice(0, 120) : "exception",
     };
   } finally {
+    // `LOAD-01` — دورةُ حياةِ العرضِ منَ القاعدةِ (أفضلُ جهدٍ): طوابعُ صفوفِ
+    // `order_offers` للطلبِ وإشعارُ البوابةِ — تُقرأُ قبلَ التنظيفِ لتُوثَّقَ
+    // الحالةُ الفعليةُ التي انتهى إليها السيناريو.
+    if (corr.orderId !== undefined) {
+      try {
+        await recordOfferLifecycle(corr);
+      } catch {
+        // أفضلُ جهدٍ — فشلُ التوثيقِ لا يغيّرُ المآلَ.
+      }
+    }
+    // تنظيفُ نهايةِ السيناريو: السائقُ يغدو غيرَ متاحٍ — وإلا تراكمَ في الحوضِ
+    // مئاتُ السائقينَ الخاملينَ المتاحينَ (`LOAD-01` التشخيصُ: هذا عينُ ما أفقدَ
+    // سائقَ السيناريو مقعدَهُ بينَ أقربِ خمسةٍ مرشحينَ في الجولاتِ المتأخرةِ،
+    // فبقيتِ الطلباتُ تبحثُ بلا وصولٍ أبدًا) — التنظيفُ أفضلُ جهدٍ لا يُفشلُ
+    // السيناريو: فشلُهُ يُسجَّلُ حدثًا لا يغيّرُ المآلَ.
+    if (driverToken !== null) {
+      try {
+        const cleanup = await call("/v1/driver/availability", {
+          method: "POST",
+          token: driverToken,
+          body: { is_available: false },
+          timeoutMs: 15_000,
+        });
+        if (!cleanup.ok) {
+          ev("driver.cleanup_failed", {
+            index: corr.index,
+            status: cleanup.networkError ?? cleanup.status,
+          });
+        }
+      } catch {
+        ev("driver.cleanup_failed", { index: corr.index, status: "exception" });
+      }
+    }
     ev("scenario.end", {
-      index,
+      index: corr.index,
       rider: rider.telegramId,
       driver: driver.telegramId,
       elapsedMs: Date.now() - startedAt,
@@ -409,13 +749,14 @@ async function waitDb(
   orderId: string,
   predicate: (state: { status: string; assignedDriverId: string | null }) => boolean,
   waitMs: number,
+  closeAt: number,
 ): Promise<true | null> {
-  const deadline = Date.now() + waitMs;
+  const deadline = boundedDeadline(Date.now() + waitMs, closeAt);
   for (;;) {
     const state = await orderStateSafe(orderId);
     if (state !== null && predicate(state)) return true;
     if (Date.now() >= deadline) return null;
-    await sleep(POLL_MS);
+    await sleep(Math.min(POLL_MS, Math.max(1, deadline - Date.now())));
   }
 }
 
@@ -429,27 +770,114 @@ async function orderStateSafe(orderId: string) {
   return { status: row.status, assignedDriverId: row.assigned };
 }
 
+async function offerStateSafe(offerId: string) {
+  const rows = await sql<{ status: string }[]>`
+    select status::text as status from order_offers where id = ${offerId}
+  `;
+  const row = rows[0];
+  if (row === undefined) return null;
+  return { status: row.status };
+}
+
+/** دورةُ حياةِ العرضِ منَ القاعدةِ — طوابعُ العروضِ للطلبِ (الإنشاءُ/الصلاحيةُ/
+ * الاستجابةُ) وحالةُ كلٍّ منها ومستقبِلُه، وإشعارُ البوابةِ للعرضِ (delivered_at)
+ * — لا يُسجَّلُ payload ولا رموزٌ. */
+async function recordOfferLifecycle(corr: ScenarioCorr): Promise<void> {
+  const orderId = corr.orderId;
+  if (orderId === undefined) return;
+  const offers = await sql<
+    {
+      id: string;
+      status: string;
+      driver_id: string;
+      round: number;
+      created_at: string;
+      expires_at: string;
+      responded_at: string | null;
+    }[]
+  >`
+    select id::text, status::text, driver_id::text, round,
+           created_at::text, expires_at::text, responded_at::text
+      from order_offers where order_id = ${orderId} order by round, created_at
+  `;
+  const outbox = await sql<{ status: string; attempts: number; delivered_at: string | null }[]>`
+    select status::text, attempts, delivered_at::text
+      from notification_outbox where order_id = ${orderId} and offer_id is not null
+  `;
+  ev("scenario.offer_lifecycle", {
+    index: corr.index,
+    orderId,
+    offers: offers.map((o) => ({
+      id: o.id.slice(0, 8),
+      status: o.status,
+      driver: o.driver_id.slice(0, 8),
+      round: o.round,
+      createdAt: o.created_at,
+      expiresAt: o.expires_at,
+      respondedAt: o.responded_at,
+    })),
+    outbox: outbox.map((n) => ({
+      status: n.status,
+      attempts: n.attempts,
+      deliveredAt: n.delivered_at,
+    })),
+  });
+}
+
 /* ───────── الحلقةُ الرئيسةُ ───────── */
 
 async function main() {
-  ev("gen.start", { profile: PROFILE, depth: DEPTH, city: CITY });
+  ev("gen.start", { profile: PROFILE, depth: DEPTH, city: CITY, drainSec: DRAIN_SEC });
+  // حارسُ مهلةٍ خارجيٌّ: لا تعليقَ للجولةِ كلِّها مهما علقَ — يُوثّقُ ويخرجُ.
+  const watchdogAt =
+    T0 + (PROFILE.reduce((acc, ph) => acc + ph.sec, 0) + DRAIN_SEC * PROFILE.length + 60) * 1000;
+  const watchdog = setTimeout(
+    () => {
+      ev("gen.watchdog", { at: watchdogAt, budgetSec: Math.round((watchdogAt - T0) / 1000) });
+      console.error("✖ حارسُ المهلةِ: الجولةُ لم تُغلق ضمنَ الميزانيةِ.");
+      process.exit(1);
+    },
+    Math.max(1, watchdogAt - Date.now()),
+  );
+  watchdog.unref?.();
   const snapshotTimer = setInterval(() => rec.snapshot(), 1_000);
+  const closeStats = { closeDeadlineHits: 0, stuckAtClose: 0, drainMsTotal: 0 };
   for (const ph of PROFILE) {
     phase = ph.name;
     ev("phase.start", { name: ph.name, sec: ph.sec, conc: ph.conc });
     const stopAt = Date.now() + ph.sec * 1000;
+    // `LOAD-01` — موعدُ الإغلاقِ الصارمُ: نهايةُ الحقنِ + نافذةُ ختامٍ معلنةٌ؛
+    // كلُّ انتظارٍ في السيناريو محدودٌ بهِ فلا انتظارَ بلا سقفٍ.
+    const closeAt = stopAt + DRAIN_SEC * 1000;
     let index = 0;
     const running = new Set<Promise<void>>();
     const launch = async (): Promise<void> => {
-      const outcome = await runScenario(index++);
+      const outcome = await runScenario(index++, closeAt);
       if (outcome.kind === "verified") rec.scenarioEnd("verified");
       else if (outcome.kind === "rejected") rec.scenarioEnd("rejected");
       else rec.scenarioEnd("undecided");
+      if ((outcome.reason ?? "").includes("close_deadline")) closeStats.closeDeadlineHits += 1;
       // المآلُ يُسجَّلُ دائمًا — الناجحُ أيضًا — لا فقطِ المتعثرِ: فبدلُّهِ
       // يبدو الحملُ كلهُ فاشلًا في سجلِّ الأحداثِ رغمَ نجاحِهِ في القاعدةِ.
       ev("scenario.outcome", {
         kind: outcome.kind,
         ...(outcome.reason === undefined ? {} : { reason: outcome.reason }),
+        // `LOAD-01` — الارتباطُ الكاملُ في الحدثِ نفسِهِ (لا رموزَ جلساتٍ).
+        ...(outcome.index === undefined ? {} : { index: outcome.index }),
+        ...(outcome.riderTelegramId === undefined ? {} : { rider: outcome.riderTelegramId }),
+        ...(outcome.driverTelegramId === undefined ? {} : { driver: outcome.driverTelegramId }),
+        ...(outcome.orderId === undefined ? {} : { orderId: outcome.orderId }),
+        ...(outcome.orderCreatedAt === undefined ? {} : { orderCreatedAt: outcome.orderCreatedAt }),
+        ...(outcome.offerWaitStartAt === undefined
+          ? {}
+          : { offerWaitStartAt: outcome.offerWaitStartAt }),
+        ...(outcome.offerWaitMs === undefined ? {} : { offerWaitMs: outcome.offerWaitMs }),
+        ...(outcome.offerPolls === undefined ? {} : { offerPolls: outcome.offerPolls }),
+        ...(outcome.acceptAttempts === undefined ? {} : { acceptAttempts: outcome.acceptAttempts }),
+        ...(outcome.assignedToOtherDriver === undefined
+          ? {}
+          : { assignedToOtherDriver: outcome.assignedToOtherDriver }),
+        ...(outcome.offerFoundAt === undefined ? {} : { offerFoundAt: outcome.offerFoundAt }),
       });
     };
     while (Date.now() < stopAt) {
@@ -467,11 +895,24 @@ async function main() {
       }
       await sleep(250);
     }
-    await Promise.all([...running]);
-    ev("phase.end", { name: ph.name });
+    // `LOAD-01` — نافذةُ الختامِ: تصريفٌ محدودٌ بموعدِ الإغلاقِ لا `Promise.all`
+    // بلا سقفٍ؛ ما بقيَ بعدَ الموعدِ يُحصى عالقًا ولا يُهملُ.
+    ev("phase.drain_start", { name: ph.name, running: running.size, closeAt });
+    while (running.size > 0 && Date.now() < closeAt) {
+      await sleep(250);
+    }
+    const stuck = running.size;
+    closeStats.stuckAtClose += stuck;
+    const drainMs = DRAIN_SEC * 1000 - (closeAt - Date.now());
+    closeStats.drainMsTotal += Math.max(0, drainMs);
+    if (stuck > 0) {
+      ev("phase.close_stuck", { name: ph.name, stuck, closeAt });
+    }
+    ev("phase.end", { name: ph.name, drainMs: Math.max(0, drainMs), stuck, closeAt });
   }
   clearInterval(snapshotTimer);
   rec.snapshot(true);
+  rec.finalSnapshot();
 
   // الحكمُ النهائيُّ منَ القاعدةِ — لا منَ الوعودِ.
   const duplicates = await engagedDuplicates();
@@ -480,10 +921,13 @@ async function main() {
     gen: GEN_ID,
     elapsedSec: Math.round((Date.now() - T0) / 1000),
     engagedDuplicates: duplicates,
+    ...closeStats,
+    lastPhaseCloseBudgetSec: DRAIN_SEC,
   };
   ev("gen.end", summary);
   console.log(JSON.stringify(summary));
   await sql.end({ timeout: 5 });
+  process.exit(0);
 }
 
 void main();

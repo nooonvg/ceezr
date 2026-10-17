@@ -458,6 +458,16 @@ describeIf("WR-24 — سباقاتٌ متزامنةٌ على قاعدةٍ حقي
   it("٧أ — اتفاقُ القروبِ واستلامُ البوتِ معًا: إسنادٌ واحدٌ، ولا عرضٌ معلَّقٌ ولا مسارا إسناد", async () => {
     for (let round = 0; round < ROUNDS; round++) {
       const [a, , c] = drivers as [string, string, string];
+      // إتمامُ التزاماتِ طرفَيِ السباقِ قبلَ الجولةِ: `freshOrder` يُنهي التزاماتِ
+      // المعروضِ لهم (a) فقط، والفائزُ بالسباقِ قد يكونُ مرشَّحَ الاتفاقِ (c) — فإن فازَ
+      // الاتفاقُ جولةً بقي c مشغولًا وطلباتُه عندَ الراكبِ قائمة، فتفشلُ الجولةُ
+      // التاليةُ من الطرفينِ معًا (ORDER_NOT_CLAIMABLE وDRIVER_HAS_ACTIVE_ORDER) رغمَ
+      // أنّ العينَ واحدةٌ فعلًا — هشاشةٌ كشفتها موجةُ تغيّرِ توقيتِ الالتقاطِ،
+      // فتُنهى التزاماتُ الطرفينِ قبلَ كلِّ جولةٍ كما يفعلُ `freshOrder` للمعروضِ لهم.
+      await sql`
+        update orders set status = 'completed', completed_at = now()
+         where assigned_driver_id = any(${[a, c]}::uuid[])
+           and is_driver_engaged_order_status(status)`;
       const { orderId } = await freshOrder([a]);
       const negotiation = await groupNegotiation(orderId, c);
       const [bot, group] = await Promise.all([

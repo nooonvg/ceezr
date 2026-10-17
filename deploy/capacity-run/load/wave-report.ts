@@ -1,0 +1,219 @@
+/**
+ * `LOAD-01` — حكمُ موجةِ القبولِ آليًّا من الأدلةِ (لا من الانطباع):
+ * يقرأُ أحداثَ المولدِ (miniapp-load-events.jsonl · load-events.jsonl) وتدقيقَ
+ * القاعدةِ (db-audit-post.json) ويطبقُ بواباتِ بروتوكولِ القبولِ المثبتةِ
+ * مسبقًا (docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/
+ * ACCEPTANCE-PROTOCOL.md §2) بندًا بندًا ويصدر حكمًا نهائيًّا.
+ *
+ * التشغيل: RUN_DIR=… bun run deploy/capacity-run/load/wave-report.ts
+ * الخروجُ بغيرِ الصفرِ = موجةٌ فاشلةٌ (بوابةٌ حمراءُ على الأقل).
+ */
+
+import { existsSync, readFileSync } from "node:fs";
+import { EV, RUN_DIR } from "./lib.ts";
+
+interface Outcome {
+  kind: string;
+  reason?: string;
+  index?: number;
+  orderId?: string;
+  orderCreatedAt?: number;
+  offerFoundAt?: number;
+  assignedToOtherDriver?: string;
+}
+
+function readJsonl(path: string): Record<string, unknown>[] {
+  if (!existsSync(path)) return [];
+  const rows: Record<string, unknown>[] = [];
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    if (line.trim() === "") continue;
+    try {
+      rows.push(JSON.parse(line) as Record<string, unknown>);
+    } catch {
+      // سطرٌ تالفٌ لا يُسقطَ الحكمَ كلَّهُ — يُتجاهلُ ويُحصى عندَ الحاجةِ.
+    }
+  }
+  return rows;
+}
+
+function pct(n: number, d: number): string {
+  return d === 0 ? "n/a" : `${((n / d) * 100).toFixed(2)}%`;
+}
+
+function p95(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(0.95 * sorted.length))] ?? null;
+}
+
+function main() {
+  const events = readJsonl(`${EV}/miniapp-load-events.jsonl`);
+  const loadRows = readJsonl(`${EV}/load-events.jsonl`);
+  const auditPath = `${EV}/db-audit-post.json`;
+  if (!existsSync(auditPath)) {
+    console.error("✖ تدقيق ما بعد الموجة مفقود — شغّل db-audit --phase=post أولًا.");
+    process.exit(2);
+  }
+  const audit = JSON.parse(readFileSync(auditPath, "utf8")) as {
+    verdict: string;
+    violations: { rule: string; detail: string }[];
+    snapshot: {
+      engagedDuplicates: number;
+      outbox: { oldestPendingSec: number | null };
+      availability: { available: number };
+    };
+    preSnapshot: { availability: { available: number } } | null;
+    outcomes: { total: number; verified: number; failed: number; closeDeadlineHits: number };
+  };
+
+  const outcomes = events.filter((e) => e.event === "scenario.outcome") as unknown as Outcome[];
+  const genEnd = events.find((e) => e.event === "gen.end") as
+    | { closeDeadlineHits?: number; stuckAtClose?: number; engagedDuplicates?: number }
+    | undefined;
+  const latencyRows = loadRows.filter((r) => r.event === "latency_percentiles" && r.gen === "genA");
+  const counterRows = loadRows.filter(
+    (r) => r.path === "miniapp_http" && r.event === undefined,
+  ) as unknown as {
+    http2xx?: number;
+    http5xx?: number;
+    http4xx?: number;
+    api429?: number;
+    networkErrors?: number;
+  }[];
+  // عدّاداتُ الحملِ تراكميةٌ في كلِّ لقطةٍ — اللقطةُ الأخيرةُ هي المجموعُ.
+  const lastCounters = counterRows.at(-1) ?? {};
+
+  const total = outcomes.length;
+  const verified = outcomes.filter((o) => o.kind === "verified").length;
+  const closeHits = outcomes.filter((o) => (o.reason ?? "").includes("close_deadline")).length;
+  const assignedOther = outcomes.filter((o) => o.assignedToOtherDriver !== undefined).length;
+  const unreadable = outcomes.filter((o) => o.reason === "offer:offer_board_unreadable").length;
+  const scenarioEnds = events.filter((e) => e.event === "scenario.end") as unknown as {
+    elapsedMs: number;
+  }[];
+  const cycleMs = scenarioEnds.map((e) => Number(e.elapsedMs));
+  const offerAppearMs = outcomes
+    .filter((o) => o.orderCreatedAt !== undefined && o.offerFoundAt !== undefined)
+    .map((o) => (o.offerFoundAt ?? 0) - (o.orderCreatedAt ?? 0));
+  const requests =
+    (lastCounters.http2xx ?? 0) +
+    (lastCounters.http5xx ?? 0) +
+    (lastCounters.http4xx ?? 0) +
+    (lastCounters.api429 ?? 0) +
+    (lastCounters.networkErrors ?? 0);
+  const availabilityLeftover =
+    audit.preSnapshot === null
+      ? null
+      : audit.snapshot.availability.available - audit.preSnapshot.availability.available;
+  const stuckAtClose = Number(genEnd?.stuckAtClose ?? audit.outcomes.closeDeadlineHits);
+
+  const gates: { id: string; rule: string; value: string; limit: string; pass: boolean }[] = [];
+  const g = (id: string, rule: string, value: string, limit: string, pass: boolean) =>
+    gates.push({ id, rule, value, limit, pass });
+
+  g(
+    "G1",
+    "دورات مكتملة مثبتة من القاعدة",
+    `${pct(verified, total)} (${verified}/${total})`,
+    "≥ 99.0%",
+    verified / Math.max(1, total) >= 0.99,
+  );
+  g(
+    "G2",
+    "إسناد مزدوج",
+    String(audit.snapshot.engagedDuplicates),
+    "= 0",
+    audit.snapshot.engagedDuplicates === 0,
+  );
+  g(
+    "G3",
+    "تجاوز نافذة الختام / عالقون عند الإغلاق",
+    `${closeHits} + ${stuckAtClose}`,
+    "= 0",
+    closeHits === 0 && stuckAtClose === 0,
+  );
+  g("G4", "تدقيق ما بعد الموجة", audit.verdict, "CLEAN", audit.verdict === "CLEAN");
+  g(
+    "G5",
+    "سائقون بقوا متاحين بعد الجولة",
+    availabilityLeftover === null ? "n/a" : String(availabilityLeftover),
+    `≤ ${Math.max(1, Math.round(total * 0.005))} (0.5%)`,
+    availabilityLeftover !== null && availabilityLeftover <= Math.max(1, total * 0.005),
+  );
+  g(
+    "G6",
+    "إسناد لسائق سيناريو آخر",
+    `${pct(assignedOther, total)} (${assignedOther})`,
+    "≤ 0.5%",
+    assignedOther <= total * 0.005,
+  );
+  const ratio5xx = requests === 0 ? 0 : (lastCounters.http5xx ?? 0) / requests;
+  g(
+    "G7",
+    "5xx من الطلبات",
+    `${pct(lastCounters.http5xx ?? 0, requests)}`,
+    "≤ 0.5%",
+    ratio5xx <= 0.005,
+  );
+  g("G8", "تعثر قراءة لوح العروض", String(unreadable), "= 0", unreadable === 0);
+
+  const lat2 = latencyRows.at(-1) ?? null;
+  const lat = (lat2 ?? {}) as unknown as Record<string, { p95: number; p99: number }>;
+  const perf: { id: string; rule: string; value: string; limit: string; pass: boolean }[] = [];
+  const p = (id: string, rule: string, value: number | null, limit: number, unit: string) =>
+    perf.push({
+      id,
+      rule,
+      value: value === null ? "n/a" : `${Math.round(value)}${unit}`,
+      limit: `≤ ${limit}${unit}`,
+      pass: value !== null && value <= limit,
+    });
+  p("P1", "p95 إنشاء الرحلة", lat.rides_create?.p95 ?? null, 1000, "ms");
+  p("P2", "p95 قبول العرض", lat.driver_offer_accept?.p95 ?? null, 1000, "ms");
+  p("P3", "p95 قراءة لوح العروض", lat.driver_offers_board?.p95 ?? null, 1000, "ms");
+  p("P4", "p95 ظهور العرض على اللوح", p95(offerAppearMs), 30000, "ms");
+  p("P5", "p95 دورة السيناريو كاملة", p95(cycleMs), 120000, "ms");
+  p("P6a", "p99 إنشاء الرحلة", lat.rides_create?.p99 ?? null, 2500, "ms");
+  p("P6b", "p99 قبول العرض", lat.driver_offer_accept?.p99 ?? null, 2500, "ms");
+  p("P6c", "p99 قراءة اللوح", lat.driver_offers_board?.p99 ?? null, 2500, "ms");
+  const pending = audit.snapshot.outbox.oldestPendingSec;
+  perf.push({
+    id: "P7",
+    rule: "أقدم مهمة إشعار معلقة عند التدقيق",
+    value: pending === null ? "n/a" : `${pending}s`,
+    limit: "≤ 120s",
+    pass: pending !== null && pending <= 120,
+  });
+  const ratio429 = requests === 0 ? 0 : (lastCounters.api429 ?? 0) / requests;
+  perf.push({
+    id: "P8",
+    rule: "429 واجهات Mini App",
+    value: pct(lastCounters.api429 ?? 0, requests),
+    limit: "≤ 2%",
+    pass: ratio429 <= 0.02,
+  });
+  const ratioNet = requests === 0 ? 0 : (lastCounters.networkErrors ?? 0) / requests;
+  perf.push({
+    id: "P9",
+    rule: "أخطاء شبكة",
+    value: pct(lastCounters.networkErrors ?? 0, requests),
+    limit: "≤ 1%",
+    pass: ratioNet <= 0.01,
+  });
+
+  const failed = [...gates, ...perf].filter((r) => !r.pass);
+  const report = {
+    runDir: RUN_DIR,
+    total,
+    verified,
+    verdict: failed.length === 0 ? "PASS" : "FAIL",
+    failedGates: failed.map((f) => f.id),
+    gates,
+    perf,
+    auditViolations: audit.violations,
+  };
+  console.log(JSON.stringify(report, null, 2));
+  process.exit(failed.length === 0 ? 0 : 1);
+}
+
+main();

@@ -1511,6 +1511,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/outbox-claim-index.test.ts",
+    suites: ["LOAD-01 — التزامُ صندوقِ الصادرِ: خطة معلمة عامة بفهرس، لا فحصًا كاملًا"],
+    skipped: 1,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "يُثبِت أنّ خطةَ plpgsql العامةَ المعلمةَ لالتقاطِ صندوقِ الصادرِ (claim_notification_delivery) لا تسقطُ إلى فحصٍ تسلسليٍّ كاملٍ — عيبُ السعةِ المقيسَ في موجةِ القبولِ 50 (198ms عند 30 ألفِ صفٍّ). والمقصودُ سلوكُ مخطِّطِ PostgreSQL نفسِه: خطتُهُ العامةُ بعدَ عتبةِ 5 تنفيذاتٍ، وإثباتُهُ محمولَ الفهرسِ الجزئيّ، وشكلُ المسحِ المفهرسِ — لا يُثبَت شيءٌ من ذلك ببديلٍ في الذاكرة.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/payment-real-flow.test.ts",
     suites: ["real subscription payment path"],
     skipped: 2,

@@ -1,0 +1,137 @@
+{
+  "gen": "genA",
+  "phase": "post",
+  "sinceT0Sec": 0,
+  "snapshot": {
+    "at": "2026-10-17T03:21:00.757Z",
+    "ordersByStatus": {
+      "searching": 36,
+      "completed": 7267
+    },
+    "offersByStatus": {
+      "cancelled": 53924,
+      "accepted": 7267,
+      "expired": 540
+    },
+    "availability": {
+      "available": 21,
+      "total": 7334
+    },
+    "outbox": {
+      "byStatus": {
+        "dead": 12530,
+        "pending": 27261,
+        "sending": 5,
+        "delivered": 20215
+      },
+      "byKind": {
+        "driver_location_reminder": {
+          "total": 63,
+          "delivered": 63,
+          "pending": 0
+        },
+        "offer": {
+          "total": 38970,
+          "delivered": 25,
+          "pending": 26415
+        },
+        "wider_circle_opened": {
+          "total": 14,
+          "delivered": 0,
+          "pending": 14
+        },
+        "rider_trip_notice": {
+          "total": 20964,
+          "delivered": 20127,
+          "pending": 832
+        }
+      },
+      "oldestPendingSec": 979
+    },
+    "egress": {
+      "byBot": {
+        "driver": {
+          "accepted": 3701,
+          "rejected": 10
+        },
+        "rider": {
+          "accepted": 2502,
+          "rejected": 0
+        }
+      }
+    },
+    "engagedDuplicates": 0,
+    "activeRides": 36
+  },
+  "preSnapshot": {
+    "at": "2026-10-17T03:17:39.720Z",
+    "ordersByStatus": {
+      "searching": 36,
+      "completed": 7175
+    },
+    "offersByStatus": {
+      "cancelled": 53431,
+      "accepted": 7175,
+      "expired": 540
+    },
+    "availability": {
+      "available": 21,
+      "total": 7231
+    },
+    "outbox": {
+      "byStatus": {
+        "dead": 12530,
+        "pending": 28819,
+        "delivered": 17709
+      },
+      "byKind": {
+        "driver_location_reminder": {
+          "total": 63,
+          "delivered": 63,
+          "pending": 0
+        },
+        "offer": {
+          "total": 38385,
+          "delivered": 25,
+          "pending": 25830
+        },
+        "wider_circle_opened": {
+          "total": 14,
+          "delivered": 0,
+          "pending": 14
+        },
+        "rider_trip_notice": {
+          "total": 20596,
+          "delivered": 17621,
+          "pending": 2975
+        }
+      },
+      "oldestPendingSec": 778
+    },
+    "egress": null,
+    "engagedDuplicates": 0,
+    "activeRides": 36
+  },
+  "diff": {
+    "availabilityLeftover": 0,
+    "activeRidesDelta": 0,
+    "ordersDelta": {
+      "completed": 92
+    }
+  },
+  "outcomes": {
+    "total": 7068,
+    "verified": 92,
+    "failed": 6976,
+    "closeDeadlineHits": 0
+  },
+  "mismatches": [],
+  "failuresDetail": [],
+  "violations": [
+    {
+      "rule": "stale_pending_outbox",
+      "detail": "أقدم مهمة معلقة عمرها 979ث (> 120ث)"
+    }
+  ],
+  "verdict": "VIOLATIONS"
+}

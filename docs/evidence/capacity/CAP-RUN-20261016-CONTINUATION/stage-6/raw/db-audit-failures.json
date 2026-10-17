@@ -1,0 +1,586 @@
+{
+ "rounds": {
+  "diag-r5": {
+   "failedCount": 18,
+   "cases": [
+    {
+     "index": 158,
+     "rider": 11400159,
+     "driver": 12400158,
+     "orderId": "48a00fdd-594c-4b7c-8a73-b6164a518200",
+     "kind": "rejected",
+     "reason": "accept:OFFER_TAKEN",
+     "offerPolls": {
+      "count": 1,
+      "readFailures": 0,
+      "targetSeen": true,
+      "lastStatus": 200,
+      "lastBoardOffers": 1
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400045,12400054,12400063,12400075,12400078,12400080,12400087,12400092,12400096,12400131,12400136,12400142,12400158,12400164,12400172"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 931,
+     "rider": 11400932,
+     "driver": 12400931,
+     "orderId": "bac08613-9250-4e16-a8fa-a3b6add6c9c1",
+     "kind": "rejected",
+     "reason": "accept:OFFER_TAKEN",
+     "offerPolls": {
+      "count": 1,
+      "readFailures": 0,
+      "targetSeen": true,
+      "lastStatus": 200,
+      "lastBoardOffers": 2
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400030,12400031,12400042,12400062,12400193,12400223,12400255,12400270,12400279,12400410,12400469,12400691,12400729,12400745,12400931"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1138,
+     "rider": 11401139,
+     "driver": 12401137,
+     "orderId": "5c49d1a6-32d2-4cf6-b3d7-5265cf883860",
+     "kind": "rejected",
+     "reason": "accept:OFFER_TAKEN",
+     "offerPolls": {
+      "count": 1,
+      "readFailures": 0,
+      "targetSeen": true,
+      "lastStatus": 200,
+      "lastBoardOffers": 1
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400136,12400208,12400355,12400428,12400515,12400563,12400590,12400699,12400757,12400790,12400854,12400956,12401014,12401075,12401137"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 782,
+     "rider": 11400783,
+     "driver": 12400784,
+     "orderId": "34f55c6a-5df2-4df3-af09-3722b7a0d2eb",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400051,12400076,12400092,12400096,12400117,12400216,12400235,12400332,12400343,12400387,12400448,12400475,12400528,12400535,12400612"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 866,
+     "rider": 11400867,
+     "driver": 12400867,
+     "orderId": "1c54cdc7-df0b-44fa-af32-2ab458cb5dbc",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400014,12400151,12400159,12400165,12400174,12400219,12400232,12400250,12400253,12400375,12400450,12400577,12400736,12400808,12400837"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 879,
+     "rider": 11400880,
+     "driver": 12400883,
+     "orderId": "5f732876-0d88-4e1e-b052-526e55704773",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400017,12400055,12400173,12400205,12400254,12400257,12400259,12400269,12400382,12400457,12400463,12400586,12400801,12400802,12400812"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 896,
+     "rider": 11400897,
+     "driver": 12400895,
+     "orderId": "014c132a-30b4-4dee-9989-6a9dbd8b7c5d",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400002,12400058,12400093,12400113,12400330,12400336,12400371,12400556,12400562,12400572,12400618,12400629,12400646,12400676,12400897"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1019,
+     "rider": 11401020,
+     "driver": 12401018,
+     "orderId": "a1a34c1e-2feb-48f3-be0b-384f44818ad5",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400151,12400159,12400165,12400174,12400219,12400232,12400250,12400253,12400450,12400684,12400736,12400808,12400837,12400867,12400960"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1021,
+     "rider": 11401022,
+     "driver": 12401022,
+     "orderId": "45d59438-c90d-4beb-89ea-8531c85e7b33",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400017,12400173,12400205,12400254,12400257,12400269,12400360,12400382,12400437,12400457,12400463,12400586,12400802,12400812,12400986"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1098,
+     "rider": 11401099,
+     "driver": 12401099,
+     "orderId": "f0f67726-2b92-449c-9187-3a105239cbe3",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400148,12400251,12400289,12400305,12400429,12400460,12400500,12400683,12400893,12400957,12400977,12400990,12401001,12401056,12401078"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1169,
+     "rider": 11401170,
+     "driver": 12401173,
+     "orderId": "6e238970-01c8-43a2-9834-0933cd57d9c4",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400175,12400189,12400202,12400263,12400492,12400520,12400634,12400667,12400707,12400708,12400747,12400910,12400911,12400915,12400940"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1182,
+     "rider": 11401183,
+     "driver": 12401184,
+     "orderId": "530e153f-e0e4-437d-b404-1748d7f45816",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400023,12400063,12400131,12400170,12400348,12400349,12400394,12400425,12400440,12400511,12400549,12400554,12400670,12400673,12401087"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1225,
+     "rider": 11401226,
+     "driver": 12401226,
+     "orderId": "a39a8cfb-cc8c-4991-a6fd-a0cba5fb5ca5",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400120,12400151,12400152,12400159,12400165,12400219,12400375,12400446,12400597,12400723,12400808,12400867,12400968,12401018,12401227"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1278,
+     "rider": 11401279,
+     "driver": 12401279,
+     "orderId": "7b68df17-1f85-4fbb-980b-939ec9784445",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400123,12400275,12400284,12400401,12400500,12400519,12400904,12400909,12400919,12400948,12401101,12401105,12401135,12401236,12401243"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1301,
+     "rider": 11401302,
+     "driver": 12401305,
+     "orderId": "cff9b052-bf79-494c-b167-307fbdd771fb",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400175,12400189,12400202,12400263,12400293,12400520,12400524,12400707,12400747,12400911,12400915,12400992,12401008,12401151,12401173"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1336,
+     "rider": 11401337,
+     "driver": 12401340,
+     "orderId": "1f61db15-42b6-4c9d-b053-665f39f58f71",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400120,12400151,12400159,12400165,12400174,12400219,12400232,12400250,12400597,12400808,12400867,12400968,12401018,12401227,12401250"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1349,
+     "rider": 11401350,
+     "driver": 12401350,
+     "orderId": "c34a4751-c745-417b-8550-5359a949eed9",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400054,12400076,12400092,12400096,12400448,12400528,12400619,12400878,12400963,12400983,12401096,12401164,12401261,12401290,12401328"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 1356,
+     "rider": 11401357,
+     "driver": 12401357,
+     "orderId": "cec25d66-0744-4433-9aa5-e193c4fbd434",
+     "kind": "undecided",
+     "reason": "offer:offer_not_found_in_time",
+     "offerPolls": {
+      "count": 61,
+      "readFailures": 0,
+      "targetSeen": false,
+      "lastStatus": 200,
+      "lastBoardOffers": 0
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12400031,12400042,12400062,12400193,12400223,12400255,12400270,12400361,12400691,12400721,12400722,12400729,12400931,12401158,12401190"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    }
+   ]
+  },
+  "diag-r6": {
+   "failedCount": 4,
+   "cases": [
+    {
+     "index": 114,
+     "rider": 11500115,
+     "driver": 12500115,
+     "orderId": "7365fbcd-21ba-45e8-ad0a-b749cb9cdc37",
+     "kind": "rejected",
+     "reason": "accept:OFFER_TAKEN",
+     "offerPolls": {
+      "count": 1,
+      "readFailures": 0,
+      "targetSeen": true,
+      "lastStatus": 200,
+      "lastBoardOffers": 6
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12500093,12500094,12500096,12500100,12500106,12500107,12500108,12500109,12500110,12500111,12500112,12500113,12500115,12500118,12500119"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 237,
+     "rider": 11500238,
+     "driver": 12500238,
+     "orderId": "e118b044-fb97-4a7a-8ea9-e50917d98dee",
+     "kind": "rejected",
+     "reason": "accept:OFFER_TAKEN",
+     "offerPolls": {
+      "count": 1,
+      "readFailures": 0,
+      "targetSeen": true,
+      "lastStatus": 200,
+      "lastBoardOffers": 7
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12500237,12500238,12500239,12500240,12500242,12500243,12500244,12500245,12500246,12500247,12500248,12500249,12500250,12500252,12500254"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 743,
+     "rider": 11500744,
+     "driver": 12500743,
+     "orderId": "5595e82f-bc3c-4727-9786-8404f835725d",
+     "kind": "rejected",
+     "reason": "accept:OFFER_TAKEN",
+     "offerPolls": {
+      "count": 1,
+      "readFailures": 0,
+      "targetSeen": true,
+      "lastStatus": 200,
+      "lastBoardOffers": 3
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "13",
+        "12500739,12500741,12500742,12500743,12500744,12500745,12500746,12500747,12500748,12500749,12500751,12500752,12500755"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    },
+    {
+     "index": 952,
+     "rider": 11500953,
+     "driver": 12500954,
+     "orderId": "37685016-d178-4bb0-9238-d27cd1c9bf23",
+     "kind": "rejected",
+     "reason": "accept:OFFER_TAKEN",
+     "offerPolls": {
+      "count": 1,
+      "readFailures": 0,
+      "targetSeen": true,
+      "lastStatus": 200,
+      "lastBoardOffers": 3
+     },
+     "db": {
+      "orderStatus": "searching",
+      "offersByStatus": [
+       [
+        "expired",
+        "15",
+        "12500948,12500949,12500951,12500953,12500954,12500956,12500957,12500958,12500959,12500960,12500962,12500965,12500967,12500968,12500969"
+       ]
+      ],
+      "acceptedCount": "0"
+     }
+    }
+   ]
+  }
+ }
+}
