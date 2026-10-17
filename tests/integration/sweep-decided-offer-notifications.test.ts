@@ -12,7 +12,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
-import { ensureActiveCity, restoreCityBaseline } from "../support/active-city.ts";
+import { type ActiveCityHandle, ensureActiveCity, restoreCityBaseline } from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 
@@ -30,7 +30,7 @@ const DRIVER_TELEGRAM_ID = 900_000_491;
 const RIDER_TELEGRAM_ID = 900_000_492;
 
 let cityId = "";
-let cityHandle: ReturnType<typeof ensureActiveCity> | undefined;
+let cityHandle: ActiveCityHandle | undefined;
 let driverUserId = "";
 let driverId = "";
 let riderUserId = "";
