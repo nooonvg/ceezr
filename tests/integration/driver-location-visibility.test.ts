@@ -219,6 +219,23 @@ describeIf("ظهور السائق بلا موقع، ووحدة مصدر التو
   const offersFor = (driverId: string) =>
     sql<{ count: string }[]>`select count(*)::text from order_offers where driver_id = ${driverId}`;
 
+  /**
+   * `LOAD-01` (الدفعةُ الرابعةُ) — إعادةُ العرضِ عندَ صيرورةِ السائقِ حيًّا صارت
+   * **خلفيّةً مخفوضةً** لا متزامنةً معَ ردِّ الموقعِ (جدولةٌ + خفضُ ثانيتينِ)، فلم
+   * يبقَ العقدُ «العرضُ في النداءِ نفسِهِ» بل «العرضُ خلالَ نافذةٍ محدودةٍ». هذا
+   * الانتظارُ يُثبتُ العقدَ الجديدَ: يستقبلُ السائقُ عرضَهُ خلالَ ثوانٍ معدودةٍ
+   * لا أنَّ الاستجابةَ تنتظرُ شوطَ مطابقةِ المدينةِ (العلّةُ التي أُصلِحتْ).
+   */
+  async function offersForEventually(driverId: string, timeoutMs = 6_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const rows = await offersFor(driverId);
+      if (Number(rows[0]?.count) > 0) return;
+      if (Date.now() >= deadline) return;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
   it("خطّ الأساس: التوثيق بالدالة الذرّية وحده يكفي لوصول العرض — مصدر واحد للتوثيق (البند 3)", async () => {
     const actorUserId = await admin();
     const driverId = await verifiedDriverWithoutLocation(actorUserId);
@@ -237,6 +254,8 @@ describeIf("ظهور السائق بلا موقع، ووحدة مصدر التو
 
     await registerRider();
     await requestRide();
+    // العقدُ الجديدُ (`LOAD-01`): العرضُ خلالَ النافذةِ لا في النداءِ نفسِهِ.
+    await offersForEventually(driverId);
     const rows = await offersFor(driverId);
     // لو فشل هذا فالخلل في التهيئة أو في التوثيق، والاختبار التالي بلا معنى
     expect(Number(rows[0]?.count)).toBeGreaterThan(0);
@@ -316,6 +335,8 @@ describeIf("ظهور السائق بلا موقع، ووحدة مصدر التو
     // الموقع هو الفرق الوحيد بين الحالتين — لا إعادة تسجيل ولا تبديل توافر
     await post("driver", location(DRIVER_CHAT, DRIVER_AT));
     await requestRide();
+    // العقدُ الجديدُ: العرضُ يصلُ خلالَ النافذةِ لا في النداءِ نفسِهِ.
+    await offersForEventually(driverId);
     expect(Number((await offersFor(driverId))[0]?.count)).toBeGreaterThan(0);
   });
 });
