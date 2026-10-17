@@ -581,7 +581,7 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     activation:
       "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
     owner: "منفّذ المستودع",
-    criticalPath: "لوحُ عروضِ السائق",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
     runsIn: "اختبارات التكامل على قاعدة حقيقية",
     whyNotRun: null,
   },
