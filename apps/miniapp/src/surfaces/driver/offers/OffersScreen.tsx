@@ -57,6 +57,7 @@ import { UiTimer } from "../../../system/ui/index.tsx";
 import { offerTimerProps } from "./offer-timer.ts";
 import {
   type ApiDriverNegotiationCard,
+  ackDriverOfferBoard,
   claimDriverNegotiation,
   type DriverAvailabilityResponse,
   type DriverNegotiationsResponse,
@@ -126,6 +127,12 @@ export interface OffersScreenProps {
    */
   readonly onOpenAccount?: () => void;
   readonly readBoard?: () => Promise<DriverOffersResponse>;
+  /**
+   * `LOAD-01 Recovery` — إقرارُ استلامِ اللوحِ بعدَ تطبيقِهِ (لا عندَ جلبِهِ):
+   * يُفصِلُ «سلّمها الخادمُ» عنِ «وصلَتْ»، وشوطُ التسليمِ يقرأُ الإيصالَ
+   * موثَّقًا فلا يُدّعى وصولٌ لم يُقَس. فشلُهُ صامتٌ — إيصالٌ تراكميٌّ.
+   */
+  readonly ackBoard?: (offerIds: readonly string[]) => Promise<unknown>;
   /**
    * `ADR 0286` — دوراتُ القروبِ المفتوحةُ: إشعارٌ ومطالبةٌ من التطبيقِ لا من زرِّ
    * القروبِ. **زيادةٌ لا تغييرٌ** (`ح-8`): غيابُها يُخفي القسمَ وحدَه.
@@ -236,6 +243,7 @@ export function OffersScreen({
   onOpenOffer,
   onOpenDocuments,
   readBoard = readDriverOffers,
+  ackBoard = ackDriverOfferBoard,
   readNegotiations = readDriverNegotiations,
   claimNegotiation = claimDriverNegotiation,
   leaveNegotiation = leaveDriverNegotiation,
@@ -280,6 +288,20 @@ export function OffersScreen({
     stateRef.current = state;
   }, [state]);
 
+  /**
+   * `LOAD-01 Recovery` — إيصالُ اللوحِ المطبَّقِ: يُرسَلُ **بعدَ** ضبطِ الحالةِ
+   * (التطبيقِ) لا قبلهُ، وفشلُهُ صامتٌ — الإيصالُ تراكميٌّ يلحقُهُ التحديثُ
+   * التالي، لا مُعوِّقٌ للعرضِ.
+   */
+  const ackAppliedBoard = useCallback(
+    (board: DriverOffersResponse) => {
+      const ids = board.offers.map((offer) => offer.offer_id);
+      if (ids.length === 0) return;
+      void ackBoard(ids).catch(() => undefined);
+    },
+    [ackBoard],
+  );
+
   const load = useCallback(async () => {
     setState({ kind: "loading" });
     // `ADR 0286` — القسمُ مستقلٌّ: فشلُهُ لا يسقطُ اللوحَ.
@@ -296,23 +318,25 @@ export function OffersScreen({
       // فزمنُ الشبكةِ لا يُحسَبُ من مهلةِ العرضِ مرّتَينِ.
       const readAtMs = now();
       setState({ kind: "ready", board, readAtMs });
+      ackAppliedBoard(board);
     } catch (thrown) {
       setState({ kind: "failed", code: codeOf(thrown) });
     }
-  }, [now, readBoard, readNegotiations]);
+  }, [ackAppliedBoard, now, readBoard, readNegotiations]);
 
   /** تحديثٌ من realtime — لا يمسحُ القائمةَ الحاليّةَ عند الفشلِ. */
   const refreshFromRealtime = useCallback(async () => {
     try {
       const board = await readBoard();
       setState({ kind: "ready", board, readAtMs: now() });
+      ackAppliedBoard(board);
     } catch {
       const current = stateRef.current;
       if (current.kind === "ready") {
         setState({ ...current, stale: true });
       }
     }
-  }, [now, readBoard]);
+  }, [ackAppliedBoard, now, readBoard]);
 
   /**
    * `WR-16A` — «حدّث اللوح» جلبٌ فعليٌّ من الخادم: اللوحُ المعروضُ يبقى أثناءَه، والفشلُ يُقالُ
@@ -328,13 +352,14 @@ export function OffersScreen({
     try {
       const board = await readBoard();
       setState({ kind: "ready", board, readAtMs: now() });
+      ackAppliedBoard(board);
       setRefresh({ kind: "done" });
     } catch (thrown) {
       const current = stateRef.current;
       if (current.kind === "ready") setState({ ...current, stale: true });
       setRefresh({ kind: "failed", code: codeOf(thrown) });
     }
-  }, [load, now, readBoard]);
+  }, [ackAppliedBoard, load, now, readBoard]);
 
   useEffect(() => {
     void load();

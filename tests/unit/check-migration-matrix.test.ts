@@ -100,10 +100,13 @@ describe("مصفوفةُ الهجرةِ — الحالةُ الحاضرةُ في
   // ADR 0263)، `NONE` في الموجةِ ٠ لأنَّ محادثةَ المهمّةِ أثرُ تنفيذٍ يملكُه MOVE.
   // ثمَّ من 69 إلى **70** بجدولِ `escalation_card_closures` (`WR-22` · ADR 0278)، `NONE`
   // في الموجةِ ٠ لأنَّ وجهتَه `KEEP` لـMOVE تبعاً لتصعيدِ المهمّة.
+  // ثمَّ من 70 إلى **71** بجدولِ `driver_offers_board_receipts` (`LOAD-01
+  // Recovery` · CAP-RUN-20261016-CONTINUATION)، `NONE` في الموجةِ ٠ لأنَّ وجهتَه
+  // `KEEP` لـMOVE تبعاً لدليلِ تسليمِ العروضِ (إيصالاتُ اللوحِ).
   // والأرقامُ السابقةُ محفوظةٌ لا ممحوّةٌ (`ح-8`).
   it("تغطّي كلَّ جدولٍ في جردِ الحدودِ بلا زيادةٍ", () => {
-    expect(WASLA_MIGRATION_MATRIX.length).toBe(70);
-    expect(new Set(WASLA_MIGRATION_MATRIX.map((e) => e.table)).size).toBe(70);
+    expect(WASLA_MIGRATION_MATRIX.length).toBe(71);
+    expect(new Set(WASLA_MIGRATION_MATRIX.map((e) => e.table)).size).toBe(71);
   });
 
   it("لا مُدخلَ يدّعي تنفيذاً اليومَ — ولا خطّةَ عمودٍ", () => {

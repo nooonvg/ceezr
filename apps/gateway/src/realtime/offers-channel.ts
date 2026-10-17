@@ -28,6 +28,11 @@ export interface OffersChannel {
   readonly stop: () => void;
   /** يبثُّ إشارةَ تحديثٍ إلى غرفةِ سائقٍ بعينِه. */
   readonly notifyDriver: (telegramUserId: string) => void;
+  /**
+   * `LOAD-01 Recovery` — هل السائقُ في غرفةِ العروضِ الآنَ (يقينٌ محليٌّ
+   * بهذهِ النسخةِ — انظرِ التنفيذَ). الغائبُ لا يُنتظرُ ولا يُزعَمُ بثٌّ لهُ.
+   */
+  readonly isDriverConnected: (telegramUserId: string) => boolean;
 }
 
 export function createOffersChannel(deps: OffersChannelDeps): OffersChannel {
@@ -68,5 +73,15 @@ export function createOffersChannel(deps: OffersChannelDeps): OffersChannel {
     deps.io.to(`driver-offers:${telegramUserId}`).emit("offers:update");
   }
 
-  return { start, stop, notifyDriver };
+  /**
+   * `LOAD-01 Recovery` — هل السائقُ في غرفةِ العروضِ الآن؟ يقينٌ محليٌّ
+   * (`adapter.rooms` خريطةُ هذهِ النسخةِ وحدَها — من يوسّعُ النشرَ إلى نسخٍ
+   * متعددةٍ يوسّعُ معهُ هذا الفحصَ بمهايئٍ مشتركٍ، وهوَ مُعلَنٌ في الأدلةِ لا
+   * مُضمَر). وظيفتُهُ: أنْ لا يُنتظرَ غيرُ المتصلِ ولا يُزعَمَ بثٌّ لغائبٍ.
+   */
+  function isDriverConnected(telegramUserId: string): boolean {
+    return deps.io.sockets.adapter.rooms.has(`driver-offers:${telegramUserId}`);
+  }
+
+  return { start, stop, notifyDriver, isDriverConnected };
 }

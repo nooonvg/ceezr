@@ -22,6 +22,11 @@ export interface OutboxDelivery {
   readonly attempts: number;
   readonly maxAttempts: number;
   /**
+   * `LOAD-01 Recovery` — كم مرةً انتظرَ الصفُّ إشارةَ اللوحِ (بلا محاولةِ
+   * إرسالٍ محسوبةٍ): يعرفهُ المعالجُ فيُسقِفُ الانتظارَ لا ميزانيةَ البطاقةِ.
+   */
+  readonly signalWaitCount?: number;
+  /**
    * سقفُ صفوفِ الشوطِ الواحدِ لهذه المدينةِ (`F6-06`). كانَ الشوطُ يُقاسُ بـ
    * `maxAttempts` — وهو **حدُّ إعادةِ محاولةِ الصفِّ الواحدِ** لا سعةُ الشوطِ —
    * فكانَ المفتاحُ الواحدُ يحملُ معنيَينِ: من رفعَ سماحَ الإعادةِ إلى عشرٍ رفعَ
@@ -92,6 +97,25 @@ export interface NotificationOutboxPort {
     reason: string | null;
   }): Promise<Result<boolean, PortFailureError>>;
   /**
+   * `LOAD-01 Recovery` — إعلانُ تسليمٍ عبرَ لوحِ Mini App بإيصالٍ موثَّقٍ منَ
+   * العميلِ: `delivered_channel = 'miniapp_board'` بلا معرّفِ رسالةٍ مُختلَقٍ.
+   * حارسُ الرمزِ نفسُهُ — لا يعملُ إلا على صفٍّ `sending` يحملُ الرمزَ نفسَهُ.
+   */
+  finishViaBoard(input: {
+    deliveryId: string;
+    claimToken: string;
+  }): Promise<Result<FinishResult, PortFailureError>>;
+  /**
+   * `LOAD-01 Recovery` — عودةٌ للطابورِ **بانتظارِ إشارةِ اللوحِ**: كمسارِ
+   * الازدحامِ لا تُحسَبُ محاولةَ إرسالٍ، لكنّ عدّادَ الانتظارِ يزيدُ فيُعلَمُ
+   * أنّ الصفّ ينتظرُ لا يفشلُ، والسقفُ عندَ المعالجِ (ثلاثٌ ثمّ البطاقةُ).
+   */
+  requeueSignalWait(input: {
+    deliveryId: string;
+    claimToken: string;
+    retryAfterMs: number;
+  }): Promise<Result<FinishResult, PortFailureError>>;
+  /**
    * `D8` — إعادةُ صفٍّ إلى الطابورِ بعدَ **ازدحامِ دلاءِ الإرسالِ** (ضغطٍ عابرٍ
    * لا فشلِ إرسالٍ): يعودُ `pending` بموعدِ الفتحةِ القادمةِ، **ولا تُحسَبُ لهذه
    * الدورةِ محاولةٌ** — فالموتُ باستنفادِ المحاولاتِ لعثراتِ الإرسالِ الحقيقيةِ لا
@@ -129,6 +153,18 @@ export interface HandlerOutcome {
    * لا `outbox.abandon`، فيُفصَلُ عجزُ التسليمِ عن `dead`.
    */
   readonly undeliverable?: boolean;
+  /**
+   * `LOAD-01 Recovery` — وصلَ العرضُ إلى لوحِ السائقِ بإيصالٍ موثَّقٍ منَ
+   * العميلِ (لا بادعاءِ إرسالٍ): يُعلَنُ التسليمُ عبرَ اللوحِ بمعرّفِ
+   * الإيصالِ القائمِ لا بمعرّفِ رسالةٍ مُختلَقٍ.
+   */
+  readonly deliveredViaBoard?: boolean;
+  /**
+   * `LOAD-01 Recovery` — انتظارُ إشارةِ اللوحِ للسائقِ المتصلِ: عودةٌ للطابورِ
+   * بموعدٍ قصيرٍ **بلا محاولةِ إرسالٍ محسوبةٍ** (نصيحةُ المراجعةِ: الانتظارُ
+   * عدٌّ منفصلٌ مسقوفٌ لا من ميزانيةِ البطاقةِ)، والسقفُ في المعالجِ.
+   */
+  readonly signalWait?: { readonly retryAfterMs: number };
   /**
    * سببُ التعذُّرِ حينَ `undeliverable = true` — يُحفظُ في `dead_reason`.
    * أسماءٌ مغلقةٌ: `TELEGRAM_DELIVERY_UNAVAILABLE` (جوهريٌّ) و
@@ -265,6 +301,51 @@ async function deliverClaimed(
       abandoned: false,
       died: false,
       undeliverable: true,
+      maxAttempts: delivery.maxAttempts,
+      batchLimit: delivery.batchLimit,
+      backpressure: null,
+      failure: null,
+    });
+  }
+  // `LOAD-01 Recovery` — وصلَ العرضُ إلى اللوحِ بإيصالٍ: تسليمٌ معلنٌ بالقناةِ
+  // لا بمعرّفِ رسالةٍ. الإيصالُ منَ العميلِ الموثّقِ لا منَ جلبٍ صمّاءَ، فلا
+  // يُدّعى وصولٌ لم يُقَس.
+  if (handled.value.deliveredViaBoard === true) {
+    const viaBoard = await deps.outbox.finishViaBoard({
+      deliveryId: delivery.deliveryId,
+      claimToken: delivery.claimToken,
+    });
+    if (!viaBoard.ok) return viaBoard;
+    return ok({
+      found: true,
+      kind: delivery.kind,
+      delivered: viaBoard.value.ok,
+      abandoned: false,
+      died: false,
+      undeliverable: false,
+      maxAttempts: delivery.maxAttempts,
+      batchLimit: delivery.batchLimit,
+      backpressure: null,
+      failure: null,
+    });
+  }
+  // `LOAD-01 Recovery` — انتظارُ إشارةِ اللوحِ للسائقِ المتصلِ: عودةٌ قصيرةُ
+  // المهلةِ بلا محاولةِ إرسالٍ محسوبةٍ (البطاقةُ تنالُ ميزانيتَها كاملةً إن
+  // لم يصلِ الإيصالُ)، والسقفُ في المعالجِ — ثلاثُ دوراتٍ ثمّ البطاقةُ.
+  if (handled.value.signalWait !== undefined) {
+    const waited = await deps.outbox.requeueSignalWait({
+      deliveryId: delivery.deliveryId,
+      claimToken: delivery.claimToken,
+      retryAfterMs: handled.value.signalWait.retryAfterMs,
+    });
+    if (!waited.ok) return waited;
+    return ok({
+      found: true,
+      kind: delivery.kind,
+      delivered: false,
+      abandoned: false,
+      died: false,
+      undeliverable: false,
       maxAttempts: delivery.maxAttempts,
       batchLimit: delivery.batchLimit,
       backpressure: null,

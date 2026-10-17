@@ -30,6 +30,10 @@ function fakeOutbox(rows: Row[], opts: { failClaimAt?: number; batchLimit?: numb
     peak: 0,
   };
   const port: NotificationOutboxPort = {
+    // `LOAD-01 Recovery` — مسارا اللوح في هذا الاختبارِ بلا عروضٍ: لا
+    // إيصالاتٍ ولا انتظارَ — يُرجعانِ التسليمَ المباشرَ للسخريةِ (لم يُطلبا).
+    finishViaBoard: async () => ok({ ok: true, outcome: "delivered" }),
+    requeueSignalWait: async () => ok({ ok: true, outcome: null }),
     claim: async () => {
       st.claims += 1;
       if (opts.failClaimAt !== undefined && st.claims === opts.failClaimAt)

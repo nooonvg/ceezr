@@ -177,6 +177,29 @@ export async function readDriverOfferBoard(
   return ok(read.value);
 }
 
+/**
+ * `LOAD-01 Recovery` — إيصالاتُ اللوحِ: العميلُ يُقرُّ بعرضٍ وصلَ وطبّقَهُ،
+ * فيُسجَّلُ وصولُهُ موثَّقًا منَ جهةِ الخادمِ. **جلبُ اللوحِ لا يكفي**: الإيصالُ
+ * يأتي بعدَ التطبيقِ — فصلُ «أُرسِلَ» عنِ «وَصَلَ» هوَ عينُ أمانةِ القياسِ.
+ */
+export async function recordDriverOfferBoardReceipts(
+  deps: DriverOfferDeps,
+  input: {
+    readonly accessToken: string | undefined;
+    readonly offerIds: readonly string[];
+  },
+): Promise<Result<{ readonly recorded: number }, DriverOfferRejection>> {
+  const session = await openSession(deps, input.accessToken);
+  if (!session.ok) return err(session.error);
+
+  const recorded = await deps.store.recordBoardReceipts({
+    telegramUserId: session.value,
+    offerIds: input.offerIds,
+  });
+  if (!recorded.ok) return err(publicCodeFrom(recorded.error));
+  return ok(recorded.value);
+}
+
 export async function readDriverOfferDetail(
   deps: DriverOfferDeps,
   input: { readonly accessToken: string | undefined; readonly offerId: unknown },

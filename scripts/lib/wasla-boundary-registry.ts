@@ -247,6 +247,15 @@ export const WASLA_BOUNDARY_INVENTORY: readonly BoundaryEntry[] = [
     rationale: "حالةُ التتبّعِ والمسارِ مملوكةٌ لـMOVE.",
   },
   {
+    table: "driver_offers_board_receipts",
+    concern:
+      "إيصالاتُ لوحِ العروضِ — دليلُ وصولِ عرضٍ إلى سائقٍ عبرَ لوحِ Mini App (إقرارُ العميلِ بعدَ تطبيقِ اللقطةِ)",
+    owner: "MOVE",
+    disposition: "KEEP",
+    rationale:
+      "دليلُ تسليمِ العرضِ مِلكُ نطاقِ العروضِ والإسنادِ (MOVE) كأختِه `order_offers` و`notification_outbox`: لا يحملُ هويةَ راكبٍ ولا موقعًا — مفتاحُ سائقٍ داخليٌّ ومعرّفُ عرضٍ ووقتُ إيصالٍ، فهوَ ذيلُ أمانةِ القياسِ على مسارِ التسليمِ لا بياناتِ عملٍ جديدةٌ.",
+  },
+  {
     table: "drivers",
     concern: "ملفُّ السائقِ التنفيذيُّ",
     owner: "MOVE",
