@@ -8,8 +8,8 @@ import { describe, expect, it } from "bun:test";
 import type { OutboundRateBucket } from "../../packages/infrastructure/notification/outbound-rate-bucket.ts";
 import {
   createMemoryDeadLetterSink,
-  type OutboundEvent,
   OutboundCongestionError,
+  type OutboundEvent,
   OutboundSendError,
   withOutboundResilience,
 } from "../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
@@ -305,14 +305,17 @@ describe("غلافُ صمودِ الصادرِ (CAP-002)", () => {
         return n <= 1 ? { granted: true, waitMs: 0 } : { granted: false, waitMs: 1000 };
       },
     };
-    const { sender } = harness(stubSender(async () => "42"), { bucket });
+    const { sender } = harness(
+      stubSender(async () => "42"),
+      { bucket },
+    );
     // أولُ رسالةٍ للمحادثةِ A: تُمنَحُ فتحةُ المحادثةِ ثمَّ العالميُّ فتُرسَلُ.
     expect(await sender.sendMessage("A", "أولى", undefined)).toBe("42");
     // ثاني رسالةٍ للمحادثةِ نفسِها خلالَ الثانيةِ: ازدحامُ محادثةٍ — يجبُ أن
     // يُرفَضَ عندَ فتحةِ المحادثةِ نفسِها **قبلَ الاقتناءِ منَ العالميِّ**.
-    await expect(sender.sendMessage("A", "ثانية", undefined, { congestion: "abort" })).rejects.toBeInstanceOf(
-      OutboundCongestionError,
-    );
+    await expect(
+      sender.sendMessage("A", "ثانية", undefined, { congestion: "abort" }),
+    ).rejects.toBeInstanceOf(OutboundCongestionError);
     // الاقتناءُ الأخيرُ منَ العالميِّ هوَ لرسالةِ «أولى» وحدَها: ازدحامُ
     // «ثانية» لم يمسَّ الدلوَ العالميَّ إطلاقاً.
     expect(calls.filter((c) => c.startsWith("global")).length).toBe(1);
@@ -328,12 +331,15 @@ describe("غلافُ صمودِ الصادرِ (CAP-002)", () => {
         return grants === 1 ? { granted: true, waitMs: 0 } : { granted: false, waitMs: 900 };
       },
     };
-    const { sender, events } = harness(stubSender(async () => "42"), { bucket });
+    const { sender, events } = harness(
+      stubSender(async () => "42"),
+      { bucket },
+    );
     expect(await sender.sendMessage("A", "أولى", undefined)).toBe("42");
     // العالميُّ ممتلئٌ: الرفضُ سببُهُ العالميُّ حتى لو كانت فتحةُ المحادثةِ مُنِحَتْ أولًا.
-    await expect(sender.sendMessage("B", "ثانية", undefined, { congestion: "abort" })).rejects.toBeInstanceOf(
-      OutboundCongestionError,
-    );
+    await expect(
+      sender.sendMessage("B", "ثانية", undefined, { congestion: "abort" }),
+    ).rejects.toBeInstanceOf(OutboundCongestionError);
     expect(events.some((e) => e.type === "backpressure" && e.detail === "global")).toBe(false);
   });
 });
