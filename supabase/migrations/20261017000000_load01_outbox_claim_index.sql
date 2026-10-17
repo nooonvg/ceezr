@@ -29,13 +29,19 @@
 -- المخطِّطُ لا يختارُها للخطةِ العامةِ أصلًا لأنَّ محمولَها لا يُثبَتُ)،
 -- وإسقاطُها لاحقًا بندٌ مستقلٌ بعدَ قياسٍ.
 --
--- ## لماذا ملفّانِ لا ملفٌّ واحدٌ
+-- ## لماذا لا يُمسُّ فهرسُ دورةِ الرحلةِ القديمُ (`…ride_cycle_due_idx`)
+
+-- استعلامُهُ الساخنُ مقيَّدٌ بهِ اختيارًا (اختبارُ `hot-query-index-plans`
+-- F7-02 يثبتُ خدمتَهُ ويمنعُ إزالتَهُ)، ومسارُهُ ليسَ عينَ الحلقةِ المُنهكةِ
+-- المقيسةِ (الالتقاطُ ذو الأولويةِ). فالإصلاحُ هنا للالتقاطِ ذي الأولويةِ وحدَه.
+--
+-- ## لماذا ملفٌّ واحدٌ وعبارةٌ واحدةٌ
 --
 -- قاعدةُ المُطبِّقِ الآمنِ: `create index concurrently` عبارةٌ وحدَها في ملفِّها
--- (لا تُقبَلُ داخلَ معاملةٍ). فهرسٌ لكلِّ ملفٍّ.
+-- (لا تُقبَلُ داخلَ معاملةٍ).
 --
 -- migration-phase: index
 
-create index concurrently if not exists notification_outbox_priority_due_idx2
+create index concurrently if not exists notification_outbox_priority_claim_idx2
     on notification_outbox (notification_kind_priority(kind), created_at)
  where status = 'pending';

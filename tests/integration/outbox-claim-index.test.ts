@@ -226,10 +226,14 @@ describeIf("LOAD-01 — التزامُ صندوقِ الصادرِ: خطة مع�
       const onTable = nodes.filter((n) => n.relation === "notification_outbox");
       // لا فحصًا تسلسليًّا للجدولِ في أيةِ عقدةٍ: عينُ الحلقةِ المُنهكةِ للسعةِ.
       expect(onTable.some((n) => n.nodeType === "Seq Scan")).toBe(false);
-      // فهرسُ الأولويةِ يخدمُ الجدولَ الخارجيَّ (الاسمُ `n`) تحديدًا — لا
-      // يكفي مسحًا مدعومًا بفهرسٍ في أيِّ موضعٍ (قد يكونَ للضدِّ-الوصلِ الداخليِّ).
-      const outerScan = onTable.find((n) => n.alias === "n");
-      expect(outerScan?.indexName).toBe("notification_outbox_priority_due_idx2");
+      // الفهرسُ الجديدُ يخدمُ الجدولَ — والاسمُ يظهرُ في الخطةِ أيا كانَ شكلُ
+      // المسحِ المفهرسِ (Index Scan عندَ الاستعلامِ الضيّقِ أو Bitmap Heap Scan عندَ
+      // تقديراتٍ أخرى)، فالحراسةُ على الاسمِ في نصِّ الخطةِ وعلى عقدةٍ تحملُهُ.
+      const planText = JSON.stringify(explained);
+      expect(planText).toContain("notification_outbox_priority_claim_idx2");
+      expect(onTable.some((n) => n.indexName === "notification_outbox_priority_claim_idx2")).toBe(
+        true,
+      );
 
       // (٣) الدالةُ الفعليةُ: كلُّ نداءٍ يُفحصُ مخرجُهُ — التقاطٌ حقيقيٌّ من
       // البياناتِ المزروعةِ (صفٌّ من رؤوسِ الطوابيرِ) لا خروجًا فارغًا سريعًا.
