@@ -1,4 +1,4 @@
--- العنوان: محاذاةُ فهارسِ صندوقِ الصادرِ لقائمةِ أنواعِ الدورةِ الحالية (LOAD-01 · WR-25)
+-- العنوان: محاذاةُ فهارسِ صندوقِ الصادرِ لقائمةِ أنواعِ الدورةِ الحالية (LOAD-01 · CAP-20261016-CONTINUATION)
 -- المرجع: docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md · docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/
 -- النوع: أداء (عيب سعة حقيقي كشفته موجة القبول 50)
 --
@@ -58,6 +58,10 @@ begin
 end
 $$;
 
+-- تُستبدلُ تعريفاتُ الفهرسينِ **بالأسماءِ نفسِها** (drop + create في الهجرةِ
+-- نفسِها): لا فقدَ لمقيسٍ في كتالوجِ القاعدةِ (الاسمُ باقٍ والتعريفُ أوسعُ)،
+-- فمسارُ العودةِ إلى الأمامِ — لا حاجةَ لسجلِّ تضييقٍ لأنَّ المسحَ لا يُزيلُ
+-- اسمًا منَ الكتالوجِ.
 drop index if exists notification_outbox_priority_due_idx;
 drop index if exists notification_outbox_ride_cycle_due_idx;
 -- نسخة 20261017 الأولى من هذه الهجرة (محلية، لم تُدفع) استخدمت محمول قائمةِ الأنواعِ
@@ -68,10 +72,10 @@ drop index if exists notification_outbox_ride_cycle_due_idx;
 -- أيةُ خطةٍ (عامةً كانت أم خاصةً)، وتصيرُ قائمةُ الأنواعِ شرطَ ترشيحٍ فوقَ مسحِ
 -- الفهرسِ المرتبِ لا شرطَ إثباتِ صلاحيتِهِ.
 
-create index notification_outbox_priority_due_idx2
+create index notification_outbox_priority_due_idx
     on notification_outbox (notification_kind_priority(kind), created_at)
  where status = 'pending';
 
-create index notification_outbox_ride_cycle_due_idx2
+create index notification_outbox_ride_cycle_due_idx
     on notification_outbox (created_at)
  where status = 'pending';
