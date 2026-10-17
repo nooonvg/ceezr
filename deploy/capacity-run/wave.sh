@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# مُشغِّلُ موجةِ قبولٍ واحدَةٍ (LOAD-01) من المستودعِ — نفسُ دلالاتِ مقعدِ
+# الجولةِ (bin/wave) لكن بمساراتٍ معلَمةٍ لا مكتوبةً: قابلٌ لإعادةِ التشغيلِ من
+# أيِّ مقعدٍ. حججُه:
+#   ./wave.sh ROUND PROFILE_JSON DRAIN_SEC WAVE_IDX [ENV=VAL ...]
+# نطاقاتُ الهوياتِ تتصادمُ بينَ الجولاتِ إن تُركت ثابتةً (موجةُ 50 الأولىِ
+# اصطدمَت بهوياتِ جولةٍ سابقةٍ) — لذا تُشتقُّ من فهرسِ الموجةِ نفسِهِ:
+# راكبو 6.2م+ وفهرسُ الموجةِ×100أ، وسائقو 8.2م+ كذلكَ.
+set -u
+HERE=$(cd "$(dirname "$0")" && pwd); REPO=$(cd "$HERE/../.." && pwd)
+ROUND=${1:?ROUND}; PROFILE=${2:?PROFILE_JSON}; DRAIN=${3:?DRAIN_SEC}; WAVEIDX=${4:-0}; shift 4 || true
+SEAT=${SEAT:-/home/user/cap-seat}
+export PATH="$HOME/bin:$HOME/envs/pg/bin:$PATH"
+RUN_DIR=${RUN_DIR:-$SEAT/runs/$ROUND}
+if [ -e "$RUN_DIR" ]; then echo "RUN_DIR exists — لا تُحذف الأدلةُ أبدًا؛ استعمل اسمًا جديدًا" >&2; exit 1; fi
+mkdir -p "$RUN_DIR/evidence"
+set -a; . "$HERE/config/run.env"; . "$SEAT/secrets.env"; set +a
+export RUN_DIR GATEWAY_URL=${GATEWAY_URL:-http://127.0.0.1:54300} GEN_ID=${GEN_ID:-genA} \
+  DRAIN_SEC="$DRAIN" PROFILE="$PROFILE" MATCH_WAIT_MS=${MATCH_WAIT_MS:-120000}
+for kv in "$@"; do export "$kv"; done
+export RIDER_SEQ_START=$((6200000+WAVEIDX*100000)) DRIVER_SEQ_START=$((8200000+WAVEIDX*100000))
+echo "{\"t\":\"$(date -Is)\",\"event\":\"round.start\",\"round\":\"$ROUND\",\"profile\":$PROFILE,\"drain_sec\":$DRAIN,\"code_sha\":\"$(git -C "$REPO" rev-parse HEAD)\",\"code_dirty\":$(git -C "$REPO" status --porcelain | grep -c .)}" > "$RUN_DIR/evidence/timeline.jsonl"
+bun run "$HERE/load/db-audit.ts" --phase=pre > "$RUN_DIR/evidence/db-audit-pre.out" 2>&1 || echo "pre-audit nonzero"
+setsid bun run "$HERE/load/miniapp-load.ts" > "$RUN_DIR/gen.out" 2>&1 < /dev/null &
+echo $! > "$RUN_DIR/gen.pid"
+echo "started round=$ROUND pid=$(cat "$RUN_DIR/gen.pid")"

@@ -1,0 +1,29 @@
+{
+  "gen": "genA",
+  "phase": "pre",
+  "snapshot": {
+    "at": "2026-10-17T02:50:13.486Z",
+    "ordersByStatus": {
+      "searching": 22,
+      "completed": 2635
+    },
+    "offersByStatus": {
+      "cancelled": 19796,
+      "accepted": 2635,
+      "expired": 330
+    },
+    "availability": {
+      "available": 21,
+      "total": 2664
+    },
+    "outbox": {
+      "byStatus": {
+        "pending": 1,
+        "delivered": 2456
+      },
+      "oldestPendingSec": 13
+    },
+    "engagedDuplicates": 0,
+    "activeRides": 22
+  }
+}

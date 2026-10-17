@@ -1,0 +1,78 @@
+{
+  "gen": "genA",
+  "phase": "post",
+  "sinceT0Sec": 0,
+  "snapshot": {
+    "at": "2026-10-17T02:53:24.783Z",
+    "ordersByStatus": {
+      "searching": 22,
+      "completed": 4015
+    },
+    "offersByStatus": {
+      "cancelled": 30831,
+      "accepted": 4015,
+      "expired": 330
+    },
+    "availability": {
+      "available": 21,
+      "total": 4044
+    },
+    "outbox": {
+      "byStatus": {
+        "pending": 15608,
+        "sending": 2,
+        "delivered": 4782
+      },
+      "oldestPendingSec": 204
+    },
+    "engagedDuplicates": 0,
+    "activeRides": 22
+  },
+  "preSnapshot": {
+    "at": "2026-10-17T02:50:13.486Z",
+    "ordersByStatus": {
+      "searching": 22,
+      "completed": 2635
+    },
+    "offersByStatus": {
+      "cancelled": 19796,
+      "accepted": 2635,
+      "expired": 330
+    },
+    "availability": {
+      "available": 21,
+      "total": 2664
+    },
+    "outbox": {
+      "byStatus": {
+        "pending": 1,
+        "delivered": 2456
+      },
+      "oldestPendingSec": 13
+    },
+    "engagedDuplicates": 0,
+    "activeRides": 22
+  },
+  "diff": {
+    "availabilityLeftover": 0,
+    "activeRidesDelta": 0,
+    "ordersDelta": {
+      "completed": 1380
+    }
+  },
+  "outcomes": {
+    "total": 1380,
+    "verified": 1380,
+    "failed": 0,
+    "closeDeadlineHits": 0
+  },
+  "mismatches": [],
+  "failuresDetail": [],
+  "violations": [
+    {
+      "rule": "stale_pending_outbox",
+      "detail": "أقدم مهمة معلقة عمرها 204ث (> 120ث)"
+    }
+  ],
+  "verdict": "VIOLATIONS"
+}

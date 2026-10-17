@@ -29,13 +29,20 @@ interface Snapshot {
   readonly ordersByStatus: Record<string, number>;
   readonly offersByStatus: Record<string, number>;
   readonly availability: { available: number; total: number };
-  readonly outbox: { byStatus: Record<string, number>; oldestPendingSec: number | null };
+  readonly outbox: {
+    byStatus: Record<string, number>;
+    byKind: Record<string, { total: number; delivered: number; pending: number }>;
+    oldestPendingSec: number | null;
+  };
+  /** قياسُ قناةِ الإرسالِ من سجلِ المحاكي في نافذةِ الموجةِ — دليلُ سببِ P7
+   *  لا افتراضَهُ: لكلِّ بوتٍ مقبولٌ (200) ومرفوضٌ (429) من إرسالياتِ المحاكي. */
+  readonly egress: { byBot: Record<string, { accepted: number; rejected: number }> } | null;
   readonly engagedDuplicates: number;
   readonly activeRides: number;
 }
 
 async function snapshot(): Promise<Snapshot> {
-  const [orders, offers, avail, outbox, dups] = await Promise.all([
+  const [orders, offers, avail, outbox, dups, byKindRows] = await Promise.all([
     sql<
       { status: string; n: string }[]
     >`select status::text as status, count(*)::text as n from orders group by 1`,
@@ -54,6 +61,11 @@ async function snapshot(): Promise<Snapshot> {
          where assigned_driver_id is not null and is_driver_engaged_order_status(status)
          group by assigned_driver_id having count(*) > 1
       ) as d`,
+    sql<{ kind: string; total: string; delivered: string; pending: string }[]>`
+      select kind, count(*)::text as total,
+             count(*) filter (where status = 'delivered')::text as delivered,
+             count(*) filter (where status = 'pending')::text as pending
+        from notification_outbox group by 1`,
   ]);
   const byStatus = (rows: { status: string; n: string }[]) =>
     Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]));
@@ -61,6 +73,19 @@ async function snapshot(): Promise<Snapshot> {
   const activeRides = orders
     .filter((r) => ["searching", "matched", "in_progress", "scheduled"].includes(r.status))
     .reduce((acc, r) => acc + Number(r.n), 0);
+  const byKind = Object.fromEntries(
+    byKindRows.map((r) => [
+      r.kind,
+      {
+        total: Number(r.total),
+        delivered: Number(r.delivered),
+        pending: Number(r.pending),
+      },
+    ]),
+  );
+  // سجلُ المحاكي: عدُّ الإرسالياتِ في نافذةِ الموجةِ (بوسمِ الوقتِ لا قراءةِ كلِّ
+  // الملفِّ) — يقرأُ آخرَ ما أمكنَهُ من الصفوفِ بكفاءةٍ (الملفُ حلقةٌ متراكمةٌ).
+  const egress = readMockEgress();
   return {
     at: new Date().toISOString(),
     ordersByStatus: byStatus(orders),
@@ -71,11 +96,49 @@ async function snapshot(): Promise<Snapshot> {
     },
     outbox: {
       byStatus: byStatus(outbox),
+      byKind,
       oldestPendingSec: pendingOldest === null ? null : Math.round(Number(pendingOldest)),
     },
+    egress,
     engagedDuplicates: Number(dups[0]?.count ?? "0"),
     activeRides,
   };
+}
+
+/**
+ * عدُّ إرسالياتِ المحاكي لكلِّ بوتٍ في نافذةِ الموجةِ (منذُ لحظةِ اللقطةِ
+ * القبليةِ إن وُجدَتْ) — القبولُ (200) والرفضُ (429) — دليلُ سببِ P7 من سجلِ
+ * المزوّدِ لا من حدسٍ. الملفُّ حلقةٌ متراكمةٌ عبرَ الجولاتِ فيُرشَّحُ بالوقتِ.
+ */
+function readMockEgress(): Snapshot["egress"] {
+  const path = `${EV}/telegram-mock.jsonl`;
+  if (!existsSync(path)) return null;
+  let sinceMs: number | null = null;
+  if (existsSync(prePath)) {
+    try {
+      const pre = JSON.parse(readFileSync(prePath, "utf8")) as { snapshot: Snapshot };
+      sinceMs = Date.parse(pre.snapshot.at);
+    } catch {
+      sinceMs = null;
+    }
+  }
+  const byBot: Record<string, { accepted: number; rejected: number }> = {};
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    if (line.trim() === "") continue;
+    let rec: Record<string, unknown>;
+    try {
+      rec = JSON.parse(line) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    const t = Number(rec.t);
+    if (sinceMs !== null && Number.isFinite(t) && t < sinceMs) continue;
+    const bot = String(rec.bot ?? "?");
+    byBot[bot] ??= { accepted: 0, rejected: 0 };
+    if (rec.status === 200) byBot[bot].accepted += 1;
+    else if (rec.status === 429) byBot[bot].rejected += 1;
+  }
+  return { byBot };
 }
 
 function readOutcomes(): {
@@ -116,9 +179,10 @@ function readOutcomes(): {
   return { total, verified, failed, closeDeadlineHits, byOrder };
 }
 
+const prePath = `${EV}/db-audit-pre.json`;
+
 async function main() {
   const snap = await snapshot();
-  const prePath = `${EV}/db-audit-pre.json`;
   if (phase === "pre") {
     writeFileSync(prePath, JSON.stringify({ gen: GEN_ID, phase, snapshot: snap }, null, 2));
     console.log(JSON.stringify({ phase, ok: true, snapshot: snap }));
