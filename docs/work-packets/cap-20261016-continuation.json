@@ -304,7 +304,21 @@
   "affected_docs": [
     "docs/ROADMAP-MASTER.md",
     "docs/SYSTEM_STATE.md",
-    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"
+    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/RESULT.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r7/db-audit-post.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r7/db-audit-pre.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r7/timeline.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r7/wave-report.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r8/db-audit-post.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r8/db-audit-pre.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r8/timeline.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r8/wave-report.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r9/db-audit-post.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r9/db-audit-pre.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r9/timeline.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/wave-250-r9/wave-report.json",
+    "docs/roadmap/execution/STATUS.md"
   ],
   "decision": "لا دمج في main ولا نشر إنتاجي ضمن هذه الجولات؛ بيئة الاختبار المعزولة ceezrsbx2 فقط؛ كل دفعة تحمل الكود والاختبارات والتوثيق وتحديث الخارطة والحالة والحزمة والدليل معًا (DEC-25 وADR 0262).",
   "tests": [
