@@ -85,6 +85,9 @@ export function createNotificationOutboxPort(sql: Sql): NotificationOutboxPort {
             claimToken: String(delivery.claim_token),
             attempts: Number(delivery.attempts),
             maxAttempts: Number(delivery.max_attempts),
+            // `LOAD-01 Recovery` — عدّادُ انتظارِ إشارةِ اللوحِ (اختياريٌّ:
+            // الصفوفُ القديمةُ قبلهُ = صفرٌ).
+            signalWaitCount: Number(delivery.signal_wait_count ?? 0),
             batchLimit: Number(delivery.batch_limit),
             // معرِّفُ الطلبِ الذي أنشأَ الصفَّ (`F8-01`): تكتبُه مُشغِّلاتُ القاعدةِ
             // عندَ الإدراجِ، ويُعادُ ههنا **كما هوَ في الصفِّ** فيستعيدُ العاملُ
@@ -96,6 +99,31 @@ export function createNotificationOutboxPort(sql: Sql): NotificationOutboxPort {
                 : {},
           } satisfies OutboxDelivery,
         };
+      }),
+    // `LOAD-01 Recovery` — تسليمٌ عبرَ اللوحِ بإيصالٍ، وعودةٌ بانتظارِ الإشارةِ:
+    // الرمزانِ الحارسانِ كما في أخواتِهما — لا عملَ إلا على صفٍّ `sending`
+    // يحملُ الرمزَ نفسَهُ.
+    finishViaBoard: (input) =>
+      guard("rpc.finish_notification_delivery_via_board", async () => {
+        const rows = await withRequestContext(
+          sql,
+          (tx) =>
+            tx<{ result: unknown }[]>`select finish_notification_delivery_via_board(
+              ${input.deliveryId}::uuid, ${input.claimToken}::uuid) result`,
+        );
+        const row = envelope(rows[0]?.result, "finish_notification_delivery_via_board");
+        return { ok: row.ok === true, outcome: finishOutcome(row.outcome) };
+      }),
+    requeueSignalWait: (input) =>
+      guard("rpc.requeue_notification_delivery_signal_wait", async () => {
+        const rows = await withRequestContext(
+          sql,
+          (tx) =>
+            tx<{ result: unknown }[]>`select requeue_notification_delivery_signal_wait(
+              ${input.deliveryId}::uuid, ${input.claimToken}::uuid, ${input.retryAfterMs}::integer) result`,
+        );
+        const row = envelope(rows[0]?.result, "requeue_notification_delivery_signal_wait");
+        return { ok: row.ok === true, outcome: finishOutcome(row.outcome) };
       }),
     finish: (input) =>
       guard("rpc.finish_notification_delivery", async () => {

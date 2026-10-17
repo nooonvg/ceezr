@@ -45,8 +45,10 @@
  */
 
 import { appendFileSync, mkdirSync } from "node:fs";
+import { io as ioClient } from "socket.io-client";
 import { type DriverOnboardingRecord, onboardDriverViaApp } from "./driver-onboarding.ts";
 import {
+  BASE,
   EV,
   engagedDuplicates,
   GEN_ID,
@@ -76,6 +78,18 @@ const PROFILE: Phase[] = JSON.parse(
   process.env.PROFILE ?? '[{"name":"smoke","sec":120,"conc":10}]',
 );
 const CITY = process.env.CITY ?? "JED";
+
+/**
+ * `LOAD-01 Recovery` — مزيجُ اتصالِ السائقينَ بالقناةِ الآنيةِ: واقعُ التطبيقِ
+ * ليسَ اتصالًا كاملًا ولا انعدامًا — فأهلُ اللوحِ المتصلونَ يُخدَمونَ بالإشارةِ
+ * (لا دلوَّ يُستهلكُ)، والغائبونَ بالبطاقةِ. النسبةُ **مسجَّلةٌ مسبقًا** في
+ * أدلةِ الجولةِ لا تُختارُ بعدَ النتيجةِ، وتغييرُها يغيّرُ حكمَ الدلوِ فلا
+ * يُعدَّلُ صامتًا.
+ */
+const DRIVER_SOCKET_MIX = Math.min(1, Math.max(0, Number(process.env.DRIVER_SOCKET_MIX ?? "0.7")));
+
+/** عداداتُ القناةِ في الجولةِ: تُطبَعُ في الختامِ — حقيقةُ المزيجِ مقيسةٌ لا مفترضةٌ. */
+const socketStats = { opened: 0, signals: 0, boardRefreshes: 0, acks: 0, ackFailures: 0 };
 const DEPTH = process.env.SCENARIO_DEPTH === "assign" ? "assign" : "full";
 const MATCH_WAIT_MS = Number(process.env.MATCH_WAIT_MS ?? 120_000);
 const POLL_MS = 2_000;
@@ -343,6 +357,50 @@ async function cachedSession(
  * مهلةٌ أو جسمٌ غيرُ صالحٍ) يُحسَبُ قراءةً فاشلةً لا «عدمَ وجودٍ»، وإلا خُطئَ
  * التشخيصَ ووُسِّعَتِ المهلةُ لعلّةِ قراءةٍ لا لعلّةِ توزيعٍ.
  */
+/**
+ * `LOAD-01 Recovery` — مقبسُ لوحِ العروضِ للسائقِ المتصلِ: يحاكي عميلَ Mini App
+ * الحقيقيَّ — اتصالٌ بمصادقةِ الجلسةِ، واستماعٌ لإشارةِ التحديثِ، وعندَها تحديثُ
+ * اللوحِ **وإقرارُ استلامِهِ** (الإيصالُ الذي يُثبِتُ الوصولَ منَ الجهةِ التي
+ * تملكُ الحكمَ). حقيقةُ المحاكاةِ: الغائبُ عنِ الغرفةِ لا يُشاهَدُ — إشارةُ
+ * الغائبِ لا تُزعَمُ.
+ */
+function openDriverOffersSocket(sessionToken: string): { close: () => void } {
+  const socket = ioClient(BASE, {
+    auth: { sessionToken },
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionAttempts: 5,
+  });
+  socketStats.opened += 1;
+  socket.on("offers:update", () => {
+    socketStats.signals += 1;
+    // عميلٌ يُحدِّثُ لوحَهُ على الإشارةِ ثمَّ يُقرُّ بما وصلهُ — كما التطبيقُ.
+    void (async () => {
+      try {
+        const board = await call("/v1/driver/offers", { token: sessionToken, timeoutMs: 15_000 });
+        if (!board.ok || board.body === null) return;
+        socketStats.boardRefreshes += 1;
+        const offers = board.body.offers;
+        if (!Array.isArray(offers)) return;
+        const ids = offers
+          .map((offer) => (offer as Record<string, unknown> | null)?.offer_id)
+          .filter((id): id is string => typeof id === "string");
+        if (ids.length === 0) return;
+        const ack = await call("/v1/driver/offers/receipts", {
+          token: sessionToken,
+          method: "POST",
+          body: { offer_ids: ids.slice(0, 50) },
+        });
+        if (ack.ok) socketStats.acks += 1;
+        else socketStats.ackFailures += 1;
+      } catch {
+        // إيصالٌ تراكميٌّ: فشلُهُ لا يُوقفُ السيناريو — التحديثُ التالي يُقرُّ.
+      }
+    })();
+  });
+  return { close: () => socket.disconnect() };
+}
+
 async function driverFindOffer(
   token: string,
   orderId: string,
@@ -480,6 +538,9 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
   // `LOAD-01` — رمزُ جلسةِ السائقِ يُرفَعُ قبلَ try ليصحَّ تنظيفُهُ في finally:
   // السائقُ الذي أنهى سيناريوهُ لا يبقى «متاحًا» في الحوضِ إلى الأبدِ.
   let driverToken: string | null = null;
+  // `LOAD-01 Recovery` — مقبسُ لوحِ العروضِ يُرفَعُ قبلَ try ليُغلقَ في finally:
+  // السائقُ لا يبقى متصلًا بقناةِ العروضِ بعدَ سيناريوهِ.
+  let driverSocket: { close: () => void } | null = null;
   try {
     // ١) الهويةُ — تحققٌ موقَّعٌ حقيقيٌّ لكلٍّ منَ الطرفينِ.
     const riderSession = await cachedSession(RIDER_BOT_TOKEN, rider.telegramId);
@@ -491,6 +552,11 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
       return { kind: "undecided", reason: `driver_session:${driverSession.error}` };
     }
     driverToken = driverSession.token;
+
+    // `LOAD-01 Recovery` — مزيجُ الاتصالِ: سبعةٌ من كلِّ عشرةِ سائقينَ متصلونَ
+    // بالقناةِ (النسبةُ مسجَّلةٌ أعلاه) — منهمْ تُصرَّفُ العروضُ بالإشارةِ
+    // والإيصالِ، ومن غابَ فلهُ البطاقةُ. حقيقةُ المزيجِ تُقاسُ في الختامِ.
+    driverSocket = Math.random() < DRIVER_SOCKET_MIX ? openDriverOffersSocket(driverToken) : null;
 
     // نقطةُ الالتقاطِ ثابتةٌ للرحلةِ والسائقِ معًا: السائقُ ينتظرُ قربَها
     // (±110م) فيكونُ أقربَ من أيِّ سائقٍ مزروعٍ بعيدًا عنها — المطابقةُ على
@@ -703,6 +769,7 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
       reason: error instanceof Error ? error.message.slice(0, 120) : "exception",
     };
   } finally {
+    driverSocket?.close();
     // `LOAD-01` — دورةُ حياةِ العرضِ منَ القاعدةِ (أفضلُ جهدٍ): طوابعُ صفوفِ
     // `order_offers` للطلبِ وإشعارُ البوابةِ — تُقرأُ قبلَ التنظيفِ لتُوثَّقَ
     // الحالةُ الفعليةُ التي انتهى إليها السيناريو.
@@ -911,6 +978,9 @@ async function main() {
     ev("phase.end", { name: ph.name, drainMs: Math.max(0, drainMs), stuck, closeAt });
   }
   clearInterval(snapshotTimer);
+  // `LOAD-01 Recovery` — المزيجُ يُعلَنُ قبلَ النتائجِ لا بعدها (النسبةُ منَ
+  // البيئةِ لا تُعدَّلُ في أثناءِ الجولةِ).
+  ev("gen.driver_socket_mix", { mix: DRIVER_SOCKET_MIX });
   rec.snapshot(true);
   rec.finalSnapshot();
 
@@ -923,6 +993,10 @@ async function main() {
     engagedDuplicates: duplicates,
     ...closeStats,
     lastPhaseCloseBudgetSec: DRAIN_SEC,
+    // `LOAD-01 Recovery` — حقيقةُ مزيجِ الاتصالِ مقيسةً لا مفترضةً: كم مقبسًا
+    // فُتحَ وكم إشارةً وصلت وكم إقرارَ استلامٍ سُجِّل — بها يُحكمُ على مسارِ
+    // اللوحِ (الإشارةُ والإيصالُ) لا على العددِ المزروعِ.
+    driverSocket: { mix: DRIVER_SOCKET_MIX, ...socketStats },
   };
   ev("gen.end", summary);
   console.log(JSON.stringify(summary));

@@ -136,6 +136,8 @@ function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     telegramTransport: "silent",
     botSurfaceMode: "legacy",
     miniAppUrl: null,
+    internalSignalSecret: null,
+    gatewayInternalUrl: null,
     driverBotToken: TEST_BOT_TOKEN,
     riderBotToken: TEST_BOT_TOKEN,
     telegramWebhookSecret: "tti-test-secret",

@@ -380,10 +380,8 @@ async function main(): Promise<void> {
 function appendToFile(results: DriverOnboardingRecord[]): void {
   const RUN_DIR = process.env.RUN_DIR ?? "/tmp/cap-run";
   mkdirSync(`${RUN_DIR}/evidence`, { recursive: true });
-  appendFileSync(
-    `${RUN_DIR}/evidence/driver-onboarding.jsonl`,
-    results.map((r) => JSON.stringify(r)).join("\n") + "\n",
-  );
+  const lines = results.map((r) => JSON.stringify(r)).join("\n");
+  appendFileSync(`${RUN_DIR}/evidence/driver-onboarding.jsonl`, `${lines}\n`);
 }
 
 if (process.env.RUN_ONBOARD_STANDALONE === "1") {

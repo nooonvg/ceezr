@@ -339,6 +339,7 @@ export const WASLA_MIGRATION_MATRIX: readonly MatrixEntry[] = [
   { ...noMigration("driver_document_reviewers") },
   { ...noMigration("driver_documents") },
   { ...noMigration("driver_location_history") },
+  { ...noMigration("driver_offers_board_receipts") },
   {
     table: "drivers",
     mechanism: "COLUMN_SPLIT",

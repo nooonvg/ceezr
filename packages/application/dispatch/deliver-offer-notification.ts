@@ -89,9 +89,38 @@ function offerAbandonReason(offer: OfferPayload | null, now: Date): string | nul
   return null;
 }
 
+/**
+ * `LOAD-01 Recovery` — مسارُ لوحِ العروضِ للسائقِ المتصلِ: الإيصالُ حقيقةً
+ * (منَ العميلِ الموثّقِ لا من جلبٍ صمّاءَ)، والإشارةُ للمتصلِ فقط، والبطاقةُ
+ * البديلُ لغيرِ المتصلِ أو من استنفدَ انتظارَه.
+ */
+export interface OfferBoardDelivery {
+  /**
+   * إيصالُ وصولِ العرضِ إلى لوحِ السائقِ — يُرسِلُه العميلُ بعدَ تطبيقِ لقطةِ
+   * اللوحِ (لا يكفي جلبُها)، فيُعلَنُ التسليمُ بالإيصالِ القائمِ لا بادعاءِ
+   * إرسالٍ. `null` = لا إيصالَ بعدُ.
+   */
+  readonly findReceipt: (driverId: string, offerId: string) => Promise<Date | null>;
+  /**
+   * إشارةُ السائقِ المتصلِ عبرَ القناةِ الآنيةِ: `true` إن بُثّت لسائقٍ في
+   * غرفةِ العروضِ. فشلُ الشبكةِ أو المهلةُ = `false` (لم تُبَثّ) لا فشلَ صفٍّ —
+   * فالبطاقةُ البديلةُ تنالُ فرصتها فورًا.
+   */
+  readonly signalDriver: (driverId: string) => Promise<boolean>;
+}
+
+/**
+ * سقفُ دوراتِ انتظارِ إشارةِ اللوحِ قبلَ بطاقةِ البوتِ: ثلاثُ إشاراتٍ
+ * (~9 ثوانٍ) ثمّ البطاقةُ — لا تعليقٌ بلا نهايةٍ (نصيحةُ المراجعةِ: الانتظارُ
+ * عدٌّ مسقوفٌ لا ميزانيةَ بطاقةٍ).
+ */
+const MAX_SIGNAL_WAITS = 3;
+const SIGNAL_WAIT_RETRY_MS = 3_000;
+
 export function createOfferNotificationHandler(
   publisher: OfferPublisher,
   log?: OfferNoticeLog,
+  board?: OfferBoardDelivery,
 ): NotificationHandler {
   return async (delivery) => {
     const offer = readOfferPayload(delivery.payload);
@@ -134,6 +163,45 @@ export function createOfferNotificationHandler(
       ...meta,
       expires_in_seconds: notification.expiresInSeconds,
     });
+    // ---------------------------------------------------------------------
+    // `LOAD-01 Recovery` — لوحُ العروضِ أولًا: إيصالٌ موثَّقٌ منَ العميلِ يُغني
+    // عنِ البطاقةِ (والدلوِ الضيّقِ)، وإشارةٌ للسائقِ المتصلِ تُؤجِّلُ البطاقةَ
+    // دوراتٍ مسقوفةً، ومن لا إيصالَ ولا اتصالَ لهُ البطاقةُ كما كانَ. هذا هوَ
+    // فصلُ «ضجيجِ العروضِ» عنِ الإشعاراتِ الحرجةِ منَ الجذرِ: العروضُ الراكدةُ
+    // تُصرَّفُ منَ اللوحِ والإشارةِ، والدلوُّ يتنفَّسُ للحرجِ.
+    // ---------------------------------------------------------------------
+    if (board !== undefined && offer !== null) {
+      const driverKey = String(offer.driverId);
+      const offerKey = String(offer.offerId);
+      const receipt = await board.findReceipt(driverKey, offerKey);
+      if (receipt !== null) {
+        // وصلَ فعلًا: تسليمٌ معلَنٌ بالقناةِ وبوقتِ الإيصالِ — لا معرّفَ رسالةٍ
+        // مُختلَقًا (القيدُ في القاعدةِ يسمحُ بالإيصالِ المصرَّحِ).
+        log?.("offer_notice.delivered_via_board", { ...meta, received_at: receipt.toISOString() });
+        return ok({
+          abandon: false,
+          messageId: null,
+          failure: null,
+          deliveredViaBoard: true,
+        });
+      }
+      const waits = delivery.signalWaitCount ?? 0;
+      if (waits < MAX_SIGNAL_WAITS) {
+        const emitted = await board.signalDriver(driverKey);
+        if (emitted) {
+          // متصلٌ وبُثّتِ الإشارةُ: انتظارٌ قصيرٌ للإيصالِ بلا محاولةِ إرسالٍ
+          // محسوبةٍ — البطاقةُ إن لم يصلِ الإيصالُ تنالُ ميزانيتَها كاملةً.
+          log?.("offer_notice.board_signal_wait", { ...meta, signal_waits: waits + 1 });
+          return ok({
+            abandon: false,
+            messageId: null,
+            failure: null,
+            signalWait: { retryAfterMs: SIGNAL_WAIT_RETRY_MS },
+          });
+        }
+      }
+      // غيرُ متصلٍ (أو استنفدَ الانتظارَ): بطاقةُ البوتِ فورًا — كما كانَ.
+    }
     const sent = await publisher.publishOffer(notification);
     // `SEC-19-ب-٤` — لو كانَ عنوانُ السائقِ غائبًا (telegram_id = null) رمى الناشرُ
     // `TELEGRAM_DELIVERY_UNAVAILABLE`. لا يُعادُ ولا يُتخلَّى عنه كـ`dead`، بل

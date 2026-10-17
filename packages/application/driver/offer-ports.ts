@@ -77,6 +77,17 @@ export interface DriverOfferStore {
     readonly telegramUserId: string;
   }): Promise<Result<DriverOfferBoard, DriverOfferStoreError>>;
 
+  /**
+   * `LOAD-01 Recovery` — إيصالاتُ لوحِ العروضِ: العميلُ يُقرُّ بأنَّه طبّقَ لقطةً
+   * فيها هذهِ العروضُ، فيُثبَتُ وصولُها منَ الجهةِ التي يملكُ الحكمَ (الخادمُ)
+   * لا منَ ادعاءِ إرسالٍ. **يكتبُ إيصالًا لا يغيّرُ عرضًا**: `on conflict do
+   * nothing` — إيصالٌ مرتانِ إيصالٌ واحدٌ، ولا يُمسُّ حالةُ العرضِ هنا.
+   */
+  recordBoardReceipts(input: {
+    readonly telegramUserId: string;
+    readonly offerIds: readonly string[];
+  }): Promise<Result<{ readonly recorded: number }, DriverOfferStoreError>>;
+
   /** **يقرأُ ولا يكتبُ**: تفاصيلُ `SD-04` لعرضٍ يملكُه هذا السائقُ وحدَه. */
   readDetail(input: {
     readonly telegramUserId: string;

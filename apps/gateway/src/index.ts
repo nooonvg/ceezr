@@ -200,6 +200,7 @@ import { createOffersChannel } from "./realtime/offers-channel.ts";
 import { createRideChannel } from "./realtime/ride-channel.ts";
 import { createUpstashRedis, sanitizeUpstashError } from "./redis/upstash.ts";
 import type { ProbeOutcome } from "./routes/health.ts";
+import { createInternalOffersSignalRoutes } from "./routes/internal-offers-signal.ts";
 import { createMetricsRoutes } from "./routes/metrics.ts";
 import { createPublicTrackingRoutes } from "./routes/public-tracking.ts";
 import { createUpdateDeduplicator } from "./routes/update-dedup.ts";
@@ -2041,7 +2042,15 @@ if (config.miniappSessionSecret !== null && isLiveLocationBroadcastPermitted(con
     log,
   });
   rideChannel.start();
+}
 
+/**
+ * `LOAD-01 Recovery` + `WR-04` — قناةُ العروضِ **خارجَ** حكمِ منعِ بثِّ الموقعِ:
+ * لا تحملُ موقعًا (إشارةُ «حدّثْ لوحَك» فحسب)، فقرارُ 2026-09-19 لا يشملُها —
+ * كانَ إقفالُها عليهِ خطأً تصنيفٍ أبقى إشارةَ العروضِ ميتةً في الإنتاجِ.
+ * وتشترطُ سرَّ الجلسةِ وحدَهُ.
+ */
+if (config.miniappSessionSecret !== null) {
   offersChannel = createOffersChannel({
     io: ioServer,
     sessions: createOffersSessionVerifier(
@@ -2051,6 +2060,24 @@ if (config.miniappSessionSecret !== null && isLiveLocationBroadcastPermitted(con
     ),
   });
   offersChannel.start();
+}
+
+/**
+ * `LOAD-01 Recovery` — مسارُ الإشارةِ الداخليُّ: نداءُ شوطِ التسليمِ (العاملُ)
+ * يسألُ: «هل السائقُ متصلٌ؟ بُثَّتْ لهُ إشارةُ اللوحِ». سرٌّ مشتركٌ
+ * (`INTERNAL_SIGNAL_SECRET`) يُعطَّلُ المسارُ بغيابِهِ (503) لا يُفتَحُ لكلِّ
+ * أحدٍ، ومهلةُ الطالبِ قصيرةٌ كي لا يُعلَّقَ الشوطُ على بوابةٍ بطيئةٍ.
+ */
+if (offersChannel !== null) {
+  app.route(
+    "/",
+    createInternalOffersSignalRoutes({
+      isDriverConnected: offersChannel.isDriverConnected,
+      notifyDriver: offersChannel.notifyDriver,
+      secret: process.env.INTERNAL_SIGNAL_SECRET ?? null,
+      log,
+    }),
+  );
 }
 
 /**

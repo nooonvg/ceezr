@@ -399,6 +399,15 @@ export const TABLE_ERASURE: Readonly<Record<string, ErasureRule>> = {
     exportSection: "orderOffers",
     deferredTo: null,
   },
+  driver_offers_board_receipts: {
+    disposition: D.retainLegalBasis,
+    subjects: [S.driver],
+    linkedBy: "driver_offers_board_receipts.driver_id → drivers.user_id",
+    basis:
+      "دليلُ وصولِ عرضٍ إلى سائقٍ عبرَ اللوحِ — شهادةُ تسليمٍ كأختِهِ `order_offers`، ولا عمودَ تعريفٍ فيه يُجهَّلُ: نسبتُه تنقطعُ بتجهيلِ الجذرِ.",
+    exportSection: "orderOffers",
+    deferredTo: null,
+  },
 
   /**
    * **الصفُّ المشتركُ بعينِه**: رحلةٌ ليسَت مِلكَ راكبٍ وحدَه — للسائقِ فيها

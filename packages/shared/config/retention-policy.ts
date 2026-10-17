@@ -242,6 +242,13 @@ export const TABLE_RETENTION: Readonly<Record<string, RetentionClass>> = {
   order_message_reads: RETENTION_CLASSES.pendingDecision,
   order_messages: RETENTION_CLASSES.pendingDecision,
   order_offers: RETENTION_CLASSES.pendingDecision,
+  /**
+   * `LOAD-01 Recovery` — إيصالاتُ لوحِ العروضِ: دليلُ وصولِ عرضٍ إلى سائقٍ عبرَ
+   * اللوحِ (إقرارُ العميلِ بعدَ تطبيقِ اللقطةِ). عمرُهُ عمرُ دليلِ التسليمِ
+   * نفسِهِ ولا مدّةً محسومةً بعدُ — `pendingDecision` كأختِهِ `order_offers`
+   * و`notification_outbox` (يحكمُ `F12-10` في أرشفتِهِ).
+   */
+  driver_offers_board_receipts: RETENTION_CLASSES.pendingDecision,
   orders: RETENTION_CLASSES.lifecycleBound,
   payment_transactions: RETENTION_CLASSES.financialSixYears,
   platform_settings: RETENTION_CLASSES.lifecycleBound,

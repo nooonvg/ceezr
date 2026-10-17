@@ -235,6 +235,17 @@ export const WASLA_EGRESS_REGISTRY: readonly EgressPeer[] = [
     removed: false,
   },
   {
+    id: "gateway-internal-offers-signal",
+    purpose:
+      "مسارُ إشارةِ لوحِ العروضِ الداخليُّ بينَ شوطِ التسليمِ والبوابةِ (متصلٌ؟ بُثَّتْ لهُ) — بابُ خدمةٍ لخدمةٍ بسرٍّ مشتركٍ",
+    peerClass: "INFRASTRUCTURE",
+    system: "NONE",
+    source: { kind: "env", envKeys: ["GATEWAY_INTERNAL_URL", "INTERNAL_SIGNAL_SECRET"] },
+    callSite: "packages/infrastructure/dispatch/offer-board-delivery.ts",
+    runtimeGate: { kind: "gated" },
+    removed: false,
+  },
+  {
     id: "upstash-redis-rest",
     purpose: "مخزنُ الجلساتِ ومنعُ التكرارِ عبرَ المثيلاتِ",
     peerClass: "INFRASTRUCTURE",

@@ -27,6 +27,7 @@ import type {
   DriverAvailabilityResponse,
   DriverNegotiationsResponse,
   DriverOfferDetailResponse,
+  DriverOffersReceiptsResponse,
   DriverOffersResponse,
   LeaveNegotiationResponse,
   RejectDriverOfferResponse,
@@ -36,6 +37,21 @@ export type * from "./offers-contract.ts";
 
 export function readDriverOffers(): Promise<DriverOffersResponse> {
   return apiFetch<DriverOffersResponse>("/v1/driver/offers", { method: "GET" });
+}
+
+/**
+ * `LOAD-01 Recovery` — إقرارُ استلامِ اللوحِ: يُرسِلُه العميلُ **بعدَ تطبيقِ**
+ * اللقطةِ (لا عندَ جلبِها)، فيفصلُ «سلّمها الخادمُ» عنِ «وصلَتْ». الإيصالُ
+ * تراكميٌّ لا مُعوِّقٌ: فشلُهُ لا يُوقفُ العرضَ — التحديثُ التالي يُقرُّ بما
+ * بقيَ، وشوطُ التسليمِ ينتظرُهُ دوراتٍ مسقوفةً ثمَّ بطاقةُ البوتِ.
+ */
+export function ackDriverOfferBoard(
+  offerIds: readonly string[],
+): Promise<DriverOffersReceiptsResponse> {
+  return apiFetch<DriverOffersReceiptsResponse>("/v1/driver/offers/receipts", {
+    method: "POST",
+    body: { offer_ids: offerIds.slice(0, 50) },
+  });
 }
 
 export function readDriverOfferDetail(offerId: string): Promise<DriverOfferDetailResponse> {

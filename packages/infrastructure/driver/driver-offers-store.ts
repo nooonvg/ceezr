@@ -257,11 +257,51 @@ export function eligibilityReasonsFrom(input: {
   return reasons;
 }
 
+/** معرّفٌ صالحٌ للإيصالِ: UUID فقط — ما عداه يُهمَلُ لا يُفسدُ الدفعةَ. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class PostgresDriverOfferStore implements DriverOfferStore {
   readonly #sql: Sql;
 
   constructor(sql: Sql) {
     this.#sql = sql;
+  }
+
+  /**
+   * `LOAD-01 Recovery` — إيصالاتُ اللوحِ: يَحلُّ الجلسةَ إلى سائقٍ (join واحدٌ)
+   * ويُدرجُ الإيصالاتِ بلا مساسٍ بحالةِ العرضِ. المعرّفاتُ غيرُ الصالحةِ
+   * (UUID) تُهمَلُ صامتةً لا أن تُسقِطَ الدفعةَ كلَّها، والسقفُ 50 إيصالًا
+   * في النداءِ (عميلٌ واحدٌ لا يُغرقُ القناةَ بالدفوعاتِ).
+   */
+  async recordBoardReceipts(input: {
+    readonly telegramUserId: string;
+    readonly offerIds: readonly string[];
+  }): Promise<Result<{ readonly recorded: number }, DriverOfferStoreError>> {
+    const telegramId = asTelegramId(input.telegramUserId);
+    if (telegramId === null) return err(failed("MALFORMED_RESULT"));
+    const validIds = [...new Set(input.offerIds)]
+      .filter((id) => UUID_PATTERN.test(id))
+      .slice(0, 50);
+    if (validIds.length === 0) return ok({ recorded: 0 });
+    try {
+      const rows = await this.#sql<{ recorded: number }[]>`
+        with ins as (
+          insert into driver_offers_board_receipts (driver_id, offer_id, city_id, received_at)
+          select dr.id, v.offer_id::uuid, dr.city_id, now()
+          from (
+            select d.id from drivers d
+            join users u on u.id = d.user_id
+            where u.telegram_id = ${telegramId}::bigint
+          ) dr
+          join unnest(${validIds}::text[]) as v(offer_id) on true
+          on conflict do nothing
+          returning 1
+        )
+        select count(*)::int as recorded from ins`;
+      return ok({ recorded: rows[0]?.recorded ?? 0 });
+    } catch {
+      return err(failed("STORE_ERROR"));
+    }
   }
 
   async readBoard(input: {

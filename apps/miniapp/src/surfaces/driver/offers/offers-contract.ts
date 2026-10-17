@@ -70,6 +70,16 @@ export interface ApiDriverOfferCard {
   readonly pickup_at?: string | null;
 }
 
+/**
+ * `LOAD-01 Recovery` — ردُّ إقرارِ استلامِ اللوحِ: كم إيصالًا سُجِّلَ. الإقرارُ
+ * يأتي **بعدَ تطبيقِ اللقطةِ** لا عندَ جلبِها — فصلُ «سلّمها الخادمُ» عنِ
+ * «وصلَتْ» هوَ عينُ أمانةِ القياسِ.
+ */
+export interface DriverOffersReceiptsResponse {
+  readonly ok: boolean;
+  readonly recorded: number;
+}
+
 export interface DriverOffersResponse {
   readonly ok: true;
   /** لحظةُ الخادمِ — تُقرأُ لتُوثِّقَ أنَّ المؤقّتَ من عندِه لا من الجهازِ. */

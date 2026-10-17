@@ -97,6 +97,10 @@ export type KeyDimension = (typeof KEY_DIMENSIONS)[number];
  * `404` (`ADR 0139`).
  */
 export const PUBLIC_PATH_PREFIXES = [
+  // `LOAD-01 Recovery` — سطحُ الخدمةِ الداخليِّ (سرٌّ مشتركٌ بينَ العاملِ
+  // والبوابةِ، لا عميلَ): بادئةٌ معلَنةٌ كي لا يُرفَدَ مسارُها كمسارٍ رُكِّبَ
+  // سهوًا على الجذرِ — والتصنيفُ في السِجلِّ هوَ الحاجزَ لا البادئةَ وحدها.
+  "/internal/",
   "/v1/",
   "/webhook/",
   "/admin",
@@ -785,6 +789,37 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
     exposure: "مُصادَقٌ بجلسةٍ",
     limits: [],
     exemption: null,
+  },
+
+  {
+    // `LOAD-01 Recovery` — إيصالاتُ اللوحِ: إقرارُ العميلِ بوصولِ العروضِ بعدَ
+    // تطبيقِ اللقطةِ. جلستُهُ تُحَدُّ نداءاتِهِ لا سِجلُّهِ: التطبيقُ يُحدِّثُ
+    // اللوحَ على الإشارةِ بخانقٍ داخليٍّ (ثانيتانِ)، والدفعاتُ بلا معرّفاتٍ
+    // صالحةٍ تُهمَلُ في المخزنِ (50 كحدٍّ أقصى للنداءِ). كأختِهِ قراءةِ اللوحِ.
+    method: "POST",
+    path: "/v1/driver/offers/receipts",
+    file: "apps/gateway/src/routes/driver-offers.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+  {
+    // `LOAD-01 Recovery` — مسارُ إشارةِ لوحِ العروضِ الداخليُّ: نداءُ شوطِ
+    // التسليمِ (العاملُ) لا عميلٍ — سرٌّ مشتركٌ في ترويسةٍ يَرِدُّ 401 بلا سرٍّ
+    // و503 حينَ يُعطَّلُ. **إعفاءٌ مكتوبٌ**: الحاجزُ الحقيقيُّ هنا هوَ السرُّ
+    // المشتركُ لا حصرُ المعدَّلِ — فالمتصلُّ خدمةٌ واحدةٌ تُدمِجُ إشاراتِها
+    // (إشارةٌ واحدةٌ لكلِّ سائقٍ كلَّ ثانيتينِ في الطالبِ نفسِهِ)، وحدُّ معدَّلٍ
+    // على العنوانِ لا يحمي مسارًا لا يعرفُ العميلَ أصلًا.
+    method: "POST",
+    path: "/internal/realtime/offers-signal",
+    file: "apps/gateway/src/routes/internal-offers-signal.ts",
+    exposure: "ويبهوكٌ موقَّعٌ",
+    limits: [],
+    exemption: {
+      reason:
+        "مسارُ خدمةٍ لخدمةٍ بسرٍّ مشتركٍ لا يعرفُهُ عميلٌ؛ الحاجزُ هوَ السرُّ (401 بلا سرٍّ) والتقارُنُ في الطالبِ (دمجُ إشارةٍ كلَّ ثانيتينِ لكلِّ سائقٍ) — وحدُّ المعدَّلِ هنا يحجبُ خدمةً صادقةً عندَ عاصفةِ عروضٍ ولا يمنعُ شريرًا يعرفُ السرَّ أصلًا.",
+      owner: REPO_EXECUTOR,
+    },
   },
 
   {
@@ -1604,9 +1639,9 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
  * 135 → 137 في 2026-10-12 (WR-09 · ADR 0266): `GET`/`POST /v1/rides/:id/candidate` — مُصادَقانِ
  *   بجلسةٍ، والطلبُ مقيَّدٌ بصاحبِه في القاعدة.
  */
-export const ROUTE_POLICY_COUNT = 145;
+export const ROUTE_POLICY_COUNT = 147;
 export const LIMITED_ROUTE_COUNT = 10;
-export const EXEMPT_ROUTE_COUNT = 3;
+export const EXEMPT_ROUTE_COUNT = 4;
 
 /** حدودُ مسارٍ بعينِه — يُعيدُ مصفوفةً فارغةً لِما لا حدَّ له. */
 export function limitsFor(method: string, path: string): readonly RateLimitPolicy[] {

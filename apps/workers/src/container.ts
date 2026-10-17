@@ -78,6 +78,7 @@ import {
 import { createStaleEscalationCardPort } from "../../../packages/infrastructure/dispatch/escalation-card-adapters.ts";
 import { createStaleGroupCardPort } from "../../../packages/infrastructure/dispatch/negotiation-adapters.ts";
 import { createNegotiationWiring } from "../../../packages/infrastructure/dispatch/negotiation-wiring.ts";
+import { createOfferBoardDelivery } from "../../../packages/infrastructure/dispatch/offer-board-delivery.ts";
 import { createDeadOfferCardPort } from "../../../packages/infrastructure/dispatch/offer-card-adapters.ts";
 import {
   createPickupReminderStateReader,
@@ -875,8 +876,18 @@ export function buildWorkerContainer(
       event === "driver_city_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
   });
   const notificationHandlers = {
-    offer: createOfferNotificationHandler(offerPublisher, (event, meta) =>
-      event === "offer_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
+    offer: createOfferNotificationHandler(
+      offerPublisher,
+      (event, meta) =>
+        event === "offer_notice.final_failure" ? log.error(event, meta) : log.info(event, meta),
+      // `LOAD-01 Recovery` — لوحُ العروضِ والإشارةُ للسائقِ المتصلِ، والبطاقةُ
+      // البديلةُ لغيرِ المتصلِ: فصلُ «ضجيجِ العروضِ» عنِ الإشعاراتِ الحرجةِ.
+      createOfferBoardDelivery({
+        sql,
+        gatewayInternalUrl: config.gatewayInternalUrl,
+        secret: config.internalSignalSecret,
+        log: (message, meta) => log.info(message, meta),
+      }),
     ),
     dispute_resolution: createDisputeResolutionHandler({
       driver: createTicketOwnerNotifier(
