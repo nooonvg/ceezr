@@ -277,9 +277,14 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
     // كلُّ صفٍّ قُبِضَ مرةً واحدةً (الصواميلُ الفارغةُ للطابورِ انتظارٌ لا التقاطٌ)
     expect(f.st.claims).toBeGreaterThanOrEqual(3);
     // الفتحاتُ احتُرِمَت: كلُّ إرسالٍ بعدَ ثانيةٍ كاملةٍ من سابقهِ للمحادثةِ نفسِها
-    const [s0, s1, s2] = [sentLog[0], sentLog[1], sentLog[2]].map((x) => x?.at ?? -1);
-    expect(s1 - s0).toBeGreaterThanOrEqual(1_000);
-    expect(s2 - s1).toBeGreaterThanOrEqual(1_000);
+    const gap = (a: number, b: number): number => {
+      const first = sentLog[a];
+      const second = sentLog[b];
+      if (first === undefined || second === undefined) return -1;
+      return second.at - first.at;
+    };
+    expect(gap(0, 1)).toBeGreaterThanOrEqual(1_000);
+    expect(gap(1, 2)).toBeGreaterThanOrEqual(1_000);
   });
 
   test("D8/الاحتفاظ: ما لم تُفتَحِ الفتحةُ داخلَ الميزانيةِ يُغسَلُ للطابورِ بالعقدِ القديمِ", async () => {
