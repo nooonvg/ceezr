@@ -22,6 +22,7 @@ echo "gen_exit_marker $(cat "$RUN_DIR/gen.pid")"
 # البعديِّ ليقرأَهُ حسابُ قناةِ الإرسالِ (المحاكيُّ يكتبُ في مقعدٍ مشتركٍ).
 cp "$SEAT/runs/current/evidence/telegram-mock.jsonl" "$RUN_DIR/evidence/telegram-mock.jsonl" 2>/dev/null || true
 set -a; . "$HERE/config/run.env"; . "$SEAT/secrets.env"; set +a
+curl -s -m 5 "${MOCK_TELEGRAM_URL:-http://127.0.0.1:58090}/stats" > "$RUN_DIR/evidence/mock-stats-post.json" 2>/dev/null || true
 export RUN_DIR GATEWAY_URL=${GATEWAY_URL:-http://127.0.0.1:54300} GEN_ID=${GEN_ID:-genA}
 bun run "$HERE/load/db-audit.ts" --phase=post > "$RUN_DIR/evidence/db-audit-post.out" 2>&1
 # استقرارُ البوابةِ عبرَ الموجةِ: الرقمُ المُدوَّنُ في wave.sh (gateway.pid) هو

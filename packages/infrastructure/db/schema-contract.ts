@@ -12,6 +12,7 @@
 export const CONTRACT_FUNCTIONS: readonly string[] = [
   "abandon_notification_delivery",
   "abandon_telegram_update_job",
+  "ack_rider_trip_events",
   "active_ride_snapshot",
   "add_ticket_message",
   "admin_break_glass_disable",
@@ -113,6 +114,7 @@ export const CONTRACT_FUNCTIONS: readonly string[] = [
   "list_order_messages",
   "list_pending_account_recovery_requests",
   "list_recent_destinations",
+  "list_rider_trip_events",
   "list_saved_places",
   "list_stale_pending_payments",
   "list_ticket_messages",
@@ -228,6 +230,7 @@ export const CONTRACT_TABLES: readonly string[] = [
   "payment_transactions",
   "platform_settings",
   "ratings",
+  "rider_trip_event_receipts",
   "riders",
   "subscriptions",
   "support_tickets",

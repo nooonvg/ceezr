@@ -399,6 +399,19 @@ export const TABLE_ERASURE: Readonly<Record<string, ErasureRule>> = {
     exportSection: "orderOffers",
     deferredTo: null,
   },
+  /**
+   * ADR 0287 — إيصالُ حدثِ رحلةٍ أقرَّ بهِ تطبيقُ الراكبِ بعدَ تطبيقِ اللقطةِ: شهادةُ
+   * تسليمٍ كأختِهِ `driver_offers_board_receipts`، ولا نصَّ فيهِ ولا موقعَ.
+   */
+  rider_trip_event_receipts: {
+    disposition: D.retainLegalBasis,
+    subjects: [S.rider],
+    linkedBy: "rider_trip_event_receipts.rider_user_id → users.id",
+    basis:
+      "دليلُ وصولِ حدثِ طورِ رحلةٍ إلى الراكبِ عبرَ Mini App — شهادةُ تسليمٍ لا تحملُ نصًّا ولا موقعًا: معرّفُ صفٍّ وطلبٍ ونوعُ الحدثِ ووقتُ الإقرارِ، ونسبتُه تنقطعُ بتجهيلِ الجذرِ.",
+    exportSection: "notificationsSent",
+    deferredTo: null,
+  },
   driver_offers_board_receipts: {
     disposition: D.retainLegalBasis,
     subjects: [S.driver],

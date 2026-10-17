@@ -32,6 +32,24 @@ if ! bun run "$HERE/load/db-audit.ts" --phase=pre > "$RUN_DIR/evidence/db-audit-
   echo "PRE-AUDIT FAILED — أُجهضت الموجة قبل الحقن (راجع db-audit-pre.out)" >&2
   exit 1
 fi
+# تصنيفُ الإرسالِ لكلِّ بوتٍ شرطٌ قبليٌّ: محاكٍ يجهلُ الرموزَ يجمعُ البوتينِ في
+# نافذةٍ واحدةٍ فيفسدُ قياسَ P7 (عيبُ r7–r9). اللقطةُ القبليةُ تُحفظُ ويُقارَنُ
+# بها بعدَ الموجةِ (بوابةُ EGRESS-CLASSIFIED في التقريرِ).
+if ! curl -s -m 5 "${MOCK_TELEGRAM_URL:-http://127.0.0.1:58090}/stats" > "$RUN_DIR/evidence/mock-stats-pre.json" \
+   || ! python3 -c "import json,sys; d=json.load(open(sys.argv[1])); sys.exit(0 if d.get('unknown_token',1)==0 else 1)" "$RUN_DIR/evidence/mock-stats-pre.json"; then
+  echo "MOCK PREFLIGHT FAILED — المحاكي لا يصنّفُ البوتاتِ (unknown_token>0) أو لا يستجيب؛ أعد تشغيله" >&2
+  exit 1
+fi
+# مسارُ الإشارةِ الآنيةِ شرطٌ قبليٌّ: بلا `INTERNAL_SIGNAL_SECRET` تعيدُ البوابةُ 503
+# فيتعطّلُ مسارُ Mini App للسائقِ والراكبِ **بصمتٍ** وينزلُ كلُّ شيءٍ إلى تيليجرامَ
+# (عيبُ مقعدِ r7–r10). نداءٌ بلا سرٍّ يجبُ أن يُرفضَ 401 (مُركَّبٌ ومحروسٌ) لا 503.
+for sig in offers-signal rider-trip-signal; do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -m 5 -X POST "${GATEWAY_INTERNAL_URL:-http://127.0.0.1:54300}/internal/realtime/$sig" -H 'content-type: application/json' -d '{}')
+  if [ "$code" != "401" ]; then
+    echo "SIGNAL PREFLIGHT FAILED — /internal/realtime/$sig أعادَ $code (المتوقعُ 401: مُركَّبٌ ومحروسٌ بسرٍّ)" >&2
+    exit 1
+  fi
+done
 setsid bun run "$HERE/load/miniapp-load.ts" > "$RUN_DIR/gen.out" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/gen.pid"
 echo "started round=$ROUND pid=$(cat "$RUN_DIR/gen.pid")"

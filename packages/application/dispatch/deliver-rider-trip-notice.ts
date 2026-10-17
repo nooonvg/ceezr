@@ -51,7 +51,38 @@ export interface RiderTripNoticeSender {
   sendReturningId(chatId: string, text: string, keyboard: Keyboard | null): Promise<string | null>;
 }
 
+/**
+ * ADR 0287 — أطوارُ الرحلةِ التي يعرضُها Mini App مباشرةً فتُسلَّمُ فيه أولًا.
+ * ما سواها (جدولةٌ، تذكيرٌ، بحثٌ، انتهاءٌ) يبقى تيليجرامَ أولًا: الراكبُ في
+ * الغالبِ ليسَ في التطبيقِ ساعتَها.
+ */
+export const RIDER_TRIP_APP_FIRST_EVENTS: ReadonlySet<RiderTripEvent> = new Set([
+  "MATCHED",
+  "ARRIVED",
+  "STARTED",
+  "COMPLETED",
+]);
+/** مهلةُ كلِّ انتظارٍ للإقرارِ بعدَ إشارةٍ مبثوثةٍ. */
+export const RIDER_TRIP_APP_ACK_WAIT_MS = 3_000;
+/**
+ * سقفُ الانتظاراتِ قبلَ البديلِ: بعدَ ثلاثِ إشاراتٍ بلا إقرارٍ (≈9ث + دوراتُ
+ * الالتقاطِ) يُرسَلُ تيليجرامُ — فلا يبقى الحدثُ معلّقًا على عميلٍ صامتٍ.
+ */
+export const RIDER_TRIP_APP_MAX_SIGNAL_WAITS = 3;
+
+/**
+ * ADR 0287 — منفذُ Mini App للراكبِ: إيصالٌ منَ العميلِ بعدَ تطبيقِ الحدثِ
+ * (لا البثُّ ولا القراءةُ)، وإشارةٌ لغرفةِ الراكبِ تُعيدُ `true` فقط إن كانَ
+ * في الغرفةِ عميلٌ متصلٌ فعلًا وبُثَّت له.
+ */
+export interface RiderTripAppDelivery {
+  findReceipt(deliveryId: string): Promise<Date | null>;
+  signalRider(telegramUserId: string, orderId: string): Promise<boolean>;
+}
+
 export interface RiderTripNoticeHandlerDeps {
+  /** غيابُه = تيليجرامُ وحدَه (السلوكُ السابقُ لـ ADR 0287). */
+  readonly app?: RiderTripAppDelivery;
   readonly facts: RiderTripFactsReader;
   readonly sender: RiderTripNoticeSender;
   readonly miniAppUrl: string | null;
@@ -84,8 +115,41 @@ export function createRiderTripNoticeHandler(
       return ok({ abandon: true, messageId: null, failure: null });
     }
     const meta = { event, order_id: orderId, delivery_id: delivery.deliveryId };
-    const facts = await deps.facts.read(orderId);
     const claimedChat = delivery.payload.chat_id;
+    // ADR 0287 — Mini App أولًا: إيصالُ العميلِ يُغلقُ الصفَّ بلا بطاقةٍ؛ وللمتصلِ
+    // إشارةٌ ثم انتظارٌ مسقوفٌ؛ وما عداهما (غيرُ متصلٍ، أو انقضتِ المهلةُ بلا
+    // إقرارٍ) فتيليجرامُ احتياطًا. البثُّ وحدَه لا يُعدُّ تسليمًا قطُّ.
+    if (deps.app !== undefined && RIDER_TRIP_APP_FIRST_EVENTS.has(event)) {
+      const receipt = await deps.app.findReceipt(delivery.deliveryId);
+      if (receipt !== null) {
+        deps.log?.("rider_trip_notice.app_acked", {
+          ...meta,
+          waits: delivery.signalWaitCount ?? 0,
+        });
+        return ok({ abandon: false, messageId: null, failure: null, deliveredViaBoard: true });
+      }
+      const waits = delivery.signalWaitCount ?? 0;
+      if (
+        waits < RIDER_TRIP_APP_MAX_SIGNAL_WAITS &&
+        typeof claimedChat === "string" &&
+        claimedChat !== "" &&
+        (await deps.app.signalRider(claimedChat, orderId))
+      ) {
+        deps.log?.("rider_trip_notice.app_signalled", { ...meta, waits });
+        return ok({
+          abandon: false,
+          messageId: null,
+          failure: null,
+          signalWait: { retryAfterMs: RIDER_TRIP_APP_ACK_WAIT_MS },
+        });
+      }
+      deps.log?.("rider_trip_notice.telegram_fallback", {
+        ...meta,
+        waits,
+        reason: waits >= RIDER_TRIP_APP_MAX_SIGNAL_WAITS ? "ack_timeout" : "not_connected",
+      });
+    }
+    const facts = await deps.facts.read(orderId);
     const chatId =
       typeof claimedChat === "string" && claimedChat !== "" ? claimedChat : facts?.riderTelegramId;
     if (facts === null || chatId === undefined) {

@@ -18,6 +18,7 @@ import type {
   OrderCancellationPort,
   SessionStore,
 } from "../../../packages/application/bots/types.ts";
+import { RIDER_TRIP_APP_FIRST_EVENTS } from "../../../packages/application/dispatch/deliver-rider-trip-notice.ts";
 import type { EscalateUnmatchedOrderDependencies } from "../../../packages/application/dispatch/escalate-unmatched-order.ts";
 import type { PublishToUnsubscribedGroupDependencies } from "../../../packages/application/dispatch/publish-to-unsubscribed-group.ts";
 import { redispatchSearchingOrders } from "../../../packages/application/dispatch/redispatch-searching-orders.ts";
@@ -280,6 +281,18 @@ export { asIdentifyingSender, asOutboundSender, asSupportSender };
 export interface Container {
   readonly handler: UpdateHandler;
   readonly sql: Sql;
+  /**
+   * ADR 0287 — خطّافُ الإشارةِ الآنيةِ لأطوارِ الرحلةِ: يُركَّبُ في `index.ts` بعدَ
+   * إنشاءِ القناةِ؛ فإن أُودِعَ طورٌ جديدٌ بُثَّ `trip:update` للراكبِ فورًا (لا
+   * بعدَ دورةِ العاملِ). الإشارةُ لا تُعدُّ تسليمًا — الإقرارُ وحدَه يُغلقُ الصفَّ.
+   */
+  readonly riderTripSignal: { notify: ((telegramUserId: string, orderId: string) => void) | null };
+  /**
+   * التكليفُ السابعُ (P4) — طلبٌ جديدٌ باحثٌ يُطلِقُ شوطَ العرضِ الفوريَّ لمدينتِه
+   * (المُجدوِلُ نفسُه بخفضِه ومانعِ تداخلِه وحافتِه اللاحقةِ). كانَ أوّلُ عرضٍ ينتظرُ محفّزَ
+   * موقعِ سائقٍ أو الدوريَّ (20ث). لا يحجبُ: يعودُ فورًا وفشلُه يُسجَّلُ.
+   */
+  readonly dispatchNewOrder: (orderId: string) => void;
   /**
    * `F2-04` — مزوِّدُ التوجيهِ مكشوفٌ لأنَّ مسارَ الاقتباسِ يحتاجُ **نفسَ** قرارِ
    * التهيئةِ الذي بُنيَ ههنا: `null` عندَ `ROUTING_PROVIDER=none` لا مزوِّدٌ
@@ -914,7 +927,16 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         limit: IMMEDIATE_REDISPATCH_LIMIT,
         log,
       });
-      if (!report.ok) log("redispatch.immediate_failed", { cityId, detail: report.error.detail });
+      if (!report.ok) {
+        log("redispatch.immediate_failed", { cityId, detail: report.error.detail });
+        return;
+      }
+      // امتلأَ الحدُّ وتقدّمَ ⇒ بقيَ مستحقٌّ على الأرجحِ: شوطٌ لاحقٌ واحدٌ بعدَ النافذةِ.
+      return {
+        saturated:
+          report.value.examined >= IMMEDIATE_REDISPATCH_LIMIT &&
+          report.value.rebroadcast.length > 0,
+      };
     },
     debounceMs: IMMEDIATE_REDISPATCH_DEBOUNCE_MS,
     now: () => Date.now(),
@@ -993,8 +1015,29 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    * `WR-15` (ADR 0265) — منفذُ إيداعِ إخطاراتِ الطورِ للراكب، واحدٌ لكلِّ المسارات:
    * Mini App وأزرارُ بوتِ السائق. المفتاحُ `rider_trip:<order>:<event>` يمنعُ التكرار.
    */
+  const riderTripSignal: Container["riderTripSignal"] = { notify: null };
+  const riderTripOutbox = createRiderTripNoticeOutbox(sql);
   const riderTripNoticeDeps: RiderTripNoticeDeps = {
-    outbox: createRiderTripNoticeOutbox(sql),
+    outbox: {
+      enqueue: async (orderId, event) => {
+        const result = await riderTripOutbox.enqueue(orderId, event);
+        const notify = riderTripSignal.notify;
+        // ADR 0287 — إشارةٌ لحظيةٌ للطورِ الجديدِ وحدَه، بعدَ ثباتِ صفِّه، وبلا
+        // انتظارٍ: فشلُها لا يمسُّ الانتقالَ (العاملُ يُشيرُ ثانيةً ثم تيليجرامُ).
+        if (result?.created === true && notify !== null && RIDER_TRIP_APP_FIRST_EVENTS.has(event)) {
+          void sql<{ telegram_id: string }[]>`
+            select u.telegram_id::text as telegram_id
+              from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id
+             where o.id = ${orderId}::uuid`
+            .then((rows) => {
+              const tg = rows[0]?.telegram_id;
+              if (tg !== undefined && tg !== null) notify(tg, orderId);
+            })
+            .catch(() => undefined);
+        }
+        return result;
+      },
+    },
     log,
   };
   /**
@@ -1191,7 +1234,24 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     tracking: liveTracking,
   };
 
+  const dispatchNewOrder = (orderId: string): void => {
+    void sql<
+      { city_id: string }[]
+    >`select city_id::text as city_id from orders where id = ${orderId}::uuid`
+      .then((rows) => {
+        const cityId = rows[0]?.city_id;
+        if (cityId !== undefined) immediateRedispatchScheduler.trigger(cityId as CityId);
+      })
+      .catch((cause: unknown) =>
+        log("redispatch.new_order_trigger_failed", {
+          detail: cause instanceof Error ? cause.message : String(cause),
+        }),
+      );
+  };
+
   return {
+    dispatchNewOrder,
+    riderTripSignal,
     routing,
     translation,
     driverDialogSessions: driverSessions,

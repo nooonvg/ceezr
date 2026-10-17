@@ -210,6 +210,21 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/rider-trip-app-ack.test.ts",
+    suites: ["ADR 0287 — أحداثُ الرحلةِ في Mini App وإقرارُ العميلِ"],
+    skipped: 7,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "إقرارُ تطبيقِ الراكبِ بأحداثِ الطورِ (ADR 0287): الملكيةُ وإزالةُ التكرارِ وإغلاقُ صفِّ الصادرِ `miniapp_ack` وعدمُ مسِّ المحمولِ عندَ العاملِ وقيدُ القناةِ — سلوكُ دوالِّ القاعدةِ وقيودِها لا يُثبَتُ بمحاكٍ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجراتِ مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً.",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+
+  {
     file: "tests/integration/redispatch-exhausted-starvation.test.ts",
     suites: ["D8 redispatch starvation by exhausted searching orders"],
     skipped: 1,

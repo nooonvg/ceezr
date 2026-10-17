@@ -1,0 +1,1 @@
+{"started_at":"2026-10-17T20:29:34.653Z","total":25094,"accepted":25047,"rejected_429":47,"by_method":{"getMe":2,"sendMessage":24799,"setMyCommands":56,"setChatMenuButton":14,"editMessageText":223},"by_bot":{"rider":16504,"driver":8590},"soft_violations_private_1ps":47,"soft_violations_group_20pm":0,"unknown_token":0,"unparsable_body":0,"seq":25094}

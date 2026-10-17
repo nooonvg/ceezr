@@ -103,10 +103,12 @@ describe("مصفوفةُ الهجرةِ — الحالةُ الحاضرةُ في
   // ثمَّ من 70 إلى **71** بجدولِ `driver_offers_board_receipts` (`LOAD-01
   // Recovery` · CAP-RUN-20261016-CONTINUATION)، `NONE` في الموجةِ ٠ لأنَّ وجهتَه
   // `KEEP` لـMOVE تبعاً لدليلِ تسليمِ العروضِ (إيصالاتُ اللوحِ).
+  // ثمَّ من 71 إلى **72** بجدولِ `rider_trip_event_receipts` (ADR 0287 · التكليفُ
+  // السابعُ)، `NONE` في الموجةِ ٠ لأنَّ وجهتَه `KEEP` لـMOVE تبعاً لدليلِ تسليمِ أحداثِ الرحلةِ.
   // والأرقامُ السابقةُ محفوظةٌ لا ممحوّةٌ (`ح-8`).
   it("تغطّي كلَّ جدولٍ في جردِ الحدودِ بلا زيادةٍ", () => {
-    expect(WASLA_MIGRATION_MATRIX.length).toBe(71);
-    expect(new Set(WASLA_MIGRATION_MATRIX.map((e) => e.table)).size).toBe(71);
+    expect(WASLA_MIGRATION_MATRIX.length).toBe(72);
+    expect(new Set(WASLA_MIGRATION_MATRIX.map((e) => e.table)).size).toBe(72);
   });
 
   it("لا مُدخلَ يدّعي تنفيذاً اليومَ — ولا خطّةَ عمودٍ", () => {

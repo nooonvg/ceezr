@@ -88,8 +88,43 @@ const CITY = process.env.CITY ?? "JED";
  */
 const DRIVER_SOCKET_MIX = Math.min(1, Math.max(0, Number(process.env.DRIVER_SOCKET_MIX ?? "0.7")));
 
+/**
+ * ADR 0287 — مزيجُ اتصالِ الركّابِ بقناةِ أحداثِ الرحلةِ: المتصلُ يُخدَمُ في
+ * Mini App بإقرارٍ بعدَ التطبيقِ، والغائبُ بتيليجرامَ احتياطًا. النسبةُ **مسجَّلةٌ
+ * قبلَ الجولةِ** في `gen.start` وتثبتُ في كلِّ موجةِ قبولٍ — لا تُختارُ بعدَ النتيجةِ.
+ */
+const RIDER_SOCKET_MIX = Math.min(1, Math.max(0, Number(process.env.RIDER_SOCKET_MIX ?? "0.7")));
+/** بقاءُ عميلِ الراكبِ بعدَ اكتمالِ الرحلةِ (شاشةُ الملخصِ) حتى يُقرَّ بـ COMPLETED. */
+const RIDER_LINGER_MS = Number(process.env.RIDER_LINGER_MS ?? 20_000);
+const riderSocketStats = {
+  opened: 0,
+  joined: 0,
+  signals: 0,
+  fetches: 0,
+  fetchFailures: 0,
+  acks: 0,
+  ackFailures: 0,
+  eventsAcked: 0,
+  completedAcked: 0,
+  lingerTimeouts: 0,
+};
+
 /** عداداتُ القناةِ في الجولةِ: تُطبَعُ في الختامِ — حقيقةُ المزيجِ مقيسةٌ لا مفترضةٌ. */
-const socketStats = { opened: 0, signals: 0, boardRefreshes: 0, acks: 0, ackFailures: 0 };
+const socketStats = {
+  opened: 0,
+  joined: 0,
+  signals: 0,
+  wakes: 0,
+  boardRefreshes: 0,
+  acks: 0,
+  ackFailures: 0,
+};
+/**
+ * التكليفُ السابعُ — مَن ينتظرُ عرضَه على اللوحِ (`driverFindOffer`) يُوقَظُ بالإشارةِ
+ * فيقرأُ اللوحَ فورًا كما يفعلُ التطبيقُ (`onUpdate` ⇒ تحديثُ اللوحِ)؛ والاستطلاعُ كلَّ
+ * `POLL_MS` يبقى شبكةَ أمانٍ لا المسارَ الوحيدَ.
+ */
+const boardWaiters = new Map<string, () => void>();
 const DEPTH = process.env.SCENARIO_DEPTH === "assign" ? "assign" : "full";
 const MATCH_WAIT_MS = Number(process.env.MATCH_WAIT_MS ?? 120_000);
 const POLL_MS = 2_000;
@@ -375,8 +410,22 @@ function openDriverOffersSocket(sessionToken: string): { close: () => void } {
     reconnectionAttempts: 5,
   });
   socketStats.opened += 1;
+  // عيبُ مولّدٍ (r7–r11): المقبسُ لم يُرسلْ `offers:join` قطُّ فلم يُضمَّ إلى غرفةِ السائقِ،
+  // فكانَ الخادمُ يرى كلَّ سائقٍ غائبًا وإشاراتُ العروضِ صفرًا. التطبيقُ الحقيقيُّ يُرسلُه
+  // عندَ كلِّ اتصالٍ (`apps/miniapp/src/services/offers-channel-client.ts`).
+  socket.on("connect", () => socket.emit("offers:join"));
+  socket.on("offers:joined", () => {
+    socketStats.joined += 1;
+  });
   socket.on("offers:update", () => {
     socketStats.signals += 1;
+    const wake = boardWaiters.get(sessionToken);
+    if (wake !== undefined) {
+      // الباحثُ عن عرضِه يقرأُ اللوحَ ويُقرُّ بنفسِه — قراءةٌ واحدةٌ لكلِّ إشارةٍ كالتطبيقِ.
+      socketStats.wakes += 1;
+      wake();
+      return;
+    }
     // عميلٌ يُحدِّثُ لوحَهُ على الإشارةِ ثمَّ يُقرُّ بما وصلهُ — كما التطبيقُ.
     void (async () => {
       try {
@@ -488,8 +537,107 @@ async function driverFindOffer(
       }
       return { offerId: null, error: "offer_not_found_in_time" };
     }
-    await sleep(Math.min(POLL_MS, Math.max(1, deadline - Date.now())));
+    await new Promise<void>((resolve) => {
+      const done = () => {
+        clearTimeout(timer);
+        if (boardWaiters.get(token) === done) boardWaiters.delete(token);
+        resolve();
+      };
+      const timer = setTimeout(done, Math.min(POLL_MS, Math.max(1, deadline - Date.now())));
+      boardWaiters.set(token, done);
+    });
   }
+}
+
+/**
+ * ADR 0287 — عميلُ الراكبِ المتصلُ: يدخلُ غرفةَ أحداثِ الرحلةِ بجلسته، وعندَ كلِّ
+ * `trip:update` يجلبُ أحداثَ الرحلةِ، «يطبّقُها» (يسجّلُها في حالتِه بترتيبِ
+ * التسلسلِ)، ثم **يُقرُّ** بما طبّقَه — كما شاشةُ الرحلةِ في التطبيقِ. وعندَ
+ * الدخولِ (العودةُ للتطبيقِ) يجلبُ مرةً بلا إشارةٍ. البثُّ لا يُحسبُ وصولًا.
+ */
+function openRiderTripSocket(sessionToken: string): {
+  linger: (ms: number) => void;
+  close: () => void;
+} {
+  const socket = ioClient(BASE, {
+    auth: { sessionToken },
+    transports: ["websocket"],
+    reconnection: true,
+    reconnectionAttempts: 5,
+  });
+  riderSocketStats.opened += 1;
+  const applied = new Map<string, string>(); // id → event
+  let completedAcked = false;
+  let onCompleted: (() => void) | null = null;
+  const sync = async (orderId: string): Promise<void> => {
+    riderSocketStats.fetches += 1;
+    const listed = await call(`/v1/rides/${orderId}/trip-events`, {
+      token: sessionToken,
+      timeoutMs: 10_000,
+    });
+    const events = listed.ok ? listed.body?.events : undefined;
+    if (!Array.isArray(events)) {
+      riderSocketStats.fetchFailures += 1;
+      return;
+    }
+    const pending = (events as Record<string, unknown>[])
+      .filter((e) => e.acked !== true && typeof e.id === "string")
+      .sort((a, b) => Number(a.seq) - Number(b.seq));
+    if (pending.length === 0) return;
+    // التطبيقُ قبلَ الإقرارِ: الحالةُ المحليةُ تُحدَّثُ أولًا ثم يُرسَلُ الإقرارُ.
+    for (const e of pending) applied.set(e.id as string, String(e.event));
+    const ack = await call(`/v1/rides/${orderId}/trip-events/ack`, {
+      token: sessionToken,
+      method: "POST",
+      body: { ids: pending.map((e) => e.id) },
+      timeoutMs: 10_000,
+    });
+    if (!ack.ok) {
+      riderSocketStats.ackFailures += 1;
+      return;
+    }
+    riderSocketStats.acks += 1;
+    riderSocketStats.eventsAcked += pending.length;
+    if (pending.some((e) => e.event === "COMPLETED")) {
+      completedAcked = true;
+      riderSocketStats.completedAcked += 1;
+      onCompleted?.();
+    }
+  };
+  let lastOrder: string | null = null;
+  socket.on("connect", () => socket.emit("trip:join"));
+  socket.on("trip:joined", () => {
+    riderSocketStats.joined += 1;
+    if (lastOrder !== null) void sync(lastOrder).catch(() => undefined);
+  });
+  socket.on("trip:update", (payload: { order_id?: unknown }) => {
+    riderSocketStats.signals += 1;
+    const orderId = typeof payload?.order_id === "string" ? payload.order_id : null;
+    if (orderId === null) return;
+    lastOrder = orderId;
+    void sync(orderId).catch(() => {
+      riderSocketStats.fetchFailures += 1;
+    });
+  });
+  return {
+    close: () => socket.close(),
+    // شاشةُ الملخصِ: يبقى حتى يُقرَّ بـ COMPLETED أو تنقضي المهلةُ — منفصلٌ عن
+    // فتحةِ التزامنِ (لا يُبطئُ حقنَ الحملِ ولا يُخفّضه).
+    linger: (ms) => {
+      if (completedAcked) {
+        socket.close();
+        return;
+      }
+      const timer = setTimeout(() => {
+        riderSocketStats.lingerTimeouts += 1;
+        socket.close();
+      }, ms);
+      onCompleted = () => {
+        clearTimeout(timer);
+        socket.close();
+      };
+    },
+  };
 }
 
 async function riderDecideCandidate(
@@ -572,6 +720,7 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
   // `LOAD-01 Recovery` — مقبسُ لوحِ العروضِ يُرفَعُ قبلَ try ليُغلقَ في finally:
   // السائقُ لا يبقى متصلًا بقناةِ العروضِ بعدَ سيناريوهِ.
   let driverSocket: { close: () => void } | null = null;
+  let riderSocket: { linger: (ms: number) => void; close: () => void } | null = null;
   try {
     // ١) الهويةُ — تحققٌ موقَّعٌ حقيقيٌّ لكلٍّ منَ الطرفينِ.
     const riderSession = await cachedSession(RIDER_BOT_TOKEN, rider.telegramId);
@@ -596,6 +745,8 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
       lat: JED.lat + rnd(-0.01, 0.01),
       lng: JED.lng + rnd(-0.01, 0.01),
     };
+    // ADR 0287 — شاشةُ الراكبِ مفتوحةٌ (بالمزيجِ المسجَّلِ) قبلَ الإنشاءِ.
+    riderSocket = Math.random() < RIDER_SOCKET_MIX ? openRiderTripSocket(riderSession.token) : null;
     // ٢) إنشاءُ الرحلةِ عبرَ واجهةِ المنتجِ.
     const idempotencyKey = `cap-${GEN_ID}-${T0}-${corr.index}`;
     const create = await call("/v1/rides", {
@@ -810,6 +961,7 @@ async function runScenarioSteps(corr: ScenarioCorr, closeAt: number): Promise<Sc
     };
   } finally {
     driverSocket?.close();
+    riderSocket?.linger(RIDER_LINGER_MS);
     // `LOAD-01` — دورةُ حياةِ العرضِ منَ القاعدةِ (أفضلُ جهدٍ): طوابعُ صفوفِ
     // `order_offers` للطلبِ وإشعارُ البوابةِ — تُقرأُ قبلَ التنظيفِ لتُوثَّقَ
     // الحالةُ الفعليةُ التي انتهى إليها السيناريو.
@@ -934,7 +1086,15 @@ async function recordOfferLifecycle(corr: ScenarioCorr): Promise<void> {
 /* ───────── الحلقةُ الرئيسةُ ───────── */
 
 async function main() {
-  ev("gen.start", { profile: PROFILE, depth: DEPTH, city: CITY, drainSec: DRAIN_SEC });
+  ev("gen.start", {
+    profile: PROFILE,
+    depth: DEPTH,
+    city: CITY,
+    drainSec: DRAIN_SEC,
+    driverSocketMix: DRIVER_SOCKET_MIX,
+    riderSocketMix: RIDER_SOCKET_MIX,
+    riderLingerMs: RIDER_LINGER_MS,
+  });
   // حارسُ مهلةٍ خارجيٌّ: لا تعليقَ للجولةِ كلِّها مهما علقَ — يُوثّقُ ويخرجُ.
   const watchdogAt =
     T0 + (PROFILE.reduce((acc, ph) => acc + ph.sec, 0) + DRAIN_SEC * PROFILE.length + 60) * 1000;
@@ -1037,6 +1197,7 @@ async function main() {
     // فُتحَ وكم إشارةً وصلت وكم إقرارَ استلامٍ سُجِّل — بها يُحكمُ على مسارِ
     // اللوحِ (الإشارةُ والإيصالُ) لا على العددِ المزروعِ.
     driverSocket: { mix: DRIVER_SOCKET_MIX, ...socketStats },
+    riderSocket: { mix: RIDER_SOCKET_MIX, ...riderSocketStats },
   };
   ev("gen.end", summary);
   console.log(JSON.stringify(summary));

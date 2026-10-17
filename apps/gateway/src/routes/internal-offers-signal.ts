@@ -31,7 +31,14 @@ export interface InternalOffersSignalDependencies {
   /** السرُّ المشتركُ — غيابُه يعطّلُ المسارَ (503) لا يفتحُه لكلِّ أحدٍ. */
   readonly secret: string | null;
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
+  /** ADR 0287 — غرفةُ أحداثِ رحلةِ الراكبِ؛ غيابُها = المسارُ غيرُ مُركَّبٍ. */
+  readonly rider?: {
+    readonly isRiderConnected: (telegramUserId: string) => boolean;
+    readonly notifyRider: (telegramUserId: string, orderId: string) => void;
+  };
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function createInternalOffersSignalRoutes(deps: InternalOffersSignalDependencies) {
   const app = new Hono();
@@ -59,6 +66,38 @@ export function createInternalOffersSignalRoutes(deps: InternalOffersSignalDepen
     deps.notifyDriver(telegramUserId);
     return c.json({ ok: true, emitted: true });
   });
+
+  /**
+   * ADR 0287 — «هل الراكبُ متصلٌ؟ بُثَّ لهُ `trip:update`». الجوابُ `emitted`
+   * يعني أنَّ في الغرفةِ عميلًا لحظةَ البثِّ — لا أنَّ الحدثَ وصلَ: الوصولُ
+   * بالإقرارِ وحدَه.
+   */
+  const rider = deps.rider;
+  if (rider !== undefined) {
+    app.post("/internal/realtime/rider-trip-signal", async (c) => {
+      if (deps.secret === null || deps.secret.length < 16) {
+        deps.log?.("internal_rider_trip_signal.disabled", {});
+        return c.json({ ok: false, error: "INTERNAL_SIGNAL_NOT_CONFIGURED" }, 503);
+      }
+      const provided = c.req.header("x-internal-secret") ?? "";
+      if (provided.length !== deps.secret.length || !timingSafeEqual(provided, deps.secret)) {
+        deps.log?.("internal_rider_trip_signal.rejected", {});
+        return c.json({ ok: false, error: "UNAUTHORIZED" }, 401);
+      }
+      const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
+      const telegramUserId = body?.telegram_user_id;
+      const orderId = body?.order_id;
+      if (typeof telegramUserId !== "string" || !/^\d{1,20}$/.test(telegramUserId)) {
+        return c.json({ ok: false, error: "TELEGRAM_USER_ID_INVALID" }, 422);
+      }
+      if (typeof orderId !== "string" || !UUID_RE.test(orderId)) {
+        return c.json({ ok: false, error: "ORDER_ID_INVALID" }, 422);
+      }
+      if (!rider.isRiderConnected(telegramUserId)) return c.json({ ok: true, emitted: false });
+      rider.notifyRider(telegramUserId, orderId);
+      return c.json({ ok: true, emitted: true });
+    });
+  }
 
   return app;
 }

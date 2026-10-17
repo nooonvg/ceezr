@@ -109,6 +109,12 @@ import {
   stopRideShare,
 } from "../../../../packages/application/transport/ride-share.ts";
 import {
+  ackRiderTripEvents,
+  type RiderTripEventsDeps,
+  type RiderTripEventsErrorCode,
+  readRiderTripEvents,
+} from "../../../../packages/application/transport/rider-trip-events.ts";
+import {
   // الاسمُ يُقصَّرُ عندَ الاستيرادِ **لا يُغيَّرُ في مصدرِه**: خريطةُ الحالاتِ
   // أدناهُ يجبُ أن يبقى تصريحُها **سطراً واحداً** يُرى فيه اتّحادُ الحالاتِ
   // المسموحةِ كما هوَ، وبالاسمِ الطويلِ يتجاوزُ السطرُ عرضَ المُنسِّقِ فيُكسَرُ
@@ -154,6 +160,8 @@ export interface RidesRouteDependencies {
   readonly shareStop?: StopRideShareDeps;
   /** `WR-09` — المرشَّحُ وقرارُ الراكب؛ غيابُه ⇒ `503` للمسارَين. */
   readonly candidate?: RideCandidateDeps;
+  /** ADR 0287 — أحداثُ رحلةِ الراكبِ وإقرارُه؛ غيابُه ⇒ `503` للمسارَين. */
+  readonly tripEvents?: RiderTripEventsDeps;
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
 }
 
@@ -263,6 +271,20 @@ const CANDIDATE_STATUS: Record<RideCandidateErrorCode, 400 | 401 | 404 | 409 | 4
   CANDIDATE_EXPIRED: 410,
   RIDE_STORE_NOT_AVAILABLE: 503,
 };
+
+const TRIP_EVENTS_STATUS: Record<RiderTripEventsErrorCode, 400 | 401 | 404 | 503> = {
+  SESSION_REQUIRED: 401,
+  SESSION_INVALID: 401,
+  SESSION_EXPIRED: 401,
+  SESSION_NOT_AVAILABLE: 503,
+  MALFORMED: 400,
+  ORDER_NOT_FOUND: 404,
+  RIDE_STORE_NOT_AVAILABLE: 503,
+};
+
+function tripEventsRejected(c: Context, error: RiderTripEventsErrorCode) {
+  return c.json({ ok: false, error }, TRIP_EVENTS_STATUS[error]);
+}
 
 function candidateRejected(c: Context, error: RideCandidateErrorCode) {
   return c.json({ ok: false, error }, CANDIDATE_STATUS[error]);
@@ -392,6 +414,54 @@ export function createRidesRoutes(deps: RidesRouteDependencies): Hono {
       duplicate: result.value.duplicate,
       matched_at: result.value.matchedAt,
     });
+  });
+
+  /**
+   * ADR 0287 — أحداثُ أطوارِ الرحلةِ الدائمةُ لراكبِها (معرّفٌ ثابتٌ وتسلسلٌ).
+   * القراءةُ لا تُعدُّ تسليمًا: العميلُ يطبّقُ ثم يُقرُّ في المسارِ التالي.
+   */
+  app.get("/v1/rides/:id/trip-events", async (c) => {
+    if (deps.tripEvents === undefined) return tripEventsRejected(c, "RIDE_STORE_NOT_AVAILABLE");
+    const result = await readRiderTripEvents(deps.tripEvents, {
+      accessToken: bearerTokenFrom(c.req.header("authorization")),
+      orderId: c.req.param("id"),
+    });
+    if (!result.ok) return tripEventsRejected(c, result.error);
+    return c.json({
+      ok: true,
+      events: result.value.map((e) => ({
+        id: e.id,
+        event: e.event,
+        seq: e.seq,
+        created_at: e.createdAt,
+        acked: e.acked,
+      })),
+    });
+  });
+
+  /**
+   * ADR 0287 — إقرارُ العميلِ **بعدَ تطبيقِ** الأحداثِ: `{ ids: [...] }`. متكرّرُه
+   * لا يُنشئُ إيصالًا ثانيًا، وما لا يملكُه صاحبُ الجلسةِ يُهمَلُ.
+   */
+  app.post("/v1/rides/:id/trip-events/ack", async (c) => {
+    if (deps.tripEvents === undefined) return tripEventsRejected(c, "RIDE_STORE_NOT_AVAILABLE");
+    const raw = await readBounded(c.req.raw.body, RIDE_CANDIDATE_MAX_BYTES);
+    if (raw === null) return c.json({ ok: false, error: "PAYLOAD_TOO_LARGE" }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return c.json({ ok: false, error: "INVALID_JSON" }, 400);
+    }
+    const ids =
+      body !== null && typeof body === "object" ? (body as Record<string, unknown>).ids : undefined;
+    const result = await ackRiderTripEvents(deps.tripEvents, {
+      accessToken: bearerTokenFrom(c.req.header("authorization")),
+      orderId: c.req.param("id"),
+      deliveryIds: ids,
+    });
+    if (!result.ok) return tripEventsRejected(c, result.error);
+    return c.json({ ok: true, recorded: result.value.recorded, closed: result.value.closed });
   });
 
   app.get("/v1/rides/:id/search", async (c) => {

@@ -109,6 +109,7 @@ import {
   outboundBucketKeyOfToken,
   withOutboundResilience,
 } from "../../../packages/infrastructure/notification/rate-aware-telegram-sender.ts";
+import { createRiderTripAppDelivery } from "../../../packages/infrastructure/notification/rider-trip-app-delivery.ts";
 import {
   createRiderCandidateFactsReader,
   createRiderTripFactsReader,
@@ -831,6 +832,14 @@ export function buildWorkerContainer(
    */
   const riderTripNoticeHandler = createRiderTripNoticeHandler({
     facts: createRiderTripFactsReader(sql),
+    // ADR 0287 — أطوارُ الرحلةِ Mini App أولًا بإقرارِ العميلِ، وتيليجرامُ
+    // احتياطًا لغيرِ المتصلِ أو لمن لم يُقرَّ ضمنَ المهلةِ.
+    app: createRiderTripAppDelivery({
+      sql,
+      gatewayInternalUrl: config.gatewayInternalUrl,
+      secret: config.internalSignalSecret,
+      log: (message, meta) => log.info(message, meta),
+    }),
     // `WR-09` — حدثُ `CANDIDATE`: يُطوى إن فاتَ المرشَّحُ قبلَ الإرسال.
     candidates: createRiderCandidateFactsReader(sql),
     sender: asIdentifyingSender(withTrafficPriority(riderTelegram, "rider_trip_notice")),

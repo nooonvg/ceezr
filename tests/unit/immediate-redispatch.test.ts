@@ -173,7 +173,110 @@ describe("LOAD-01 — إعادةُ العرضِ الفوريّةُ: جدولةٌ
     if (release === null) throw new Error("الشوطُ لم يبدأْ");
     release();
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(runs).toEqual(["started", "finished"]);
+    expect(runs.slice(0, 2)).toEqual(["started", "finished"]);
+  });
+
+  /**
+   * التكليفُ السابعُ (P4) — الحافةُ اللاحقةُ: المحفّزُ المُسكَتُ لا يُترَكُ للدوريّةِ (20ث).
+   * قيسَ في `diag-r11-join-250`: أوّلُ جولةِ عرضٍ لطلبٍ جديدٍ انتظرتْ حتى 82ث بعدَ توقّفِ
+   * محفّزاتِ المواقعِ، لأنَّ المُسكَتَ كانَ يضيعُ. والمعيارُ: مُسكِتٌ لا مُراكِمٌ — أيُّ
+   * عددٍ منَ المُسكَتاتِ = لاحقٌ **واحدٌ**.
+   */
+  function manualTimers() {
+    const queue: { ms: number; fn: () => void }[] = [];
+    return {
+      scheduleAfter: (ms: number, fn: () => void) => void queue.push({ ms, fn }),
+      fireAll: () => {
+        const due = queue.splice(0);
+        for (const t of due) t.fn();
+        return due;
+      },
+      size: () => queue.length,
+    };
+  }
+
+  it("٦) خمسونَ محفّزًا داخلَ النافذةِ = شوطٌ الآنَ + لاحقٌ واحدٌ بعدَ انقضائِها", async () => {
+    const runs: CityId[] = [];
+    let nowMs = NOW_MS;
+    const timers = manualTimers();
+    const scheduler = createImmediateRedispatchScheduler({
+      run: async (cityId) => {
+        runs.push(cityId);
+        return undefined;
+      },
+      debounceMs: 2_000,
+      now: () => nowMs,
+      ...immediateSchedule(),
+      scheduleAfter: timers.scheduleAfter,
+    });
+    for (let i = 0; i < 50; i++) scheduler.trigger(CITY);
+    expect(runs).toHaveLength(1);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(timers.size()).toBe(1); // مؤقّتٌ واحدٌ لا خمسون
+    nowMs += 2_000;
+    const fired = timers.fireAll();
+    expect(fired[0]?.ms).toBeLessThanOrEqual(2_000);
+    expect(runs).toHaveLength(2);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    timers.fireAll();
+    expect(runs).toHaveLength(2); // لا ذيلَ ثالثٌ بلا محفّزٍ جديدٍ
+  });
+
+  it("٧) الشوطُ الممتلئُ الحدِّ يطلبُ لاحقًا واحدًا؛ وغيرُ الممتلئِ لا يطلبُ", async () => {
+    const runs: number[] = [];
+    let nowMs = NOW_MS;
+    const timers = manualTimers();
+    const saturation = [true, false];
+    const scheduler = createImmediateRedispatchScheduler({
+      run: async () => {
+        runs.push(nowMs);
+        return { saturated: saturation.shift() ?? false };
+      },
+      debounceMs: 2_000,
+      now: () => nowMs,
+      ...immediateSchedule(),
+      scheduleAfter: timers.scheduleAfter,
+    });
+    scheduler.trigger(CITY);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(timers.size()).toBe(1);
+    nowMs += 2_000;
+    timers.fireAll();
+    expect(runs).toHaveLength(2);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(timers.size()).toBe(0);
+  });
+
+  it("٨) محفّزاتٌ أثناءَ شوطٍ جارٍ = لاحقٌ واحدٌ بعدَ اكتمالِه", async () => {
+    let starts = 0;
+    let releaseRun: (() => void) | null = null;
+    let nowMs = NOW_MS;
+    const timers = manualTimers();
+    const scheduler = createImmediateRedispatchScheduler({
+      run: async () => {
+        starts += 1;
+        if (starts === 1) {
+          await new Promise<void>((resolve) => {
+            releaseRun = resolve;
+          });
+        }
+        return undefined;
+      },
+      debounceMs: 0,
+      now: () => nowMs,
+      ...immediateSchedule(),
+      scheduleAfter: timers.scheduleAfter,
+    });
+    scheduler.trigger(CITY);
+    for (let i = 0; i < 10; i++) scheduler.trigger(CITY);
+    expect(starts).toBe(1);
+    expect(timers.size()).toBe(0); // لا مؤقّتَ والشوطُ جارٍ
+    (releaseRun as (() => void) | null)?.();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(timers.size()).toBe(1);
+    nowMs += 1;
+    timers.fireAll();
+    expect(starts).toBe(2);
   });
 
   it("٥) فشلُ الشوطِ الخلفيِّ يُسجَّلُ ولا يُرمى — القياسُ لا يُسقِطُ ما يقيسُهُ", async () => {
