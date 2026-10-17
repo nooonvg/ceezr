@@ -317,9 +317,10 @@
     "اختبار I1 التنافسي المتزامن بحاجز بدء: سائق واحد على طلبين مختلفين + طلب واحد بسائقين + جدار الفهرس بكتابة مباشرة + استعلامات مستقلة بعد الحمل (4/4)",
     "تجربة إزالة الحارس على قاعدة مؤقتة مستقلة: إسقاط الفهرس ونزع حارس claim_ride كلٌّ يفشل الاختبار عمدًا ثم الاستعادة تعيد الأخضر",
     "اختبار بوابة صندوق الصادر على المستلم (D8): الحرجة لا تنتظر خلف عرض أقدم لمستلم آخر + التسلسل داخل المستلم يبقى + إعادة الازدحام لا تحسب محاولة ولا تقتل وبالرمز (3/3 — يفشل قبل الهجرة وينجح بعدها)",
-    "اختبار ازدحام المسارات في الحزمة المتوازية: خطأ OutboundCongestionError يعيد الصف إلى الطابور لا موتًا ولا تسليمًا (9/9)"
+    "اختبار ازدحام المسارات في الحزمة المتوازية: خطأ OutboundCongestionError يعيد الصف إلى الطابور لا موتًا ولا تسليمًا (9/9)",
+    "الدفعةُ الخامسةُ (تصريفُ إشعاراتِ الرحلةِ): اختبارا انحدارٍ في tests/unit/rate-aware-telegram-sender.test.ts — ازدحامُ المحادثةِ لا يستهلكُ فتحةً منَ الدلوِ العالميِّ المشتركِ، ورفضُ العالميِّ بعدَ منحِ المحادثةِ يُعيدُ سببَهُ العالميَّ؛ معَ 6,950 وحدةً وكلِّ تكاملِ الإشعاراتِ (d8-outbox-gate، cancellation، claim-timeout، mark-undeliverable) خُضرًا"
   ],
-  "evidence": "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/ (يُنشأ مع أول دفعة تنفيذية)؛ المرحلة 5: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-5/؛ المرحلة 2ب: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-2b/؛ المرحلة 1: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-1/؛ المرحلة 3: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-3/؛ المرحلة 6: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/",
+  "evidence": "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/ (يُنشأ مع أول دفعة تنفيذية)؛ المرحلة 5: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-5/؛ المرحلة 2ب: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-2b/؛ المرحلة 1: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-1/؛ المرحلة 3: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-3/؛ المرحلة 6: docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/؛ الدفعةُ الخامسةُ: موجاتُ القبولِ الرسميةُ المعادَةُ تحتَ /home/user/cap-seat/runs/ (r3-wave-50: G1=100% وP7=287ث قبلَ الإصلاحِ — تشخيصُ هدرِ الفتحةِ العالميةِ من سجلِّ البوابةِ: 15,770 حدثَ ضغطٍ عالميٍّ مقابلَ 170 محادثيًّا)",
   "constraints": [
     "لا تستخدم قاعدة الإنتاج أو Render أو Telegram حقيقيًا",
     "لا تطبع الأسرار أو الجلسات أو initData",
