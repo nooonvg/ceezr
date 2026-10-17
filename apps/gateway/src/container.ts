@@ -13,6 +13,7 @@ import type { MiniAppSurfaceConfig } from "../../../packages/application/bots/mi
 import type { RiderBotDependencies } from "../../../packages/application/bots/rider-dialog.ts";
 import type { SupportDialogDependencies } from "../../../packages/application/bots/support-dialog.ts";
 import type {
+  BotReply,
   DriverDirectory,
   OfferDecisionPort,
   OrderCancellationPort,
@@ -261,6 +262,15 @@ export function createUpdateHandler(wiring: BotWiring): UpdateHandler {
     handle: async (bot, update) => {
       if (typeof update !== "object" || update === null) return false;
       return routes[bot](update as RawTelegramUpdate);
+    },
+    prepare: async (bot, update) => {
+      if (typeof update !== "object" || update === null) return { handled: false, replies: [] };
+      const target = bot === "driver" ? driverBot : riderBot;
+      return target.prepare(update as RawTelegramUpdate);
+    },
+    deliver: (bot, replies, from) => {
+      const target = bot === "driver" ? driverBot : riderBot;
+      return target.deliver(replies as readonly BotReply[], from);
     },
   };
 }

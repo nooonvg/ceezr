@@ -72,6 +72,39 @@ export interface TelegramUpdateQueue {
    * يعيدُ عددَ المجدَّد. اختياريٌّ.
    */
   renew?(jobs: readonly JobLease[]): Promise<number>;
+  /** S5 (ADR 0288) — دفترُ الأثرِ ونيّةُ الردِّ الدائمةُ. اختياريٌّ: غيابُه = المسارُ القديمُ. */
+  readonly ledger?: TelegramUpdateEffectLedger;
+}
+
+export interface PendingUpdateReplies {
+  readonly bot: string;
+  readonly updateId: number;
+  readonly replies: readonly unknown[];
+  readonly repliesSent: number;
+  readonly replyToken: string;
+  readonly attempts: number;
+}
+
+export type RecordEffectResult =
+  | { readonly ok: true; readonly first: boolean; readonly replyToken: string | null }
+  | { readonly ok: false; readonly error: string };
+
+export interface TelegramUpdateEffectLedger {
+  /** هل خُتمَ أثرُ التحديثِ سلفًا؟ (إعادةٌ بعدَ انقضاءِ إيجارٍ — لا يُعادُ الأثرُ). */
+  effectRecorded(bot: string, updateId: number): Promise<boolean>;
+  /** ختمُ الأثرِ + نيّةِ الردِّ + إتمامِ الوظيفةِ في معاملةٍ واحدةٍ (لحائزِ الإيجارِ). */
+  recordEffect(job: JobLease, replies: readonly unknown[]): Promise<RecordEffectResult>;
+  /** ختمُ محاولةِ إرسالٍ بالمؤشرِ؛ يعيدُ `done`/`retried`/`dead` أو `null` إن فُقدتِ الملكيةُ. */
+  finishReplies(
+    bot: string,
+    updateId: number,
+    replyToken: string,
+    sent: number,
+    error: string | null,
+    retryAfterSec: number | null,
+  ): Promise<string | null>;
+  /** التقاطُ الردودِ المستحقّةِ والمحمولةِ التي ماتَ حائزُها. */
+  claimReplies(limit: number, leaseSeconds: number): Promise<readonly PendingUpdateReplies[]>;
 }
 
 function envelopeOf(value: unknown, name: string): Record<string, unknown> {
@@ -160,6 +193,51 @@ export function createPostgresTelegramUpdateQueue(
       `;
       const row = envelopeOf(rows[0]?.result, "finish_telegram_update_job");
       return row.ok === true;
+    },
+
+    ledger: {
+      effectRecorded: async (bot, updateId) => {
+        const rows = await sql<{ r: boolean }[]>`
+          select telegram_update_effect_recorded(${bot}, ${updateId}) as r`;
+        return rows[0]?.r === true;
+      },
+      recordEffect: async (job, replies) => {
+        const rows = await sql<{ result: unknown }[]>`
+          select record_telegram_update_effect(
+            ${job.bot}, ${job.updateId}, ${job.claimToken}::uuid, ${sql.json(replies as never)}::jsonb
+          ) as result`;
+        const row = envelopeOf(rows[0]?.result, "record_telegram_update_effect");
+        if (row.ok !== true) return { ok: false, error: String(row.error ?? "UNKNOWN") };
+        return {
+          ok: true,
+          first: row.first === true,
+          replyToken: typeof row.reply_token === "string" ? row.reply_token : null,
+        };
+      },
+      finishReplies: async (bot, updateId, replyToken, sent, error, retryAfterSec) => {
+        const rows = await sql<{ result: unknown }[]>`
+          select finish_telegram_update_replies(
+            ${bot}, ${updateId}, ${replyToken}::uuid, ${sent}::integer,
+            ${error}, ${retryAfterSec}::integer
+          ) as result`;
+        const row = envelopeOf(rows[0]?.result, "finish_telegram_update_replies");
+        return row.ok === true ? String(row.outcome) : null;
+      },
+      claimReplies: async (limit, leaseSeconds) => {
+        const rows = await sql<{ result: unknown }[]>`
+          select claim_telegram_update_replies(${limit}::integer, ${leaseSeconds}::integer) as result`;
+        const row = envelopeOf(rows[0]?.result, "claim_telegram_update_replies");
+        if (row.ok !== true) throw new Error(String(row.error ?? "UNKNOWN"));
+        const jobs = Array.isArray(row.jobs) ? (row.jobs as Record<string, unknown>[]) : [];
+        return jobs.map((j) => ({
+          bot: String(j.bot),
+          updateId: Number(j.update_id),
+          replies: Array.isArray(j.replies) ? (j.replies as unknown[]) : [],
+          repliesSent: Number(j.replies_sent ?? 0),
+          replyToken: String(j.reply_token),
+          attempts: Number(j.attempts ?? 0),
+        }));
+      },
     },
 
     abandon: async (job, errorCode) => {

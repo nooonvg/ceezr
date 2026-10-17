@@ -169,6 +169,7 @@ export const SURFACE_INVENTORY: readonly SurfaceGroup[] = [
       "shared/language-middleware.ts",
       "shared/redis-session.ts",
       "shared/register-commands.ts",
+      "shared/reply-delivery.ts",
       "shared/session-revision.ts",
       "shared/session.ts",
       "shared/telegram-mapper.ts",

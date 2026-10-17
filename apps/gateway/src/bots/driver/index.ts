@@ -26,8 +26,13 @@ import {
 } from "../../../../../packages/application/bots/miniapp-surface.ts";
 import { type BotReply, INITIAL_STATE } from "../../../../../packages/application/bots/types.ts";
 import type { TelegramSender as TelegramSenderType } from "../../../../../packages/infrastructure/notification/telegram-api-sender.ts";
-import { isCallbackDataValid, toTelegramMarkup } from "../shared/keyboards.ts";
+import { isCallbackDataValid } from "../shared/keyboards.ts";
 import type { LanguageHydration } from "../shared/language-middleware.ts";
+import {
+  deliverReplies,
+  type PreparedUpdate,
+  type ReplyDeliveryResult,
+} from "../shared/reply-delivery.ts";
 import { SessionCasConflictError } from "../shared/session-revision.ts";
 import { type RawTelegramUpdate, toIncomingUpdate } from "../shared/telegram-mapper.ts";
 
@@ -37,6 +42,13 @@ export { grammyTelegramSender } from "../../../../../packages/infrastructure/not
 export interface DriverBotAdapter {
   /** يعيد false إن تعذّرت المعالجة، فتسجّلها البوابة بلا ادّعاء نجاح. */
   handleUpdate(raw: RawTelegramUpdate): Promise<boolean>;
+  /**
+   * S5 (ADR 0288) — الأثرُ وحسابُ الردودِ بلا إرسالٍ: `handled=false` = لم يكتملِ
+   * المعالجُ (يُعادُ التحديثُ)، وإلا فالردودُ نيّةٌ تُثبَّتُ قبلَ أيِّ إرسالٍ.
+   */
+  prepare(raw: RawTelegramUpdate): Promise<PreparedUpdate>;
+  /** S5 — إرسالُ الردودِ من المؤشرِ `from`؛ يتوقّفُ عندَ أوّلِ رفضٍ. */
+  deliver(replies: readonly BotReply[], from: number): Promise<ReplyDeliveryResult>;
 }
 
 /**
@@ -79,123 +91,89 @@ export function createDriverBot(
       }
     },
   };
-  return {
-    handleUpdate: async (raw) => {
-      /**
-       * `BOT-GRP-01` — ترقيةُ قروبٍ تُبطلُ معرّفَه المحفوظَ في `cities` فتتوقّفُ بطاقاتُه بصمتٍ
-       * («group chat was upgraded to a supergroup chat»). لا نُعدّلُ القاعدةَ هنا تلقائياً
-       * (تعديلُ معرّفاتِ القروباتِ فعلُ مسؤولٍ مُدقَّقٌ)، بل نُسجّلُ حدثاً صريحاً بالمعرّفَين.
-       */
-      const migratedFrom = raw.message?.migrate_from_chat_id;
-      const migratedTo = raw.message?.migrate_to_chat_id;
-      if (migratedFrom !== undefined || migratedTo !== undefined) {
-        log("bot.group_migrated_to_supergroup", {
-          oldChatId: String(migratedFrom ?? raw.message?.chat?.id ?? ""),
-          newChatId: String(migratedTo ?? raw.message?.chat?.id ?? ""),
-          action: "update cities group ids via admin_update_city_group_ids",
-        });
-      }
-      const incoming = toIncomingUpdate(raw);
-      if (incoming === null) return true; // تحديث لا يخصّنا: نعترف بالاستلام ولا نردّ
-      // `BOT-GRP-01`: أوقِفْ مؤشّرَ التحميلِ على الزرِّ فوراً — إخفاقُه لا يمسُّ المعالجةَ.
-      const callbackQueryId = raw.callback_query?.id;
-      if (callbackQueryId !== undefined && sender.answerCallbackQuery !== undefined) {
-        await sender.answerCallbackQuery(callbackQueryId).catch((error: unknown) => {
-          log("bot.driver.answer_callback_failed", { detail: String(error) });
-        });
-      }
-      // `BOT-GRP-01`: في القروبِ لا يمرُّ إلى الحوارِ إلا الأزرارُ والأوامرُ.
-      if (!admitUpdate(incoming)) return true;
+  const prepare = async (raw: RawTelegramUpdate): Promise<PreparedUpdate> => {
+    /**
+     * `BOT-GRP-01` — ترقيةُ قروبٍ تُبطلُ معرّفَه المحفوظَ في `cities` فتتوقّفُ بطاقاتُه بصمتٍ
+     * («group chat was upgraded to a supergroup chat»). لا نُعدّلُ القاعدةَ هنا تلقائياً
+     * (تعديلُ معرّفاتِ القروباتِ فعلُ مسؤولٍ مُدقَّقٌ)، بل نُسجّلُ حدثاً صريحاً بالمعرّفَين.
+     */
+    const migratedFrom = raw.message?.migrate_from_chat_id;
+    const migratedTo = raw.message?.migrate_to_chat_id;
+    if (migratedFrom !== undefined || migratedTo !== undefined) {
+      log("bot.group_migrated_to_supergroup", {
+        oldChatId: String(migratedFrom ?? raw.message?.chat?.id ?? ""),
+        newChatId: String(migratedTo ?? raw.message?.chat?.id ?? ""),
+        action: "update cities group ids via admin_update_city_group_ids",
+      });
+    }
+    const incoming = toIncomingUpdate(raw);
+    if (incoming === null) return { handled: true, replies: [] }; // تحديث لا يخصّنا: نعترف بالاستلام ولا نردّ
+    // `BOT-GRP-01`: أوقِفْ مؤشّرَ التحميلِ على الزرِّ فوراً — إخفاقُه لا يمسُّ المعالجةَ.
+    const callbackQueryId = raw.callback_query?.id;
+    if (callbackQueryId !== undefined && sender.answerCallbackQuery !== undefined) {
+      await sender.answerCallbackQuery(callbackQueryId).catch((error: unknown) => {
+        log("bot.driver.answer_callback_failed", { detail: String(error) });
+      });
+    }
+    // `BOT-GRP-01`: في القروبِ لا يمرُّ إلى الحوارِ إلا الأزرارُ والأوامرُ.
+    if (!admitUpdate(incoming)) return { handled: true, replies: [] };
 
-      // قبل الحوار لا بعده: الحوار يقرأ الجلسة في أوّل سطر، فلا ينفع ترطيبٌ بعده.
-      // والحوارُ كلُّه — ترطيبُ اللغة ثم حسابُ الردود — يُعادُ بأكمله عند تعارضِ
-      // مراجعةِ الجلسة (BUG-007): لا تُرسَلُ رسالةٌ قبلَ أن تنجحَ الكتابةُ الشرطية،
-      // فلا يرى السائقُ ردًّا لحالةٍ كُتبَ فوقَها متزامنٌ آخرُ. والحدُّ ثلاثٌ: من
-      // يفشلُ بعدَها عطلٌ لا تزامن.
-      const MAX_CAS_RETRIES = 3;
-      let replies: readonly BotReply[] = [];
-      for (let attempt = 0; ; attempt++) {
-        try {
-          if (language !== undefined) await language.hydrate(incoming.from);
-          replies =
-            surface === undefined
-              ? await handleDriverUpdate(incoming, deps)
-              : await handleSurfaceUpdate("driver", incoming, surface, ports, () =>
-                  handleDriverUpdate(incoming, deps),
-                );
-          break;
-        } catch (error) {
-          if (error instanceof SessionCasConflictError && attempt < MAX_CAS_RETRIES) {
-            log("bot.session_revision_conflict", {
-              attempt: attempt + 1,
-              userId: error.telegramUserId,
-            });
-            continue;
-          }
-          log("bot.driver.dialog_unexpected_error", { detail: String(error) });
-          return false;
-        }
-      }
-
-      replies = silenceUnknownInGroup(incoming, replies);
-
-      for (const reply of replies) {
-        const markup = toTelegramMarkup(reply.keyboard);
-        if (reply.keyboard?.kind === "inline") {
-          const tooLong = reply.keyboard.rows
-            .flat()
-            .filter((button) => !isCallbackDataValid(button.data));
-          if (tooLong.length > 0) {
-            log("bot.driver.callback_data_too_long", { count: tooLong.length });
-            return false;
-          }
-        }
-        try {
-          if (
-            reply.editMessageId !== undefined &&
-            reply.photoFileId === undefined &&
-            sender.editMessageText !== undefined &&
-            (await sender
-              .editMessageText(reply.chatId, reply.editMessageId, reply.text, markup)
-              .then(() => true)
-              .catch((error: unknown) => {
-                // رسالةٌ لا تُعدَّلُ (قديمةٌ أو مطابقةٌ) ليست إخفاقاً: تُرسَلُ جديدةً.
-                log("bot.telegram_edit_failed", { detail: String(error) });
-                return false;
-              }))
-          ) {
-            continue;
-          }
-          if (reply.photoFileId === undefined) {
-            await sender.sendMessage(reply.chatId, reply.text, markup);
-          } else {
-            await sender.sendPhoto(reply.chatId, reply.photoFileId, reply.text, markup);
-          }
-          /**
-           * الدبّوس بعد النصّ لا قبله: النصّ يشرح ما هذه النقطة، فوصوله ثانياً
-           * يجعل السائق يرى دبّوساً لا يعرف ما هو ثم يُشرَح له.
-           *
-           * ولماذا `try` هنا وليس في نفس المحاولة؟ لأن فشل الدبّوس لا يُبطل
-           * الرسالة التي وصلت: السائق قرأ انطلاقه ووسمه، وإرجاع false كان
-           * سيجعل الويبهوك يُعيد المحاولة فيصله النصّ مرّتين.
-           */
-          if (reply.mapPin !== undefined) {
-            try {
-              await sender.sendLocation(
-                reply.chatId,
-                reply.mapPin.latitude,
-                reply.mapPin.longitude,
+    // قبل الحوار لا بعده: الحوار يقرأ الجلسة في أوّل سطر، فلا ينفع ترطيبٌ بعده.
+    // والحوارُ كلُّه — ترطيبُ اللغة ثم حسابُ الردود — يُعادُ بأكمله عند تعارضِ
+    // مراجعةِ الجلسة (BUG-007): لا تُرسَلُ رسالةٌ قبلَ أن تنجحَ الكتابةُ الشرطية،
+    // فلا يرى السائقُ ردًّا لحالةٍ كُتبَ فوقَها متزامنٌ آخرُ. والحدُّ ثلاثٌ: من
+    // يفشلُ بعدَها عطلٌ لا تزامن.
+    const MAX_CAS_RETRIES = 3;
+    let replies: readonly BotReply[] = [];
+    for (let attempt = 0; ; attempt++) {
+      try {
+        if (language !== undefined) await language.hydrate(incoming.from);
+        replies =
+          surface === undefined
+            ? await handleDriverUpdate(incoming, deps)
+            : await handleSurfaceUpdate("driver", incoming, surface, ports, () =>
+                handleDriverUpdate(incoming, deps),
               );
-            } catch (error) {
-              log("bot.driver.location_pin_send_failed", { detail: String(error) });
-            }
-          }
-        } catch (error) {
-          log("bot.telegram_send_failed", { detail: String(error) });
-          return false;
+        break;
+      } catch (error) {
+        if (error instanceof SessionCasConflictError && attempt < MAX_CAS_RETRIES) {
+          log("bot.session_revision_conflict", {
+            attempt: attempt + 1,
+            userId: error.telegramUserId,
+          });
+          continue;
+        }
+        log("bot.driver.dialog_unexpected_error", { detail: String(error) });
+        return { handled: false, replies: [] };
+      }
+    }
+
+    replies = silenceUnknownInGroup(incoming, replies);
+
+    for (const reply of replies) {
+      if (reply.keyboard?.kind === "inline") {
+        const tooLong = reply.keyboard.rows
+          .flat()
+          .filter((button) => !isCallbackDataValid(button.data));
+        if (tooLong.length > 0) {
+          log("bot.driver.callback_data_too_long", { count: tooLong.length });
+          return { handled: false, replies: [] };
         }
       }
-      return true;
+    }
+    return { handled: true, replies };
+  };
+  const deliver: DriverBotAdapter["deliver"] = (replies, from) =>
+    deliverReplies(sender, replies, from, log, true);
+  return {
+    prepare,
+    deliver,
+    // المسارُ القديمُ (ويبهوك متزامنٌ/اختبارات): تحضيرٌ ثم إرسالٌ، ورفضُ الإرسالِ ← false.
+    handleUpdate: async (raw) => {
+      const prepared = await prepare(raw);
+      if (!prepared.handled) return false;
+      const delivered = await deliver(prepared.replies, 0);
+      return delivered.error === null;
     },
   };
 }

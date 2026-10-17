@@ -223,6 +223,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     runsIn: "اختبارات التكامل على قاعدة حقيقية",
     whyNotRun: null,
   },
+  {
+    file: "tests/integration/s5-update-effect-ledger.test.ts",
+    suites: ["S5 — دفترُ أثرِ التحديثِ ونيّةُ الردِّ الدائمةُ (قاعدةٌ حقيقيةٌ)"],
+    skipped: 6,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "S5 (ADR 0288): فصلُ الأثرِ التجاريِّ عن إرسالِ الردِّ — الختمُ الذرّيُّ وإعادةُ الالتقاطِ ونافذةُ الانهيارِ والتراجعُ والاستنفادُ سلوكُ معاملاتِ PostgreSQL وأقفالِه لا سلوكُ محاكٍ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجراتِ مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً.",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
 
   {
     file: "tests/integration/redispatch-exhausted-starvation.test.ts",

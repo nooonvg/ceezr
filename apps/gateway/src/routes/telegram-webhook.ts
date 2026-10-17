@@ -61,6 +61,23 @@ export type BotKind = "driver" | "rider";
 export interface UpdateHandler {
   /** يعالج تحديثاً واحداً. يعيد false إن تعذّرت المعالجة، ولا يرمي استثناءً. */
   handle(bot: BotKind, update: unknown): Promise<boolean>;
+  /**
+   * S5 (ADR 0288) — اختياريّان معًا: الأثرُ وحسابُ الردودِ بلا إرسالٍ، ثم الإرسالُ من
+   * مؤشرٍ. حينَ يتوفّرانِ يُثبِّتُ المستنزفُ الأثرَ ونيّةَ الردِّ ذرّيًّا قبلَ الإرسالِ،
+   * فلا يُعيدُ رفضُ رسالةٍ تحديثًا ثبتَ أثرُه. `replies` بياناتٌ قابلةٌ للتسلسلِ (JSON).
+   */
+  prepare?(
+    bot: BotKind,
+    update: unknown,
+  ): Promise<{ readonly handled: boolean; readonly replies: readonly unknown[] }>;
+  deliver?(
+    bot: BotKind,
+    replies: readonly unknown[],
+    from: number,
+  ): Promise<{
+    readonly sent: number;
+    readonly error: { readonly message: string; readonly retryAfterSec: number | null } | null;
+  }>;
 }
 
 export interface WebhookDependencies {
