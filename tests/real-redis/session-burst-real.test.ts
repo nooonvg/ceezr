@@ -38,15 +38,20 @@ function makeClient() {
 
 describeIf("جدارُ الجلسةِ — حاجزُ تزامنِ Redis تحتَ الانفجارِ", () => {
   it("المسلكُ يحملُ ذروةَ الطلبِ المحسوبةَ بلا رفضِ امتلاءٍ", async () => {
+    // درسُ الجولةِ الأولى: خادمُ CI واحدٌ يُشارَكُ بينَ اختباراتِ الملفِّ كلِّها،
+    // فمفاتيحُ الانفجارِ (2,000) لو تُرِكَت حتى انتهاءِ مهلتِها لملأتْ دُفعةَ
+    // SCAN في اختبارِ الجلساتِ القائمِ فأفلتتِ المفاتيحُ المطلوبةَ منَ الصفحةِ
+    // الأولى — فالتُنظَّفْ هنا في نهايةِ كلِّ اختبارٍ لا بعدها.
     // القيمةُ المعلنةُ في الميزانيةِ تكفي الذروةَ — وإلا كانَ هذا الاختبارُ
     // إنذارَ ارتدادٍ لا استرحامًا: من خفّضها دونَ حسابٍ يكسرُ الموجاتِ هنا.
     expect(DEPENDENCY_BUDGETS.redis.maxConcurrent).toBeGreaterThanOrEqual(BURST);
 
     const redis = makeClient();
+    const burstTag = Date.now();
     const started = Date.now();
     const outcomes = await Promise.all(
       Array.from({ length: BURST }, (_, i) =>
-        redis.command(["SET", `load01-burst-probe:${Date.now()}:${i}`, "1", "NX", "EX", "30"]),
+        redis.command(["SET", `load01-burst-probe:${burstTag}:${i}`, "1", "NX", "EX", "30"]),
       ),
     );
     const saturated = outcomes.filter((o) => !o.ok && o.error.kind === "saturated");
@@ -59,6 +64,12 @@ describeIf("جدارُ الجلسةِ — حاجزُ تزامنِ Redis تحتَ
     expect(failures).toHaveLength(0);
     // وللصرفِ في الحسابِ: الدفعةُ كلُّها عبرت في ثوانٍ لا دقائقَ.
     expect(wallMs).toBeLessThan(10_000);
+    // التنظيفُ بعدَ الانفجارِ: الخادمُ مشتركٌ بينَ اختباراتِ الملفِّ، ومفاتيحُ
+    // الاختبارِ لا تُخلَّفْ لمن بعده (UNLINK دفعاتٍ من مئةٍ).
+    const keys = outcomes.map((_, i) => `load01-burst-probe:${burstTag}:${i}`);
+    for (let start = 0; start < keys.length; start += 100) {
+      await redis.command(["UNLINK", ...keys.slice(start, start + 100)]);
+    }
   });
 
   it("بصمةٌ واحدةٌ لا تُستهلكُ مرتينِ مهما بلغَ التزامنُ (أمانُ الحارسِ لا يمسُّه الرفعُ)", async () => {
