@@ -277,8 +277,9 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
     // كلُّ صفٍّ قُبِضَ مرةً واحدةً (الصواميلُ الفارغةُ للطابورِ انتظارٌ لا التقاطٌ)
     expect(f.st.claims).toBeGreaterThanOrEqual(3);
     // الفتحاتُ احتُرِمَت: كلُّ إرسالٍ بعدَ ثانيةٍ كاملةٍ من سابقهِ للمحادثةِ نفسِها
-    expect(sentLog[1].at - sentLog[0].at).toBeGreaterThanOrEqual(1_000);
-    expect(sentLog[2].at - sentLog[1].at).toBeGreaterThanOrEqual(1_000);
+    const [s0, s1, s2] = [sentLog[0], sentLog[1], sentLog[2]].map((x) => x?.at ?? -1);
+    expect(s1 - s0).toBeGreaterThanOrEqual(1_000);
+    expect(s2 - s1).toBeGreaterThanOrEqual(1_000);
   });
 
   test("D8/الاحتفاظ: ما لم تُفتَحِ الفتحةُ داخلَ الميزانيةِ يُغسَلُ للطابورِ بالعقدِ القديمِ", async () => {
