@@ -1,3 +1,6 @@
+# pgss-top — diag-r11-dispatch-250
+
+```text
 43826|15930|2.75|select claim_notification_delivery() result
 20112|4458|4.51|select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_location::geometry) as lng, (extract($1 from d.last_location_at) * $2):
 14116|7538|1.87|select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result
@@ -38,3 +41,4 @@
 261|3059|0.09|select rider_order_candidate($1::bigint, $2::uuid) as result
 255|12236|0.02|select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.phone, d.verification_status, a.is_available, (d.last_location is not null) as has_location, 
 246|12236|0.02|select u.telegram_id::text as telegram_id from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id where o.id = $1::uuid
+```

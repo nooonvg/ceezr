@@ -1,3 +1,6 @@
+# pgss-top — diag-r11-join-250
+
+```text
 34785|3435|10.13|select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_location::geometry) as lng, (extract($1 from d.last_location_at) * $2):
 14298|26784|0.53|select claim_notification_delivery() result
 12161|25217|0.48|select driver_offer_board($1::bigint) as result
@@ -38,3 +41,4 @@
 307|4|76.77|select relocate_drivers_by_location($1) as result
 305|2707|0.11|update drivers set verification_status = $2::verification_status where id = $1::uuid and verification_status = $3::verification_status
 303|9475|0.03|select ru.telegram_id::text as rider_telegram_id, ru.language_code as rider_language, du.full_name as driver_name, d.plate_number as plate, d.vehicle_type::text
+```

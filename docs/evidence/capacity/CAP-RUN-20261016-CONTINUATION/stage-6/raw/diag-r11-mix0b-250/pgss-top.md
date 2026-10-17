@@ -1,3 +1,6 @@
+# pgss-top — diag-r11-mix0b-250
+
+```text
 55866|33466|1.67|select claim_notification_delivery() result
 14666|3986|3.68|select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_location::geometry) as lng, (extract($1 from d.last_location_at) * $2):
 11171|22601|0.49|select driver_offer_board($1::bigint) as result
@@ -38,3 +41,4 @@
 266|12740|0.02|select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.phone, d.verification_status, a.is_available, (d.last_location is not null) as has_location, 
 257|3185|0.08|with current as ( select id, driver_id, trip_id, started_at, last_fix_at, ended_at, end_reason, last_sequence from tracking_sessions where driver_id = $1::uuid 
 252|12740|0.02|select u.telegram_id::text as telegram_id from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id where o.id = $1::uuid
+```

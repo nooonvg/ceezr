@@ -240,7 +240,7 @@
 | `diag-r11-dispatch-250` | + عرضٌ عندَ الإنشاءِ + حافةٌ لاحقةٌ | **100% (3,059)** | **نظيف** | **14.7ث** | **39ث** | 8,532/3,207/497 ² | **PASS — كلُّ البواباتِ** |
 
 ¹ أُطلقتْ بـ`RIDER_SOCKET_MIX=0` لكنَّ غلافَ netns أسقطَ المتغيّرَ فجرى المولّدُ بـ0.7 (`gen.out`) —
-موسومةٌ `LABEL-NOTE.txt` ومُعاملةٌ بما جرى فعلًا؛ وأُصلحَ الغلافُ قبلَ `mix0b`.
+موسومةٌ `LABEL-NOTE.md` ومُعاملةٌ بما جرى فعلًا؛ وأُصلحَ الغلافُ قبلَ `mix0b`.
 ² المعلّقُ عندَ لقطةِ ما بعدَ التصريفِ داخلَ حدِّ G4 (نظيف)؛ لكنَّ زمنَ احتياطِ تيليجرامَ للراكبِ صارَ
 p50=33.7ث لأنَّ صفوفَ العروضِ (22,042) تزاحمُه في المستهلكِ — **خطرٌ مُعلَنٌ لموجةِ 500** لا يُخفى.
 
@@ -248,7 +248,7 @@ p50=33.7ث لأنَّ صفوفَ العروضِ (22,042) تزاحمُه في ا�
   العاملِ وحدَها في `diag-r11-smoke20d`). الإيصالاتُ المكرّرةُ صفرٌ في كلِّ الجولاتِ.
 - الموارد (`resources.jsonl`، نسبةُ نواةٍ واحدةٍ، الجهازُ نواتان): PostgreSQL متوسطٌ 58–84% وأقصى 117–128%،
   البوابةُ 32–42% (أقصى ~50%)، المولّدُ ≤13%. **PostgreSQL هو المورِدُ الحاكمُ** على هذا المقعدِ.
-- أعلى الاستعلاماتِ (`pgss-top.txt`): حلقةُ `claim_notification_delivery` (في `mix0b`: 33,466 التقاطًا
+- أعلى الاستعلاماتِ (`pgss-top.md`): حلقةُ `claim_notification_delivery` (في `mix0b`: 33,466 التقاطًا
   و28,688 إعادةَ جدولةٍ لازدحامِ الدلوِ ≈ 65ث معالجٍ — هدرٌ يزاحمُ المطابقةَ)، ثم بحثُ السائقينَ المرشّحينَ
   (متوسطٌ 4–10ms)، ثم `driver_offer_board`.
 
@@ -261,8 +261,8 @@ p50=33.7ث لأنَّ صفوفَ العروضِ (22,042) تزاحمُه في ا�
 ## الأدلة
 
 - `stage-6/raw/diag-r10-baseline-fixedmock/` و`diag-r11-*/` — `wave-report.json` و`db-audit-pre/post.json`
-  و`timeline.jsonl` و`mock-stats-pre/post.json` و`gen-summary.json` و`pgss-top.txt` و`resources.jsonl`.
-- `stage-6/raw/diag-r11-mix0-250-ABORTED-s5bug/ABORTED.txt` — الجولةُ الموقوفةُ وسببُها.
+  و`timeline.jsonl` و`mock-stats-pre/post.json` و`gen-summary.json` و`pgss-top.md` و`resources.jsonl`.
+- `stage-6/raw/diag-r11-mix0-250-ABORTED-s5bug/ABORTED.md` — الجولةُ الموقوفةُ وسببُها.
 - `stage-6/raw/seat-tools-r11/` — أدواتُ المقعدِ المستعملةُ (قاعدةٌ نظيفةٌ من قالبٍ، عيّناتُ الموارد، `pg_stat_statements`).
 - الاختبارات: `tests/integration/rider-trip-app-ack.test.ts` (7) · `tests/integration/s5-update-effect-ledger.test.ts` (6)
   · `tests/unit/rider-trip-app-first.test.ts` (9) · `tests/unit/immediate-redispatch.test.ts` (8، ثلاثٌ جديدةٌ للحافةِ اللاحقةِ)
