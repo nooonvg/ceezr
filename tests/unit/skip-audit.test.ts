@@ -946,8 +946,11 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // حالاتٍ في `d8-outbox-gate-per-recipient.test.ts`: بوابةُ الالتقاطِ التسلسليُّ
     // على المستلِمِ وإعادةُ الازدحامِ أحكامُ قاعدةٍ (claim/requeue) لا تُقاسُ إلا
     // على PostgreSQL حقيقيٍّ — خطوتُها في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
-    expect(SKIP_REGISTRY).toHaveLength(190);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1632);
+    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · المرحلة 6 · LOAD-01): والآنَ 191 و1633 — حالةٌ واحدةٌ في
+    // `outbox-claim-index.test.ts`: حراسةُ خطةِ الالتقاطِ العامةِ المعلمةِ (فهرسٌ لا فحصٌ كاملٌ)
+    // سلوكُ مخطِّطِ PostgreSQL نفسِه — خطوتُها في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
+    expect(SKIP_REGISTRY).toHaveLength(191);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1633);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {
