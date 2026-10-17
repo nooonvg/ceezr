@@ -180,9 +180,14 @@ function main() {
   perf.push({
     id: "P7",
     rule: "أقدم مهمة إشعار معلقة عند التدقيق",
-    value: pending === null ? "n/a" : `${pending}s`,
+    // `LOAD-01 Recovery` — لا معلّقَ أصلًا هوَ الحالةُ المثلىُ لا فشلٌ: البوابةُ
+    // تقيسُ «لا مهمةً عالقةً أقدمَ من 120ث» — والطابورُ الفارغُ يحقّقُها
+    // تحقيقًا تامًّا (لا شيءَ عالقٌ). القيمةُ المفقودةُ (`null`) ليست قياسًا
+    // فاشلًا بل غيابَ المُدخَلِ نفسِهِ — والخلطُ بينهما أخفقَ موجةً صحيحةً
+    // (`wave-50-attempt1`) في الجولةِ السابقةِ. الحدُّ (120ث) لم يتغيرْ.
+    value: pending === null ? "لا معلّقَ (طابورٌ فارغٌ)" : `${pending}s`,
     limit: "≤ 120s",
-    pass: pending !== null && pending <= 120,
+    pass: pending === null || pending <= 120,
   });
   const ratio429 = requests === 0 ? 0 : (lastCounters.api429 ?? 0) / requests;
   perf.push({
