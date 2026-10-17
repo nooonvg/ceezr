@@ -1,0 +1,2 @@
+{"t":"2026-10-17T18:45:48+00:00","event":"round.start","round":"r8-wave-250","profile":[{"name":"wave-250","sec":180,"conc":250}],"drain_sec":180,"code_sha":"eeaec8f549dc8234f76a19e61094efd2b24ea597","code_dirty":9}
+{"t":"2026-10-17T18:45:48+00:00","event":"gateway.pid","pid":"29332"}

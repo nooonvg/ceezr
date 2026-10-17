@@ -1,0 +1,57 @@
+{
+  "gen": "genA",
+  "phase": "pre",
+  "snapshot": {
+    "at": "2026-10-17T18:18:23.784Z",
+    "ordersByStatus": {
+      "completed": 196
+    },
+    "offersByStatus": {
+      "cancelled": 904,
+      "accepted": 196
+    },
+    "availability": {
+      "available": 0,
+      "total": 196
+    },
+    "outbox": {
+      "byStatus": {
+        "pending": 275,
+        "dead": 619,
+        "delivered": 990
+      },
+      "byKind": {
+        "offer": {
+          "total": 1100,
+          "delivered": 206,
+          "pending": 275,
+          "dead": 619
+        },
+        "rider_trip_notice": {
+          "total": 784,
+          "delivered": 784,
+          "pending": 0,
+          "dead": 0
+        }
+      },
+      "byKindAllTime": {
+        "offer": {
+          "total": 1100,
+          "delivered": 206,
+          "pending": 275,
+          "dead": 619
+        },
+        "rider_trip_notice": {
+          "total": 784,
+          "delivered": 784,
+          "pending": 0,
+          "dead": 0
+        }
+      },
+      "oldestPendingSec": 38
+    },
+    "egress": null,
+    "engagedDuplicates": 0,
+    "activeRides": 0
+  }
+}
