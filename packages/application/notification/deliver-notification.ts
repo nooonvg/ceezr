@@ -203,10 +203,7 @@ export interface NotificationDeliveryDeps {
    * فإشعاراتُ الرحلةِ المتجمعةُ لمحادثةٍ واحدةٍ تُسلَّمُ في شوطٍ واحدٍ متباعدةً
    * بثانيةٍ لا في ثلاثِ دوراتٍ. غيابُ الخطافِ = السلوكُ القديمُ حرفيًّا.
    */
-  readonly congestionHold?: (
-    delivery: OutboxDelivery,
-    retryAfterMs: number,
-  ) => boolean;
+  readonly congestionHold?: (delivery: OutboxDelivery, retryAfterMs: number) => boolean;
 }
 
 export interface DeliveryAttemptOutcome {
@@ -394,10 +391,7 @@ async function deliverClaimed(
     // `LOAD-01` (الدفعةُ الخامسةُ): المستنزفُ المتزامنُ يحتجزُ الصفَّ داخلَ الشوطِ
     // ويعيدُ المحاولةَ عندَ فتحتِهِ؛ الازدحامُ لم يُرسِلْ شيئًا (لا رسالةَ) فالإعادةُ
     // بلا خطرِ تكرارٍ، والعقدُ في نهايةِ الشوطِ إن لم تُفتَحِ الفتحةُ.
-    if (
-      deps.congestionHold !== undefined &&
-      deps.congestionHold(delivery, 1_000)
-    ) {
+    if (deps.congestionHold !== undefined && deps.congestionHold(delivery, 1_000)) {
       return ok({
         found: true,
         kind: delivery.kind,
@@ -570,8 +564,7 @@ export async function deliverNotificationsConcurrently(
 ): Promise<Result<ConcurrentDrainOutcome, PortFailureError>> {
   const now = options.now ?? (() => Date.now());
   const sleep =
-    options.sleep ??
-    ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+    options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const lanes = Math.max(1, Math.floor(options.lanes));
   const started = now();
   let claimed = 0;
