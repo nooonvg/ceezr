@@ -47,8 +47,11 @@ import type { CityId } from "../../../../packages/shared/kernel/index.ts";
 export const IMMEDIATE_REDISPATCH_DEBOUNCE_MS = 2_000;
 
 export interface ImmediateRedispatchSchedulerDeps {
-  /** الشوطُ الفعليُّ لإعادةِ عرضِ مدينةٍ — نفسُ منفذِ الدوريّةِ بحدِّهِ القائمِ. */
-  readonly run: (cityId: CityId) => Promise<void>;
+  /**
+   * الشوطُ الفعليُّ لإعادةِ عرضِ مدينةٍ — نفسُ منفذِ الدوريّةِ بحدِّهِ القائمِ.
+   * `saturated=true` = امتلأَ الحدُّ وتقدّمَ (بقيَ مستحقٌّ على الأرجحِ) ⇒ شوطٌ لاحقٌ واحدٌ.
+   */
+  readonly run: (cityId: CityId) => Promise<{ readonly saturated: boolean } | undefined>;
   /** نافذةُ الخفضِ بالملّي ثانيةِ. */
   readonly debounceMs: number;
   /** ساعةٌ قابلةٌ للحقنِ — للاختبارِ لا لإنتاجٍ. */
@@ -57,6 +60,8 @@ export interface ImmediateRedispatchSchedulerDeps {
   readonly schedule: (fn: () => void) => void;
   /** تسجيلٌ — الخفضُ والتخطّي يُعلنانِ لا يُخفيانِ. */
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
+  /** مؤقّتُ الشوطِ اللاحقِ (`setTimeout` غيرُ ممسِكٍ للعمليةِ افتراضيًّا) — قابلٌ للحقنِ. */
+  readonly scheduleAfter?: (ms: number, fn: () => void) => void;
 }
 
 export interface ImmediateRedispatchScheduler {
@@ -75,18 +80,49 @@ export function createImmediateRedispatchScheduler(
   const lastAcceptedAtMs = new Map<CityId, number>();
   /** المدنُ التي شوطُها جارٍ — مانعُ التداخلِ: مُسكِتًا لا مُراكمًا. */
   const running = new Set<CityId>();
+  /**
+   * التكليفُ السابعُ (P4) — **الحافةُ اللاحقةُ:** محفّزٌ أُسكِتَ (خفضٌ أو شوطٌ جارٍ) كانَ
+   * يُترَكُ للدوريّةِ (20ث)؛ فطلبٌ أُنشئَ بعدَ آخرِ شوطٍ ينتظرُ حتى 20ث لأوّلِ عرضٍ،
+   * وبعدَ توقّفِ تحديثاتِ المواقعِ صارَ الدوريُّ (50 كلَّ 20ث) وحدَه يُصرِّفُ — قيسَ في
+   * `diag-r11-join-250` انتظارٌ لأوّلِ جولةٍ بلغَ 82ث. الآنَ: علَمٌ واحدٌ لكلِّ مدينةٍ
+   * (لا عدّادٌ — مُسكِتٌ لا مُراكِمٌ): أيُّ عددٍ من المحفّزاتِ المُسكَتةِ = شوطٌ لاحقٌ
+   * **واحدٌ** بعدَ النافذةِ أو بعدَ الجاري. والشوطُ المُمتلئُ الحدِّ يطلبُ لاحقًا واحدًا.
+   */
+  const pending = new Set<CityId>();
+  const trailingArmed = new Set<CityId>();
+  const scheduleAfter =
+    deps.scheduleAfter ??
+    ((ms: number, fn: () => void) => {
+      const timer = setTimeout(fn, ms) as unknown as { unref?: () => void };
+      timer.unref?.();
+    });
+
+  const armTrailing = (cityId: CityId, delayMs: number): void => {
+    if (trailingArmed.has(cityId)) return;
+    trailingArmed.add(cityId);
+    scheduleAfter(Math.max(0, delayMs), () => {
+      trailingArmed.delete(cityId);
+      if (pending.has(cityId) && !running.has(cityId)) {
+        pending.delete(cityId);
+        trigger(cityId);
+      }
+    });
+  };
 
   const trigger = (cityId: CityId): void => {
     const now = deps.now();
     const last = lastAcceptedAtMs.get(cityId);
     if (last !== undefined && now - last < deps.debounceMs) {
-      // تخطّي الخفضِ حدثٌ يُعلَنُ لا يُخفى: الدوريّةُ ستُدركُ هذا الطلبَ.
+      // تخطّي الخفضِ يُعلَنُ، ويُسلِّحُ شوطًا لاحقًا واحدًا عندَ انقضاءِ النافذةِ.
       deps.log?.("redispatch.immediate_debounced", { cityId });
+      pending.add(cityId);
+      if (!running.has(cityId)) armTrailing(cityId, deps.debounceMs - (now - last));
       return;
     }
     if (running.has(cityId)) {
-      // شوطٌ جارٍ: لا شوطًا فوقَهُ — والدوريّةُ أرضٌ صلبةٌ وراءَنا.
+      // شوطٌ جارٍ: لا شوطًا فوقَهُ — ويُطلَبُ لاحقٌ واحدٌ بعدَ اكتمالِه.
       deps.log?.("redispatch.immediate_in_flight", { cityId });
+      pending.add(cityId);
       return;
     }
     lastAcceptedAtMs.set(cityId, now);
@@ -94,6 +130,9 @@ export function createImmediateRedispatchScheduler(
       running.add(cityId);
       void deps
         .run(cityId)
+        .then((report) => {
+          if (report?.saturated === true) pending.add(cityId);
+        })
         .catch((cause: unknown) => {
           // فشلُ الشوطِ الخلفيِّ يُسجَّلُ ولا يُرمى ولا يُصمتُ — والحاويةُ
           // تُسجّلُ فشلَهُ باسمِ الحدثِ نفسِهِ الذي كانَ يُسجّلُهُ قبلَ الجدولةِ.
@@ -104,6 +143,10 @@ export function createImmediateRedispatchScheduler(
         })
         .finally(() => {
           running.delete(cityId);
+          if (pending.has(cityId)) {
+            const since = deps.now() - (lastAcceptedAtMs.get(cityId) ?? 0);
+            armTrailing(cityId, deps.debounceMs - since);
+          }
         });
     });
   };

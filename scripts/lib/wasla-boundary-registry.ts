@@ -455,6 +455,15 @@ export const WASLA_BOUNDARY_INVENTORY: readonly BoundaryEntry[] = [
     rationale: "السمعةُ وإشاراتُ الثقةِ مملوكةٌ لـCORE؛ MOVE يُصدِرُ إشارةً ولا يحسبُ درجةً.",
   },
   {
+    table: "rider_trip_event_receipts",
+    concern:
+      "إيصالاتُ أحداثِ الرحلةِ في Mini App — دليلُ وصولِ طورِ رحلةٍ إلى الراكبِ (إقرارُ العميلِ بعدَ تطبيقِ اللقطةِ، ADR 0287)",
+    owner: "MOVE",
+    disposition: "KEEP",
+    rationale:
+      "دليلُ تسليمِ إخطارِ الطورِ مِلكُ نطاقِ الرحلةِ (MOVE) كأختَيه `notification_outbox` و`driver_offers_board_receipts`: لا نصَّ فيه ولا موقعَ — معرّفُ صفِّ الصادرِ والطلبِ ونوعُ الحدثِ ووقتُ الإقرارِ، فهوَ ذيلُ أمانةِ القياسِ على مسارِ التسليمِ لا بياناتِ عملٍ جديدةٌ.",
+  },
+  {
     table: "riders",
     concern: "ملفُّ الراكبِ",
     owner: "CORE",

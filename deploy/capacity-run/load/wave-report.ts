@@ -187,6 +187,26 @@ function main() {
     !gatewayRestarted,
   );
 
+  // نزاهةُ القناةِ: كلُّ إرساليةٍ في نافذةِ الموجةِ مصنّفةٌ لبوتِها — «unknown»
+  // يعني أنَّ المحاكيَ جمعَ البوتينِ في نافذةِ حدٍّ واحدةٍ فقياسُ P7 مزيَّفٌ.
+  const readStats = (f: string): { unknown_token?: number } | null =>
+    existsSync(`${EV}/${f}`)
+      ? (JSON.parse(readFileSync(`${EV}/${f}`, "utf8")) as { unknown_token?: number })
+      : null;
+  const mockPre = readStats("mock-stats-pre.json");
+  const mockPost = readStats("mock-stats-post.json");
+  const unknownDelta =
+    mockPre === null || mockPost === null
+      ? null
+      : (mockPost.unknown_token ?? 0) - (mockPre.unknown_token ?? 0);
+  g(
+    "EGRESS-CLASSIFIED",
+    "كل إرسالية في المحاكي مصنفة لبوتها (لا unknown)",
+    unknownDelta === null ? "n/a (لقطة مفقودة)" : `unknown +${unknownDelta}`,
+    "= 0",
+    unknownDelta === 0,
+  );
+
   const genStart = events.find((e) => e.event === "gen.start") as
     | { profile?: { conc: number }[] }
     | undefined;

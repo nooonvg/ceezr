@@ -246,6 +246,17 @@ export const WASLA_EGRESS_REGISTRY: readonly EgressPeer[] = [
     removed: false,
   },
   {
+    id: "gateway-internal-rider-trip-signal",
+    purpose:
+      "ADR 0287 — إشارةُ حدثِ رحلةِ الراكبِ الداخليةُ بينَ شوطِ التسليمِ والبوابةِ (متصلٌ؟ بُثَّتْ لهُ) — بابُ خدمةٍ لخدمةٍ بسرٍّ مشتركٍ",
+    peerClass: "INFRASTRUCTURE",
+    system: "NONE",
+    source: { kind: "env", envKeys: ["GATEWAY_INTERNAL_URL", "INTERNAL_SIGNAL_SECRET"] },
+    callSite: "packages/infrastructure/notification/rider-trip-app-delivery.ts",
+    runtimeGate: { kind: "gated" },
+    removed: false,
+  },
+  {
     id: "upstash-redis-rest",
     purpose: "مخزنُ الجلساتِ ومنعُ التكرارِ عبرَ المثيلاتِ",
     peerClass: "INFRASTRUCTURE",

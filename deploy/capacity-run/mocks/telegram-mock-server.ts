@@ -19,6 +19,14 @@ const LOG_DIR = process.env.RUN_DIR ? `${process.env.RUN_DIR}/evidence` : "/tmp/
 const GLOBAL_PER_BOT_PER_SEC = Number(process.env.MOCK_GLOBAL_PER_BOT_PER_SEC ?? 30);
 const DRIVER_TOKEN = process.env.DRIVER_BOT_TOKEN ?? "";
 const RIDER_TOKEN = process.env.RIDER_BOT_TOKEN ?? "";
+// نزاهةُ القياسِ: محاكٍ بلا رمزَي البوتينِ يصنّفُ كلَّ إرساليةٍ «unknown» فيجمعُ
+// البوتينِ في نافذةِ 30/ث واحدةٍ — وتيليجرامُ الحقيقيُّ يحدُّ لكلِّ بوتٍ على
+// حدةٍ. هذا ما أفسدَ قياسَ P7 في r7–r9 (بدأ المحاكي قبلَ ملفِّ الأسرارِ
+// بثانيتين). فلا بدءَ برمزٍ فارغٍ: الفشلُ الصريحُ خيرٌ من قياسٍ مزيَّفٍ.
+if (DRIVER_TOKEN === "" || RIDER_TOKEN === "" || DRIVER_TOKEN === RIDER_TOKEN) {
+  console.error("telegram-mock: DRIVER_BOT_TOKEN/RIDER_BOT_TOKEN مفقودان أو متطابقان — يُرفضُ البدء");
+  process.exit(2);
+}
 const KEEP = 400_000;
 mkdirSync(LOG_DIR, { recursive: true });
 

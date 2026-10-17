@@ -249,6 +249,8 @@ export const TABLE_RETENTION: Readonly<Record<string, RetentionClass>> = {
    * و`notification_outbox` (يحكمُ `F12-10` في أرشفتِهِ).
    */
   driver_offers_board_receipts: RETENTION_CLASSES.pendingDecision,
+  /** ADR 0287 — إيصالاتُ أحداثِ الرحلةِ في Mini App: عمرُ دليلِ التسليمِ كأختِها. */
+  rider_trip_event_receipts: RETENTION_CLASSES.pendingDecision,
   orders: RETENTION_CLASSES.lifecycleBound,
   payment_transactions: RETENTION_CLASSES.financialSixYears,
   platform_settings: RETENTION_CLASSES.lifecycleBound,

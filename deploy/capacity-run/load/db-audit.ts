@@ -44,6 +44,24 @@ interface Snapshot {
   readonly egress: { byBot: Record<string, { accepted: number; rejected: number }> } | null;
   readonly engagedDuplicates: number;
   readonly activeRides: number;
+  /**
+   * ADR 0287 — قناةُ تسليمِ أطوارِ رحلةِ الراكبِ في نافذةِ الموجةِ: إيصالُ Mini App
+   * (`miniapp_ack`) منفصلٌ عن قبولِ Telegram API (`telegram`)، والإقراراتُ
+   * المتأخرةُ (إيصالٌ على صفٍّ أُغلقَ بتيليجرامَ) تُعدُّ وحدَها — وزمنُ الإقرارِ
+   * منَ الإدراجِ إلى الإيصالِ (p50/p95/p99 بالثواني).
+   */
+  readonly riderTripChannel: {
+    phaseRows: number;
+    miniappAck: number;
+    telegram: number;
+    pending: number;
+    other: number;
+    receipts: number;
+    lateReceiptsAfterTelegram: number;
+    duplicateReceipts: number;
+    ackLatencySec: { p50: number | null; p95: number | null; p99: number | null };
+    telegramLatencySec: { p50: number | null; p95: number | null; p99: number | null };
+  } | null;
 }
 
 async function snapshot(): Promise<Snapshot> {
@@ -126,6 +144,57 @@ async function snapshot(): Promise<Snapshot> {
   // سجلُ المحاكي: عدُّ الإرسالياتِ في نافذةِ الموجةِ (بوسمِ الوقتِ لا قراءةِ كلِّ
   // الملفِّ) — يقرأُ آخرَ ما أمكنَهُ من الصفوفِ بكفاءةٍ (الملفُ حلقةٌ متراكمةٌ).
   const egress = readMockEgress(sinceMs);
+  const since = sinceMs === null ? new Date(0) : new Date(sinceMs);
+  let riderTripChannel: Snapshot["riderTripChannel"] = null;
+  try {
+    const [ch] = await sql<Record<string, string | null>[]>`
+      with rows as (
+        -- تسليمُ تيليجرامَ العاديُّ لا يكتبُ القناةَ (تبقى null) ويحملُ معرّفَ رسالةٍ:
+        -- فهوَ «telegram» بدليلِه (قبولُ API)، لا يُخلطُ بإيصالِ Mini App.
+        select n.id, n.status,
+               case when n.delivered_channel is not null then n.delivered_channel
+                    when n.delivered_message_id is not null then 'telegram' end as delivered_channel,
+               n.created_at, n.delivered_at
+          from notification_outbox n
+         where n.kind = 'rider_trip_notice' and n.created_at >= ${since}
+           and n.payload ->> 'event' in ('MATCHED','ARRIVED','STARTED','COMPLETED')
+      ), rc as (
+        select r.delivery_id, r.acked_at, rows.delivered_channel, rows.created_at
+          from rider_trip_event_receipts r join rows on rows.id = r.delivery_id
+      )
+      select
+        (select count(*) from rows)::text as phase_rows,
+        (select count(*) from rows where status = 'delivered' and delivered_channel = 'miniapp_ack')::text as miniapp_ack,
+        (select count(*) from rows where status = 'delivered' and delivered_channel = 'telegram')::text as telegram,
+        (select count(*) from rows where status in ('pending','sending'))::text as pending,
+        (select count(*) from rows where not (status = 'delivered' and coalesce(delivered_channel, '') in ('miniapp_ack','telegram')) and status not in ('pending','sending'))::text as other,
+        (select count(*) from rc)::text as receipts,
+        (select count(*) from rc where delivered_channel = 'telegram')::text as late_receipts,
+        (select count(*) - count(distinct delivery_id) from rc)::text as duplicate_receipts,
+        (select percentile_cont(0.5) within group (order by extract(epoch from acked_at - created_at)) from rc)::text as ack_p50,
+        (select percentile_cont(0.95) within group (order by extract(epoch from acked_at - created_at)) from rc)::text as ack_p95,
+        (select percentile_cont(0.99) within group (order by extract(epoch from acked_at - created_at)) from rc)::text as ack_p99,
+        (select percentile_cont(0.5) within group (order by extract(epoch from delivered_at - created_at)) from rows where delivered_channel = 'telegram' and status = 'delivered')::text as tg_p50,
+        (select percentile_cont(0.95) within group (order by extract(epoch from delivered_at - created_at)) from rows where delivered_channel = 'telegram' and status = 'delivered')::text as tg_p95,
+        (select percentile_cont(0.99) within group (order by extract(epoch from delivered_at - created_at)) from rows where delivered_channel = 'telegram' and status = 'delivered')::text as tg_p99`;
+    const n = (v: string | null | undefined) =>
+      v === null || v === undefined ? null : Math.round(Number(v) * 10) / 10;
+    riderTripChannel = {
+      phaseRows: Number(ch?.phase_rows ?? 0),
+      miniappAck: Number(ch?.miniapp_ack ?? 0),
+      telegram: Number(ch?.telegram ?? 0),
+      pending: Number(ch?.pending ?? 0),
+      other: Number(ch?.other ?? 0),
+      receipts: Number(ch?.receipts ?? 0),
+      lateReceiptsAfterTelegram: Number(ch?.late_receipts ?? 0),
+      duplicateReceipts: Number(ch?.duplicate_receipts ?? 0),
+      ackLatencySec: { p50: n(ch?.ack_p50), p95: n(ch?.ack_p95), p99: n(ch?.ack_p99) },
+      telegramLatencySec: { p50: n(ch?.tg_p50), p95: n(ch?.tg_p95), p99: n(ch?.tg_p99) },
+    };
+  } catch {
+    // قاعدةٌ قبلَ ADR 0287 (لا جدولَ إيصالاتٍ): القناةُ غيرُ مقيسةٍ — `null` صريحًا.
+    riderTripChannel = null;
+  }
   return {
     at: new Date().toISOString(),
     ordersByStatus: byStatus(orders),
@@ -143,6 +212,7 @@ async function snapshot(): Promise<Snapshot> {
     egress,
     engagedDuplicates: Number(dups[0]?.count ?? "0"),
     activeRides,
+    riderTripChannel,
   };
 }
 

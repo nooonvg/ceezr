@@ -122,8 +122,16 @@ import {
   showsCancelButton,
 } from "./active-ride-view.ts";
 import { NegotiationPanel } from "./NegotiationPanel.tsx";
+import { PRODUCTION_TRIP_EVENTS } from "./production-trip-events.ts";
 import { RideJourney } from "./RideJourney.tsx";
 import { activeRideTruth, journeyFromActivePhase } from "./ride-journey.ts";
+import {
+  ackableIds,
+  subscribeTripEvents,
+  type TripEventsApi,
+  type TripEventsChannelDeps,
+  type TripEventsResponse,
+} from "./trip-events.ts";
 
 export interface ActiveRideScreenProps {
   readonly orderId: string;
@@ -160,6 +168,14 @@ export interface ActiveRideScreenProps {
   readonly onOpenShare?: () => void;
   /** لوحةُ التسليمِ R5→R7: «طلب المساعدة» يفتحُ شاشةَ الاستغاثةِ نفسَها بتأكيدِها ذي الخطوتَين. */
   readonly onOpenHelp?: () => void;
+  /**
+   * ADR 0287 — أحداثُ أطوارِ الرحلةِ في Mini App: إشارةٌ آنيةٌ ← جلبُ الأحداثِ ←
+   * تطبيقُها بقراءةِ اللقطةِ ← إقرارٌ بما تغطّيه اللقطةُ. بغيابِه لا إقرارَ،
+   * فتصلُ الأطوارُ بتيليجرامَ احتياطًا كما كانَت.
+   */
+  readonly tripEvents?: { readonly api: TripEventsApi; readonly channel: TripEventsChannelDeps };
+  /** المُركِّبُ في الإنتاجِ: منفذُ الإنتاجِ ما لم يُحقَنْ `tripEvents` صراحةً. */
+  readonly liveTripEvents?: boolean;
 }
 
 type Found = Extract<ActiveRideResponse, { found: true }>;
@@ -213,7 +229,10 @@ export function ActiveRideScreen({
   channelBaseUrl = "",
   onOpenShare,
   onOpenHelp,
+  tripEvents: injectedTripEvents,
+  liveTripEvents = false,
 }: ActiveRideScreenProps) {
+  const tripEvents = injectedTripEvents ?? (liveTripEvents ? PRODUCTION_TRIP_EVENTS : undefined);
   const [language] = useState<MiniAppLanguage>(initialLanguage);
   const [state, setState] = useState<ActiveState>({ kind: "reading" });
   const [system, setSystem] = useState<SystemState>(null);
@@ -247,26 +266,28 @@ export function ActiveRideScreen({
    * قراءةٍ فأعادَ الأثرُ النداءَ — نداءٌ لم يطلبْه أحدٌ.
    */
   const refresh = useCallback(
-    async (id: string) => {
-      if (readingRef.current) return;
+    async (id: string): Promise<Found | null> => {
+      if (readingRef.current) return null;
       readingRef.current = true;
       setReading(true);
       setCandidateToken((n) => n + 1);
       const ticket = ++issued.current;
       try {
         const response = await read(id);
-        if (!mounted.current || ticket !== issued.current) return;
+        if (!mounted.current || ticket !== issued.current) return null;
         if (!response.found) {
           setState({ kind: "refused", refusal: response.refusal });
-          return;
+          return null;
         }
         setState({ kind: "ready", view: response, measuredAtMs: now() });
+        return response;
       } catch (thrown) {
-        if (!mounted.current || ticket !== issued.current) return;
+        if (!mounted.current || ticket !== issued.current) return null;
         const screen = await screenFor(thrown);
-        if (!mounted.current) return;
+        if (!mounted.current) return null;
         if (screen !== null) setSystem({ screen });
         else setState({ kind: "rejected", code: codeOf(thrown) ?? "HTTP_ERROR" });
+        return null;
       } finally {
         readingRef.current = false;
         if (mounted.current) setReading(false);
@@ -274,6 +295,43 @@ export function ActiveRideScreen({
     },
     [now, read],
   );
+
+  /**
+   * ADR 0287 — مزامنةُ أحداثِ الرحلةِ: تُجلبُ، فإن بقيَ ما لم يُقَرَّ قُرئَتِ
+   * اللقطةُ (التطبيقُ)، ثم يُقَرُّ بما يغطّيه طورُها وحدَه — **بعدَ** رسمِها.
+   * القراءةُ المشغولةُ أو الفاشلةُ لا تُقِرُّ بشيءٍ.
+   */
+  const syncTripEvents = useCallback(
+    async (id: string) => {
+      if (tripEvents === undefined) return;
+      let listed: TripEventsResponse;
+      try {
+        listed = await tripEvents.api.list(id);
+      } catch {
+        return;
+      }
+      const pending = (listed.events ?? []).filter((e) => !e.acked);
+      if (pending.length === 0 || !mounted.current) return;
+      const applied = await refresh(id);
+      if (applied === null || !mounted.current) return;
+      const ids = ackableIds(pending, applied.phase);
+      if (ids.length === 0) return;
+      await tripEvents.api.ack(id, ids).catch(() => undefined);
+    },
+    [tripEvents, refresh],
+  );
+
+  useEffect(() => {
+    if (tripEvents === undefined) return;
+    const subscription = subscribeTripEvents(tripEvents.channel, {
+      onSignal: (signalled) => {
+        if (!mounted.current) return;
+        if (signalled !== null && signalled !== orderId) return;
+        void syncTripEvents(orderId);
+      },
+    });
+    return () => subscription.disconnect();
+  }, [orderId, tripEvents, syncTripEvents]);
 
   /** نداءٌ واحدٌ عندَ الدخولِ — ثمَّ لا شيءَ إلّا بطلبِ الراكبِ. */
   useEffect(() => {

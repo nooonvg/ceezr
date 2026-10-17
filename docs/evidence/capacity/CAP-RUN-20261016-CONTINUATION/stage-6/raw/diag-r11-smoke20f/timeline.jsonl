@@ -1,0 +1,2 @@
+{"t":"2026-10-17T21:21:33+00:00","event":"round.start","round":"diag-r11-smoke20f","profile":[{"name":"wave-20","sec":60,"conc":20}],"drain_sec":130,"code_sha":"b63a73146c65c36a110ebb85f807410fb376eccf","code_dirty":51}
+{"t":"2026-10-17T21:21:33+00:00","event":"gateway.pid","pid":"13034"}

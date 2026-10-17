@@ -823,6 +823,21 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
   },
 
   {
+    // ADR 0287 — إشارةُ حدثِ رحلةِ الراكبِ الداخليةُ: الحكمُ نفسُه لأختِها
+    // (سرٌّ مشتركٌ، 401 بلا سرٍّ و503 حينَ يُعطَّلُ) — نداءُ العاملِ لا عميلٍ.
+    method: "POST",
+    path: "/internal/realtime/rider-trip-signal",
+    file: "apps/gateway/src/routes/internal-offers-signal.ts",
+    exposure: "ويبهوكٌ موقَّعٌ",
+    limits: [],
+    exemption: {
+      reason:
+        "مسارُ خدمةٍ لخدمةٍ بسرٍّ مشتركٍ لا يعرفُهُ عميلٌ؛ الحاجزُ هوَ السرُّ (401 بلا سرٍّ) والسقفُ في الطالبِ (ثلاثُ إشاراتٍ على الأكثرِ لكلِّ حدثٍ ثمَّ تيليجرامُ) — وحدُّ المعدَّلِ هنا يحجبُ خدمةً صادقةً عندَ ذروةِ الرحلاتِ ولا يمنعُ شريرًا يعرفُ السرَّ أصلًا.",
+      owner: REPO_EXECUTOR,
+    },
+  },
+
+  {
     method: "POST",
     path: "/v1/driver/offers/:offerId/reject",
     file: "apps/gateway/src/routes/driver-offers.ts",
@@ -1364,6 +1379,27 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
   },
 
   {
+    // ADR 0287 — أحداثُ رحلةِ الراكبِ (قراءةٌ لا تُسجّلُ إيصالًا) — كأختِها `candidate`.
+    method: "GET",
+    path: "/v1/rides/:id/trip-events",
+    file: "apps/gateway/src/routes/rides.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
+    // ADR 0287 — إقرارُ العميلِ بعدَ تطبيقِ الأحداثِ: ثمانيةُ معرّفاتٍ على الأكثرِ،
+    // وما لا يملكُه صاحبُ الجلسةِ يُهمَلُ في المخزنِ، والتكرارُ لا يُنشئُ إيصالًا ثانيًا.
+    method: "POST",
+    path: "/v1/rides/:id/trip-events/ack",
+    file: "apps/gateway/src/routes/rides.ts",
+    exposure: "مُصادَقٌ بجلسةٍ",
+    limits: [],
+    exemption: null,
+  },
+
+  {
     method: "POST",
     path: "/v1/rides/:id/cancel",
     file: "apps/gateway/src/routes/rides.ts",
@@ -1638,10 +1674,13 @@ export const ROUTE_POLICIES: readonly RoutePolicy[] = [
  *   والطرفُ يحكمُه الخادمُ.
  * 135 → 137 في 2026-10-12 (WR-09 · ADR 0266): `GET`/`POST /v1/rides/:id/candidate` — مُصادَقانِ
  *   بجلسةٍ، والطلبُ مقيَّدٌ بصاحبِه في القاعدة.
+ * 147 → 150 في 2026-10-18 (ADR 0287): `GET /v1/rides/:id/trip-events` و`POST …/ack` مُصادَقانِ
+ *   بجلسةٍ، و`POST /internal/realtime/rider-trip-signal` خدمةٌ لخدمةٍ بسرٍّ مشتركٍ.
  */
-export const ROUTE_POLICY_COUNT = 147;
+export const ROUTE_POLICY_COUNT = 150;
 export const LIMITED_ROUTE_COUNT = 10;
-export const EXEMPT_ROUTE_COUNT = 4;
+/** 4 → 5 في 2026-10-18 (ADR 0287): `/internal/realtime/rider-trip-signal` بسرٍّ مشتركٍ كأختِه. */
+export const EXEMPT_ROUTE_COUNT = 5;
 
 /** حدودُ مسارٍ بعينِه — يُعيدُ مصفوفةً فارغةً لِما لا حدَّ له. */
 export function limitsFor(method: string, path: string): readonly RateLimitPolicy[] {

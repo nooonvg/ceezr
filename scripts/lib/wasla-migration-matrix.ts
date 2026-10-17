@@ -458,6 +458,7 @@ export const WASLA_MIGRATION_MATRIX: readonly MatrixEntry[] = [
       "عددُ التقييماتِ ومتوسّطُها لكلِّ سائقٍ متساويانِ في الطرفَينِ، وسباقُ تقييمَينِ متزامنَينِ لا يُنتِجُ متوسّطاً مكرَّراً — يُقاسُ على قاعدةٍ حقيقيّةٍ كما يُقاسُ اليومَ في `race-rating-average`.",
     executed: false,
   },
+  { ...noMigration("rider_trip_event_receipts") },
   {
     table: "riders",
     mechanism: "SPLIT_TABLE",

@@ -19,6 +19,7 @@ import { createNegotiationApp } from "../../../packages/application/negotiation/
 import { PortFailureError } from "../../../packages/application/ports/index.ts";
 import type { OperatingCityDeps } from "../../../packages/application/rider-city/operating-city.ts";
 import type { EmergencyContactDeps } from "../../../packages/application/safety/emergency-contact.ts";
+import type { RideRequestCommand } from "../../../packages/application/transport/ride-request-ports.ts";
 import { createFulfillmentLifecycle } from "../../../packages/application/wasla/fulfillment-lifecycle.ts";
 import { isSupportedLanguage } from "../../../packages/domain/i18n-translation/value-objects.ts";
 import { parseCitySettings, subscriptionPriceFor } from "../../../packages/domain/policy/entity.ts";
@@ -131,6 +132,7 @@ import {
   createRideSummaryReader,
 } from "../../../packages/infrastructure/transport/ride-summary-store.ts";
 import { createRideTraceReader } from "../../../packages/infrastructure/transport/ride-trace-store.ts";
+import { createRiderTripEventsStore } from "../../../packages/infrastructure/transport/rider-trip-events-store.ts";
 import { createOperationalJobRepository } from "../../../packages/infrastructure/wasla/operational-job-repository.ts";
 import {
   MAPLIBRE_CDN_ORIGIN,
@@ -198,6 +200,7 @@ import { createHttpBridge } from "./realtime/http-bridge.ts";
 import { isLiveLocationBroadcastPermitted } from "./realtime/live-tracking-policy.ts";
 import { createOffersChannel } from "./realtime/offers-channel.ts";
 import { createRideChannel } from "./realtime/ride-channel.ts";
+import { createRiderTripChannel } from "./realtime/rider-trip-channel.ts";
 import { createUpstashRedis, sanitizeUpstashError } from "./redis/upstash.ts";
 import type { ProbeOutcome } from "./routes/health.ts";
 import { createInternalOffersSignalRoutes } from "./routes/internal-offers-signal.ts";
@@ -406,6 +409,7 @@ type GatewayServer = import("node:http").Server;
 let serverHandle: GatewayServer | null = null;
 let rideChannel: ReturnType<typeof createRideChannel> | null = null;
 let offersChannel: ReturnType<typeof createOffersChannel> | null = null;
+let riderTripChannel: ReturnType<typeof createRiderTripChannel> | null = null;
 /** `WR-04` — قناةُ غرفِ المحادثة؛ تُركَّبُ بعدَ `ioServer`، والمساراتُ تبثُّ عبرَها متى وُجِدَت. */
 let chatChannel: ChatChannel | null = null;
 let ioServer: IoServer | null = null;
@@ -446,6 +450,10 @@ const lifecycle = createLifecycle({
       if (rideChannel !== null) {
         rideChannel.stop();
         rideChannel = null;
+      }
+      if (riderTripChannel !== null) {
+        riderTripChannel.stop();
+        riderTripChannel = null;
       }
       if (offersChannel !== null) {
         offersChannel.stop();
@@ -889,6 +897,28 @@ const quote =
  * قراءةٌ منها. والقارئُ والآمرُ والمُلغي **ثلاثةُ كائناتٍ** لا واحدٌ: مسارُ
  * القراءةِ لا يجبُ أن يملكَ حقَّ الكتابةِ ولا حقَّ الإلغاءِ.
  */
+/**
+ * التكليفُ السابعُ (P4) — طلبٌ جديدٌ (لا إعادةُ مفتاحٍ) في طورِ البحثِ يُطلِقُ عرضَ مدينتِه
+ * فورًا بدلَ انتظارِ محفّزِ موقعٍ أو الدوريِّ (20ث). المجدوَلُ لا يُطلَقُ (يبدأُ بموعدِه).
+ */
+function withNewOrderDispatch(command: RideRequestCommand): RideRequestCommand {
+  return {
+    ...command,
+    create: async (input) => {
+      const result = await command.create(input);
+      if (
+        result.ok &&
+        result.value.accepted &&
+        !result.value.ride.reused &&
+        (result.value.ride.status === undefined || result.value.ride.status === "searching")
+      ) {
+        container.dispatchNewOrder(result.value.ride.orderId);
+      }
+      return result;
+    },
+  };
+}
+
 const rides =
   config.miniappSessionSecret === null
     ? undefined
@@ -898,7 +928,7 @@ const rides =
             createMiniAppSessionReader(config.miniappSessionSecret),
             sessionRevocationStore,
           ),
-          rides: createRideRequestCommand(container.sql),
+          rides: withNewOrderDispatch(createRideRequestCommand(container.sql)),
           now: () => new Date(),
         },
         search: {
@@ -916,6 +946,15 @@ const rides =
             sessionRevocationStore,
           ),
           store: createRideCandidateStore(container.sql),
+          now: () => new Date(),
+        },
+        // ADR 0287 — أحداثُ رحلةِ الراكبِ في Mini App وإقرارُه بعدَ التطبيقِ.
+        tripEvents: {
+          sessions: createRevocableSessionReader(
+            createMiniAppSessionReader(config.miniappSessionSecret),
+            sessionRevocationStore,
+          ),
+          store: createRiderTripEventsStore(container.sql),
           now: () => new Date(),
         },
         // الرحلةُ النشطةُ (`F2-06`) **تملكُ مزوِّدَ التوجيهِ** خلافاً لأخواتِها:
@@ -1038,7 +1077,7 @@ const deliveries =
             createMiniAppSessionReader(config.miniappSessionSecret),
             sessionRevocationStore,
           ),
-          rides: createRideRequestCommand(container.sql),
+          rides: withNewOrderDispatch(createRideRequestCommand(container.sql)),
           now: () => new Date(),
         },
         log,
@@ -2060,6 +2099,20 @@ if (config.miniappSessionSecret !== null) {
     ),
   });
   offersChannel.start();
+  // ADR 0287 — غرفةُ أحداثِ رحلةِ الراكبِ بالمحقِّقِ نفسِه (الهويةُ منَ الجلسةِ).
+  riderTripChannel = createRiderTripChannel({
+    io: ioServer,
+    sessions: createOffersSessionVerifier(
+      config.miniappSessionSecret,
+      () => Date.now(),
+      sessionRevocationStore,
+    ),
+  });
+  riderTripChannel.start();
+  const channel = riderTripChannel;
+  container.riderTripSignal.notify = (telegramUserId, orderId) => {
+    if (channel.isRiderConnected(telegramUserId)) channel.notifyRider(telegramUserId, orderId);
+  };
 }
 
 /**
@@ -2076,6 +2129,14 @@ if (offersChannel !== null) {
       notifyDriver: offersChannel.notifyDriver,
       secret: process.env.INTERNAL_SIGNAL_SECRET ?? null,
       log,
+      ...(riderTripChannel === null
+        ? {}
+        : {
+            rider: {
+              isRiderConnected: riderTripChannel.isRiderConnected,
+              notifyRider: riderTripChannel.notifyRider,
+            },
+          }),
     }),
   );
 }

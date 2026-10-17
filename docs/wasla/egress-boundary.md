@@ -39,6 +39,7 @@
 | `supabase-postgres` | قاعدةُ البياناتِ — مخزنُ الحقيقةِ الوحيدُ | بيئةٌ: `DATABASE_URL` · `SUPABASE_URL` · `SUPABASE_SERVICE_ROLE_KEY` | `packages/infrastructure/db/client.ts` | لا تنطبقُ: ناقلُه بروتوكولُ PostgreSQL على مقبسٍ لا `fetch`، فلا موضعَ للبوّابةِ فيه؛ ومضيفُه من البيئةِ يفحصُه `assertEgressEnvironment`. | لا |
 | `supabase-object-storage` | مخزنُ الأجسامِ — روابطُ رفعٍ موقَّعةٌ لوثائقِ السائقِ (F3-01) | بيئةٌ: `OBJECT_STORAGE_URL` · `OBJECT_STORAGE_SECRET_KEY` · `DRIVER_DOCUMENTS_BUCKET` | `packages/infrastructure/storage/signed-upload.ts` | نعم — `createGuardedFetch` | لا |
 | `gateway-internal-offers-signal` | مسارُ إشارةِ لوحِ العروضِ الداخليُّ بينَ شوطِ التسليمِ والبوابةِ (متصلٌ؟ بُثَّتْ لهُ) — بابُ خدمةٍ لخدمةٍ بسرٍّ مشتركٍ | بيئةٌ: `GATEWAY_INTERNAL_URL` · `INTERNAL_SIGNAL_SECRET` | `packages/infrastructure/dispatch/offer-board-delivery.ts` | نعم — `createGuardedFetch` | لا |
+| `gateway-internal-rider-trip-signal` | ADR 0287 — إشارةُ حدثِ رحلةِ الراكبِ الداخليةُ بينَ شوطِ التسليمِ والبوابةِ (متصلٌ؟ بُثَّتْ لهُ) — بابُ خدمةٍ لخدمةٍ بسرٍّ مشتركٍ | بيئةٌ: `GATEWAY_INTERNAL_URL` · `INTERNAL_SIGNAL_SECRET` | `packages/infrastructure/notification/rider-trip-app-delivery.ts` | نعم — `createGuardedFetch` | لا |
 | `upstash-redis-rest` | مخزنُ الجلساتِ ومنعُ التكرارِ عبرَ المثيلاتِ | بيئةٌ: `UPSTASH_REDIS_REST_URL` · `UPSTASH_REDIS_REST_TOKEN` | `packages/infrastructure/redis/upstash.ts` | نعم — `createGuardedFetch` | لا |
 | `google-drive-backup` | رفعُ النسخِ الاحتياطيّةِ وسحبُها — تحقُّقُ الاستعادةِ | حرفاً: `www.googleapis.com` · `oauth2.googleapis.com` | `packages/infrastructure/backup/google-drive-adapter.ts` | نعم — `createGuardedFetch` | لا |
 | `metrics-collector` | تصديرُ القياسِ إلى مُجمِّعٍ خارجيٍّ — مُعطَّلٌ بلا نهايةٍ مضبوطةٍ | بيئةٌ: `METRICS_EXPORT_ENDPOINT` | `packages/infrastructure/observability/metrics-exporter.ts` | نعم — `createGuardedFetch` | لا |
@@ -72,5 +73,5 @@
 | المضيفُ | السببُ |
 |---|---|
 
-**العدُّ**: 21 مقصداً مُعلَناً · 2 تكاملاً تجاريّاً مباشراً ينتظرُ التسليمَ · 0 مضيفاً معفًى · **صفرَ مقصدٍ في MARKET**.
+**العدُّ**: 22 مقصداً مُعلَناً · 2 تكاملاً تجاريّاً مباشراً ينتظرُ التسليمَ · 0 مضيفاً معفًى · **صفرَ مقصدٍ في MARKET**.
 <!-- END GENERATED: egress-boundary -->
