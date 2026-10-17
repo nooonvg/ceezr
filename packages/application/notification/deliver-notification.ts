@@ -195,6 +195,15 @@ export interface NotificationDeliveryDeps {
     delivery: OutboxDelivery,
     run: () => Promise<T>,
   ) => Promise<T>;
+  /**
+   * `LOAD-01` (الدفعةُ الخامسةُ) — احتفاظُ صفِّ الازدحامِ **داخلَ الشوطِ**: حينَ
+   * يوفرُه المستنزفُ المتزامنُ يُعلِنُ أنَّهُ أخذَ الصفَّ على عهدتِهِ (ويعيدُهُ إلى
+   * الطابورِ عندَ نهايةِ الشوطِ إن لم يُفتَحْ)، فيُعادُ إرسالُهُ عندَ فتحتِهِ
+   * (ثانيةٍ واحدةٍ) داخلَ الشوطِ نفسِهِ بدلَ انتظارِ الدورةِ التاليةِ (10ث) —
+   * فإشعاراتُ الرحلةِ المتجمعةُ لمحادثةٍ واحدةٍ تُسلَّمُ في شوطٍ واحدٍ متباعدةً
+   * بثانيةٍ لا في ثلاثِ دوراتٍ. غيابُ الخطافِ = السلوكُ القديمُ حرفيًّا.
+   */
+  readonly congestionHold?: (delivery: OutboxDelivery, retryAfterMs: number) => boolean;
 }
 
 export interface DeliveryAttemptOutcome {
@@ -202,6 +211,8 @@ export interface DeliveryAttemptOutcome {
   readonly kind: string | null;
   readonly delivered: boolean;
   readonly abandoned: boolean;
+  /** `LOAD-01` (الدفعةُ الخامسةُ): احتُجزَ الصفُّ داخلَ الشوطِ — لا يُحسَبُ فشلًا حتى يُغسَلَ. */
+  readonly held?: boolean;
   /** ماتَ الصفُّ باستنفادِ المحاولاتِ في `finish` — لا بتخلٍّ صريحٍ (CAP-002). */
   readonly died: boolean;
   /**
@@ -377,6 +388,24 @@ async function deliverClaimed(
   // الطابورِ بموعدِ الفتحةِ القادمةِ (نافذةُ المحادثةِ) بلا محاولةٍ مُحتسَبةٍ،
   // والمسارُ يتفرّغُ لصفٍّ آخرَ لمحادثةٍ باردةٍ — هذا هوَ صونُ عملِ المساراتِ.
   if (handled.value.failure === "OutboundCongestionError" && handled.value.messageId === null) {
+    // `LOAD-01` (الدفعةُ الخامسةُ): المستنزفُ المتزامنُ يحتجزُ الصفَّ داخلَ الشوطِ
+    // ويعيدُ المحاولةَ عندَ فتحتِهِ؛ الازدحامُ لم يُرسِلْ شيئًا (لا رسالةَ) فالإعادةُ
+    // بلا خطرِ تكرارٍ، والعقدُ في نهايةِ الشوطِ إن لم تُفتَحِ الفتحةُ.
+    if (deps.congestionHold !== undefined && deps.congestionHold(delivery, 1_000)) {
+      return ok({
+        found: true,
+        kind: delivery.kind,
+        delivered: false,
+        abandoned: false,
+        died: false,
+        undeliverable: false,
+        maxAttempts: delivery.maxAttempts,
+        batchLimit: delivery.batchLimit,
+        backpressure: null,
+        failure: null,
+        held: true,
+      });
+    }
     const requeued = await deps.outbox.requeue({
       deliveryId: delivery.deliveryId,
       claimToken: delivery.claimToken,
@@ -506,6 +535,8 @@ export interface ConcurrentDrainOptions {
   readonly budgetMs: number;
   readonly maxClaims: number;
   readonly now?: () => number;
+  /** نومٌ محقونٌ لاختبارِ احتجازِ الازدحامِ داخلَ الشوطِ — الافتراضيُّ `setTimeout`. */
+  readonly sleep?: (ms: number) => Promise<void>;
 }
 
 export interface ConcurrentDrainOutcome extends DeliveryBatchOutcome {
@@ -532,6 +563,8 @@ export async function deliverNotificationsConcurrently(
   options: ConcurrentDrainOptions,
 ): Promise<Result<ConcurrentDrainOutcome, PortFailureError>> {
   const now = options.now ?? (() => Date.now());
+  const sleep =
+    options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const lanes = Math.max(1, Math.floor(options.lanes));
   const started = now();
   let claimed = 0;
@@ -545,6 +578,14 @@ export async function deliverNotificationsConcurrently(
   const failure: { error: PortFailureError | null } = { error: null };
   const inFlight = new Set<Promise<void>>();
   const laneTails = new Map<string, Promise<void>>();
+  /**
+   * `LOAD-01` (الدفعةُ الخامسةُ) — صفوفُ الازدحامِ المحتجزةُ داخلَ الشوطِ: تُعادُ
+   * محاولتُها عندَ فتحتِها (ثانيةٍ واحدةٍ) في الشوطِ نفسِهِ، فلا تنتظرُ دورةَ
+   * التشغيلِ القادمةَ (10ث) — وهذا هوَ عقدُ `retryAfterMs` الذي كانتِ الدورةُ
+   * تجحدُهُ. وما لم يُفتَحْ حتى نهايةِ الشوطِ يُغسَلُ إلى الطابورِ بالعقدِ
+   * القديمِ نفسِهِ (إعادةُ اصطفافٍ بموعدِ ثانيةٍ) فلا يتغيرُ شيءٌ في النهايةِ.
+   */
+  const heldRows: { delivery: OutboxDelivery; dueAt: number }[] = [];
 
   const record = (r: Result<DeliveryAttemptOutcome, PortFailureError>) => {
     if (!r.ok) {
@@ -552,50 +593,27 @@ export async function deliverNotificationsConcurrently(
       return;
     }
     const a = r.value;
+    if (a.held === true) return;
     if (a.delivered) delivered += 1;
     if (a.abandoned) abandoned += 1;
     if (a.undeliverable) undeliverable += 1;
     if (a.died) died += 1;
     if (a.failure !== null) failed += 1;
   };
-  const runOne = (delivery: OutboxDelivery) => {
-    const wrap = deps.withDeliveryCorrelation;
-    return wrap === undefined
-      ? deliverClaimed(deps, delivery)
-      : wrap(delivery, () => deliverClaimed(deps, delivery));
+  const drainDeps: NotificationDeliveryDeps = {
+    ...deps,
+    congestionHold: (delivery, retryAfterMs) => {
+      heldRows.push({ delivery, dueAt: now() + Math.max(0, retryAfterMs) });
+      return true;
+    },
   };
-
-  while (failure.error === null) {
-    if (claimed >= options.maxClaims) {
-      backpressure = "BATCH_LIMIT";
-      break;
-    }
-    if (now() - started >= options.budgetMs) break;
-    if (inFlight.size >= lanes) {
-      await Promise.race(inFlight);
-      continue;
-    }
-    const c = await deps.outbox.claim();
-    if (!c.ok) {
-      failure.error = c.error;
-      break;
-    }
-    const delivery = c.value.delivery;
-    if (delivery === null) {
-      if (c.value.undeliverable) {
-        claimed += 1;
-        undeliverable += 1;
-        continue;
-      }
-      if (c.value.backpressure) backpressure = c.value.backpressure;
-      // فارغٌ أو مشبَعٌ: ما في الطيرانِ قد يفكُّ تاليًا لنفسِ الطلبِ أو يحرّرُ سقفَ المدينة.
-      if (inFlight.size > 0) {
-        await Promise.race(inFlight);
-        continue;
-      }
-      break;
-    }
-    claimed += 1;
+  const runOne = (delivery: OutboxDelivery) => {
+    const wrap = drainDeps.withDeliveryCorrelation;
+    return wrap === undefined
+      ? deliverClaimed(drainDeps, delivery)
+      : wrap(delivery, () => deliverClaimed(drainDeps, delivery));
+  };
+  const launch = (delivery: OutboxDelivery) => {
     const key = notificationLaneKey(delivery);
     const prev = laneTails.get(key);
     const task: Promise<void> = (prev ?? Promise.resolve())
@@ -613,8 +631,85 @@ export async function deliverNotificationsConcurrently(
     laneTails.set(key, task);
     inFlight.add(task);
     if (inFlight.size > peakInFlight) peakInFlight = inFlight.size;
+  };
+  const waitForHeldOrBudgetEnd = async () => {
+    const nextDue = Math.min(...heldRows.map((h) => h.dueAt));
+    const budgetEnd = started + options.budgetMs;
+    await sleep(Math.max(1, Math.min(nextDue, budgetEnd) - now()));
+  };
+
+  while (failure.error === null) {
+    if (now() - started >= options.budgetMs) break;
+    // ١) المستحقُّ منَ المحتجزِ أولًا — لا يستهلكُ التقاطًا جديدًا
+    const dueIndex = heldRows.findIndex((h) => h.dueAt <= now());
+    if (dueIndex >= 0) {
+      const held = heldRows.splice(dueIndex, 1)[0];
+      if (held === undefined) continue;
+      if (inFlight.size < lanes) {
+        launch(held.delivery);
+        continue;
+      }
+      heldRows.push(held);
+      await Promise.race(inFlight);
+      continue;
+    }
+    if (claimed >= options.maxClaims) {
+      if (heldRows.length === 0) {
+        backpressure = "BATCH_LIMIT";
+        break;
+      }
+      // استُنفدتِ الالتقاطاتُ والمحتجزُ ينتظرُ فتحتَهُ: انتظارٌ لا انسحابٌ
+      await waitForHeldOrBudgetEnd();
+      continue;
+    }
+    if (inFlight.size >= lanes) {
+      await Promise.race(inFlight);
+      continue;
+    }
+    const c = await deps.outbox.claim();
+    if (!c.ok) {
+      failure.error = c.error;
+      break;
+    }
+    const delivery = c.value.delivery;
+    if (delivery === null) {
+      if (c.value.undeliverable) {
+        claimed += 1;
+        undeliverable += 1;
+        continue;
+      }
+      if (c.value.backpressure) backpressure = c.value.backpressure;
+      // فارغٌ أو مشبَعٌ: ما في الطيرانِ قد يفكُّ تاليًا لنفسِ الطلبِ أو يحرّرُ سقفَ المدينةِ.
+      if (inFlight.size > 0) {
+        await Promise.race(inFlight);
+        continue;
+      }
+      if (heldRows.length > 0) {
+        // الطابورُ فارغٌ والمحتجزُ ينتظرُ فتحتَهُ: انتظارٌ حتى فتحتِهِ لا انسحابٌ
+        // يتركُ الصفوفَ لدورةِ التشغيلِ القادمةِ (10ث) — والميزانيةُ هيَ الحارسةُ.
+        await waitForHeldOrBudgetEnd();
+        continue;
+      }
+      break;
+    }
+    claimed += 1;
+    launch(delivery);
   }
   await Promise.all(inFlight);
+  // ٢) غسلُ المحتجزِ: ما لم تُفتَحْ فتحتُهُ داخلَ الشوطِ يعودُ للطابورِ بالعقدِ
+  // القديمِ نفسِهِ — فلا يتغيرُ منَ الدلالةِ شيءٌ في نهايةِ المطافِ.
+  for (const h of heldRows) {
+    const requeued = await deps.outbox.requeue({
+      deliveryId: h.delivery.deliveryId,
+      claimToken: h.delivery.claimToken,
+      retryAfterMs: 1_000,
+    });
+    if (!requeued.ok) {
+      failure.error ??= requeued.error;
+      break;
+    }
+    failed += 1;
+  }
   if (failure.error !== null) return err(failure.error);
   return ok({
     claimed,

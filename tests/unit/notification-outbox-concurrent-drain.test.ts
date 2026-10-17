@@ -231,4 +231,84 @@ describe("N1: استنزافُ صندوقِ الصادرِ المتزامن", ()
     expect(f.st.finished.size).toBe(0);
     expect(f.st.sent.length).toBe(0);
   });
+
+  // `LOAD-01` (الدفعةُ الخامسةُ) — انحدارُ الاحتفاظِ بالازدحامِ داخلَ الشوطِ:
+  // إشعاراتُ رحلةٍ متجمعةٌ لمحادثةٍ واحدةٍ (نافذةُ المحادثةِ رسالةٌ في الثانيةِ)
+  // كانَ ازدحامُها يُعيدُ كلَّ صفٍّ لدورةِ التشغيلِ القادمةِ (10ث) فتحتاجُ الرحلةُ
+  // ثلاثَ دوراتٍ؛ العقدُ الجديدُ: يعادُ المحاولةُ عندَ الفتحةِ (ثانيةٍ) داخلَ
+  // الشوطِ نفسِهِ فتُسلَّمُ كلُّها في شوطٍ واحدٍ — بلا إعادةِ اصطفافٍ ولا محاولةٍ
+  // محسوبةٍ إضافيةٍ.
+  test("D8/الاحتفاظ: إشعاراتٌ متجمعةٌ لمحادثةٍ واحدةٍ تُسلَّمُ في شوطٍ واحدٍ عندَ الفتحةِ", async () => {
+    const rows: Row[] = [1, 2, 3].map((i) => ({
+      id: `n${i}`,
+      kind: "rider_trip_notice",
+      payload: { order_id: "o1", chat_id: "chat-A" },
+    }));
+    const f = fakeOutbox(rows);
+    let clock = 1_000;
+    const lastSentAt = new Map<string, number>();
+    const sentLog: { id: string; at: number }[] = [];
+    const windowed = async (d: OutboxDelivery) => {
+      const chat = String(d.payload.chat_id);
+      const last = lastSentAt.get(chat);
+      if (last !== undefined && clock - last < 1_000) {
+        return ok({ abandon: false, messageId: null, failure: "OutboundCongestionError" });
+      }
+      lastSentAt.set(chat, clock);
+      sentLog.push({ id: d.deliveryId, at: clock });
+      return ok({ abandon: false, messageId: `m-${d.deliveryId}`, failure: null });
+    };
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: { rider_trip_notice: windowed } },
+      {
+        lanes: 4,
+        budgetMs: 5_000,
+        maxClaims: 10,
+        now: () => clock,
+        sleep: async (ms) => {
+          clock += ms;
+        },
+      },
+    );
+    expect(r.ok).toBe(true);
+    // الثلاثةُ سُلِّمَتْ في الشوطِ نفسِهِ وبالترتيبِ — لا إعادةَ اصطفافٍ إطلاقاً
+    expect(sentLog.map((x) => x.id)).toEqual(["n1", "n2", "n3"]);
+    expect(f.st.requeued).toEqual([]);
+    // كلُّ صفٍّ قُبِضَ مرةً واحدةً (الصواميلُ الفارغةُ للطابورِ انتظارٌ لا التقاطٌ)
+    expect(f.st.claims).toBeGreaterThanOrEqual(3);
+    // الفتحاتُ احتُرِمَت: كلُّ إرسالٍ بعدَ ثانيةٍ كاملةٍ من سابقهِ للمحادثةِ نفسِها
+    const gap = (a: number, b: number): number => {
+      const first = sentLog[a];
+      const second = sentLog[b];
+      if (first === undefined || second === undefined) return -1;
+      return second.at - first.at;
+    };
+    expect(gap(0, 1)).toBeGreaterThanOrEqual(1_000);
+    expect(gap(1, 2)).toBeGreaterThanOrEqual(1_000);
+  });
+
+  test("D8/الاحتفاظ: ما لم تُفتَحِ الفتحةُ داخلَ الميزانيةِ يُغسَلُ للطابورِ بالعقدِ القديمِ", async () => {
+    const f = fakeOutbox(offers(1));
+    let clock = 1_000;
+    const congested = async () =>
+      ok({ abandon: false, messageId: null, failure: "OutboundCongestionError" });
+    const r = await deliverNotificationsConcurrently(
+      { outbox: f.port, handlers: { offer: congested } },
+      {
+        lanes: 4,
+        budgetMs: 300,
+        maxClaims: 10,
+        now: () => clock,
+        sleep: async (ms) => {
+          clock += ms;
+        },
+      },
+    );
+    expect(r.ok).toBe(true);
+    // الميزانيةُ انتهت قبلَ الفتحةِ: الصفُّ يعودُ للطابورِ (إعادةُ اصطفافٍ بموعدِ
+    // ثانيةٍ) ويُحسَبُ فشلًا كما كانَ — لا تسليمَ ولا موتَ.
+    expect(f.st.requeued.length).toBe(1);
+    expect(f.st.sent.length).toBe(0);
+    if (r.ok) expect(r.value.failed).toBe(1);
+  });
 });
