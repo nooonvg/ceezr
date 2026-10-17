@@ -1,6 +1,7 @@
 -- العنوان: محاذاةُ فهارسِ صندوقِ الصادرِ لقائمةِ أنواعِ الدورةِ الحالية (LOAD-01 · CAP-20261016-CONTINUATION)
 -- المرجع: docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md · docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/
 -- النوع: أداء (عيب سعة حقيقي كشفته موجة القبول 50)
+-- migration-phase: index
 --
 -- ## لماذا هذه الهجرة
 --
@@ -45,37 +46,9 @@
 -- الالتقاطِ لا يتناسبَ طرديًّا معَ حجمِ الطابورِ المعلقِ.
 
 -- حرّاس الاتساق: لا فهرسٌ باسمٍ موجودٍ مسبقًا، ولا قائمةُ أنواعٍ تغادرُ الدالةَ.
-do $$
-begin
-  if exists (
-    select 1 from pg_indexes
-     where tablename = 'notification_outbox'
-       and indexname in ('notification_outbox_priority_due_idx2',
-                         'notification_outbox_ride_cycle_due_idx2')
-  ) then
-    raise exception 'فهرس load01 موجود مسبقًا — راجع الهجرة.';
-  end if;
-end
-$$;
+-- الإنفاذ (كلُّ عبارةٍ متزامنةٍ في ملفٍّ وحدَهِ — قاعدةُ المُطبِّقِ الآمنِ):
+-- هذا الملفُّ (الإسقاطُ الأولُّ) ثمَّ 20261017000100 (الإنشاءُ الأولُّ) ثمَّ
+-- 20261017000200 (الإسقاطُ الثاني) ثمَّ 20261017000300 (الإنشاءُ الثاني).
+-- migration-phase: index
 
--- تُستبدلُ تعريفاتُ الفهرسينِ **بالأسماءِ نفسِها** (drop + create في الهجرةِ
--- نفسِها): لا فقدَ لمقيسٍ في كتالوجِ القاعدةِ (الاسمُ باقٍ والتعريفُ أوسعُ)،
--- فمسارُ العودةِ إلى الأمامِ — لا حاجةَ لسجلِّ تضييقٍ لأنَّ المسحَ لا يُزيلُ
--- اسمًا منَ الكتالوجِ.
-drop index if exists notification_outbox_priority_due_idx;
-drop index if exists notification_outbox_ride_cycle_due_idx;
--- نسخة 20261017 الأولى من هذه الهجرة (محلية، لم تُدفع) استخدمت محمول قائمةِ الأنواعِ
--- حرفيًّا؛ اكتُشف بعدها أنَّ خطة plpgsql **العامة** (المُعلمَة `kind = any($1)`) لا
--- تستطيعُ إثباتَ احتواءِ محمولِ الفهرسِ للقائمةِ المعلمةِ فيسقطَهُ ويفحصَ الجدولَ
--- تسلسليًّا (مُثبَتٌ بخطةٍ عامةٍ: `Seq Scan`, ‏198ms عندَ 30 ألفِ صفٍّ). فالحلُّ
--- النهائيُّ محمولٌ لا يعتمدُ القائمةَ أصلًا: `status = 'pending'` وحدهُ — تثبتهُ
--- أيةُ خطةٍ (عامةً كانت أم خاصةً)، وتصيرُ قائمةُ الأنواعِ شرطَ ترشيحٍ فوقَ مسحِ
--- الفهرسِ المرتبِ لا شرطَ إثباتِ صلاحيتِهِ.
-
-create index notification_outbox_priority_due_idx
-    on notification_outbox (notification_kind_priority(kind), created_at)
- where status = 'pending';
-
-create index notification_outbox_ride_cycle_due_idx
-    on notification_outbox (created_at)
- where status = 'pending';
+drop index concurrently if exists notification_outbox_priority_due_idx;
