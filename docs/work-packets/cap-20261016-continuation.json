@@ -296,11 +296,7 @@
   "affected_docs": [
     "docs/ROADMAP-MASTER.md",
     "docs/SYSTEM_STATE.md",
-    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/RECOVERY-DIAGNOSIS.md",
-    "docs/migration/matrix.md",
-    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
-    "docs/wasla/boundary-audit.md",
-    "docs/wasla/egress-boundary.md"
+    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"
   ],
   "decision": "لا دمج في main ولا نشر إنتاجي ضمن هذه الجولات؛ بيئة الاختبار المعزولة ceezrsbx2 فقط؛ كل دفعة تحمل الكود والاختبارات والتوثيق وتحديث الخارطة والحالة والحزمة والدليل معًا (DEC-25 وADR 0262).",
   "tests": [

@@ -63,10 +63,7 @@ async function seedOrderWithOffer(offerStatus: "accepted" | "pending"): Promise<
   return { orderId: order.id, offerId: offer.id };
 }
 
-async function seedOutboxOfferRow(
-  orderId: string,
-  offerId: string,
-): Promise<string> {
+async function seedOutboxOfferRow(orderId: string, offerId: string): Promise<string> {
   const [row] = await sql<{ id: string }[]>`
     insert into notification_outbox (city_id, kind, order_id, offer_id, driver_id, recipient_user_id, payload, dedup_key, next_attempt_at)
     values (${cityId}::uuid, 'offer', ${orderId}::uuid, ${offerId}::uuid, ${driverId}::uuid, ${driverUserId}::uuid,

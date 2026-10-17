@@ -193,7 +193,6 @@ import { deliverSafetyIncidents } from "./jobs/deliver-safety-incidents.ts";
 import { deliverSubscriptionNotices } from "./jobs/deliver-subscription-notices.ts";
 import { detectCeilingExceededOrders } from "./jobs/detect-ceiling-exceeded.ts";
 import { detectStalledOrders } from "./jobs/detect-stalled-orders.ts";
-import { sweepDecidedOfferNotifications } from "./jobs/sweep-decided-offer-notifications.ts";
 import { expireOffers } from "./jobs/expire-offers.ts";
 import { expireSubscriptions, warnExpiringSoon } from "./jobs/expire-subscriptions.ts";
 import { expireTrackingTokens } from "./jobs/expire-tracking-tokens.ts";
@@ -202,6 +201,7 @@ import { runReconcilePendingPayments } from "./jobs/reconcile-pending-payments.t
 import { runRedispatchSearching } from "./jobs/redispatch-searching.ts";
 import { refreshAdminMetrics } from "./jobs/refresh-admin-metrics.ts";
 import { rotateUnsubscribedNegotiations } from "./jobs/rotate-unsubscribed-negotiation.ts";
+import { sweepDecidedOfferNotifications } from "./jobs/sweep-decided-offer-notifications.ts";
 import { runSweepUnmatchedOrders } from "./jobs/sweep-unmatched-orders.ts";
 import { runBackupRestoreVerification } from "./jobs/verify-backup-restore.ts";
 import { warnExpiringDocumentsJob } from "./jobs/warn-expiring-documents.ts";
