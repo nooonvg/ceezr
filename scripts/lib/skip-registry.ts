@@ -2065,6 +2065,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/real-redis/session-burst-real.test.ts",
+    suites: ["جدارُ الجلسةِ — حاجزُ تزامنِ Redis تحتَ الانفجارِ"],
+    skipped: 3,
+    gate: "UPSTASH_REDIS_REST_URL",
+    reason:
+      "يُثبِتُ أنَّ حاجزَ تزامنِ Redis يحملُ ذروةَ طلبِ مبادلاتِ الجلساتِ المتزامنةِ (2×1,000) بلا رفضِ امتلاءٍ، وأنَّ رفعَ المسلكِ لا يمسُّ أمانَ الحارسِ: بصمةٌ واحدةٌ لا تُستهلكُ مرتينِ مهما بلغَ التزامنُ، والتبعيةُ المعطوبةُ تُغلقُ لا تفتحُ. هذا عينُ الجدارِ الذي أسقطَ الموجاتِ (959/959 رفضًا بالامتلاءِ) ولا يُثبَتُ إلا على Redis حقيقيٍّ عبرَ الحاجزِ الحقيقيَّ نفسَه — مزدوجُ الذاكرةِ لا يملأُ مسلكًا أصلًا.",
+    activation:
+      "يُضبَط UPSTASH_REDIS_REST_URL وUPSTASH_REDIS_REST_TOKEN على قشرةِ REST التي تنشرُها وظيفةُ CI نفسُها فوقَ خادمِ redis:7-alpine مُستضافٍ في الشغلةِ (S-3 · ADR 0096) — لا سرَّ خارجيٌّ ولا حسابٌ عندَ مُزوِّدٍ. ويفعلُه المطوّرُ محلّيًا بالحاويتَينِ نفسِهما أو بنقطةِ اختباريّةٍ خاصّةٍ به.",
+    owner: "منفّذ المستودع",
+    criticalPath: "الهويةُ والجلسةُ والصلاحيات",
+    runsIn: "اختبارات الجلسات على Redis حقيقي",
+    whyNotRun: null,
+  },
+  {
     file: "tests/real-redis/redis-loss-commercial-state-real.test.ts",
     suites: ["فقدانُ Redis وسطَ الدورةِ التجاريّةِ على Redis حقيقيٍّ — F11-03"],
     skipped: 1,
