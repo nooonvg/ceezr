@@ -201,6 +201,7 @@ import { runReconcilePendingPayments } from "./jobs/reconcile-pending-payments.t
 import { runRedispatchSearching } from "./jobs/redispatch-searching.ts";
 import { refreshAdminMetrics } from "./jobs/refresh-admin-metrics.ts";
 import { rotateUnsubscribedNegotiations } from "./jobs/rotate-unsubscribed-negotiation.ts";
+import { sweepDecidedOfferNotifications } from "./jobs/sweep-decided-offer-notifications.ts";
 import { runSweepUnmatchedOrders } from "./jobs/sweep-unmatched-orders.ts";
 import { runBackupRestoreVerification } from "./jobs/verify-backup-restore.ts";
 import { warnExpiringDocumentsJob } from "./jobs/warn-expiring-documents.ts";
@@ -220,6 +221,14 @@ export const WORKER_SETTINGS_REMEMBER_MS = 60_000;
 /** تواتر كل مهمّة بالثواني. تقنيّة لا تجارية: لا تُقرأ من platform_settings. */
 export const JOB_INTERVALS = {
   expireOffers: 60,
+  /**
+   * `LOAD-01 Recovery` — كنسُّ العروضِ المحسومةِ من طابورِ الإشعاراتِ جملةً: مهلةُ
+   * العرضِ (٤٥ث) وزمنُ حسمِهِ الفعليُّ (~١٠ث) يَدَعانِ هامشًا واسعًا للدقيقةِ
+   * الكاملةِ (الحسمُ + الكنسُ ≈ ٧٠ث « ١٢٠ث بوابةَ P7) — والدقيقةُ الأخفُّ حملًا
+   * على القاعدةِ: جولةُ ٥٠ب قاستْ ٨٪ فشلَ تحديثِ موقعٍ تحتَ الكنسِ كلَّ ١٥ث
+   * (ازدحامُ القاعدةِ يظهرُ في المسارِ الأضعفِ لا في الكنسِ نفسِهِ).
+   */
+  sweepDecidedOffers: 60,
   rotateNegotiations: 60,
   cleanupStale: 1800,
   expireSubscriptions: 900,
@@ -1513,6 +1522,18 @@ export function buildWorkerContainer(
       }
 
       const global: JobDefinition[] = [
+        {
+          // `LOAD-01 Recovery` — كنسٌّ عالميٌّ (لا مدينةَ بعينِها): الدالّةُ تنظرُ
+          // الطابورَ كلَّهُ. عطلُهُ لا يفتحُ رابطًا ولا يُبطِلُ إشعارًا حيًّا —
+          // الصفوفُ تعودُ إلى انتظارِ المعالجِ كما كانَ (أبطأُ لا مكسورٌ).
+          name: "sweep-decided-offers",
+          everySeconds: JOB_INTERVALS.sweepDecidedOffers,
+          run: async () => {
+            const report = await sweepDecidedOfferNotifications(sql);
+            if (!report.ok) throw new Error(report.error.detail);
+            return `swept=${report.value.swept}`;
+          },
+        },
         ...(cityIds.length === 0
           ? []
           : [

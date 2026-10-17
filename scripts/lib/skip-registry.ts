@@ -572,6 +572,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/driver-offers-board-receipts.test.ts",
+    suites: ["LOAD-01 — إيصالاتُ لوحِ العروضِ على القاعدةِ الحقيقيّةِ"],
+    skipped: 4,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "يُثبِت «إيصالاتُ لوحِ العروضِ على القاعدةِ الحقيقيّةِ» على PostgreSQL حقيقيةٍ بالهجرات مطبَّقة: قيدَ الإيصالِ الجديدَ (`PR #563`) وقيدَ إيصالِ المدينةِ وتكرارَهُ الآمنَ — سلوكُ المحرّكِ نفسِهِ لا محاكاةٌ. ولا يُثبَتُ ببديلٍ في الذاكرة.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/driver-documents.test.ts",
     suites: [
       "بنيةُ القاعدةِ — القيدُ والفهرسُ مُصدَّقانِ في الكتالوجِ لا في نصِّ هجرةٍ",
@@ -1661,6 +1675,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
       "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
     owner: "منفّذ المستودع",
     criticalPath: "المخطّطُ وتفعيلُ المدن",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
+    file: "tests/integration/sweep-decided-offer-notifications.test.ts",
+    suites: ["LOAD-01 — كنسُّ العروضِ المحسومةِ من طابورِ الإشعاراتِ"],
+    skipped: 3,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "يُثبِت «كنسُّ العروضِ المحسومةِ من طابورِ الإشعاراتِ» على PostgreSQL حقيقيةٍ بالهجرات مطبَّقة: الدالّةَ الجمليةَ التي تُميتُ إشعاراتِ العروضِ المقبولةِ والملغاةِ والمنتهيةِ — سلوكُ المحرّكِ لا محاكاةٌ. ولا يُثبَتُ ببديلٍ في الذاكرة.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
+    owner: "منفّذ المستودع",
+    criticalPath: "المهامُّ الدوريةُ والقفلُ الموزَّع",
     runsIn: "اختبارات التكامل على قاعدة حقيقية",
     whyNotRun: null,
   },

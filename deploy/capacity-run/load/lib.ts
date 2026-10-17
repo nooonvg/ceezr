@@ -90,6 +90,11 @@ export interface HttpResult {
   readonly elapsedMs: number;
   readonly body: Record<string, unknown> | null;
   readonly networkError: string | null;
+  /**
+   * `LOAD-01` — معرّفُ الطلبِ من الخادمِ (`x-request-id` — لا رأسًا من العميلِ
+   * يُوقَّعُ عليه)، لربطِ زمنِ العميلِ بأطوارِ الخادمِ للطلبِ نفسِهِ في السجلِ.
+   */
+  readonly requestId: string | null;
 }
 
 export async function http(
@@ -127,6 +132,7 @@ export async function http(
       elapsedMs: performance.now() - started,
       body,
       networkError: null,
+      requestId: response.headers.get("x-request-id"),
     };
   } catch (error) {
     return {
@@ -136,6 +142,8 @@ export async function http(
       elapsedMs: performance.now() - started,
       body: null,
       networkError: error instanceof Error ? error.name : "network",
+      // لا استجابةَ فلا معرّفَ طلبٍ — والفشلُ الصفريُّ بلا رأسٍ منَ الخادمِ أصلاً.
+      requestId: null,
     };
   }
 }

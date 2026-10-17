@@ -187,6 +187,7 @@ export const CONTRACT_FUNCTIONS: readonly string[] = [
   "submit_rating_with_tags",
   "subscription_wallet_balance",
   "subscriptions_expiring_soon",
+  "sweep_decided_offer_notifications",
   "top_up_subscription_wallet",
   "touch_admin_session",
   "trigger_sos",
