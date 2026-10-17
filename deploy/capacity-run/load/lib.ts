@@ -209,6 +209,39 @@ export class PathRecorder {
     if (this.httpInFlight > this.peakHttpInFlight) this.peakHttpInFlight = this.httpInFlight;
   }
 
+  /** عيّناتُ زمنِ الاستجابةِ لكلِّ مسارٍ (تسميةِ نداءٍ) — تُحوَّلُ مئيناتٍ في
+   *  اللقطةِ: مطلوبةٌ لمعاييرِ القبولِ المعلنةِ مسبقًا (p50/p95/p99). */
+  private readonly latencies = new Map<string, number[]>();
+
+  httpLatency(label: string, elapsedMs: number): void {
+    const arr = this.latencies.get(label);
+    if (arr === undefined) this.latencies.set(label, [elapsedMs]);
+    else arr.push(elapsedMs);
+  }
+
+  latencyPercentiles(): Record<
+    string,
+    { n: number; p50: number; p95: number; p99: number; max: number }
+  > {
+    const out: Record<string, { n: number; p50: number; p95: number; p99: number; max: number }> =
+      {};
+    for (const [label, arr] of this.latencies) {
+      if (arr.length === 0) continue;
+      const sorted = [...arr].sort((a, b) => a - b);
+      const at = (q: number) =>
+        sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] ?? 0;
+      const top = sorted[sorted.length - 1] ?? 0;
+      out[label] = {
+        n: sorted.length,
+        p50: Math.round(at(0.5)),
+        p95: Math.round(at(0.95)),
+        p99: Math.round(at(0.99)),
+        max: Math.round(top),
+      };
+    }
+    return out;
+  }
+
   httpEnd(result: HttpResult): void {
     this.httpInFlight -= 1;
     if (result.networkError !== null) this.counters.networkErrors += 1;
@@ -245,6 +278,20 @@ export class PathRecorder {
     };
     appendFileSync(`${EV}/load-events.jsonl`, `${JSON.stringify(row)}\n`);
     this.windowUsers.clear();
+  }
+
+  finalSnapshot(): void {
+    appendFileSync(
+      `${EV}/load-events.jsonl`,
+      `${JSON.stringify({
+        t: new Date().toISOString(),
+        sinceStartMs: Date.now() - T0,
+        path: this.path,
+        gen: this.gen,
+        event: "latency_percentiles",
+        ...this.latencyPercentiles(),
+      })}\n`,
+    );
   }
 }
 
