@@ -110,6 +110,9 @@ async function claimOnce(): Promise<ClaimEnvelope> {
 }
 
 describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ", () => {
+  // مهلةٌ سخيةٌ: نسخُ القالبِ لقاعدةِ CI المتراكمةِ (postgis + بياناتِ الدفعةِ) يستغرقُ
+  // ثوانيَ — والمهلةُ الافتراضيةُ (5ث) للخطافاتِ كانت تقطعُ الإنشاءَ في منتصفِهِ فتفسدُ
+  // اتصالاتِ الملفاتِ التاليةِ.
   beforeAll(async () => {
     // **عزلٌ حتميٌّ:** ترتيبُ الالتقاطِ (أولويةُ النوعِ ثمّ القِدَمُ) لا يضمنُ أسبقيةَ
     // صفوفِنا في قاعدةٍ مشتركةٍ فيها صفوفُ اختباراتٍ أخرى — فننشئُ لكلِّ جولةٍ قاعدةً
@@ -126,15 +129,25 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     const adminUrl = new URL(DATABASE_URL as string);
     adminUrl.pathname = "/postgres";
     const admin = createSql({ connectionString: adminUrl.toString() });
-    await admin`select pg_terminate_backend(pid) from pg_stat_activity where datname = ${sourceDb} and pid <> pg_backend_pid()`;
     const isoDb = `${safe(sourceDb)}_claimskip_iso`;
     await admin.unsafe(`drop database if exists "${isoDb}" with (force)`);
-    await admin.unsafe(`create database "${isoDb}" encoding 'UTF8' template "${safe(sourceDb)}"`);
+    // نحاول الإنشاءَ بلا مساسٍ باتصالاتِ القاعدةِ المشتركةِ (خطواتُ CI متعاقبةٌ فلا
+    // أحدَ متصلٌ عادةً)؛ فإن رفضَ القالبُ الاتصالاتِ القائمةَ أنهيناها وحدها عندَئذٍ.
+    try {
+      await admin.unsafe(`create database "${isoDb}" encoding 'UTF8' template "${safe(sourceDb)}"`);
+    } catch {
+      await admin`select pg_terminate_backend(pid) from pg_stat_activity where datname = ${sourceDb} and pid <> pg_backend_pid()`;
+      await admin.unsafe(`create database "${isoDb}" encoding 'UTF8' template "${safe(sourceDb)}"`);
+    }
     await admin.end({ timeout: 5 });
     const isoUrl = new URL(DATABASE_URL as string);
     isoUrl.pathname = `/${isoDb}`;
     isoDatabaseName = isoDb;
     sql = createSql({ connectionString: isoUrl.toString() });
+    // النسخةُ خاصتُنا: نمسحُ الطابورَ **كاملًا** — فالقالبُ ينسخُ بياناتِ القاعدةِ
+    // المشتركةِ (بقايا اختباراتٍ أخرى) ولا يكفي تنظيفُ معرفاتِنا وحدها ليكونَ الطابورُ
+    // «صفوفَنا وحدَها»؛ المسحُ الكاملُ هنا لا يمسُّ أحدًا غيرَنا (تُسقَط القاعدةُ لاحقًا).
+    await sql`delete from notification_outbox`;
     // نظافةُ بقايا جولةٍ سابقةٍ لنفسِ المعرفاتِ (اختبارٌ محليٌّ معاد).
     await sql`delete from notification_outbox where dedup_key like 'claimskip-test:%' or recipient_user_id in (
       select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint))`;
@@ -184,7 +197,7 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     decidedOutboxId = await seedOutboxOfferRow(decidedOfferId, 90);
     const liveOfferId = await seedOrderWithOffer("pending", 1);
     liveOutboxId = await seedOutboxOfferRow(liveOfferId, 30);
-  });
+  }, 120_000);
 
   afterAll(async () => {
     await sql`delete from notification_outbox where dedup_key like 'claimskip-test:%'`;
