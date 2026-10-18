@@ -60,13 +60,14 @@ interface Recorder {
   readonly writes: { quality: StoredLocationQuality }[];
   readonly published: StoredFix[];
   readonly redispatched: CityId[];
+  readonly near: unknown[];
 }
 
 function harness(outcome: "accepted" | "stale" | "no_driver" | "failure" = "accepted"): {
   deps: UpdateDriverLocationDeps;
   seen: Recorder;
 } {
-  const seen: Recorder = { writes: [], published: [], redispatched: [] };
+  const seen: Recorder = { writes: [], published: [], redispatched: [], near: [] };
   const drivers: DriverLocationWriter = {
     updateLocation: async (_driverId, _location, quality) => {
       seen.writes.push({ quality });
@@ -87,8 +88,9 @@ function harness(outcome: "accepted" | "stale" | "no_driver" | "failure" = "acce
         },
       },
       redispatch: {
-        onDriverBecameDispatchable: async (cityId) => {
+        onDriverBecameDispatchable: async (cityId, near) => {
           seen.redispatched.push(cityId);
+          seen.near.push(near);
         },
       },
     },
@@ -248,6 +250,10 @@ describe("F4-01 — استقبالُ الموقعِ: الانتقالُ وإعا
     if (!result.ok) return;
     expect(result.value.kind === "accepted" && result.value.becameLive).toBe(true);
     expect(seen.redispatched).toEqual([CITY]);
+    // LOAD-01 (الدفعةُ السابعةُ، P4): موضعُ السائقِ يُمرَّرُ ليُعرَضَ عليه الطلبُ الأقربُ إليه.
+    expect(seen.near).toEqual([
+      { driverId: DRIVER, latitude: AT.latitude, longitude: AT.longitude },
+    ]);
   });
 
   it("١٠) نبضةُ سائقٍ ظاهرٍ أصلاً لا تُطلِقُ مسحَ مدينةٍ", async () => {

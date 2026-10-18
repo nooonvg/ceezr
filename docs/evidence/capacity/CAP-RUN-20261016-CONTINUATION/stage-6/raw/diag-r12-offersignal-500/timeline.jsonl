@@ -1,0 +1,2 @@
+{"t":"2026-10-18T00:37:29+00:00","event":"round.start","round":"diag-r12-offersignal-500","profile":[{"name":"wave-500","sec":180,"conc":500}],"drain_sec":180,"code_sha":"856dd7805727c51475763f0a2e5f4096f712bf82","code_dirty":16,"docs_dirty":106}
+{"t":"2026-10-18T00:37:29+00:00","event":"gateway.pid","pid":"14318"}

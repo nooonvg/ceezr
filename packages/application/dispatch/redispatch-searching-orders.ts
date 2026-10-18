@@ -72,6 +72,22 @@ export interface SearchingOrderFinder {
      */
     opts?: { readonly maxBroadcastRounds?: number },
   ): Promise<Result<readonly SearchingOrderRef[], PortFailureError>>;
+  /**
+   * LOAD-01 (الدفعةُ السابعةُ، P4) — الطلباتُ الباحثةُ **الأقربُ إلى سائقٍ صارَ متاحًا**
+   * (لا أقدمُ المدينةِ). نصفُ القطرِ وحدُّ الدوراتِ يمرّانِ منَ المستدعي (إعداداتُ المدينةِ
+   * عندَ المجالِ، كالنافذةِ العادلةِ أعلاه)، ويُستثنى طلبٌ لهذا السائقِ فيه عرضٌ حيٌّ
+   * (`expires_at` بيانٌ مكتوبٌ لكلِّ عرضٍ لا سياسةٌ منسوخةٌ) — كي لا تُستهلَكَ دورةٌ تذهبُ
+   * إلى غيرِه.
+   */
+  findSearchingNearDriver?(input: {
+    readonly cityId: CityId;
+    readonly driverId: string;
+    readonly latitude: number;
+    readonly longitude: number;
+    readonly radiusKm: number;
+    readonly maxBroadcastRounds: number;
+    readonly limit: number;
+  }): Promise<Result<readonly SearchingOrderRef[], PortFailureError>>;
 }
 
 export interface RedispatchDependencies {
@@ -196,4 +212,76 @@ export async function redispatchSearchingOrders(
     raced,
     failed,
   });
+}
+
+/**
+ * LOAD-01 (الدفعةُ السابعةُ، P4) — سائقٌ صارَ متاحًا ⇒ يُعرَضُ عليه **الطلبُ الباحثُ الأقربُ
+ * إليه** لا أقدمُ طلباتِ المدينةِ وحدَها.
+ *
+ * المقيسُ (`diag-r12-conc12-500`): شوطُ المدينةِ يخدمُ أقدمَ 50 باحثًا، فتحتَ 500 متزامنٍ
+ * يبقى السائقُ الذي وصلَ للتوِّ قربَ طلبٍ ينتظرُ بلا عرضٍ حتى تبلغَ النافذةُ ذلك الطلبَ
+ * (P4 = 56.6ث، 9 طلباتٍ استنفدت دوراتِها الثلاثَ على من لم يكن أهلَها).
+ *
+ * والقرارُ ليس هنا: الطلبُ يمرُّ بـ`broadcastOffers` نفسِها (نصفُ القطرِ والوزنان وحجمُ
+ * الدفعةِ وحدُّ الدوراتِ واستبعادُ من له عرضٌ حيٌّ كلُّها عندَ المجالِ). هذا القارئُ يختارُ
+ * **أيَّ** طلبٍ يُسألُ عنه أولًا. وحدُّه الافتراضيُّ طلبٌ واحدٌ لكلِّ وصولٍ: كلُّ بثٍّ يستهلكُ
+ * دورةً من حدِّ الطلبِ، فلو بُثَّ أقربُ ثلاثةٍ لكلِّ سائقٍ لاستُنفدت دوراتُ الطلبِ في حيٍّ
+ * مزدحمٍ قبلَ أن يصلَه أهلُه.
+ */
+export interface NearestDispatchInput {
+  readonly cityId: CityId;
+  readonly driverId: string;
+  readonly latitude: number;
+  readonly longitude: number;
+}
+
+export interface NearestDispatchReport {
+  readonly examined: number;
+  readonly rebroadcast: readonly OrderId[];
+  /** لا نصفُ قطرٍ ولا حدُّ دوراتٍ مقروءٌ ⇒ لا تخمينَ: يبقى شوطُ المدينةِ وحدَه. */
+  readonly skipped?: "NO_SETTINGS" | "FINDER_UNSUPPORTED";
+}
+
+export async function dispatchNearestToDriver(
+  input: NearestDispatchInput,
+  deps: Pick<RedispatchDependencies, "finder" | "broadcast" | "log"> & { readonly limit?: number },
+): Promise<Result<NearestDispatchReport, PortFailureError>> {
+  const finder = deps.finder.findSearchingNearDriver;
+  if (finder === undefined)
+    return ok({ examined: 0, rebroadcast: [], skipped: "FINDER_UNSUPPORTED" });
+  const rawSettings = await deps.broadcast.settings.findByCity(input.cityId);
+  if (!rawSettings.ok) return rawSettings;
+  const parsed = parseCitySettings(input.cityId, rawSettings.value);
+  if (!parsed.ok) return ok({ examined: 0, rebroadcast: [], skipped: "NO_SETTINGS" });
+
+  const found = await finder.call(deps.finder, {
+    ...input,
+    radiusKm: parsed.value.searchRadiusKm,
+    maxBroadcastRounds: parsed.value.maxBroadcastRounds,
+    limit: deps.limit ?? 1,
+  });
+  if (!found.ok) return found;
+
+  const rebroadcast: OrderId[] = [];
+  for (const order of found.value) {
+    const result = await broadcastOffers({ orderId: order.orderId }, deps.broadcast);
+    if (result.ok) {
+      rebroadcast.push(order.orderId);
+      deps.log?.("dispatch.nearby_broadcast", {
+        orderId: order.orderId,
+        cityId: input.cityId,
+        round: result.value.round,
+        offered: result.value.offered.length,
+        includesDriver: result.value.offered.some((id) => String(id) === input.driverId),
+        waitingSeconds: order.waitingSeconds,
+      });
+      continue;
+    }
+    deps.log?.("dispatch.nearby_not_broadcast", {
+      orderId: order.orderId,
+      cityId: input.cityId,
+      code: result.error.code,
+    });
+  }
+  return ok({ examined: found.value.length, rebroadcast });
 }

@@ -68,6 +68,14 @@ export interface TelegramUpdateQueue {
    */
   claimFor?(bot: string): Promise<{ job: ClaimedTelegramUpdateJob | null }>;
   /**
+   * LOAD-01 (الدفعةُ السابعةُ) — التقاطُ حتى `limit` وظيفةً لبوتٍ في رحلةٍ واحدةٍ، **مرتّبةً
+   * بـ`created_at`** (ترتيبُ تحديثاتِ المستخدمِ محفوظٌ). اختياريٌّ: غيابُه = `claimFor` المفردُ.
+   */
+  claimBatchFor?(
+    bot: string,
+    limit: number,
+  ): Promise<{ jobs: readonly ClaimedTelegramUpdateJob[] }>;
+  /**
    * CAP-RUN-20261015 / D3 — تجديدُ إيجارِ وظائفَ ما زالت محجوزةً بالرمزِ نفسِه (تنتظرُ مسارَها).
    * يعيدُ عددَ المجدَّد. اختياريٌّ.
    */
@@ -171,6 +179,31 @@ export function createPostgresTelegramUpdateQueue(
           attempts: Number(delivery.attempts),
           maxAttempts: Number(delivery.max_attempts),
         } satisfies ClaimedTelegramUpdateJob,
+      };
+    },
+
+    claimBatchFor: async (bot: string, limit: number) => {
+      const rows = await sql<{ result: unknown }[]>`
+        select claim_telegram_update_jobs_for_bot(${leaseTimeout}, ${maxAttempts}, ${bot}, ${limit}) as result
+      `;
+      const row = envelopeOf(rows[0]?.result, "claim_telegram_update_jobs_for_bot");
+      if (row.ok !== true) throw new Error(String(row.error ?? "UNKNOWN"));
+      const list = Array.isArray(row.jobs) ? (row.jobs as Record<string, unknown>[]) : [];
+      return {
+        jobs: list.map(
+          (delivery) =>
+            ({
+              bot: String(delivery.bot),
+              updateId: Number(delivery.update_id),
+              payload:
+                typeof delivery.payload === "object" && delivery.payload !== null
+                  ? (delivery.payload as Record<string, unknown>)
+                  : {},
+              claimToken: String(delivery.claim_token),
+              attempts: Number(delivery.attempts),
+              maxAttempts: Number(delivery.max_attempts),
+            }) satisfies ClaimedTelegramUpdateJob,
+        ),
       };
     },
 

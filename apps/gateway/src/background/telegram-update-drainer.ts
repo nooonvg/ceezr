@@ -412,13 +412,37 @@ async function drainConcurrently(
       : null;
   const busy = new Map<string, number>();
   const drained = new Set<string>();
+  /**
+   * LOAD-01 (الدفعةُ السابعةُ) — التقاطٌ دُفعيٌّ: رحلةٌ واحدةٌ تجلبُ حتى عددِ المساراتِ الفارغةِ
+   * (مقسومًا على البوتاتِ للإنصافِ) مرتّبةً، فيُستهلَكُ المخزَّنُ بترتيبِه قبلَ رحلةٍ تاليةٍ.
+   * المقيسُ قبلَه: رحلةُ الالتقاطِ المفردِ ~40ms تحتَ 500 متزامنٍ ⇒ الجاري 4–5 من 32 والإتمامُ
+   * ~25/ث (`diag-r12-jobtiming-500`). والمخزَّنُ لا يتجاوزُ المساراتِ الفارغةَ فيُسنَدُ فورًا.
+   */
+  const batched: ClaimedJob[] = [];
+  const batchClaim = deps.queue.claimBatchFor;
   const nextClaim = async (): Promise<ClaimedJob | null> => {
+    const buffered = batched.shift();
+    if (buffered !== undefined) return buffered;
     if (fair === null) return (await deps.queue.claim()).job;
     for (;;) {
       const open = fair.filter((b) => !drained.has(b));
       if (open.length === 0) return null;
       open.sort((a, b) => (busy.get(a) ?? 0) - (busy.get(b) ?? 0));
       const bot = open[0] as string;
+      if (batchClaim !== undefined) {
+        const room = Math.min(
+          Math.max(1, lanes - inflight.size),
+          Math.max(1, Math.ceil(lanes / fair.length)),
+          Math.max(1, maxJobsPerRun - claimed),
+        );
+        const { jobs } = await batchClaim.call(deps.queue, bot, room);
+        if (jobs.length > 0) {
+          batched.push(...jobs.slice(1));
+          return jobs[0] as ClaimedJob;
+        }
+        drained.add(bot);
+        continue;
+      }
       const job = (await deps.queue.claimFor?.(bot))?.job ?? null;
       if (job !== null) return job;
       drained.add(bot);

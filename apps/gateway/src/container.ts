@@ -22,7 +22,10 @@ import type {
 import { RIDER_TRIP_APP_FIRST_EVENTS } from "../../../packages/application/dispatch/deliver-rider-trip-notice.ts";
 import type { EscalateUnmatchedOrderDependencies } from "../../../packages/application/dispatch/escalate-unmatched-order.ts";
 import type { PublishToUnsubscribedGroupDependencies } from "../../../packages/application/dispatch/publish-to-unsubscribed-group.ts";
-import { redispatchSearchingOrders } from "../../../packages/application/dispatch/redispatch-searching-orders.ts";
+import {
+  dispatchNearestToDriver,
+  redispatchSearchingOrders,
+} from "../../../packages/application/dispatch/redispatch-searching-orders.ts";
 import type { RepublishDependencies } from "../../../packages/application/dispatch/republish-order-card.ts";
 import type { RotateNegotiationDependencies } from "../../../packages/application/dispatch/rotate-negotiation-turn.ts";
 import type { PostDisputeCardDependencies } from "../../../packages/application/dispute/post-dispute-card.ts";
@@ -197,6 +200,7 @@ import {
   createSupportAdvicePublisher,
   createTicketAdvisor,
 } from "./agent-advisor.ts";
+import { createBoundedTaskRunner } from "./background/bounded-task-runner.ts";
 import {
   createImmediateRedispatchScheduler,
   IMMEDIATE_REDISPATCH_DEBOUNCE_MS,
@@ -297,6 +301,13 @@ export interface Container {
    * بعدَ دورةِ العاملِ). الإشارةُ لا تُعدُّ تسليمًا — الإقرارُ وحدَه يُغلقُ الصفَّ.
    */
   readonly riderTripSignal: { notify: ((telegramUserId: string, orderId: string) => void) | null };
+  /**
+   * LOAD-01 (الدفعةُ السابعةُ، ADR 0289) — إشارةُ لوحِ العروضِ اللحظيةُ للسائقِ المتصلِ عندَ فتحِ
+   * جولةٍ تضمُّه، كما `riderTripSignal` للراكبِ (ADR 0287). تُضبَطُ من `index.ts` بقناةِ العروضِ.
+   */
+  readonly driverOfferSignal: {
+    notify: ((telegramUserIds: readonly string[]) => void) | null;
+  };
   /**
    * التكليفُ السابعُ (P4) — طلبٌ جديدٌ باحثٌ يُطلِقُ شوطَ العرضِ الفوريَّ لمدينتِه
    * (المُجدوِلُ نفسُه بخفضِه ومانعِ تداخلِه وحافتِه اللاحقةِ). كانَ أوّلُ عرضٍ ينتظرُ محفّزَ
@@ -514,6 +525,18 @@ export interface ContainerOverrides {
 const IMMEDIATE_REDISPATCH_LIMIT = 50;
 
 /**
+ * LOAD-01 (الدفعةُ السابعةُ، P4) — سائقٌ صارَ متاحًا ⇒ يُعرَضُ عليه الطلبُ الباحثُ الأقربُ
+ * إليه (`dispatchNearestToDriver`) في مُرسِلٍ خلفيٍّ محدودٍ (`background/bounded-task-runner.ts`).
+ * ثمانيةٌ في آنٍ مقيسةٌ لا مخمّنةٌ: أربعةٌ ⇒ انتظارُ الطابورِ p50 = 50ث (`diag-r12-nearby4-500`)،
+ * واثنا عشرَ مع بثِّ الإنشاءِ ⇒ تجمّعُ الاتصالاتِ (15) يُجوِّعُ درينرَ التحديثاتِ فتفوتُ مهلةُ
+ * التسجيلِ (`diag-r12-nearby-500`، G1 = 63%)، وستّةَ عشرَ ⇒ زمنُ الخدمةِ يتضاعفُ (0.6ث → 1.2ث)
+ * والإنتاجيّةُ ثابتةٌ ~13/ث (`diag-r12-nearby16-500`): السقفُ إنتاجيّةُ تجمّعِ البوابةِ لا التوازي. وطابورٌ بسقفِ ألفين — ما فوقَه يُتركُ لشوطِ
+ * المدينةِ المخفوضِ ثم الدوريِّ (20ث) كما كانَ.
+ */
+const NEARBY_DISPATCH_CONCURRENCY = 8;
+const NEARBY_DISPATCH_MAX_QUEUED = 2_000;
+
+/**
  * حصّةُ مزوّدِ التوجيهِ المُعلَنةُ (`REQ-09` · `ADR 0190`). على `Redis` متى وُجِدَ:
  * الحدُّ حدُّ **الحسابِ**، فحدٌّ في ذاكرةِ كلِّ نسخةٍ يضربُه في عددِ النسخِ. وسياسةُ
  * عجزِ `Redis` سياسةُ الحدِّ القائمةِ (يُسمَحُ ويُسجَّلُ) — والمزوّدُ يبقى يردُّ `429`
@@ -623,15 +646,49 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
   const offers = createOfferRepository(sql);
   const candidates = createDriverCandidateRepository(sql);
 
+  /**
+   * LOAD-01 (الدفعةُ السابعةُ، ADR 0289) — Mini App أولًا للعروضِ كما للراكبِ (ADR 0287): بعدَ أن
+   * تلتزمَ القاعدةُ بالجولةِ وصفوفِ إشعارِها، يُشارُ إلى المتصلينَ من سائقيها فورًا فيقرؤونَ اللوحَ
+   * ويُقِرّونَ. قبلَه كانتِ الإشارةُ تنتظرُ مستهلكَ الإشعاراتِ (`signal_wait`)، وتحتَ 500 متزامنٍ
+   * لم يبلغْ منها السائقينَ المتصلينَ إلا 0–60 (`driverSocket.signals` في `gen-summary.json`)
+   * وماتت صفوفُ العروضِ (~15–18 ألفًا `dead`) قبلَ التقاطِها؛ وبعدَه 8,920 إشارةً
+   * (`diag-r12-offersignal-500`). الإشارةُ ليست تسليمًا: التسليمُ إيصالُ اللوحِ، والمستهلكُ يبقى
+   * الاحتياطَ (بطاقةُ تيليجرامَ لمن لم يُقِرَّ). وفشلُ الإشارةِ لا يمسُّ الجولةَ.
+   */
+  const driverOfferSignal: Container["driverOfferSignal"] = { notify: null };
+  const baseOfferWriter =
+    overrides.metrics === undefined
+      ? createOfferWriter(sql)
+      : instrumentOfferWriter(createOfferWriter(sql), overrides.metrics);
+  const signallingOfferWriter: typeof baseOfferWriter = {
+    ...baseOfferWriter,
+    openRound: async (input) => {
+      const written = await baseOfferWriter.openRound(input);
+      const notify = driverOfferSignal.notify;
+      if (
+        written.ok &&
+        written.value.opened &&
+        notify !== null &&
+        written.value.offers.length > 0
+      ) {
+        const driverIds = written.value.offers.map((offer) => String(offer.driverId));
+        void sql<{ telegram_id: string }[]>`
+          select u.telegram_id::text as telegram_id
+            from drivers d join users u on u.id = d.user_id
+           where d.id = any(${driverIds}::uuid[])`
+          .then((rows) => notify(rows.map((row) => row.telegram_id)))
+          .catch(() => undefined);
+      }
+      return written;
+    },
+  };
+
   const matching = {
     orders,
     offers,
     candidates,
     settings,
-    offerWriter:
-      overrides.metrics === undefined
-        ? createOfferWriter(sql)
-        : instrumentOfferWriter(createOfferWriter(sql), overrides.metrics),
+    offerWriter: signallingOfferWriter,
     clock: systemClock,
     // يوصل `dispatch.no_eligible_driver` وتعداد أسباب الرفض إلى سجلّ الإنتاج.
     // دونه يبقى التشخيص حبيساً في قيمة راجعة يُسقطها منادي بوت العميل.
@@ -954,14 +1011,44 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     log,
   });
 
+  const nearbyDispatch = createBoundedTaskRunner({
+    concurrency: NEARBY_DISPATCH_CONCURRENCY,
+    maxQueued: NEARBY_DISPATCH_MAX_QUEUED,
+    log,
+  });
+  const nearbyFinder = createSearchingOrderFinder(sql);
   const redispatchDeps = {
     /**
      * `LOAD-01` — جدولةٌ لا حجبٌ: يعودُ فورًا، والشوطُ الخلفيُّ المخفوضُ للمدينةِ
      * (المعرَّفُ أعلاه) هوَ الذي يعملُ. عقدُ الخطوةِ الخامسةِ في حالةِ الاستخدامِ
      * («إعادةُ العرضِ بعدَ الكتابةِ») قائمٌ — لكنهُ غيرُ حاجبٍ للردِّ.
      */
-    onDriverBecameDispatchable: async (cityId: CityId): Promise<void> => {
+    onDriverBecameDispatchable: async (
+      cityId: CityId,
+      near?: { readonly driverId: string; readonly latitude: number; readonly longitude: number },
+    ): Promise<void> => {
       immediateRedispatchScheduler.trigger(cityId);
+      if (near === undefined) return;
+      // الدفعةُ السابعةُ (P4): الطلبُ الأقربُ إلى السائقِ الواصلِ، في المُرسِلِ المحدودِ —
+      // خلفيٌّ لا يحجبُ ردَّ الموقعِ، والممتلئُ يتركُه لشوطِ المدينةِ أعلاه.
+      const submittedAt = Date.now();
+      const accepted = nearbyDispatch.submit(async () => {
+        const startedAt = Date.now();
+        const report = await dispatchNearestToDriver(
+          { cityId, ...near },
+          { finder: nearbyFinder, broadcast: matching, log },
+        );
+        // انتظارُ الطابورِ منفصلًا عن زمنِ الخدمةِ: أيُّهما الحاكمُ قياسٌ لا تخمينٌ.
+        log("dispatch.nearby_task", {
+          cityId,
+          queuedMs: startedAt - submittedAt,
+          tookMs: Date.now() - startedAt,
+          ok: report.ok,
+          rebroadcast: report.ok ? report.value.rebroadcast.length : 0,
+        });
+        if (!report.ok) log("dispatch.nearby_failed", { cityId, detail: report.error.detail });
+      });
+      if (!accepted) log("dispatch.nearby_queue_full", { cityId });
     },
   };
 
@@ -1262,6 +1349,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
   return {
     dispatchNewOrder,
     riderTripSignal,
+    driverOfferSignal,
     routing,
     translation,
     driverDialogSessions: driverSessions,

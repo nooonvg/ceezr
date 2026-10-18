@@ -2136,6 +2136,13 @@ if (config.miniappSessionSecret !== null) {
  * أحدٍ، ومهلةُ الطالبِ قصيرةٌ كي لا يُعلَّقَ الشوطُ على بوابةٍ بطيئةٍ.
  */
 if (offersChannel !== null) {
+  // ADR 0289 — إشارةُ اللوحِ اللحظيةُ عندَ فتحِ الجولةِ، للمتصلِ وحدَه (غيرُ المتصلِ تُدركُه البطاقةُ).
+  const channel = offersChannel;
+  container.driverOfferSignal.notify = (telegramUserIds) => {
+    for (const tg of telegramUserIds) {
+      if (channel.isDriverConnected(tg)) channel.notifyDriver(tg);
+    }
+  };
   app.route(
     "/",
     createInternalOffersSignalRoutes({

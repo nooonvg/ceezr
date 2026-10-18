@@ -609,5 +609,34 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
           waitingSeconds: Number(row.waiting_seconds),
         }));
       }),
+    findSearchingNearDriver: (input) =>
+      guard("orders.findSearchingNearDriver", async (): Promise<readonly SearchingOrderRef[]> => {
+        const rows = await sql<{ id: string; city_id: string; waiting_seconds: string | number }[]>`
+          select o.id      as id,
+                 o.city_id as city_id,
+                 extract(epoch from (now() - coalesce(o.searching_since, o.created_at)))::bigint as waiting_seconds
+            from orders o
+           where o.city_id = ${input.cityId}::uuid
+             and o.status = 'searching'
+             and o.assigned_driver_id is null
+             and (o.candidate_expires_at is null or o.candidate_expires_at <= now())
+             and o.broadcast_round < ${input.maxBroadcastRounds}
+             and st_dwithin(
+                   o.pickup,
+                   st_setsrid(st_makepoint(${input.longitude}, ${input.latitude}), 4326)::geography,
+                   ${input.radiusKm * 1000})
+             and not exists (
+                   select 1 from order_offers x
+                    where x.order_id = o.id and x.driver_id = ${input.driverId}::uuid
+                      and x.status = 'pending' and x.expires_at > now())
+           order by o.pickup <-> st_setsrid(st_makepoint(${input.longitude}, ${input.latitude}), 4326)::geography
+           limit ${input.limit}
+        `;
+        return rows.map((row) => ({
+          orderId: row.id as OrderId,
+          cityId: row.city_id as CityId,
+          waitingSeconds: Number(row.waiting_seconds),
+        }));
+      }),
   };
 }

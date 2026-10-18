@@ -95,7 +95,14 @@ export interface UpdateDriverLocationDeps {
   /** غيابُها لا يُخفِقُ الاستقبالَ: الكتابةُ القانونيّةُ لا تتوقّفُ على البثِّ. */
   readonly tracking?: { onFix(fix: StoredFix): Promise<void> };
   readonly redispatch?: {
-    onDriverBecameDispatchable(cityId: DriverProfile["cityId"]): Promise<void>;
+    /**
+     * `near` (الدفعةُ السابعةُ، P4): موضعُ السائقِ الذي صارَ متاحًا — ليُعرَضَ عليه الطلبُ
+     * الباحثُ الأقربُ إليه لا أقدمُ طلباتِ المدينةِ وحدَها. اختياريٌّ: مسارُ البوتِ يمرّرُ المدينةَ.
+     */
+    onDriverBecameDispatchable(
+      cityId: DriverProfile["cityId"],
+      near?: { readonly driverId: string; readonly latitude: number; readonly longitude: number },
+    ): Promise<void>;
   };
   /**
    * `F4-02`: غيابُها يعني نسقَ `F4-01` بحرفِه — كتابةٌ مشروطةٌ لكلِّ نبضةٍ. وهيَ
@@ -301,7 +308,13 @@ export async function updateDriverLocation(
    * (20ث) هيَ الضمانةُ المعلَنةُ سلفًا.
    */
   const becameLive = !driver.hasLocation && driver.isAvailable;
-  if (becameLive) await deps.redispatch?.onDriverBecameDispatchable(driver.cityId);
+  if (becameLive) {
+    await deps.redispatch?.onDriverBecameDispatchable(driver.cityId, {
+      driverId: driver.id,
+      latitude: assessment.fix.coordinates.latitude,
+      longitude: assessment.fix.coordinates.longitude,
+    });
+  }
 
   return ok({
     kind: "accepted",
