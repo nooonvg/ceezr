@@ -1445,6 +1445,17 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     criticalPath: null,
     documentedIn: null,
   },
+  {
+    migration: "20261018130000_load01_claim_skip_decided_offers.sql",
+    change: "revoke_function:claim_notification_delivery(0)",
+    why: "الهجرةُ `20261018130000` (`LOAD-01` · الدفعةُ الثامنةُ) تُعيدُ تعريفَ `claim_notification_delivery()` **بالتوقيعِ والمردِّ نفسِهما**: شرطا `not exists` جراحيَّانِ يُزيلانِ من الالتقاطِ والترتيبِ (D8) العروضَ المحسومةَ (`accepted`/`cancelled`/`expired`) — فلا يُستهلكُ قراءةُ ردٍّ ولا محاولةُ تسليمٍ لعرضٍ انتهى أمرُه، والعدادُ `attempts` لا يتغيّرُ للحياةِ (الاختباراتُ تُثبتُ ذلك). والسحبُ بعدَ `create or replace` إعادةُ قفلٍ كما كانَ: لـ`service_role` وحدَها، والسطرُ إبطالٌ للمنحِ الضمنيِّ لا انتزاعُ صلاحيّةٍ قائمةٍ. والعودةُ إعادةُ تطبيقِ النصِّ من آخرِ تعريفٍ سابقٍ (`20261012200100`) — تراجعُ سلوكِيٍّ بحتٍ لا فقدُ عقدِ قراءةٍ.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    documentedIn: null,
+  },
 ];
 
 /**
