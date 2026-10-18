@@ -1,0 +1,175 @@
+{
+  "runDir": "/home/user/cap-seat/runs/b12-diag-stab-2",
+  "total": 3710,
+  "verified": 3710,
+  "verdict": "FAIL",
+  "failedGates": [
+    "P2"
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "rule": "دورات مكتملة مثبتة من القاعدة",
+      "value": "100.00% (3710/3710)",
+      "limit": "≥ 99.0%",
+      "pass": true
+    },
+    {
+      "id": "G2",
+      "rule": "إسناد مزدوج",
+      "value": "0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "G3",
+      "rule": "تجاوز نافذة الختام / عالقون عند الإغلاق",
+      "value": "0 + 0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "G4",
+      "rule": "تدقيق ما بعد الموجة",
+      "value": "CLEAN",
+      "limit": "CLEAN",
+      "pass": true
+    },
+    {
+      "id": "G5",
+      "rule": "سائقون بقوا متاحين بعد الجولة",
+      "value": "0",
+      "limit": "≤ 19 (0.5%)",
+      "pass": true
+    },
+    {
+      "id": "G6",
+      "rule": "إسناد لسائق سيناريو آخر",
+      "value": "0.00% (0)",
+      "limit": "≤ 0.5%",
+      "pass": true
+    },
+    {
+      "id": "G7",
+      "rule": "5xx من الطلبات",
+      "value": "0.00%",
+      "limit": "≤ 0.5%",
+      "pass": true
+    },
+    {
+      "id": "G8",
+      "rule": "تعثر قراءة لوح العروض",
+      "value": "0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "I1-identities",
+      "rule": "هويات فريدة من أحداث المولد (راكب + سائق لكل سيناريو)",
+      "value": "riders 3710/3710 · drivers 3710/3710",
+      "limit": "= 3710 + 3710",
+      "pass": true
+    },
+    {
+      "id": "GW-STABILITY",
+      "rule": "البوابة نفس العملية عبر الموجة (لا انهيار خفي)",
+      "value": "stable",
+      "limit": "stable",
+      "pass": true
+    },
+    {
+      "id": "EGRESS-CLASSIFIED",
+      "rule": "كل إرسالية في المحاكي مصنفة لبوتها (لا unknown)",
+      "value": "unknown +0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "CONC-peak",
+      "rule": "ذروة السيناريوهات المتزامنة الفعلية من لقطات المولد",
+      "value": "peak 500 / target 500",
+      "limit": "≥ 500",
+      "pass": true
+    }
+  ],
+  "perf": [
+    {
+      "id": "P1",
+      "rule": "p95 إنشاء الرحلة",
+      "value": "871ms",
+      "limit": "≤ 1000ms",
+      "pass": true
+    },
+    {
+      "id": "P2",
+      "rule": "p95 قبول العرض",
+      "value": "1276ms",
+      "limit": "≤ 1000ms",
+      "pass": false
+    },
+    {
+      "id": "P3",
+      "rule": "p95 قراءة لوح العروض",
+      "value": "898ms",
+      "limit": "≤ 1000ms",
+      "pass": true
+    },
+    {
+      "id": "P4",
+      "rule": "p95 ظهور العرض على اللوح",
+      "value": "11038ms",
+      "limit": "≤ 30000ms",
+      "pass": true
+    },
+    {
+      "id": "P5",
+      "rule": "p95 دورة السيناريو كاملة",
+      "value": "18762ms",
+      "limit": "≤ 120000ms",
+      "pass": true
+    },
+    {
+      "id": "P6a",
+      "rule": "p99 إنشاء الرحلة",
+      "value": "1018ms",
+      "limit": "≤ 2500ms",
+      "pass": true
+    },
+    {
+      "id": "P6b",
+      "rule": "p99 قبول العرض",
+      "value": "1395ms",
+      "limit": "≤ 2500ms",
+      "pass": true
+    },
+    {
+      "id": "P6c",
+      "rule": "p99 قراءة اللوح",
+      "value": "1026ms",
+      "limit": "≤ 2500ms",
+      "pass": true
+    },
+    {
+      "id": "P7",
+      "rule": "أقدم مهمة إشعار معلقة عند التدقيق",
+      "value": "51s",
+      "limit": "≤ 120s",
+      "pass": true
+    },
+    {
+      "id": "P8",
+      "rule": "429 واجهات Mini App",
+      "value": "0.00%",
+      "limit": "≤ 2%",
+      "pass": true
+    },
+    {
+      "id": "P9",
+      "rule": "أخطاء شبكة",
+      "value": "0.00%",
+      "limit": "≤ 1%",
+      "pass": true
+    }
+  ],
+  "auditViolations": []
+}

@@ -1,0 +1,18 @@
+{
+ "samples": 60,
+ "steal_mean": 0.22,
+ "steal_max_1s": 3.47,
+ "siblings_mean": 0.04,
+ "foreign_mean": 0.73,
+ "iowait_mean": 0.01,
+ "throttled": 0,
+ "foreign_top": [],
+ "procs_blocked_max": 0,
+ "speed_probe_median_ms": 411.4,
+ "pg_probe_median_ms": 364.4,
+ "leftover": [],
+ "validity_version": "B12-V1",
+ "mode": "preflight",
+ "violations": [],
+ "verdict": "VALID"
+}
