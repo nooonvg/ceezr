@@ -939,13 +939,31 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         ? createSql({ connectionString: config.databaseUrl, max: 1 })
         : null,
   });
+  // تجربةُ عزلٍ تشخيصيّةٌ (`DISPATCH_DIAG_DEDICATED_POOL=<n>`): الشوطُ الفوريُّ على تجمُّعٍ
+  // مخصَّصٍ خارجَ تجمُّعِ الطلبِ — متغيّرٌ واحدٌ هو انتظارُ التجمُّعِ. غيابُه = المسارُ الأصلُ.
+  const diagPoolMax = Number(process.env.DISPATCH_DIAG_DEDICATED_POOL ?? "0");
+  const dispatchSql =
+    Number.isInteger(diagPoolMax) && diagPoolMax > 0
+      ? createSql({ connectionString: config.databaseUrl, max: diagPoolMax })
+      : sql;
+  const immediateMatching =
+    dispatchSql === sql
+      ? matching
+      : {
+          ...matching,
+          orders: createOrderRepository(dispatchSql),
+          offers: createOfferRepository(dispatchSql),
+          candidates: createDriverCandidateRepository(dispatchSql),
+          settings: createSettingsRepository(dispatchSql),
+          offerWriter: createOfferWriter(dispatchSql),
+        };
   const immediateRedispatchScheduler = createImmediateRedispatchScheduler({
     run: async (cityId) => {
-      const finder = createSearchingOrderFinder(sql);
-      const pass = dispatchTrace?.beginPass(cityId, finder, matching) ?? null;
+      const finder = createSearchingOrderFinder(dispatchSql);
+      const pass = dispatchTrace?.beginPass(cityId, finder, immediateMatching) ?? null;
       const report = await redispatchSearchingOrders(cityId, {
         finder: pass?.finder ?? finder,
-        broadcast: pass?.broadcast ?? matching,
+        broadcast: pass?.broadcast ?? immediateMatching,
         limit: IMMEDIATE_REDISPATCH_LIMIT,
         log,
       });
