@@ -1346,6 +1346,14 @@ jobs:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
         run: bun test tests/integration/i1-concurrent-engagement-races.test.ts
 
+      # `LOAD-01` (P4) · الدفعةُ الثامنةُ: قراءةُ لوحِ العروضِ بجولةِ قاعدةٍ واحدةٍ —
+      # تكافؤٌ حرفيٌّ مع المسارِ القديمِ (لوحٌ + ملاحقٌ + أهليةٌ) وعدّادُ عباراتٍ = 1
+      # على قاعدةٍ حقيقيةٍ، واللوحُ الفارغُ ورفضُ USER_NOT_FOUND كما كانَا.
+      - name: لوحُ العروضِ بجولةِ قاعدةٍ واحدةٍ على PostgreSQL حقيقيٍّ (LOAD-01 · P4)
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
+        run: bun test tests/integration/driver-offer-board-single-read.test.ts
+
       # `F8-06`: أطوارُ دورةِ حياةِ الدفعِ (نجاحٌ · فشلٌ · معلّقٌ · مكرّرٌ · استرجاعٌ ·
       # تناقضٌ) **يُشغِّلُها المحرِّكُ** لا الحاجزُ الساكنُ. وخطوةٌ باسمِها كي يُقرأَ
       # حُكمُها مفرَداً لا مُبتلَعاً في حزمةٍ من خمسٍ وخمسينَ.

@@ -967,12 +967,13 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // والآنَ 197 و1661 — سبعُ حالاتٍ في `rider-trip-app-ack.test.ts` (ADR 0287: إقرارُ
     // تطبيقِ الراكبِ) وثمانٍ في `s5-update-effect-ledger.test.ts` (ADR 0288: دفترُ الأثرِ، اثنتانِ منها لملحقِ المُرسِلِ الفوريِّ)،
     // كلُّها خلفَ TEST_DATABASE_URL وتجري في CI على قاعدةٍ حقيقيّةٍ.
-    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · الدفعةُ الثامنةُ · LOAD-01 · P4): 198 و1667 —
-    // ستُّ حالاتٍ في `claim-skip-decided-offers.test.ts` (تخطي المحسومِ في الالتقاطِ:
-    // التزامنُ وإعادةُ المحاولةُ والكنسُ أحكامُ دوالِّ plpgsql لا تُقاسُ إلا على PostgreSQL
-    // حقيقيٍّ) — خطوتُها في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
-    expect(SKIP_REGISTRY).toHaveLength(198);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1667);
+    // زيادةٌ (CAP-RUN-20261016-CONTINUATION · الدفعةُ الثامنةُ · LOAD-01 · P4): 199 و1671 —
+    // أربعُ حالاتٍ في `driver-offer-board-single-read.test.ts` (قراءةُ اللوحِ بجولةِ قاعدةٍ
+    // واحدةٍ: عدّادُ العباراتِ والتكافؤُ الحرفيُّ) وستُّ حالاتٍ في `claim-skip-decided-offers.test.ts`
+    // (تخطي المحسومِ في الالتقاطِ: التزامنُ وإعادةُ المحاولةُ والكنسُ) — كلُّها أحكامُ قاعدةٍ
+    // لا تُقاسُ إلا على PostgreSQL حقيقيٍّ — خطوتُهما في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
+    expect(SKIP_REGISTRY).toHaveLength(199);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1671);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {
