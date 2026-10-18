@@ -25,6 +25,7 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { resolve } from "node:path";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import {
   type ActiveCityHandle,
@@ -113,15 +114,16 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
   // مهلةٌ سخيةٌ: نسخُ القالبِ لقاعدةِ CI المتراكمةِ (postgis + بياناتِ الدفعةِ) يستغرقُ
   // ثوانيَ — والمهلةُ الافتراضيةُ (5ث) للخطافاتِ كانت تقطعُ الإنشاءَ في منتصفِهِ فتفسدُ
   // اتصالاتِ الملفاتِ التاليةِ.
+  // مهلةٌ سخيةٌ: تهيئةُ القاعدةِ المعزولةِ (هجراتٌ كاملةٌ) تستغرقُ عشراتِ الثواني —
+  // والمهلةُ الافتراضيةُ (5ث) للخطافاتِ كانت تقطعُها في منتصفِها.
   beforeAll(async () => {
-    // **عزلٌ حتميٌّ:** ترتيبُ الالتقاطِ (أولويةُ النوعِ ثمّ القِدَمُ) لا يضمنُ أسبقيةَ
-    // صفوفِنا في قاعدةٍ مشتركةٍ فيها صفوفُ اختباراتٍ أخرى — فننشئُ لكلِّ جولةٍ قاعدةً
-    // خاصةً (قالبًا من قاعدةِ الاختبارِ نفسِها بعدَ إنهاءِ اتصالاتِها الأخرى)، وفيها
-    // صفوفُنا وحدَها: المحسومُ الأقدمُ والحيُّ الأحدثُ — فالأقدميةُ والنتائجُ حتميةٌ.
+    // **عزلٌ حتميٌّ كاملٌ بلا مسٍّ بالقاعدةِ المشتركةِ:** ننشئُ قاعدةً خاصةً من
+    // `template0` ونُطبّقُ عليها الهجراتِ بالمُطبّقِ الآمنِ نفسِهِ (عمليةٌ مستقلةٌ)،
+    // ثمّ نمسحُ الطابورَ **كاملًا** — فلا صفوفَ في الالتقاطِ إلا صفوفُ هذا الاختبارِ:
+    // المحسومُ الأقدمُ والحيُّ الأحدثُ، وترتيبُ الالتقاطِ (أولويةُ النوعِ ثمّ القِدَمُ)
+    // حتميٌّ. لا إنهاءَ لاتصالاتِ أحدٍ ولا رجوعٌ صامتٌ إلى قاعدةٍ مشتركةٍ.
     const sourceUrl = new URL(DATABASE_URL as string);
     const sourceDb = sourceUrl.pathname.replace(/^\//, "");
-    // اسمُ القاعدةِ مشتقٌّ من مسارِ الرابطِ (مُدخَلٌ مضبوطٌ) — يُنقّى ويُدمجُ عبرَ
-    // `unsafe` (عباراتُ DDL لا تقبلُ معاملاتٍ)، والتنقيةُ تمنعُ أيَّ تسميعٍ.
     const safe = (name: string): string => {
       if (!/^[a-z0-9_]+$/.test(name)) throw new Error(`اسمُ قاعدةٍ غيرُ آمنٍ: ${name}`);
       return name;
@@ -131,37 +133,31 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     const admin = createSql({ connectionString: adminUrl.toString() });
     const isoDb = `${safe(sourceDb)}_claimskip_iso`;
     await admin.unsafe(`drop database if exists "${isoDb}" with (force)`);
-    // نحاول الإنشاءَ بلا مساسٍ باتصالاتِ القاعدةِ المشتركةِ (خطواتُ CI متعاقبةٌ فلا
-    // أحدَ متصلٌ عادةً)؛ فإن رفضَ القالبُ الاتصالاتِ القائمةَ أنهيناها وحدها عندَئذٍ.
-    try {
-      await admin.unsafe(`create database "${isoDb}" encoding 'UTF8' template "${safe(sourceDb)}"`);
-    } catch {
-      await admin`select pg_terminate_backend(pid) from pg_stat_activity where datname = ${sourceDb} and pid <> pg_backend_pid()`;
-      await admin.unsafe(`create database "${isoDb}" encoding 'UTF8' template "${safe(sourceDb)}"`);
-    }
+    await admin.unsafe(
+      `create database "${isoDb}" encoding 'UTF8' lc_collate 'C.UTF-8' lc_ctype 'C.UTF-8' template template0`,
+    );
     await admin.end({ timeout: 5 });
     const isoUrl = new URL(DATABASE_URL as string);
     isoUrl.pathname = `/${isoDb}`;
+    // الهجراتُ بالمُطبّقِ الآمنِ نفسِهِ في عمليةٍ مستقلةٍ على القاعدةِ الجديدةِ.
+    const repoRoot = resolve(import.meta.dir, "../..");
+    const migrate = Bun.spawn(["bun", "run", "scripts/migrate.ts"], {
+      cwd: repoRoot,
+      env: { ...process.env, DATABASE_URL: isoUrl.toString() },
+      stdout: "ignore",
+      stderr: "pipe",
+    });
+    const exitCode = await migrate.exited;
+    if (exitCode !== 0) {
+      const stderr = await new Response(migrate.stderr).text();
+      throw new Error(
+        `تعذّرَ تطبيقُ الهجراتِ على القاعدةِ المعزولةِ (${exitCode}): ${stderr.slice(0, 400)}`,
+      );
+    }
     isoDatabaseName = isoDb;
     sql = createSql({ connectionString: isoUrl.toString() });
-    // النسخةُ خاصتُنا: نمسحُ الطابورَ **كاملًا** — فالقالبُ ينسخُ بياناتِ القاعدةِ
-    // المشتركةِ (بقايا اختباراتٍ أخرى) ولا يكفي تنظيفُ معرفاتِنا وحدها ليكونَ الطابورُ
-    // «صفوفَنا وحدَها»؛ المسحُ الكاملُ هنا لا يمسُّ أحدًا غيرَنا (تُسقَط القاعدةُ لاحقًا).
+    // النسخةُ خاصتُنا: نمسحُ الطابورَ **كاملًا** — لا يوجدَ فيهِ إلا ما نزرعُهُ نحنُ.
     await sql`delete from notification_outbox`;
-    // نظافةُ بقايا جولةٍ سابقةٍ لنفسِ المعرفاتِ (اختبارٌ محليٌّ معاد).
-    await sql`delete from notification_outbox where dedup_key like 'claimskip-test:%' or recipient_user_id in (
-      select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint))`;
-    await sql`delete from order_offers where order_id in (
-      select o.id from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id
-      where u.telegram_id = ${RIDER_TELEGRAM_ID}::bigint)`;
-    await sql`delete from orders where rider_id in (
-      select id from riders where user_id in (
-        select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint)))`;
-    await sql`delete from riders where user_id in (
-      select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint))`;
-    await sql`delete from drivers where user_id in (
-      select id from users where telegram_id = ${DRIVER_TELEGRAM_ID}::bigint)`;
-    await sql`delete from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint)`;
     cityHandle = await ensureActiveCity(sql);
     cityId = cityHandle.cityId;
 
