@@ -122,6 +122,7 @@ export function createSql(options: DbOptions): Sql {
     deadlineMs,
     slots: options.max ?? DEFAULT_DB_POOL_MAX,
     onDeadline: options.onQueryDeadline,
+    label: options.applicationName,
   });
 }
 

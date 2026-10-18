@@ -17,6 +17,7 @@
  */
 import { readFileSync } from "node:fs";
 import { appendFile } from "node:fs/promises";
+import { observeQueryTimings } from "../../../../packages/infrastructure/db/query-deadline.ts";
 import type { DrainerTiming } from "./telegram-update-drainer.ts";
 
 export interface LoadTrace {
@@ -63,6 +64,18 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
     buffer.push(JSON.stringify(row));
   };
   let window = new Map<string, { ms: number[]; errors: number }>();
+  // توقيتُ الاستعلاماتِ لكلِّ تجمُّعٍ ونوعٍ: انتظارُ المقعدِ وزمنُ التنفيذِ/الاحتجاز.
+  let dbWindow = new Map<string, { wait: number[]; run: number[] }>();
+  observeQueryTimings((t) => {
+    const key = `${t.label}|${t.kind}`;
+    let w = dbWindow.get(key);
+    if (w === undefined) {
+      w = { wait: [], run: [] };
+      dbWindow.set(key, w);
+    }
+    w.wait.push(t.waitMs);
+    w.run.push(t.runMs);
+  });
   const flush = async (): Promise<void> => {
     if (window.size > 0) {
       const at = Date.now();
@@ -81,6 +94,29 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
         });
       }
       window = new Map();
+    }
+    if (dbWindow.size > 0) {
+      const at = Date.now();
+      for (const [key, w] of dbWindow) {
+        const [pool, kind] = key.split("|");
+        const wait = [...w.wait].sort((a, b) => a - b);
+        const run = [...w.run].sort((a, b) => a - b);
+        emit({
+          k: "db",
+          at,
+          pool,
+          kind,
+          n: run.length,
+          waitSumMs: Math.round(wait.reduce((s, x) => s + x, 0)),
+          runSumMs: Math.round(run.reduce((s, x) => s + x, 0)),
+          waitP50Ms: percentile(wait, 0.5),
+          waitP95Ms: percentile(wait, 0.95),
+          runP50Ms: percentile(run, 0.5),
+          runP95Ms: percentile(run, 0.95),
+          runMaxMs: run[run.length - 1] ?? null,
+        });
+      }
+      dbWindow = new Map();
     }
     if (buffer.length === 0) return;
     const text = `${buffer.join("\n")}\n`;
@@ -147,6 +183,7 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
     stop: async () => {
       clearInterval(timer);
       clearInterval(lagTimer);
+      observeQueryTimings(null);
       await flush();
     },
   };
