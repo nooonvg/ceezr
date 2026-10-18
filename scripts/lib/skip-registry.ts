@@ -1568,6 +1568,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/claim-skip-decided-offers.test.ts",
+    suites: ["LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"],
+    skipped: 6,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "يُثبِتُ أنّ الالتقاطَ لا يستهلكُ العروضَ المحسومةَ ولا يحجبُها وما خلفَها (شرطا not exists في الترشُّحِ وترتيبِ D8)، معَ سلامةِ التزامنِ ومسارِ إعادةِ المحاولةِ والكنسِ الدوريِّ — سلوكُ دوالِّ plpgsql على قاعدةٍ حقيقيةٍ لا يُثبَتُ ببديلٍ في الذاكرةِ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/driver-offer-board-single-read.test.ts",
     suites: ["لوحُ العروضِ بجولةِ قاعدةٍ واحدةٍ — LOAD-01 (P4)"],
     skipped: 4,

@@ -1453,6 +1453,14 @@ jobs:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
         run: bun test tests/integration/worker-loss-reclaim.test.ts
 
+      # `LOAD-01` (P4) · الدفعةُ الثامنةُ: الالتقاطُ لا يستهلكُ العروضَ المحسومةَ —
+      # لا التقاطَ ولا حجبًا ولا عدّادَ محاولاتٍ يزيدُ، وتزامنُ مُلتقطَينِ ومسارُ إعادةِ
+      # المحاولةِ والكنسُ الدوريُّ على قاعدةٍ حقيقيةٍ (هجرةُ 20261018130000).
+      - name: الالتقاطُ لا يستهلكُ المحسومَ على PostgreSQL حقيقيٍّ (LOAD-01 · P4)
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
+        run: bun test tests/integration/claim-skip-decided-offers.test.ts
+
       # `ECO-003`: رسائلُ تيليجرام تُعَدُّ على **السِلكِ** — مُرسِلٌ يُلتقَطُ خروجُه
       # نصّاً وصورةً ودبّوساً، وبوّابةٌ من `buildContainer` تمرُّ بالـwebhook وصندوقِ
       # الصادرِ. وخطوةٌ باسمِها كي يُقرأَ الرقمُ مفرَداً: خمسُ رسائلِ دفعٍ في رحلةٍ

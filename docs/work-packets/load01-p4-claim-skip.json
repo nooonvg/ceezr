@@ -1,0 +1,40 @@
+{
+  "id": "load01-p4-claim-skip",
+  "goal": "LOAD-01 (P4) · الدفعةُ الثامنةُ من CAP-RUN-20261016-CONTINUATION — الإصلاحُ الثاني: التقاطُ إشعاراتِ العروضِ لا يستهلكُ العروضَ المحسومةَ (قُبِلَت/أُلغِيَت/انتهت صلاحيتُها) — شرطا not exists جراحيّانِ في الترشُّحِ وترتيبِ D8، فلا قراءةَ ردٍّ ولا محاولةَ تسليمٍ ولا هجرًا لمحسومٍ، بلا حذفِ أحداثٍ ولا تغييرِ تدقيقٍ.",
+  "canonical_source": [
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-8-LOAD01-P4.md",
+    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"
+  ],
+  "implementation": [
+    ".github/workflows/ci.yml",
+    "scripts/lib/skip-registry.ts",
+    "scripts/lib/rollback-registry.ts",
+    "supabase/migrations/20261018130000_load01_claim_skip_decided_offers.sql",
+    "tests/integration/claim-skip-decided-offers.test.ts",
+    "tests/unit/skip-audit.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md", "docs/roadmap/execution/STATUS.md"],
+  "affected_docs": [
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/work-packets/load01-p4-claim-skip.json"
+  ],
+  "decision": "الاستبعادُ داخلَ دالةِ الالتقاطِ نفسِها (لا هجرًا بعدَ الالتقاطِ): claim_notification_delivery بالتوقيعِ والمردِّ نفسِهما معَ شرطَي not exists يُزيلانِ المحسومَ من الترشُّحِ ومن ترتيبِ D8 فلا يحجبُ ما خلفَه. مسارُ الرجوعِ مُعلنٌ في سجلِّ الرجوعِ (إعادةُ نصِّ 20261012200100). عدّادُ المحاولاتِ للمحسومِ لا يتغيّرُ والكنسُ الدوريُّ يوسمُهُ dead/ABANDONED كما كانَ.",
+  "tests": [
+    "bun test tests/integration/claim-skip-decided-offers.test.ts (6/6 على PostgreSQL حقيقيةٍ: لا التقاطَ ولا حجبًا ولا عدّادًا يزيدُ · الحيُّ يُلتقطُ · تزامنُ مُلتقطَينِ · مسارُ إعادةِ المحاولةِ للحيِّ سليمٌ · الكنسُ كما كانَ)",
+    "المجموعةُ الكاملةُ على PG حقيقيةٍ في المقعدِ المعزولِ — مجموعةُ الفشلِ مطابقةٌ لخطِّ الأساسِ على main",
+    "موجةُ القياسِ fixB500 (500 متزامنًا): P4 = 37.3ث (الأساسُ 37.5ث)؛ وعندَ الجمعِ نداءاتُ الالتقاطِ 25,274 → 13,398 (−47%)",
+    "قياسُ A/B لكلفةِ الدالةِ على بياناتٍ متطابقةٍ (240 ألفَ صفٍّ): وسيطُ 0.59ms (main) مقابلَ 0.67ms (المرشّحُ) — كلفةُ الاستبعادِ ~0.08ms لكلِّ نداءٍ"
+  ],
+  "evidence": "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-8-LOAD01-P4.md (فرعُ الأدلةِ) — القياسُ المنفردُ والمجموعُ وقبولُ الموجتَينِ.",
+  "constraints": [
+    "لا حذفَ للأحداثِ المطلوبةِ ولا تغييرَ لسجلِّ التدقيقِ",
+    "لا رفعَ لمعدلِ الاستطلاعِ ولا تخفيفًا لبروتوكولِ القبولِ",
+    "لا قاعدةَ إنتاجٍ ولا بوتًا حقيقيًّا في الاختباراتِ",
+    "حدُّ P4=30ث لا يتغيّرُ ولا تعريفُ التزامنِ ولا نافذةُ القياسِ ولا عبءُ الحملِ"
+  ],
+  "limitations": "الإصلاحُ وحدَهُ لا يجتازُ حدَّ P4 عندَ 500 متزامنٍ (37.3ث)؛ وكلفةُ الاستبعادِ مقيسةٌ (~0.08ms لكلِّ نداءٍ) مقابلَ توفيرِ 47% من النداءاتِ.",
+  "scope_note": "إصلاحٌ واحدٌ منطقيٌّ مستقلٌّ (تخطي المحسومِ في الالتقاطِ) على فرعٍ منفصلٍ من main؛ رفيقُهُ قراءةُ اللوحِ بجولةٍ واحدةٍ على فرعٍ آخرَ. مسارُ الرجوعِ للدالةِ مُعلنٌ في rollback-registry."
+}
