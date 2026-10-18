@@ -109,6 +109,7 @@ export function buildAdminContainer(
     createSql({
       connectionString: config.databaseUrl,
       max: DB_POOL_MAX.adminRequest,
+      applicationName: "ceezr:adminRequest",
       prepare: false,
       // `F11-04` · `ADR 0197`: تقريرٌ عالقٌ خلفَ قفلٍ لا يحتجزُ تجمُّعَ اللوحةِ طولَ البطءِ.
       queryDeadlineMs: DB_QUERY_DEADLINE_MS.adminRequest,

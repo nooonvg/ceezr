@@ -547,6 +547,9 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    */
   const sql = createSql({
     connectionString: config.databaseUrl,
+    // اسمُ الدورِ في `pg_stat_activity.application_name`: يُنسَبُ به CPU كلِّ خادمٍ خلفيٍّ
+    // إلى تجمُّعِه (LOAD-01 · الدفعةُ الحاديةَ عشرة)، ولا يغيّرُ سلوكاً.
+    applicationName: "ceezr:gatewayRequest",
     queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayRequest,
     onQueryDeadline: ({ deadlineMs }) =>
       log("db.query_deadline_exceeded", { pool: "gatewayRequest", deadlineMs }),
@@ -948,6 +951,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
   const dispatchSql = createSql({
     connectionString: config.databaseUrl,
     max: DB_POOL_MAX.gatewayDispatch,
+    applicationName: "ceezr:gatewayDispatch",
     queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayDispatch,
     onQueryDeadline: ({ deadlineMs }) =>
       log("db.query_deadline_exceeded", { pool: "gatewayDispatch", deadlineMs }),

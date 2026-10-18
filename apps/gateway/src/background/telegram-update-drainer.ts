@@ -79,6 +79,48 @@ export interface TelegramUpdateDrainDeps {
    * مسارِ الوظيفةِ (السلوكُ السابقُ)، فيصيرُ معدّلُ إتمامِ الوظائفِ معدّلَ دلوِ البوتِ.
    */
   readonly replyPool?: TelegramReplyPool;
+  /**
+   * LOAD-01 (الدفعةُ الحاديةَ عشرةَ) — أثرُ توقيتٍ تشخيصيٌّ اختياريٌّ: لكلِّ وظيفةٍ لحظةُ التقاطِها
+   * وبدءُ معالجتِها وأطوارُها، ولكلِّ شوطٍ بدؤه وآخرُ التقاطٍ فيه ونهايتُه. غيابُه = لا كلفةَ ولا سلوكَ مختلف.
+   */
+  readonly timing?: DrainerTiming;
+}
+
+export interface DrainerJobTiming {
+  readonly bot: string;
+  readonly updateId: number;
+  /** لحظاتٌ بـ`performance.timeOrigin + performance.now()` (مللي ثانية). */
+  readonly claimedAt: number;
+  readonly startedAt: number;
+  readonly endedAt: number;
+  /** أطوارُ المسارِ الدائم: فحصُ الأثرِ، والتحضيرُ (المعالج)، وختمُ الأثر. */
+  readonly effectCheckMs: number | null;
+  readonly prepareMs: number | null;
+  readonly recordMs: number | null;
+  readonly ok: boolean;
+}
+
+export interface DrainerSweepTiming {
+  readonly startedAt: number;
+  readonly lastClaimAt: number | null;
+  readonly endedAt: number;
+  readonly claimed: number;
+  readonly claimTrips: number;
+  readonly claimMs: number;
+  readonly truncated: boolean;
+}
+
+export interface DrainerTiming {
+  readonly onJob: (timing: DrainerJobTiming) => void;
+  readonly onSweep: (timing: DrainerSweepTiming) => void;
+}
+
+const wallNow = (): number => performance.timeOrigin + performance.now();
+
+interface PhaseClock {
+  effectCheckMs: number | null;
+  prepareMs: number | null;
+  recordMs: number | null;
 }
 
 /** حقلٌ من حمولةِ تيليجرام يحملُ مُرسِلًا أو محادثة — كلُّ ما يلزمُ مفتاحَ المسار. */
@@ -177,7 +219,32 @@ export async function drainTelegramUpdateJobsOnce(
  * معالجةُ وظيفةٍ ملتقَطةٍ واحدةٍ وختمُها — مشتركةٌ بينَ المسارِ التسلسليِّ والمتوازي
  * فلا يختلفُ بينهما معنى «تمّ» ولا «فشل». تعيدُ `true` إن عولجَت وخُتمَت.
  */
-async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob): Promise<boolean> {
+async function processClaimedJob(
+  deps: TelegramUpdateDrainDeps,
+  job: ClaimedJob,
+  claimedAt?: number,
+): Promise<boolean> {
+  if (deps.timing === undefined) return processClaimedJobUntimed(deps, job, null);
+  const startedAt = wallNow();
+  const phases: PhaseClock = { effectCheckMs: null, prepareMs: null, recordMs: null };
+  const ok = await processClaimedJobUntimed(deps, job, phases);
+  deps.timing.onJob({
+    bot: job.bot,
+    updateId: job.updateId,
+    claimedAt: claimedAt ?? startedAt,
+    startedAt,
+    endedAt: wallNow(),
+    ...phases,
+    ok,
+  });
+  return ok;
+}
+
+async function processClaimedJobUntimed(
+  deps: TelegramUpdateDrainDeps,
+  job: ClaimedJob,
+  phases: PhaseClock | null,
+): Promise<boolean> {
   const lease = { bot: job.bot, updateId: job.updateId, claimToken: job.claimToken };
   const ledger = deps.queue.ledger;
   if (
@@ -185,7 +252,7 @@ async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob)
     deps.handler.prepare !== undefined &&
     deps.handler.deliver !== undefined
   ) {
-    return processDurably(deps, job, lease, ledger);
+    return processDurably(deps, job, lease, ledger, phases);
   }
   try {
     const handled = await deps.handler.handle(job.bot as BotKind, job.payload);
@@ -220,10 +287,14 @@ async function processDurably(
   job: ClaimedJob,
   lease: { bot: string; updateId: number; claimToken: string },
   ledger: TelegramUpdateEffectLedger,
+  phases: PhaseClock | null = null,
 ): Promise<boolean> {
   const bot = job.bot as BotKind;
   try {
-    if (await ledger.effectRecorded(job.bot, job.updateId)) {
+    let t = performance.now();
+    const alreadyRecorded = await ledger.effectRecorded(job.bot, job.updateId);
+    if (phases !== null) phases.effectCheckMs = performance.now() - t;
+    if (alreadyRecorded) {
       const replay = await ledger.recordEffect(lease, []);
       deps.log?.("telegram.drainer.effect_replay_skipped", {
         bot: job.bot,
@@ -232,10 +303,12 @@ async function processDurably(
       });
       return replay.ok;
     }
+    t = performance.now();
     const prepared = await (deps.handler.prepare as NonNullable<UpdateHandler["prepare"]>)(
       bot,
       job.payload,
     );
+    if (phases !== null) phases.prepareMs = performance.now() - t;
     if (!prepared.handled) {
       await deps.queue.finish(lease, false, "NOT_HANDLED").catch(() => {});
       deps.log?.("telegram.drainer.stamp_failed", {
@@ -245,7 +318,9 @@ async function processDurably(
       });
       return false;
     }
+    t = performance.now();
     const recorded = await ledger.recordEffect(lease, prepared.replies);
+    if (phases !== null) phases.recordMs = performance.now() - t;
     if (!recorded.ok) {
       deps.log?.("telegram.drainer.effect_record_failed", {
         bot: job.bot,
@@ -380,6 +455,10 @@ async function drainConcurrently(
   let done = 0;
   let failed = 0;
   let truncated = false;
+  const sweepStartedAt = deps.timing === undefined ? 0 : wallNow();
+  let lastClaimAt: number | null = null;
+  let claimTrips = 0;
+  let claimMs = 0;
   const tails = new Map<string, Promise<void>>();
   const inflight = new Set<Promise<void>>();
   // D3: كلُّ محجوزٍ لم يُختَم بعدُ (ينتظرُ مسارَه أو يُعالَج) يُجدَّدُ إيجارُه دوريًّا.
@@ -435,7 +514,10 @@ async function drainConcurrently(
           Math.max(1, Math.ceil(lanes / fair.length)),
           Math.max(1, maxJobsPerRun - claimed),
         );
+        const t0 = performance.now();
         const { jobs } = await batchClaim.call(deps.queue, bot, room);
+        claimTrips += 1;
+        claimMs += performance.now() - t0;
         if (jobs.length > 0) {
           batched.push(...jobs.slice(1));
           return jobs[0] as ClaimedJob;
@@ -467,6 +549,8 @@ async function drainConcurrently(
       if (job === null) break;
       claimed += 1;
       const claimedJob = job;
+      const claimedAt = deps.timing === undefined ? undefined : wallNow();
+      if (claimedAt !== undefined) lastClaimAt = claimedAt;
       const heldKey = `${claimedJob.bot}:${claimedJob.updateId}`;
       held.set(heldKey, {
         bot: claimedJob.bot,
@@ -477,7 +561,7 @@ async function drainConcurrently(
       const key = laneKeyOf(claimedJob.bot, claimedJob.payload, String(claimedJob.updateId));
       const prev = tails.get(key) ?? Promise.resolve();
       const run = prev.then(async () => {
-        if (await processClaimedJob(deps, claimedJob)) done += 1;
+        if (await processClaimedJob(deps, claimedJob, claimedAt)) done += 1;
         else failed += 1;
       });
       tails.set(key, run);
@@ -493,6 +577,15 @@ async function drainConcurrently(
   } finally {
     if (renewTimer !== null) clearInterval(renewTimer);
   }
+  deps.timing?.onSweep({
+    startedAt: sweepStartedAt,
+    lastClaimAt,
+    endedAt: wallNow(),
+    claimed,
+    claimTrips,
+    claimMs,
+    truncated,
+  });
   return { claimed, done, failed, truncated };
 }
 
