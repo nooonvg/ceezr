@@ -292,6 +292,8 @@ export { asIdentifyingSender, asOutboundSender, asSupportSender };
 export interface Container {
   readonly handler: UpdateHandler;
   readonly sql: Sql;
+  /** تجمُّعُ الحلقاتِ الخلفيّةِ التسلسليّةِ؛ يساوي `sql` ما لم يُفصَل (تجربةُ عزلٍ LOAD-01 P4). */
+  readonly backgroundSql: Sql;
   /**
    * ADR 0287 — خطّافُ الإشارةِ الآنيةِ لأطوارِ الرحلةِ: يُركَّبُ في `index.ts` بعدَ
    * إنشاءِ القناةِ؛ فإن أُودِعَ طورٌ جديدٌ بُثَّ `trip:update` للراكبِ فورًا (لا
@@ -540,8 +542,10 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    * `F11-04` · `ADR 0197` — **مهلةُ استعلامٍ من العميلِ**: بطءٌ على جدولٍ واحدٍ كانَ يحتجزُ
    * اتّصالاتِ التجمُّعِ الخمسةَ فيقفُ كلُّ مسارٍ طولَ البطءِ. والإلغاءُ مرصودٌ لا صامتٌ.
    */
+  const diagRequestPoolMax = Number(process.env.DISPATCH_DIAG_REQUEST_POOL ?? "0");
   const sql = createSql({
     connectionString: config.databaseUrl,
+    ...(Number.isInteger(diagRequestPoolMax) && diagRequestPoolMax > 0 ? { max: diagRequestPoolMax } : {}),
     queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayRequest,
     onQueryDeadline: ({ deadlineMs }) =>
       log("db.query_deadline_exceeded", { pool: "gatewayRequest", deadlineMs }),
@@ -1328,6 +1332,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         : {}),
     }),
     sql,
+    backgroundSql: dispatchSql,
     driverSender,
     financial,
     trackingTokens: trackingTokens,
