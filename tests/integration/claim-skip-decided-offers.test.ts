@@ -110,6 +110,9 @@ async function claimOnce(): Promise<ClaimEnvelope> {
 }
 
 describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ", () => {
+  // مهلةٌ سخيةٌ: نسخُ القالبِ لقاعدةِ CI المتراكمةِ (postgis + بياناتِ الدفعةِ) يستغرقُ
+  // ثوانيَ — والمهلةُ الافتراضيةُ (5ث) للخطافاتِ كانت تقطعُ الإنشاءَ في منتصفِهِ فتفسدُ
+  // اتصالاتِ الملفاتِ التاليةِ.
   beforeAll(async () => {
     // **عزلٌ حتميٌّ:** ترتيبُ الالتقاطِ (أولويةُ النوعِ ثمّ القِدَمُ) لا يضمنُ أسبقيةَ
     // صفوفِنا في قاعدةٍ مشتركةٍ فيها صفوفُ اختباراتٍ أخرى — فننشئُ لكلِّ جولةٍ قاعدةً
@@ -194,7 +197,7 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     decidedOutboxId = await seedOutboxOfferRow(decidedOfferId, 90);
     const liveOfferId = await seedOrderWithOffer("pending", 1);
     liveOutboxId = await seedOutboxOfferRow(liveOfferId, 30);
-  });
+  }, 120_000);
 
   afterAll(async () => {
     await sql`delete from notification_outbox where dedup_key like 'claimskip-test:%'`;
