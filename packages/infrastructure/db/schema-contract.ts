@@ -45,6 +45,7 @@ export const CONTRACT_FUNCTIONS: readonly string[] = [
   "claim_telegram_update",
   "claim_telegram_update_job",
   "claim_telegram_update_job_for_bot",
+  "claim_telegram_update_jobs_for_bot",
   "claim_telegram_update_replies",
   "close_admin_session",
   "close_unsubscribed_negotiation",
