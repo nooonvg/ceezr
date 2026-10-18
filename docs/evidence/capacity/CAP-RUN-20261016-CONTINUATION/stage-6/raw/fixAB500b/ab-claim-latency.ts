@@ -71,14 +71,18 @@ async function cleanup(): Promise<void> {
   await pool`delete from users where telegram_id between 900000000001 and 900000000004`;
 }
 
-// (٠) إثباتُ اختلافِ التعريفِ بينَ القاعدتَينِ كما هو مقصودٌ
+// (٠) إثباتُ اختلافِ التعريفِ بينَ القاعدتَينِ كما هو مقصودٌ — التوقعُ مدخلٌ صريحٌ:
+//   AB_EXPECT_SKIP=false للتعريفِ القديمِ (main السابق) و=true للمرشّحِ (هجرةُ التخطي).
+//   الأداةُ ترفضُ القياسَ إن خالفَ التعريفُ المُعلَنَ (قياسُ الجانبِ الخطأِ بلا ملاحظةٍ
+//   أسوأُ من عدمِ القياسِ).
+const expectSkip = (process.env.AB_EXPECT_SKIP ?? "true") === "true";
 const [def] = await pool<{ len: string; hasSkip: boolean }[]>`
   select length(prosrc)::text as len, prosrc like '%decided%' as "hasSkip"
   from pg_proc where proname = 'claim_notification_delivery'`;
-console.log(`AB_DEF len=${def?.len} hasSkipMarker=${def?.hasSkip}`);
-if (def?.hasSkip !== true) {
+console.log(`AB_DEF len=${def?.len} hasSkipMarker=${def?.hasSkip} expected=${expectSkip}`);
+if (def?.hasSkip !== expectSkip) {
   throw new Error(
-    "التعريفُ لا يحملُ وسمَ التخطي — قِستَ الدالةَ القديمةَ على قاعدةِ المرشّحِ أو العكس؛ تحقق من القاعدةِ.",
+    `التعريفُ (${def?.hasSkip}) يخالفُ المتوقعَ (${expectSkip}) — قِستَ الدالةَ على الجانبِ الخطأِ أو القاعدةِ الخطأِ؛ عيّن AB_EXPECT_SKIP.`
   );
 }
 

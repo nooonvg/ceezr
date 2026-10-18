@@ -1,12 +1,23 @@
 {
   "round": "fixA500b",
-  "window_source": "mtime(mock-stats-pre.json) → mtime(mock-stats-post.json) — الالتقاطان الفعليان للعدادات",
-  "window_seconds": 211,
-  "delta_sendmessage": 5822,
-  "delta_api_total": 5865,
-  "sendmessage_rate_per_s": 27.59,
-  "pool_samples_window": "نفس النافذة (قصّ عينات pool-samples.jsonl عليها)",
-  "pool_peak_active": 7,
-  "pool_samples_in_window": 42,
-  "note": "قابلٌ لإعادةِ الحسابِ: الأصلُ mock-stats-{pre,post}.json وpool-samples.jsonl في هذا الدليلِ؛ النافذةُ من أوقاتِ ملفاتِ الالتقاطِ نفسِها (لا تقديرٌ)."
+  "pre_capture_utc": "2026-10-18T05:20:22.491873+00:00",
+  "post_capture_utc": "2026-10-18T05:23:53.343873+00:00",
+  "capture_points": {
+    "pre": "wave.sh:39 — لقطةُ عداداتِ الوهمِ عندَ بدءِ الجولةِ (قبلَ الحقنِ)",
+    "post": "finish-wave.sh:25 — لقطةُ العداداتِ عندَ إغلاقِ الجولةِ (بعدَ التصريفِ)"
+  },
+  "window_seconds_unrounded": 210.852,
+  "equations": {
+    "delta_sendmessage": "post.by_method.sendMessage - pre.by_method.sendMessage = 5822",
+    "delta_api_total": "post.total - pre.total = 5865",
+    "rate": "delta_sendmessage / window_seconds = 5822 / 210.9 = 27.61/s"
+  },
+  "rate_description": "متوسطُ sendMessage بينَ لقطتَي العداداتِ على الحدودِ المثبتةِ أعلاه",
+  "pool_samples": {
+    "window": "نفسُ الحدودِ — قصّ pool-samples.jsonl عليها",
+    "peak_active": 7,
+    "samples_in_window": 42,
+    "source": "pool-samples.jsonl (عيّنةٌ كلَّ 5ث لحالةِ اتصالاتِ pg_stat_activity)"
+  },
+  "provenance": "الطوابعُ من أوقاتِ ملفّي الالتقاطِ الفعليينِ وقتَ نسخِ الأدلةِ (mtime لا يحفظه git)؛ الأصلُ القابلُ لإعادةِ الحسابِ: mock-stats-{pre,post}.json (العداداتُ التراكميةُ للوهمِ) وpool-samples.jsonl كما هي."
 }
