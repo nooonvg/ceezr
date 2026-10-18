@@ -22,13 +22,8 @@
     "tests/unit/telegram-update-drainer-batch-claim.test.ts",
     "deploy/capacity-run/monitor/p4-decompose.py"
   ],
-  "state": [
-    "docs/SYSTEM_STATE.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md",
-    "docs/ROADMAP-MASTER.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md", "docs/ROADMAP-MASTER.md"],
   "affected_docs": [
     "docs/adr/0289-immediate-dispatch-dedicated-connection.md",
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-8-LOAD01-P4.md",
