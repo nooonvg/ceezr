@@ -1,0 +1,336 @@
+{
+ "scenarios": 3505,
+ "verdict": "PASS",
+ "failed_gates": [],
+ "gates": {
+  "G1": "100.00% (3505/3505)",
+  "P1": "439ms",
+  "P2": "826ms",
+  "P3": "435ms",
+  "P4": "7957ms",
+  "P7": "55s"
+ },
+ "window_s": 184.0,
+ "cpu_s_in_window": {
+  "postgres": 171.54,
+  "redis": 7.11,
+  "mock": 1.51,
+  "redis_shim": 18.15,
+  "gateway": 85.71,
+  "generator": 20.86,
+  "pg:pg_aux": 0.13,
+  "pg:ceezr:gatewayRequest": 78.32,
+  "pg:ceezr:workerJobs": 43.54,
+  "pg:ceezr:workerLocks": 0.08,
+  "pg:genA": 9.92,
+  "pg:driver-onboarding": 5.96,
+  "pg:ceezr:gatewayDispatch": 33.6,
+  "pg:psql": 0.0
+ },
+ "scenarios_per_s": 19.47,
+ "cpu_ms_per_scenario": {
+  "postgres": 47.9,
+  "gateway": 23.9,
+  "pg:ceezr:gatewayRequest": 21.9,
+  "pg:ceezr:workerJobs": 12.2,
+  "pg:ceezr:gatewayDispatch": 9.4,
+  "generator": 5.8,
+  "redis_shim": 5.1,
+  "pg:genA": 2.8,
+  "redis": 2.0,
+  "pg:driver-onboarding": 1.7,
+  "mock": 0.4,
+  "pg:pg_aux": 0.0,
+  "pg:ceezr:workerLocks": 0.0,
+  "pg:psql": 0.0
+ },
+ "cpu_ms_per_scenario_total_processes": 85.1,
+ "host_cpu_util_pct_of_2vcpu": 82.8,
+ "load1_mean": 3.12,
+ "pg_statements_per_scenario": 148.4,
+ "pg_exec_ms_per_scenario": 57.63,
+ "pg_top_by_exec": [
+  {
+   "calls_per_scenario": 4.78,
+   "exec_ms_per_scenario": 12.47,
+   "share_pct": 21.6,
+   "mean_ms": 2.607,
+   "stddev_ms": 21.017,
+   "max_ms": 2563.7,
+   "query": "select claim_notification_delivery() result"
+  },
+  {
+   "calls_per_scenario": 1.41,
+   "exec_ms_per_scenario": 11.53,
+   "share_pct": 20.0,
+   "mean_ms": 8.15,
+   "stddev_ms": 7.566,
+   "max_ms": 85.3,
+   "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_location::geometry) as lng, (extract($1 from d.last_location_at) * $2):"
+  },
+  {
+   "calls_per_scenario": 1.41,
+   "exec_ms_per_scenario": 5.16,
+   "share_pct": 9.0,
+   "mean_ms": 3.648,
+   "stddev_ms": 3.17,
+   "max_ms": 47.7,
+   "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+  },
+  {
+   "calls_per_scenario": 2.82,
+   "exec_ms_per_scenario": 4.69,
+   "share_pct": 8.1,
+   "mean_ms": 1.665,
+   "stddev_ms": 2.661,
+   "max_ms": 56.0,
+   "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 4.01,
+   "share_pct": 7.0,
+   "mean_ms": 3.946,
+   "stddev_ms": 3.213,
+   "max_ms": 43.5,
+   "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::text::jsonb, $14::text::jsonb, $15) as result"
+  },
+  {
+   "calls_per_scenario": 4.06,
+   "exec_ms_per_scenario": 2.78,
+   "share_pct": 4.8,
+   "mean_ms": 0.685,
+   "stddev_ms": 0.625,
+   "max_ms": 23.8,
+   "query": "select enqueue_rider_trip_notice($1::uuid, $2::text) as r"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 2.59,
+   "share_pct": 4.5,
+   "mean_ms": 2.547,
+   "stddev_ms": 2.493,
+   "max_ms": 31.5,
+   "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id = $1 and offer_id is not null"
+  },
+  {
+   "calls_per_scenario": 1.59,
+   "exec_ms_per_scenario": 1.74,
+   "share_pct": 3.0,
+   "mean_ms": 1.093,
+   "stddev_ms": 1.356,
+   "max_ms": 33.1,
+   "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.verification_status::text as verification_status, d.last_location is not "
+  },
+  {
+   "calls_per_scenario": 3.57,
+   "exec_ms_per_scenario": 1.34,
+   "share_pct": 2.3,
+   "mean_ms": 0.377,
+   "stddev_ms": 0.298,
+   "max_ms": 11.1,
+   "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 0.97,
+   "share_pct": 1.7,
+   "mean_ms": 0.957,
+   "stddev_ms": 0.729,
+   "max_ms": 22.3,
+   "query": "select driver_accept_offer($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.03,
+   "exec_ms_per_scenario": 0.74,
+   "share_pct": 1.3,
+   "mean_ms": 0.362,
+   "stddev_ms": 0.79,
+   "max_ms": 53.2,
+   "query": "select (record_attendance($1::uuid, $2, $3) ->> $4)::boolean as ok"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 0.65,
+   "share_pct": 1.1,
+   "mean_ms": 0.644,
+   "stddev_ms": 0.515,
+   "max_ms": 15.5,
+   "query": "select driver_complete_ride($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 0.61,
+   "share_pct": 1.1,
+   "mean_ms": 0.604,
+   "stddev_ms": 0.606,
+   "max_ms": 26.5,
+   "query": "select driver_start_ride($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.82,
+   "exec_ms_per_scenario": 0.61,
+   "share_pct": 1.1,
+   "mean_ms": 0.216,
+   "stddev_ms": 0.29,
+   "max_ms": 18.6,
+   "query": "select list_rider_trip_events($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 0.59,
+   "share_pct": 1.0,
+   "mean_ms": 0.583,
+   "stddev_ms": 0.319,
+   "max_ms": 11.0,
+   "query": "select start_trial($1::uuid, $2::subscription_plan) as result where not exists (select $4 from subscriptions s where s.driver_id = $3::uuid)"
+  },
+  {
+   "calls_per_scenario": 0.0,
+   "exec_ms_per_scenario": 0.51,
+   "share_pct": 0.9,
+   "mean_ms": 446.711,
+   "stddev_ms": 182.948,
+   "max_ms": 717.0,
+   "query": "select public.sweep_decided_offer_notifications() result"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 0.43,
+   "share_pct": 0.7,
+   "mean_ms": 0.425,
+   "stddev_ms": 0.498,
+   "max_ms": 21.8,
+   "query": "select claim_and_enqueue_telegram_update( $1, $2, $3, $4, $5 ) as result"
+  },
+  {
+   "calls_per_scenario": 1.02,
+   "exec_ms_per_scenario": 0.41,
+   "share_pct": 0.7,
+   "mean_ms": 0.404,
+   "stddev_ms": 0.436,
+   "max_ms": 11.5,
+   "query": "select driver_mark_arrived($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.21,
+   "exec_ms_per_scenario": 0.41,
+   "share_pct": 0.7,
+   "mean_ms": 0.339,
+   "stddev_ms": 0.278,
+   "max_ms": 11.3,
+   "query": "select finish_notification_delivery($1::uuid, $2::uuid, $3::text, $4, $5::text) result"
+  },
+  {
+   "calls_per_scenario": 0.04,
+   "exec_ms_per_scenario": 0.39,
+   "share_pct": 0.7,
+   "mean_ms": 10.816,
+   "stddev_ms": 22.325,
+   "max_ms": 149.8,
+   "query": "select claim_telegram_update_replies($1::integer, $2::integer) as result"
+  }
+ ],
+ "pg_top_by_calls": [
+  {
+   "calls_per_scenario": 34.65,
+   "mean_ms": 0.01,
+   "query": "select status from telegram_update_jobs where bot = $2 and update_id = $1::bigint"
+  },
+  {
+   "calls_per_scenario": 6.09,
+   "mean_ms": 0.009,
+   "query": "select role::text as role, is_blocked, language_code from users where telegram_id = $1"
+  },
+  {
+   "calls_per_scenario": 5.56,
+   "mean_ms": 0.002,
+   "query": "select btrim( regexp_replace( regexp_replace( lower( translate( coalesce(p_input, $2), -- الطيُّ واحداً بواحدٍ ثمَّ الحذفُ (تشكيلٌ وتطويلٌ) في الذيلِ. $3, $4 ) "
+  },
+  {
+   "calls_per_scenario": 4.78,
+   "mean_ms": 2.607,
+   "query": "select claim_notification_delivery() result"
+  },
+  {
+   "calls_per_scenario": 4.77,
+   "mean_ms": 0.017,
+   "query": "select request_id from notification_outbox where id = $1::uuid"
+  },
+  {
+   "calls_per_scenario": 4.77,
+   "mean_ms": 0.01,
+   "query": "select acked_at from rider_trip_event_receipts where delivery_id = $1::uuid"
+  },
+  {
+   "calls_per_scenario": 4.77,
+   "mean_ms": 0.036,
+   "query": "select ru.telegram_id::text as rider_telegram_id, ru.language_code as rider_language, du.full_name as driver_name, d.plate_number as plate, d.vehicle_type::text"
+  },
+  {
+   "calls_per_scenario": 4.06,
+   "mean_ms": 0.015,
+   "query": "select status::text as status, assigned_driver_id::text as assigned from orders where id = $1"
+  },
+  {
+   "calls_per_scenario": 4.06,
+   "mean_ms": 0.685,
+   "query": "select enqueue_rider_trip_notice($1::uuid, $2::text) as r"
+  },
+  {
+   "calls_per_scenario": 4.06,
+   "mean_ms": 0.024,
+   "query": "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.phone, d.verification_status, a.is_available, (d.last_location is not null) as has_location, "
+  },
+  {
+   "calls_per_scenario": 3.57,
+   "mean_ms": 0.377,
+   "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+  },
+  {
+   "calls_per_scenario": 3.05,
+   "mean_ms": 0.053,
+   "query": "select kind, version, accepted_at from list_user_consents($1)"
+  },
+  {
+   "calls_per_scenario": 2.82,
+   "mean_ms": 1.665,
+   "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+  },
+  {
+   "calls_per_scenario": 2.82,
+   "mean_ms": 0.216,
+   "query": "select list_rider_trip_events($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.78,
+   "mean_ms": 0.001,
+   "query": "select $1 in ($2 /*, ... */)"
+  },
+  {
+   "calls_per_scenario": 2.22,
+   "mean_ms": 0.001,
+   "query": "begin"
+  },
+  {
+   "calls_per_scenario": 2.03,
+   "mean_ms": 0.022,
+   "query": "select id, code, name_ar, name_en from cities where is_active = $1 order by name_ar"
+  },
+  {
+   "calls_per_scenario": 2.03,
+   "mean_ms": 0.362,
+   "query": "select (record_attendance($1::uuid, $2, $3) ->> $4)::boolean as ok"
+  },
+  {
+   "calls_per_scenario": 2.03,
+   "mean_ms": 0.011,
+   "query": "select id from orders where assigned_driver_id = $1::uuid and status in ($2 /*, ... */) limit $3"
+  },
+  {
+   "calls_per_scenario": 1.69,
+   "mean_ms": 0.001,
+   "query": "select case p_kind -- ١ = حرجٌ: استغاثةٌ، وحالةُ رحلةٍ نشطةٍ، ومطالبةُ إسنادٍ لها مؤقّتٌ يجري. when $2 then $3 when $4 then $5 when $6 then $7 when $8 then $9 w"
+  }
+ ]
+}
