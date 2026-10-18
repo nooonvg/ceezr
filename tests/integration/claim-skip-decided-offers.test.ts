@@ -29,7 +29,6 @@ import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts"
 import {
   type ActiveCityHandle,
   ensureActiveCity,
-  restoreCityBaseline,
 } from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -194,19 +193,6 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     const admin = createSql({ connectionString: adminUrl.toString() });
     await admin.unsafe(`drop database if exists "${isoDatabaseName}" with (force)`);
     await admin.end({ timeout: 5 });
-    return;
-    await sql`delete from order_offers where order_id in (
-      select o.id from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id
-      where u.telegram_id = ${RIDER_TELEGRAM_ID}::bigint)`;
-    await sql`delete from orders where rider_id in (
-      select id from riders where user_id in (
-        select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint)))`;
-    await sql`delete from riders where user_id in (
-      select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint))`;
-    await sql`delete from drivers where user_id in (
-      select id from users where telegram_id = ${DRIVER_TELEGRAM_ID}::bigint)`;
-    await sql`delete from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint)`;
-    await restoreCityBaseline(sql, cityHandle);
   });
 
   it("١) المحسومُ لا يُلتقطُ: صفُّهُ يبقى `pending` بعدَّدِ محاولاتٍ كما هو", async () => {
