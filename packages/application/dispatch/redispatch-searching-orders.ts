@@ -95,14 +95,6 @@ export interface RedispatchDependencies {
    */
   readonly limit: number;
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
-  /**
-   * `LOAD-01 · P4` — أقصى ما يُعالَجُ من طلباتِ الشوطِ في آنٍ. الافتراضُ 1 = التسلسلُ القائمُ
-   * حرفيّاً (العاملُ الدوريُّ عليه). الطلباتُ تُبدأُ بترتيبِ النافذةِ (الأقدمُ أولاً) والتقريرُ
-   * بترتيبِها كذلك؛ وكلُّ بثٍّ ذرّيٌّ في القاعدةِ (`open_offer_round` يحسمُ الدورةَ، والقبولُ
-   * يحسمُه `driver_accept_offer`) فلا يُغيّرُ التوازي بين **طلباتٍ مختلفةٍ** معنى العرضِ ولا
-   * يفتحُ إسناداً مزدوجاً. الشوطُ نفسُه يبقى واحداً لكلِّ مدينةٍ (مانعُ التداخلِ في المُجدوِلِ).
-   */
-  readonly concurrency?: number;
   /** خطّافُ قياسٍ اختياريٌّ يلفُّ معالجةَ كلِّ طلبٍ (أثرُ التشخيصِ)؛ غيابُه = نداءٌ مباشر. */
   readonly aroundOrder?: <T>(orderId: OrderId, fn: () => Promise<T>) => Promise<T>;
 }
@@ -187,24 +179,9 @@ export async function redispatchSearchingOrders(
    * معاملاتٌ إضافيّة. فكلُّ ما يحكم دورةَ إعادةٍ يحكم الدورةَ الأولى: نصفُ
    * القطر، والوزنان، وحجمُ الدفعة، وحدُّ الدورات، واستبعادُ من له عرضٌ حيّ.
    */
-  const orders = found.value;
-  const results: Awaited<ReturnType<typeof broadcastOffers>>[] = new Array(orders.length);
-  const width = Math.max(1, Math.min(orders.length, Math.trunc(deps.concurrency ?? 1)));
-  let next = 0;
-  const lane = async (): Promise<void> => {
-    for (;;) {
-      const i = next;
-      next += 1;
-      if (i >= orders.length) return;
-      const orderId = (orders[i] as SearchingOrderRef).orderId;
-      const work = () => broadcastOffers({ orderId }, broadcast);
-      results[i] = await (deps.aroundOrder ? deps.aroundOrder(orderId, work) : work());
-    }
-  };
-  await Promise.all(Array.from({ length: width }, lane));
-
-  for (const [i, order] of orders.entries()) {
-    const result = results[i] as Awaited<ReturnType<typeof broadcastOffers>>;
+  for (const order of found.value) {
+    const work = () => broadcastOffers({ orderId: order.orderId }, broadcast);
+    const result = await (deps.aroundOrder ? deps.aroundOrder(order.orderId, work) : work());
 
     if (result.ok) {
       rebroadcast.push(order.orderId);

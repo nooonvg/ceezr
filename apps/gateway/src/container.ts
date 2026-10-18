@@ -187,7 +187,10 @@ import {
 import { createRideRequestCommand } from "../../../packages/infrastructure/transport/ride-request-store.ts";
 import type { RoutingProvider, RoutingQuota } from "../../../packages/maps/index.ts";
 import { createOsrmProvider } from "../../../packages/maps/index.ts";
-import { DB_QUERY_DEADLINE_MS } from "../../../packages/shared/config/connection-budget.ts";
+import {
+  DB_POOL_MAX,
+  DB_QUERY_DEADLINE_MS,
+} from "../../../packages/shared/config/connection-budget.ts";
 import type { AppConfig } from "../../../packages/shared/config/index.ts";
 import { type CityId, systemClock } from "../../../packages/shared/kernel/index.ts";
 import { resolveGpsPolicy } from "../../../packages/tracking/config.ts";
@@ -292,8 +295,8 @@ export { asIdentifyingSender, asOutboundSender, asSupportSender };
 export interface Container {
   readonly handler: UpdateHandler;
   readonly sql: Sql;
-  /** تجمُّعُ الحلقاتِ الخلفيّةِ التسلسليّةِ؛ يساوي `sql` ما لم يُفصَل (تجربةُ عزلٍ LOAD-01 P4). */
-  readonly backgroundSql: Sql;
+  /** `ADR 0289` — اتّصالُ شوطِ البثِّ الفوريِّ (`gatewayDispatch`)؛ يُغلَقُ مع `sql` عندَ الإيقافِ. */
+  readonly dispatchSql: Sql;
   /**
    * ADR 0287 — خطّافُ الإشارةِ الآنيةِ لأطوارِ الرحلةِ: يُركَّبُ في `index.ts` بعدَ
    * إنشاءِ القناةِ؛ فإن أُودِعَ طورٌ جديدٌ بُثَّ `trip:update` للراكبِ فورًا (لا
@@ -515,14 +518,6 @@ export interface ContainerOverrides {
  * الضمانةَ المعلنةَ.
  */
 const IMMEDIATE_REDISPATCH_LIMIT = 50;
-/**
- * `LOAD-01 · P4` — طلبانِ في آنٍ داخلَ شوطِ المدينةِ الواحدِ (لا شوطانِ). الشوطُ على تجمُّعِ
- * الطلبِ المشتركِ عمداً فيتباطأُ حينَ يزدحمُ التجمُّعُ ولا يُغرقُه؛ وتسلسلُه التامُّ جعلَ طاقتَه
- * ~14 طلباً جديداً/ث تحتَ موجةِ 500 (`b9-C1-500`: ~4 رحلاتٍ × ~12ms انتظاراً لكلِّ طلبٍ) دونَ
- * وصولٍ ~17/ث. القيمةُ مقيسةٌ لا مُخمَّنةٌ — انظرْ أدلّةَ `b9-C2-500` وما بعدها.
- */
-const IMMEDIATE_REDISPATCH_CONCURRENCY =
-  Number(process.env.DISPATCH_DIAG_PASS_CONCURRENCY ?? "") || 2;
 
 /**
  * حصّةُ مزوّدِ التوجيهِ المُعلَنةُ (`REQ-09` · `ADR 0190`). على `Redis` متى وُجِدَ:
@@ -550,12 +545,8 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    * `F11-04` · `ADR 0197` — **مهلةُ استعلامٍ من العميلِ**: بطءٌ على جدولٍ واحدٍ كانَ يحتجزُ
    * اتّصالاتِ التجمُّعِ الخمسةَ فيقفُ كلُّ مسارٍ طولَ البطءِ. والإلغاءُ مرصودٌ لا صامتٌ.
    */
-  const diagRequestPoolMax = Number(process.env.DISPATCH_DIAG_REQUEST_POOL ?? "0");
   const sql = createSql({
     connectionString: config.databaseUrl,
-    ...(Number.isInteger(diagRequestPoolMax) && diagRequestPoolMax > 0
-      ? { max: diagRequestPoolMax }
-      : {}),
     queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayRequest,
     onQueryDeadline: ({ deadlineMs }) =>
       log("db.query_deadline_exceeded", { pool: "gatewayRequest", deadlineMs }),
@@ -945,32 +936,33 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    * تُبقي الاستجابةَ للكتابةِ والبثِّ وحدهما، والدوريّةَ (20ث) أرضًا صلبةً.
    */
   // `LOAD-01 · P4` — أثرٌ تشخيصيٌّ اختياريٌّ (`DISPATCH_TRACE_FILE`)؛ غيابُه = المسارُ الأصلُ حرفيّاً.
-  const dispatchTrace = createDispatchTrace({
-    file: process.env.DISPATCH_TRACE_FILE,
-    sql,
-    probeSql:
-      process.env.DISPATCH_TRACE_FILE !== undefined && process.env.DISPATCH_TRACE_FILE !== ""
-        ? createSql({ connectionString: config.databaseUrl, max: 1 })
-        : null,
+  const dispatchTrace = createDispatchTrace({ file: process.env.DISPATCH_TRACE_FILE, sql });
+  /**
+   * `LOAD-01 · P4` · `ADR 0289` — **شوطُ البثِّ الفوريِّ على اتّصالِه المُعلَنِ** (`gatewayDispatch`)
+   * لا على تجمُّعِ الطلبِ. الشوطُ تسلسليٌّ لكلِّ مدينةٍ، فطاقتُه = 1 ÷ مجموعِ رحلاتِ الطلبِ الواحدِ،
+   * وكلُّ رحلةٍ على تجمُّعِ الطلبِ كانت تنتظرُ اتّصالاً خلفَ حركةِ الراكبِ والسائقِ. تجربةُ العزلِ
+   * بمتغيّرٍ واحدٍ (`b9-isoPool1-500`): انتظارُ ما قبلَ أوّلِ معالجةٍ p95 من ~35ث إلى ~3ث.
+   * المنافذُ هي منافذُ `matching` نفسُها مبنيّةً على هذا الاتّصالِ (والعدّادُ على كاتبِ العروضِ
+   * باقٍ)، فلا يتغيّرُ معنى عرضٍ ولا جولةٍ: الذرّيّةُ في `open_offer_round` و`driver_accept_offer`.
+   */
+  const dispatchSql = createSql({
+    connectionString: config.databaseUrl,
+    max: DB_POOL_MAX.gatewayDispatch,
+    queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayDispatch,
+    onQueryDeadline: ({ deadlineMs }) =>
+      log("db.query_deadline_exceeded", { pool: "gatewayDispatch", deadlineMs }),
   });
-  // تجربةُ عزلٍ تشخيصيّةٌ (`DISPATCH_DIAG_DEDICATED_POOL=<n>`): الشوطُ الفوريُّ على تجمُّعٍ
-  // مخصَّصٍ خارجَ تجمُّعِ الطلبِ — متغيّرٌ واحدٌ هو انتظارُ التجمُّعِ. غيابُه = المسارُ الأصلُ.
-  const diagPoolMax = Number(process.env.DISPATCH_DIAG_DEDICATED_POOL ?? "0");
-  const dispatchSql =
-    Number.isInteger(diagPoolMax) && diagPoolMax > 0
-      ? createSql({ connectionString: config.databaseUrl, max: diagPoolMax })
-      : sql;
-  const immediateMatching =
-    dispatchSql === sql
-      ? matching
-      : {
-          ...matching,
-          orders: createOrderRepository(dispatchSql),
-          offers: createOfferRepository(dispatchSql),
-          candidates: createDriverCandidateRepository(dispatchSql),
-          settings: createSettingsRepository(dispatchSql),
-          offerWriter: createOfferWriter(dispatchSql),
-        };
+  const immediateMatching = {
+    ...matching,
+    orders: createOrderRepository(dispatchSql),
+    offers: createOfferRepository(dispatchSql),
+    candidates: createDriverCandidateRepository(dispatchSql),
+    settings: createSettingsRepository(dispatchSql),
+    offerWriter:
+      overrides.metrics === undefined
+        ? createOfferWriter(dispatchSql)
+        : instrumentOfferWriter(createOfferWriter(dispatchSql), overrides.metrics),
+  };
   const immediateRedispatchScheduler = createImmediateRedispatchScheduler({
     run: async (cityId) => {
       const finder = createSearchingOrderFinder(dispatchSql);
@@ -979,7 +971,6 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         finder: pass?.finder ?? finder,
         broadcast: pass?.broadcast ?? immediateMatching,
         limit: IMMEDIATE_REDISPATCH_LIMIT,
-        concurrency: IMMEDIATE_REDISPATCH_CONCURRENCY,
         ...(pass ? { aroundOrder: pass.aroundOrder } : {}),
         log,
       });
@@ -1344,7 +1335,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         : {}),
     }),
     sql,
-    backgroundSql: dispatchSql,
+    dispatchSql,
     driverSender,
     financial,
     trackingTokens: trackingTokens,
@@ -1406,7 +1397,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     },
     close: async () => {
       distributedTrackingBus?.stop();
-      await sql.end({ timeout: 5 });
+      await Promise.all([sql.end({ timeout: 5 }), dispatchSql.end({ timeout: 5 })]);
     },
   };
 }

@@ -290,6 +290,8 @@ describe("رمزُ خروجِ الحاجزِ لا نصُّه", () => {
         "createSql({ max: DB_POOL_MAX.workerLocks });",
         "createSql({ max: DB_POOL_MAX.adminRequest, queryDeadlineMs: DB_QUERY_DEADLINE_MS.adminRequest });",
         "createSql({ max: DB_POOL_MAX.restoreVerifier });",
+        // `ADR 0289` — دورُ شوطِ البثِّ الفوريِّ مُعلَنٌ فلا بدَّ له من مُستدعٍ في الجذرِ المزروعِ.
+        "createSql({ max: DB_POOL_MAX.gatewayDispatch, queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayDispatch });",
         call,
         "",
       ].join("\n"),

@@ -2014,10 +2014,7 @@ if (drainLanes.invalid)
   });
 updateDrainer = startTelegramUpdateDrainer(
   {
-    // تجربةُ عزلٍ (`DISPATCH_DIAG_DRAINER_BG=1`): حلقةُ الالتقاطِ على تجمُّعِ الحلقاتِ الخلفيّةِ.
-    queue: createPostgresTelegramUpdateQueue(
-      process.env.DISPATCH_DIAG_DRAINER_BG === "1" ? container.backgroundSql : container.sql,
-    ),
+    queue: createPostgresTelegramUpdateQueue(container.sql),
     handler: container.handler,
     log,
     // SANDBOX-SOAK-01: مساراتٌ متوازيةٌ لكلِّ مستخدم. الافتراضُ ١ = السلوكُ التسلسليُّ القائم،
