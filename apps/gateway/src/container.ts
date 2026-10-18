@@ -65,7 +65,6 @@ import type {
 import type { TranslationFailure } from "../../../packages/domain/i18n-translation/index.ts";
 import { DEFAULT_SESSION_POLICY } from "../../../packages/domain/tracking/session.ts";
 import { createSql, type Sql } from "../../../packages/infrastructure/db/client.ts";
-import { createDispatchTrace } from "./background/dispatch-trace.ts";
 import {
   createDispatchRpc,
   createDriverCandidateRepository,
@@ -198,6 +197,7 @@ import {
   createSupportAdvicePublisher,
   createTicketAdvisor,
 } from "./agent-advisor.ts";
+import { createDispatchTrace } from "./background/dispatch-trace.ts";
 import {
   createImmediateRedispatchScheduler,
   IMMEDIATE_REDISPATCH_DEBOUNCE_MS,
@@ -545,7 +545,9 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
   const diagRequestPoolMax = Number(process.env.DISPATCH_DIAG_REQUEST_POOL ?? "0");
   const sql = createSql({
     connectionString: config.databaseUrl,
-    ...(Number.isInteger(diagRequestPoolMax) && diagRequestPoolMax > 0 ? { max: diagRequestPoolMax } : {}),
+    ...(Number.isInteger(diagRequestPoolMax) && diagRequestPoolMax > 0
+      ? { max: diagRequestPoolMax }
+      : {}),
     queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayRequest,
     onQueryDeadline: ({ deadlineMs }) =>
       log("db.query_deadline_exceeded", { pool: "gatewayRequest", deadlineMs }),

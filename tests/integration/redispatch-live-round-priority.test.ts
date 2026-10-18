@@ -13,10 +13,20 @@
  *  3. لا استبعادَ: الحيُّ الحديثُ يملأُ ما فضلَ من النافذةِ، والمستنفدُ يبقى آخراً.
  */
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { LIVE_ROUND_ESCALATION_GRACE_SECONDS } from "../../packages/application/dispatch/redispatch-searching-orders.ts";
+import {
+  LIVE_ROUND_ESCALATION_GRACE_SECONDS,
+  redispatchSearchingOrders,
+} from "../../packages/application/dispatch/redispatch-searching-orders.ts";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
-import { createSearchingOrderFinder } from "../../packages/infrastructure/dispatch/dispatch-adapters.ts";
-import type { CityId } from "../../packages/shared/kernel/index.ts";
+import {
+  createDriverCandidateRepository,
+  createOfferRepository,
+  createOfferWriter,
+  createSearchingOrderFinder,
+} from "../../packages/infrastructure/dispatch/dispatch-adapters.ts";
+import { createSettingsRepository } from "../../packages/infrastructure/policy/settings-repository.ts";
+import { createOrderRepository } from "../../packages/infrastructure/transport/order-adapters.ts";
+import { type CityId, systemClock } from "../../packages/shared/kernel/index.ts";
 import {
   type ActiveCityHandle,
   ensureActiveCity,
@@ -64,7 +74,9 @@ beforeAll(async () => {
     telegramId: TG_DRIVER,
     name: "سائق أولوية الجولة الحية",
   });
-  const [u] = await sql<{ id: string }[]>`select user_id as id from drivers where id = ${driverRowId}::uuid`;
+  const [u] = await sql<
+    { id: string }[]
+  >`select user_id as id from drivers where id = ${driverRowId}::uuid`;
   if (u === undefined) throw new Error("drivers: الصف غير موجود");
   driverUserId = u.id;
 });
@@ -145,5 +157,36 @@ describeIf("LOAD-01 P4 — الجولة الحية لا تحجب الطلب ال
     // نافذةٌ واسعةٌ: لا استبعاد.
     const wide = await window(50);
     expect(wide).toEqual([staleLive, expired, fresh, ...freshLive, exhausted]);
+  });
+
+  it("الشوطُ يقرأُ إعداداتِ المدينةِ مرّةً واحدةً مهما عدَدُ طلباتِه (لا رحلةَ لكلِّ طلبٍ)", async () => {
+    const ids = [await order(0, 30), await order(0, 20), await order(0, 10)];
+    const settings = createSettingsRepository(sql);
+    let reads = 0;
+    const counted = {
+      ...settings,
+      findByCity: (id: Parameters<typeof settings.findByCity>[0]) => {
+        reads += 1;
+        return settings.findByCity(id);
+      },
+    };
+    const report = await redispatchSearchingOrders(cityId, {
+      finder: createSearchingOrderFinder(sql),
+      broadcast: {
+        orders: createOrderRepository(sql),
+        offers: createOfferRepository(sql),
+        candidates: createDriverCandidateRepository(sql),
+        settings: counted,
+        offerWriter: createOfferWriter(sql),
+        clock: systemClock,
+      },
+      limit: 50,
+    });
+    expect(report.ok).toBe(true);
+    if (!report.ok) return;
+    // الطلباتُ الثلاثةُ فُحصت فعلاً (لا سائقَ متاحاً قربَها في هذا الاختبارِ فلا عرضَ)،
+    // وقبلَ الإصلاحِ كانت القراءاتُ 1 + عددَ المفحوصِ (13 على قاعدةِ الاختبارِ المشتركةِ).
+    expect(report.value.examined).toBeGreaterThanOrEqual(ids.length);
+    expect(reads).toBe(1);
   });
 });

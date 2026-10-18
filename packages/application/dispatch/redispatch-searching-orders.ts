@@ -144,6 +144,28 @@ export async function redispatchSearchingOrders(
   const found = await deps.finder.findSearching(cityId, deps.limit, fairWindow);
   if (!found.ok) return found;
 
+  /**
+   * `LOAD-01 · P4` — **إعداداتُ المدينةِ تُقرَأُ مرّةً للشوطِ لا مرّةً لكلِّ طلبٍ.** الشوطُ
+   * تسلسليٌّ على تجمُّعِ البوابةِ المشتركِ، وكلُّ رحلةٍ إلى القاعدةِ فيه تنتظرُ اتّصالاً: قيسَ
+   * في موجةِ 500 (`b9-fixA2-500`) أنَّ متوسّطَ النداءِ ~9–13ms جُلُّه انتظارُ التجمُّعِ (`select 1`
+   * عبرَه 28ms وعلى اتّصالٍ مخصَّصٍ 2.4ms)، والطلبُ يكلّفُ خمسَ رحلاتٍ إحداها إعادةُ قراءةِ
+   * الإعداداتِ نفسِها التي قرأها الشوطُ للتوِّ. القراءةُ الأولى للشوطِ هي المصدرُ: نجاحُها
+   * يُعادُ لكلِّ طلبٍ في المدينةِ نفسِها، وفشلُها لا يُخزَّنُ (يقرأُ كلُّ طلبٍ لنفسِه كما كانَ،
+   * فلا يتحوّلُ عطلٌ عابرٌ إلى رفضِ شوطٍ كاملٍ). عمرُ النسخةِ عمرُ الشوطِ (ثوانٍ)، وهو أضيقُ
+   * من نافذةِ أيِّ تعديلٍ إداريٍّ على الإعداداتِ؛ ومسارُ إنشاءِ الطلبِ خارجَ الشوطِ لا يتغيّر.
+   */
+  const passSettings = rawSettings;
+  const broadcast: BroadcastDependencies = passSettings.ok
+    ? {
+        ...deps.broadcast,
+        settings: {
+          ...deps.broadcast.settings,
+          findByCity: async (id) =>
+            id === cityId ? passSettings : deps.broadcast.settings.findByCity(id),
+        },
+      }
+    : deps.broadcast;
+
   const rebroadcast: OrderId[] = [];
   const stillNoDriver: OrderId[] = [];
   const exhausted: OrderId[] = [];
@@ -156,7 +178,7 @@ export async function redispatchSearchingOrders(
      * معاملاتٌ إضافيّة. فكلُّ ما يحكم دورةَ إعادةٍ يحكم الدورةَ الأولى: نصفُ
      * القطر، والوزنان، وحجمُ الدفعة، وحدُّ الدورات، واستبعادُ من له عرضٌ حيّ.
      */
-    const result = await broadcastOffers({ orderId: order.orderId }, deps.broadcast);
+    const result = await broadcastOffers({ orderId: order.orderId }, broadcast);
 
     if (result.ok) {
       rebroadcast.push(order.orderId);

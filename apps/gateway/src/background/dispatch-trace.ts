@@ -160,11 +160,12 @@ export function createDispatchTrace(options: {
         current = null;
       };
 
-      const timed = <A extends unknown[], R>(
-        phase: Phase,
-        fn: (...args: A) => Promise<R>,
-        onCall?: (...args: A) => void,
-      ) =>
+      const timed =
+        <A extends unknown[], R>(
+          phase: Phase,
+          fn: (...args: A) => Promise<R>,
+          onCall?: (...args: A) => void,
+        ) =>
         async (...args: A): Promise<R> => {
           onCall?.(...args);
           const t0 = performance.now();
@@ -188,7 +189,10 @@ export function createDispatchTrace(options: {
             current = { orderId: String(orderId), startAt: Date.now(), phases: {}, calls: 0 };
           }),
         },
-        settings: { ...b.settings, findByCity: timed("settings", b.settings.findByCity.bind(b.settings)) },
+        settings: {
+          ...b.settings,
+          findByCity: timed("settings", b.settings.findByCity.bind(b.settings)),
+        },
         offers: { ...b.offers, findByOrder: timed("offers", b.offers.findByOrder.bind(b.offers)) },
         candidates: {
           ...b.candidates,
@@ -198,7 +202,10 @@ export function createDispatchTrace(options: {
           ),
           findAvailableInCity: timed("all", b.candidates.findAvailableInCity.bind(b.candidates)),
         },
-        offerWriter: { ...b.offerWriter, openRound: timed("openRound", b.offerWriter.openRound.bind(b.offerWriter)) },
+        offerWriter: {
+          ...b.offerWriter,
+          openRound: timed("openRound", b.offerWriter.openRound.bind(b.offerWriter)),
+        },
       } as BroadcastDependencies;
 
       let finderMs = 0;
