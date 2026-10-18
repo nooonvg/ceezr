@@ -1,0 +1,69 @@
+{
+  "id": "load01-batch10-accept500",
+  "goal": "LOAD-01 · الدفعةُ العاشرة: قبولُ 250 ثمّ 500 على مرشّحٍ ملتزَمٍ بـ DB_POOL_MAX.gatewayRequest = 6 (gatewayDispatch = 1 والباقي كما هو) بتفويضِ المالكِ لتجربةِ قبولٍ معزولةٍ لا نشر، وفصلُ حكمِ قبولِ الحملِ عن جاهزيّةِ النشر.",
+  "canonical_source": [
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/ACCEPTANCE-PROTOCOL.md",
+    "docs/adr/0073-connection-budget-is-computed-not-narrated.md",
+    "docs/adr/0289-immediate-dispatch-dedicated-connection.md"
+  ],
+  "implementation": [
+    "packages/shared/config/connection-budget.ts",
+    "tests/unit/connection-budget.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md", "docs/ROADMAP-MASTER.md"],
+  "affected_docs": [
+    "docs/adr/0289-immediate-dispatch-dedicated-connection.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-10-LOAD01-ACCEPT500.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-9-LOAD01-P4.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/SHA256SUMS",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/db-audit-post.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/db-audit-pre.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/diag-env.env",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/gateway-event-counts.tsv",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/load-events.jsonl.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/miniapp-load-events.jsonl.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/mock-stats-post.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/mock-stats-pre.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/offers.csv.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/orders.csv.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/p4-decompose.out.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/pgss-top.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/resources.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/timeline.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-250/wave-report.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/SHA256SUMS",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/db-audit-post.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/db-audit-pre.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/diag-env.env",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/gateway-event-counts.tsv",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/load-events.jsonl.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/miniapp-load-events.jsonl.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/mock-stats-post.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/mock-stats-pre.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/offers.csv.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/orders.csv.gz",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/p4-decompose.out.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/pgss-top.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/resources.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/telegram-update-queue-wait.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/timeline.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/b10-acc-500/wave-report.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/copy-evidence.sh",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch10/environment.md",
+    "docs/roadmap/execution/STATUS.md"
+  ],
+  "decision": "المرشّحُ d3c4b90d (gatewayRequest = 6، الميزانيّةُ 22 + 1 عابر) قيسَ: 250 PASS و500 FAIL على G1 (96.81%). لم يُعتمَد: gatewayRequest باقٍ 5 (الميزانيّةُ 21) واختبارٌ مُثبَّتٌ للميزانيّةِ مقابلَ render.yaml يحرسُه.",
+  "tests": [
+    "bun test tests/unit/connection-budget.test.ts tests/unit/check-connection-budget.test.ts",
+    "bun scripts/check-connection-budget.ts"
+  ],
+  "evidence": "raw/batch10/: b10-acc-250 (PASS: G1 100% 3822/3822، P2 680ms، P4 6139ms) وb10-acc-500 (FAIL: G1 96.81% 3677/3798، P2 945ms، P4 11366ms، G4 CLEAN) على d3c4b90d بـ code_dirty=0، مع SHA256SUMS وenvironment.md وتفكيكِ انتظارِ وظائفِ تيليجرام.",
+  "constraints": [
+    "لا تغييرَ لحدودِ القبولِ ولا معدّلِ تيليجرام ولا تعريفِ السيناريو ولا مزيجِ الحمل",
+    "لا نشرَ ولا تغييرَ لإعدادِ النشرِ أو خطّةِ القاعدة (autoDeploy: false)",
+    "لا 750/1000 ولا SOAK-01 قبلَ قبولِ 500"
+  ],
+  "limitations": "المقعدُ (2 vCPU) متشبِّعٌ عندَ ~21 سيناريو/ث عندَ 250 و500؛ عندَ 500 في الحلقةِ المغلقةِ يتراكمُ الطابورُ أمامَ أضيقِ مرحلة (HTTP بالطلبِ 5 أو مستنزِفُ تيليجرام بالطلبِ 6). ملاءمةُ 22 اتّصالاً للإنتاج NOT PROVEN: حجمُ الحوسبةِ وmax_connections وpool size والمحجوزُ غيرُ مُتحقَّقة.",
+  "status": "FAIL"
+}

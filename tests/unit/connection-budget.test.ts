@@ -9,6 +9,8 @@
  */
 
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { MAX_JOB_CONCURRENCY } from "../../apps/workers/src/container.ts";
 import {
   BUDGETED_PROCESSES,
@@ -22,6 +24,7 @@ import {
   JOB_CONCURRENCY,
   TRANSIENT_POOL_ROLES,
 } from "../../packages/shared/config/connection-budget.ts";
+import { analyseManifest, MANIFEST_NAME } from "../../scripts/check-connection-budget.ts";
 
 const budget = computeConnectionBudget(DECLARED_TOPOLOGY);
 
@@ -164,5 +167,38 @@ describe("حسابُ الميزانيّةِ", () => {
     expect(summary).toContain(budget.formula);
     expect(summary).toContain(String(budget.steadyStateTotal));
     expect(summary).toContain(String(budget.transientPeak));
+  });
+});
+
+describe("الميزانيّةُ المحسوبةُ المُثبَّتةُ (LOAD-01 · الدفعةُ العاشرة)", () => {
+  // رقمٌ مُثبَّتٌ عمداً لا مُشتقٌّ: تغييرُ أيِّ سقفٍ يُسقطُ هذا الاختبارَ فيُقرأُ الأثرُ على
+  // الميزانيّةِ صراحةً في طلبِ الدمجِ نفسِه (ADR 0073)، لا يمرُّ صامتاً. المرشّحُ `gatewayRequest = 6`
+  // (22) قيسَ ولم يُعتمَد — `BATCH-10-LOAD01-ACCEPT500.md`.
+  const budget = computeConnectionBudget(DECLARED_TOPOLOGY);
+
+  it("السقوفُ المعتمدةُ: الطلبُ 5 والشوطُ 1 والمهامُّ 5 والأقفالُ JOB_CONCURRENCY+1 واللوحةُ 5", () => {
+    expect(DB_POOL_MAX.gatewayRequest).toBe(5);
+    expect(DB_POOL_MAX.gatewayDispatch).toBe(1);
+    expect(DB_POOL_MAX.workerJobs).toBe(5);
+    expect(DB_POOL_MAX.workerLocks).toBe(JOB_CONCURRENCY + 1);
+    expect(JOB_CONCURRENCY).toBe(4);
+    expect(DB_POOL_MAX.adminRequest).toBe(5);
+    expect(DB_POOL_MAX.restoreVerifier).toBe(1);
+  });
+
+  it("الحالةُ المستقرّةُ على طوبولوجيا render.yaml = 21: بوّابةٌ واحدةٌ تحملُ (5+1) + (5+5) + 5", () => {
+    const manifest = readFileSync(join(import.meta.dir, "..", "..", MANIFEST_NAME), "utf8");
+    expect(analyseManifest(manifest)).toEqual([]);
+    expect(budget.rows).toHaveLength(3);
+    const gateway = budget.rows.find((row) => row.process === "gateway");
+    expect(gateway?.instances).toBe(1);
+    expect(gateway?.perInstance).toBe(21);
+    expect(budget.steadyStateTotal).toBe(21);
+  });
+
+  it("restoreVerifier عابرٌ: يُعلَنُ في الذروةِ العابرةِ (1) ولا يدخلُ مجموعَ الحالةِ المستقرّة", () => {
+    expect(TRANSIENT_POOL_ROLES).toEqual(["restoreVerifier"]);
+    expect(budget.transientPeak).toBe(1);
+    for (const row of budget.rows) expect(row.roles).not.toContain("restoreVerifier");
   });
 });
