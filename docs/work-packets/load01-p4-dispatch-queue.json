@@ -1,0 +1,47 @@
+{
+  "id": "load01-p4-dispatch-queue",
+  "goal": "LOAD-01 · الدفعةُ التاسعة: تفكيكُ زمنِ P4 عندَ 500 لكلِّ طلبٍ بمعرّفِه، وإصلاحُ سببِه في الشيفرة (طابورُ الشوطِ الفوريِّ قبلَ أوّلِ معالجةٍ على تجمُّعِ طلبِ البوّابةِ المشترك)، وقبولُ 250 ثمّ 500 من قاعدةٍ نظيفةٍ برأسٍ معروف.",
+  "canonical_source": [
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/ACCEPTANCE-PROTOCOL.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-8-LOAD01-P4.md"
+  ],
+  "implementation": [
+    "apps/gateway/src/background/dispatch-trace.ts",
+    "apps/gateway/src/background/telegram-update-drainer.ts",
+    "apps/gateway/src/container.ts",
+    "packages/application/dispatch/redispatch-searching-orders.ts",
+    "packages/infrastructure/db/schema-contract.ts",
+    "packages/infrastructure/db/telegram-update-queue.ts",
+    "packages/infrastructure/dispatch/dispatch-adapters.ts",
+    "packages/shared/config/connection-budget.ts",
+    "scripts/lib/skip-registry.ts",
+    "supabase/migrations/20261018140000_load01_telegram_update_batch_claim.sql",
+    "tests/integration/redispatch-live-round-priority.test.ts",
+    "tests/integration/telegram-update-batch-claim.test.ts",
+    "tests/unit/check-connection-budget.test.ts",
+    "tests/unit/telegram-update-drainer-batch-claim.test.ts",
+    "deploy/capacity-run/monitor/p4-decompose.py"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md", "docs/ROADMAP-MASTER.md"],
+  "affected_docs": [
+    "docs/adr/0289-immediate-dispatch-dedicated-connection.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-9-LOAD01-P4.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-8-LOAD01-P4.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/RESULT.md"
+  ],
+  "decision": "ADR 0289: دورُ تجمُّعٍ gatewayDispatch=1 لشوطِ البثِّ الفوريِّ (تجمُّعُ الطلبِ يبقى 5)، والتقاطٌ دُفعيٌّ مرتّبٌ لوظائفِ تحديثاتِ تيليجرام (claim_telegram_update_jobs_for_bot)، وتأخيرُ الجولةِ الحيّةِ الحديثةِ (< 3ث) وحدَها داخلَ النافذةِ العادلةِ بلا تجويعٍ، وقراءةُ إعداداتِ المدينةِ مرّةً للشوط. لا تغييرَ في حدِّ إرسالِ تيليجرام ولا البوتاتِ ولا النافذةِ العادلةِ ولا ذرّيّةِ القبولِ ولا WR-15.",
+  "tests": [
+    "TEST_DATABASE_URL=… bun test tests/integration/redispatch-live-round-priority.test.ts tests/integration/telegram-update-batch-claim.test.ts tests/unit/telegram-update-drainer-batch-claim.test.ts tests/unit/check-connection-budget.test.ts"
+  ],
+  "evidence": "على 1ac6b860: 5 نجاحاتٍ و4 إخفاقاتٍ (3 حالاتٍ مسمّاةٍ + ملفٌّ لا يُحمَّل)؛ على 8959ed48: 10/10. موجاتُ القبولِ على 8959ed48 (code_dirty=0): b9-acc-250 PASS بكلِّ البوابات (P4 7,733ms)، وb9-acc-500 FAIL على P2 (1,016ms > 1,000ms) وP4 11,953ms (كانت 39,254ms على main) وG1 100%. الخامُ في docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch9/.",
+  "constraints": [
+    "لا رفعَ لحدِّ إرسالِ تيليجرام ولا بوتَ إضافيّ",
+    "لا تغييرَ لحدودِ القبول",
+    "لا نشرَ إلى الإنتاج (autoDeploy: false)",
+    "+1 اتّصالٍ على الميزانيةِ — مقارنتُه بخطّةِ القاعدةِ قرارُ سعةِ المالكِ (ADR 0073)"
+  ],
+  "limitations": "موجةُ 500 FAIL على P2: تجمُّعُ طلبِ البوّابةِ (5) يتشبّعُ عندَ ~21 سيناريو/ث على 2 vCPU. عزلٌ تشخيصيٌّ برقعةٍ محلّيّةٍ (الطلبُ 6) اجتازَ كلَّ البوابات، ورفعُه قرارُ سعةٍ للمالكِ لم يُتَّخذ. 750/1000 وSOAK-01 لم تُشغَّل.",
+  "status": "FAIL"
+}

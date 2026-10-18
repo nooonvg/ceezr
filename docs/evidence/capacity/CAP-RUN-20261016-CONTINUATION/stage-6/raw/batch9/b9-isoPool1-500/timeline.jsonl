@@ -1,0 +1,2 @@
+{"t":"2026-10-18T10:09:26+00:00","event":"round.start","round":"b9-isoPool1-500","profile":[{"name":"wave-500","sec":180,"conc":500}],"drain_sec":180,"code_sha":"a3ce0e3410681ebe5a6f249571bd6ebf2bf50643","code_dirty":0,"docs_dirty":0}
+{"t":"2026-10-18T10:09:26+00:00","event":"gateway.pid","pid":"11131"}
