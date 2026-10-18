@@ -972,8 +972,12 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // واحدةٍ: عدّادُ العباراتِ والتكافؤُ الحرفيُّ) وستُّ حالاتٍ في `claim-skip-decided-offers.test.ts`
     // (تخطي المحسومِ في الالتقاطِ: التزامنُ وإعادةُ المحاولةُ والكنسُ) — كلُّها أحكامُ قاعدةٍ
     // لا تُقاسُ إلا على PostgreSQL حقيقيٍّ — خطوتُهما في وظيفةِ التكاملِ على قاعدةٍ حقيقيّةٍ.
-    expect(SKIP_REGISTRY).toHaveLength(199);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1671);
+    // زيادةٌ (الدفعةُ التاسعةُ · LOAD-01 · P4 عندَ 500، ADR 0289): 201 و1676 — حالتانِ في
+    // `redispatch-live-round-priority.test.ts` (A′: الجولةُ الحيّةُ الحديثةُ وحدَها تتأخّرُ بلا تجويعٍ)
+    // وثلاثٌ في `telegram-update-batch-claim.test.ts` (الالتقاطُ الدُّفعيُّ: الترتيبُ و`skip locked` والقصُّ) —
+    // أحكامُ قاعدةٍ لا تُقاسُ إلا على PostgreSQL حقيقيٍّ، وتجري في وظيفةِ التكاملِ.
+    expect(SKIP_REGISTRY).toHaveLength(201);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1676);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {
