@@ -1,10 +1,12 @@
 /**
  * قياسٌ مقارنٌ لمتوسطِ زمنِ `claim_notification_delivery()` بينَ تعريفَينِ للدالةِ
- * (main مقابلَ المرشَّحِ) على قاعدتَينِ متطابقتَي البذرِ — نفسُ منهجيةِ
+ * (main مقابلَ المرشَّحِ) على قاعدتَينِ متطابقتَي البذرِ (طابورٌ من أنواعٍ غيرِ `offer` — `rider_trip_notice`/`order_chat_message`؛ كلفةُ الاستبعادِ تقاسُ على مسحِ المرشحينَ لا على معالجةِ عروضٍ محسومةٍ فعليةٍ) — نفسُ منهجيةِ
  * `outbox-claim-index.test.ts` (بذرٌ فعليٌّ ثمّ ANALYZE ثمّ وسيطُ العيناتِ الدافئةِ).
  * تشغيلٌ يدويٌّ واحدٌ لا اختبارٌ: يُطبعُ الوسيطُ ولا يسقطُ.
+ * الأمرُ الموثقُ (من أصلِ المستودعِ): DATABASE_URL="postgres://..."
+ *   bun run docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/fixAB500b/ab-claim-latency.ts
  */
-import { createSql } from "../packages/infrastructure/db/client.ts";
+import { createSql } from "../../../../../../../packages/infrastructure/db/client.ts";
 
 const url = process.env.DATABASE_URL ?? process.argv[2];
 if (url === undefined) throw new Error("استعمل: DATABASE_URL=... bun scripts/ab-claim-latency.ts");
@@ -71,7 +73,7 @@ async function cleanup(): Promise<void> {
 
 // (٠) إثباتُ اختلافِ التعريفِ بينَ القاعدتَينِ كما هو مقصودٌ
 const [def] = await pool<{ len: string; hasSkip: boolean }[]>`
-  select length(prosrc)::text as len, prosrc like '%decided%' as has_skip
+  select length(prosrc)::text as len, prosrc like '%decided%' as "hasSkip"
   from pg_proc where proname = 'claim_notification_delivery'`;
 console.log(`AB_DEF len=${def?.len} hasSkipMarker=${def?.hasSkip}`);
 

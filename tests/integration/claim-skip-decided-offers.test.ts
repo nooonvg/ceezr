@@ -242,12 +242,15 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     expect(rows[0]?.reason).toBe("ABANDONED");
   });
 
-  it("٥) تزامنُ مُلتقطَينِ على قائمةٍ فيها محسومٌ `pending`: لا واحدٌ منهما يعودُ بالمحسومِ، والحيُّ يُلتقطُ مرةً واحدةً لا مرتينِ", async () => {
-    // نُعيدُ الحيَّ والمحسومَ `pending` معًا (الاختبارُ ٤ وسَمَ المحسومَ `dead`) ثمّ نُطلقُ
-    // التقاطَينِ معًا: قفلُ `for update skip locked` يمنعُ الالتقاطَ المزدوجَ، والاستبعادُ
-    // الجديدُ يمنعُ المحسومَ `pending` من كليهما — وهذا هو جوهرُ الإصلاحِ تحتَ التزامنِ.
+  it("٥) تزامنُ مُلتقطَينِ على قائمةٍ فيها محسومٌ `pending`: لا واحدٌ منهما يعودُ بالمحسومِ، والحيُّ يُلتقطُ مرةً واحدةً بالضبطِ", async () => {
+    // عزلٌ حتميٌّ: نُعيدُ الحيَّ والمحسومَ `pending` (الاختبارُ ٤ وسَمَ المحسومَ `dead`)
+    // ونُؤرّخُ الحيَّ أقدمَ صفِّ عروضٍ مؤهّلٍ (created_at من ساعتَينِ) — فأولُ التقاطٍ
+    // يستهدفُهُ حتمًا، والثاني المتزامنُ يتخطّاهُ المقفولَ (`for update skip locked`).
+    // الاستبعادُ الجديدُ يمنعُ المحسومَ `pending` من كليهما — وهذا جوهرُ الإصلاحِ تحتَ
+    // التزامنِ، بلا حاجةٍ إلى إعادةِ صفوفِ اختباراتٍ أخرى إلى الطابورِ.
     await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, dead_reason=null where id = ${liveOutboxId}::uuid`;
     await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, dead_reason=null, attempts=0 where id = ${decidedOutboxId}::uuid`;
+    await sql`update notification_outbox set created_at = now() - make_interval(hours => 2) where id = ${liveOutboxId}::uuid`;
     const decidedAttemptsBefore = (
       await sql<
         { attempts: number }[]
@@ -260,87 +263,78 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
         expect(envelope.delivery.delivery_id).not.toBe(decidedOutboxId);
       }
     }
-    // نُكملُ حتى يُلتقطَ الحيُّ (قد يسبقَ التقاطَينِ صفوفٌ أخرى من قاعدةٍ مشتركةٍ)،
-    // ونعدُّ مراتِ التقاطِهِ في الجولتينِ المتزامنتينِ وما تلاهما: مرةً واحدةً بالضبطِ.
-    let liveClaims = [a.delivery?.delivery_id, b.delivery?.delivery_id].filter(
-      (id) => id === liveOutboxId,
-    ).length;
-    for (let i = 0; i < 12 && liveClaims === 0; i += 1) {
-      const envelope = await claimOnce();
-      if (envelope.delivery === null) continue;
-      expect(envelope.delivery.delivery_id).not.toBe(decidedOutboxId);
-      if (envelope.delivery.delivery_id === liveOutboxId) liveClaims += 1;
-      else
-        await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null where id = ${envelope.delivery.delivery_id}::uuid`;
-    }
-    expect(liveClaims).toBe(1);
+    // بالتأريخِ أعلاه: واحدٌ من الالتقاطَينِ المتزامنَينِ حصلَ على الحيِّ بالضبطِ،
+    // والآخرُ تخطّاهُ المقفولَ فأخذَ غيرَهُ أو أعادَ خلوًّا — لا التقطاهُ الاثنانِ أبدًا.
+    const claimedIds = [a.delivery?.delivery_id, b.delivery?.delivery_id].filter(
+      (v) => v !== undefined,
+    );
+    expect(claimedIds.filter((id) => id === liveOutboxId).length).toBe(1);
     const decided = await sql<{ attempts: number; status: string }[]>`
       select attempts, status from notification_outbox where id = ${decidedOutboxId}::uuid`;
     expect(decided[0]?.status).toBe("pending");
     expect(decided[0]?.attempts).toBe(decidedAttemptsBefore);
-    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null where id = ${liveOutboxId}::uuid`;
+    // إعادةُ الحيِّ إلى الطابورِ لل اختبارِ التالي (بلا تأريخٍ — دورتُهُ العاديةُ).
+    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, created_at = now() - make_interval(secs => 30) where id = ${liveOutboxId}::uuid`;
   });
 
-  it("٦) مسارُ إعادةِ المحاولةِ للحيِّ سليمٌ بعدَ فشلِ تسليمٍ — عدّادُ محاولاتِهِ يزادُ، والمحسومُ لا يعودُ بالترتيبِ", async () => {
-    // الحيُّ يُلتقطُ، يُعادُ إلى الطابورِ (`requeue`) بعدَ «فشلِ إرسالٍ»، ثمّ يُلتقطُ من جديدٍ
-    // — عدّادُ المحاولاتِ يزادُ للحيِّ (نُثبتُهُ بالقيمِ قبلَ/بعدَ)، والمحسومُ لا يدخلُ الدورةَ أصلًا.
-    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, next_attempt_at=now() where id = ${liveOutboxId}::uuid`;
+  it("٦) مسارُ إعادةِ المحاولةِ للحيِّ سليمٌ — دورةُ العدّادِ موثّقةٌ بالقيمِ، والمحسومُ لا يعودُ بالترتيبِ", async () => {
+    // دورةُ العدّادِ كما تعرّفُها الدوالُ الحيّةُ: الالتقاطُ يزيدُ `attempts+1`، و`requeue`
+    // ينقصُ `−1` (إعادةُ الطابورِ لا تُحسَبُ محاولةً فاشلةً)، ثمّ الالتقاطُ الثاني يزيدُ
+    // من جديدٍ. نُثبتُ كلَّ خطوةٍ بقيمتِها، والمحسومُ لا يدخلُ الدورةَ أصلًا.
+    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, next_attempt_at=now(), attempts=0 where id = ${liveOutboxId}::uuid`;
     await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, dead_reason=null, attempts=0 where id = ${decidedOutboxId}::uuid`;
+    // عزلٌ حتميٌّ: تأريخُ الحيِّ أقدمَ صفٍّ مؤهّلٍ فأولُ التقاطٍ يستهدفُهُ مباشرةً.
+    await sql`update notification_outbox set created_at = now() - make_interval(hours => 2) where id = ${liveOutboxId}::uuid`;
     const decidedAttemptsBefore = (
       await sql<
         { attempts: number }[]
       >`select attempts from notification_outbox where id = ${decidedOutboxId}::uuid`
     )[0]?.attempts;
-    let claimToken = "";
-    let claimedLive = false;
-    let liveAttemptsAfterFirstClaim = -1;
-    for (let i = 0; i < 12 && !claimedLive; i += 1) {
-      const envelope = await claimOnce();
-      if (envelope.delivery === null) break;
-      expect(envelope.delivery.delivery_id).not.toBe(decidedOutboxId);
-      if (envelope.delivery.delivery_id === liveOutboxId) {
-        claimedLive = true;
-        const row = await sql<{ claim_token: string | null; attempts: number }[]>`
-          select claim_token, attempts from notification_outbox where id = ${liveOutboxId}::uuid`;
-        claimToken = row[0]?.claim_token ?? "";
-        liveAttemptsAfterFirstClaim = row[0]?.attempts ?? -1;
-      } else {
-        await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null where id = ${envelope.delivery.delivery_id}::uuid`;
-      }
-    }
-    expect(claimedLive).toBe(true);
-    expect(claimToken).not.toBe("");
-    // «فشلُ الإرسالِ»: إعادةٌ إلى الطابورِ بمحاولةٍ بعدَ مهلةٍ قصيرةٍ.
-    const requeued = await sql<{ result: { ok: boolean } }[]>`
-      select requeue_notification_delivery(${liveOutboxId}::uuid, ${claimToken}::uuid, 0) result`;
-    expect((requeued[0] as { result: { ok: boolean } })?.result?.ok).toBe(true);
-    await sql`update notification_outbox set next_attempt_at = now() where id = ${liveOutboxId}::uuid`;
-    let reclaimedLive = false;
-    for (let i = 0; i < 12 && !reclaimedLive; i += 1) {
-      const envelope = await claimOnce();
-      if (envelope.delivery === null) break;
-      expect(envelope.delivery.delivery_id).not.toBe(decidedOutboxId);
-      if (envelope.delivery.delivery_id === liveOutboxId) reclaimedLive = true;
-      else
-        await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null where id = ${envelope.delivery.delivery_id}::uuid`;
-    }
-    expect(reclaimedLive).toBe(true);
-    // دورةُ العدّادِ موثّقةٌ بالقيمِ: الالتقاطُ يزيدُ (`attempts+1`)، `requeue` ينقصُ (`−1` —
-    // إعادةُ الطابورِ لا تُحسَبُ محاولةً فاشلةً)، ثمّ الالتقاطُ الثاني يزيدُ من جديدٍ: إقرارٌ فعليٌّ
-    // بأنّ مسارَ إعادةِ المحاولةِ يمرُّ عبرَ الدالةِ نفسِها، والمحسومُ لم يُمسّ طوالَ الدورةِ.
-    const liveAfter = (
+    const liveAttemptsBefore = (
       await sql<
         { attempts: number }[]
       >`select attempts from notification_outbox where id = ${liveOutboxId}::uuid`
     )[0]?.attempts;
-    expect(liveAttemptsAfterFirstClaim).toBeGreaterThanOrEqual(1);
-    expect(liveAfter).toBeGreaterThanOrEqual(1);
+    // (١) الالتقاطُ الأولُ: يزيدُ العدّادَ ويُسلّمُ رمزَ المطالبةِ.
+    const first = await claimOnce();
+    expect(first.ok).toBe(true);
+    expect(first.delivery?.delivery_id).toBe(liveOutboxId);
+    const afterFirst = (
+      await sql<{ attempts: number; claim_token: string | null }[]>`
+        select attempts, claim_token from notification_outbox where id = ${liveOutboxId}::uuid`
+    )[0];
+    const claimToken = afterFirst?.claim_token ?? "";
+    expect(claimToken).not.toBe("");
+    expect(afterFirst?.attempts).toBe((liveAttemptsBefore ?? 0) + 1);
+    // (٢) «فشلُ الإرسالِ»: إعادةٌ إلى الطابورِ — العدّادُ ينقصُ (لا يُحسَبُ فشلًا).
+    const requeued = await sql<{ result: { ok: boolean } }[]>`
+      select requeue_notification_delivery(${liveOutboxId}::uuid, ${claimToken}::uuid, 0) result`;
+    expect((requeued[0] as { result: { ok: boolean } })?.result?.ok).toBe(true);
+    const afterRequeue = (
+      await sql<
+        { attempts: number }[]
+      >`select attempts from notification_outbox where id = ${liveOutboxId}::uuid`
+    )[0];
+    expect(afterRequeue?.attempts).toBe((afterFirst?.attempts ?? 1) - 1);
+    await sql`update notification_outbox set next_attempt_at = now() where id = ${liveOutboxId}::uuid`;
+    // (٣) الالتقاطُ الثاني: يزيدُ العدّادَ من جديدٍ — إقرارٌ فعليٌّ بأنّ مسارَ إعادةِ
+    // المحاولةِ يمرُّ عبرَ الدالةِ نفسِها، والمحسومُ لم يُمسّ طوالَ الدورةِ.
+    const second = await claimOnce();
+    expect(second.ok).toBe(true);
+    expect(second.delivery?.delivery_id).toBe(liveOutboxId);
+    const afterSecond = (
+      await sql<
+        { attempts: number }[]
+      >`select attempts from notification_outbox where id = ${liveOutboxId}::uuid`
+    )[0];
+    expect(afterSecond?.attempts).toBe((afterRequeue?.attempts ?? 0) + 1);
     const decidedAfter = (
       await sql<{ attempts: number; status: string }[]>`
         select attempts, status from notification_outbox where id = ${decidedOutboxId}::uuid`
     )[0];
     expect(decidedAfter?.status).toBe("pending");
     expect(decidedAfter?.attempts).toBe(decidedAttemptsBefore);
-    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null where id = ${liveOutboxId}::uuid`;
+    // إعادةُ الحيِّ إلى دورتِهِ العاديةِ (بلا تأريخٍ) لما بعدَ الاختبارِ.
+    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, created_at = now() - make_interval(secs => 30) where id = ${liveOutboxId}::uuid`;
   });
 });
