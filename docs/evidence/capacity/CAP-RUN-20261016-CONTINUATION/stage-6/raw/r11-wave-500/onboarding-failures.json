@@ -1,0 +1,33 @@
+{
+ "total": 4360,
+ "first": "2026-10-17T22:37:57.532Z",
+ "last": "2026-10-17T22:40:55.678Z",
+ "byStepsSignature": [
+  {
+   "count": 4344,
+   "steps": {
+    "adminVerification": "not_run",
+    "capability": "not_run",
+    "dbPendingVerified": false,
+    "onboardingPost": 409,
+    "phoneProofJob": "timeout",
+    "phoneProofWebhook": 200,
+    "session": "ok",
+    "trial": "not_run"
+   }
+  },
+  {
+   "count": 16,
+   "steps": {
+    "adminVerification": "ok",
+    "capability": "ok",
+    "dbPendingVerified": true,
+    "onboardingPost": 201,
+    "phoneProofJob": "timeout",
+    "phoneProofWebhook": 200,
+    "session": "ok",
+    "trial": "ok"
+   }
+  }
+ ]
+}

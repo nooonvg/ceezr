@@ -49,6 +49,7 @@ import {
   TELEGRAM_JOB_CONSUMER_CONCURRENCY,
 } from "../../../../packages/shared/config/domain-ingress.ts";
 import type { BotKind, UpdateHandler } from "../routes/telegram-webhook.ts";
+import type { TelegramReplyPool } from "./telegram-reply-pool.ts";
 
 export interface TelegramUpdateDrainDeps {
   readonly queue: TelegramUpdateQueue;
@@ -73,6 +74,11 @@ export interface TelegramUpdateDrainDeps {
   readonly fairBots?: readonly string[];
   /** CAP-RUN-20261015 / D3 — فترةُ تجديدِ إيجارِ المحجوزِ المنتظرِ (مللي ثانية). الافتراضيُّ 10ث (ثلثُ الإيجار). */
   readonly leaseRenewEveryMs?: number;
+  /**
+   * S5 (ADR 0288 §ملحق) — مُرسِلُ الردودِ الفوريُّ غيرُ الحاجبِ. بدونِه يُرسَلُ الردُّ داخلَ
+   * مسارِ الوظيفةِ (السلوكُ السابقُ)، فيصيرُ معدّلُ إتمامِ الوظائفِ معدّلَ دلوِ البوتِ.
+   */
+  readonly replyPool?: TelegramReplyPool;
 }
 
 /** حقلٌ من حمولةِ تيليجرام يحملُ مُرسِلًا أو محادثة — كلُّ ما يلزمُ مفتاحَ المسار. */
@@ -249,14 +255,21 @@ async function processDurably(
       return false;
     }
     if (recorded.replyToken !== null) {
-      await sendRepliesFrom(deps, ledger, {
+      const pending: PendingUpdateReplies = {
         bot: job.bot,
         updateId: job.updateId,
         replies: prepared.replies,
         repliesSent: 0,
         replyToken: recorded.replyToken,
         attempts: 0,
-      });
+      };
+      // الوظيفةُ مُتمّةٌ منذُ `recordEffect`؛ والردُّ لا يحجزُ المسارَ عن الوظيفةِ التاليةِ.
+      // الامتلاءُ (أو غيابُ المُرسِلِ) ⇒ إرسالٌ داخلَ المسارِ: ضغطٌ خلفيٌّ صريحٌ.
+      const queued =
+        deps.replyPool?.submit(laneKeyOf(job.bot, job.payload, String(job.updateId)), () =>
+          sendRepliesFrom(deps, ledger, pending),
+        ) ?? false;
+      if (!queued) await sendRepliesFrom(deps, ledger, pending);
     }
     return true;
   } catch (error) {
@@ -577,6 +590,13 @@ export function startTelegramUpdateDrainer(
       if (replyTimer !== null) clearInterval(replyTimer);
       while (replying) {
         await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      // الردودُ المقبولةُ في المُرسِلِ الفوريِّ تُكمَلُ أو تُتركُ لإيجارِها (لا تُفقَدُ: صفُّها دائمٌ).
+      if (deps.replyPool !== undefined) {
+        await Promise.race([
+          deps.replyPool.idle(),
+          new Promise((resolve) => setTimeout(resolve, 5_000)),
+        ]);
       }
       // إن كان شوطٌ جارٍ، انتظرْه. لا نُهملُ وظيفةً محجوزةً.
       while (running) {
