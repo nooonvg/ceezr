@@ -11,7 +11,11 @@
  *   والمساراتُ فارغةٌ)، ورحلاتُ الالتقاطِ وزمنُها.
  * - `http`: كلَّ 5ث لكلِّ مسارٍ مُطبَّعٍ: العدد، والمجموع، وp50/p95/max لزمنِ المعالجةِ في الخادم
  *   (من دخولِ `fetch` حتى الردّ) — لا زمنُ العميلِ.
+ * - `loop`: كلَّ 5ث تأخُّرُ حلقةِ الأحداثِ (مؤقّتٌ كلَّ 50ms: p50/p95/max للانحراف) وCPU الخيطِ
+ *   الرئيسيِّ (`/proc/self/task/<pid>/stat`، لينكس) وCPU العمليّةِ كلِّها (`process.cpuUsage`)،
+ *   فيُفصَلُ «الخيطُ مشغول» عن «الخيطُ ينتظرُ دورَه على المعالج».
  */
+import { readFileSync } from "node:fs";
 import { appendFile } from "node:fs/promises";
 import type { DrainerTiming } from "./telegram-update-drainer.ts";
 
@@ -33,6 +37,17 @@ export function normaliseRoute(method: string, pathname: string): string {
     )
     .join("/");
   return `${method} ${path}`;
+}
+
+/** ثواني CPU للخيطِ الرئيسيِّ (utime+stime) أو `null` خارجَ لينكس. */
+function mainThreadCpuSeconds(): number | null {
+  try {
+    const stat = readFileSync(`/proc/self/task/${process.pid}/stat`, "utf8");
+    const fields = stat.slice(stat.lastIndexOf(")") + 2).split(" ");
+    return (Number(fields[11]) + Number(fields[12])) / 100;
+  } catch {
+    return null;
+  }
 }
 
 function percentile(sorted: readonly number[], q: number): number | null {
@@ -72,7 +87,47 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
     buffer = [];
     await appendFile(out, text).catch(() => {});
   };
-  const timer = setInterval(() => void flush(), 5_000);
+  let lags: number[] = [];
+  let expected = performance.now() + 50;
+  const lagTimer = setInterval(() => {
+    const now = performance.now();
+    lags.push(Math.max(0, now - expected));
+    expected = now + 50;
+  }, 50);
+  lagTimer.unref?.();
+  let lastMain = mainThreadCpuSeconds();
+  let lastProc = process.cpuUsage();
+  let lastAt = performance.now();
+  const sampleLoop = (): void => {
+    const now = performance.now();
+    const main = mainThreadCpuSeconds();
+    const proc = process.cpuUsage();
+    const wall = (now - lastAt) / 1000;
+    const sorted = [...lags].sort((a, b) => a - b);
+    emit({
+      k: "loop",
+      at: Date.now(),
+      lagP50Ms: percentile(sorted, 0.5),
+      lagP95Ms: percentile(sorted, 0.95),
+      lagMaxMs: sorted[sorted.length - 1] ?? null,
+      mainThreadCpuPct:
+        main === null || lastMain === null
+          ? null
+          : Math.round((1000 * (main - lastMain)) / wall) / 10,
+      processCpuPct:
+        Math.round(
+          ((100 * (proc.user - lastProc.user + proc.system - lastProc.system)) / 1e6 / wall) * 10,
+        ) / 10,
+    });
+    lags = [];
+    lastMain = main;
+    lastProc = proc;
+    lastAt = now;
+  };
+  const timer = setInterval(() => {
+    sampleLoop();
+    void flush();
+  }, 5_000);
   timer.unref?.();
   return {
     drainer: {
@@ -91,6 +146,7 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
     },
     stop: async () => {
       clearInterval(timer);
+      clearInterval(lagTimer);
       await flush();
     },
   };
