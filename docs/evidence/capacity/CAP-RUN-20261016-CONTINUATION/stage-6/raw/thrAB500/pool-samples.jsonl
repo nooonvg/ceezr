@@ -1,0 +1,155 @@
+{"t":"02:03:40","activity":""}
+{"t":"02:03:45","activity":""}
+{"t":"02:03:45","activity":""}
+{"t":"02:03:51","activity":""}
+{"t":"02:03:56","activity":""}
+{"t":"02:03:58","activity":"active:2,idle:25,"}
+{"t":"02:04:03","activity":"active:2,idle:25,"}
+{"t":"02:04:08","activity":"active:2,idle:25,"}
+{"t":"02:04:13","activity":"active:2,idle:25,"}
+{"t":"02:04:18","activity":"active:2,idle:25,"}
+{"t":"02:04:24","activity":"active:3,idle:23,idle in transaction:1,"}
+{"t":"02:04:29","activity":"active:2,idle:25,"}
+{"t":"02:04:34","activity":"active:3,idle:24,"}
+{"t":"02:04:39","activity":"active:2,idle:25,"}
+{"t":"02:04:44","activity":"active:3,idle:24,"}
+{"t":"02:04:49","activity":"active:2,idle:25,"}
+{"t":"02:04:54","activity":"active:3,idle:24,"}
+{"t":"02:04:59","activity":"active:4,idle:22,idle in transaction:1,"}
+{"t":"02:05:04","activity":"active:3,idle:24,"}
+{"t":"02:05:10","activity":"active:2,idle:25,"}
+{"t":"02:05:15","activity":"active:3,idle:23,idle in transaction:1,"}
+{"t":"02:05:20","activity":"active:5,idle:22,"}
+{"t":"02:05:25","activity":"active:3,idle:22,idle in transaction:2,"}
+{"t":"02:05:30","activity":"active:4,idle:23,"}
+{"t":"02:05:35","activity":"active:1,idle:25,idle in transaction:1,"}
+{"t":"02:05:40","activity":"active:5,idle:22,"}
+{"t":"02:05:45","activity":"active:2,idle:23,idle in transaction:2,"}
+{"t":"02:05:50","activity":"active:2,idle:24,idle in transaction:1,"}
+{"t":"02:05:55","activity":"active:5,idle:21,idle in transaction:1,"}
+{"t":"02:06:00","activity":"active:5,idle:20,idle in transaction:2,"}
+{"t":"02:06:06","activity":"active:3,idle:24,"}
+{"t":"02:06:11","activity":"active:4,idle:23,"}
+{"t":"02:06:16","activity":"active:3,idle:22,idle in transaction:2,"}
+{"t":"02:06:21","activity":"active:5,idle:21,idle in transaction:1,"}
+{"t":"02:06:26","activity":"active:2,idle:25,"}
+{"t":"02:06:31","activity":"active:1,idle:26,"}
+{"t":"02:06:36","activity":"active:1,idle:22,"}
+{"t":"02:06:41","activity":"active:3,idle:18,idle in transaction:2,"}
+{"t":"02:06:46","activity":"active:1,idle:22,"}
+{"t":"02:06:51","activity":"active:1,idle:22,"}
+{"t":"02:06:56","activity":"active:1,idle:22,"}
+{"t":"02:07:01","activity":"active:1,idle:22,"}
+{"t":"02:07:06","activity":"active:1,idle:20,"}
+{"t":"02:07:11","activity":"active:1,idle:18,"}
+{"t":"02:07:16","activity":"active:1,idle:14,"}
+{"t":"02:07:21","activity":"active:1,idle:14,"}
+{"t":"02:07:26","activity":"active:1,idle:14,"}
+{"t":"02:07:32","activity":"active:1,idle:14,"}
+{"t":"02:07:37","activity":"active:1,idle:14,"}
+{"t":"02:07:42","activity":"active:1,idle:14,"}
+{"t":"02:07:47","activity":"active:1,idle:14,"}
+{"t":"02:07:52","activity":"active:1,idle:14,"}
+{"t":"02:07:57","activity":"active:1,idle:14,"}
+{"t":"02:08:02","activity":"active:1,idle:14,"}
+{"t":"02:08:07","activity":"active:1,idle:14,"}
+{"t":"02:08:12","activity":"active:1,idle:14,"}
+{"t":"02:08:17","activity":"active:1,idle:14,"}
+{"t":"02:08:22","activity":"active:1,idle:14,"}
+{"t":"02:08:27","activity":"active:1,idle:14,"}
+{"t":"02:08:32","activity":"active:1,idle:14,"}
+{"t":"02:08:37","activity":"active:1,idle:14,"}
+{"t":"02:08:42","activity":"active:1,idle:14,"}
+{"t":"02:08:47","activity":"active:1,idle:14,"}
+{"t":"02:08:52","activity":"active:1,idle:14,"}
+{"t":"02:08:57","activity":"active:1,idle:14,"}
+{"t":"02:09:02","activity":"active:1,idle:14,"}
+{"t":"02:09:07","activity":"active:1,idle:14,"}
+{"t":"02:09:12","activity":"active:1,idle:14,"}
+{"t":"02:09:17","activity":"active:1,idle:14,"}
+{"t":"02:09:22","activity":"active:1,idle:14,"}
+{"t":"02:09:28","activity":"active:1,idle:14,"}
+{"t":"02:09:33","activity":"active:1,idle:14,"}
+{"t":"02:09:38","activity":"active:1,idle:14,"}
+{"t":"02:09:43","activity":"active:1,idle:14,"}
+{"t":"02:09:48","activity":"active:1,idle:14,"}
+{"t":"02:09:53","activity":"active:1,idle:14,"}
+{"t":"02:09:58","activity":"active:1,idle:14,"}
+{"t":"02:10:03","activity":"active:1,idle:14,"}
+{"t":"02:10:08","activity":"active:1,idle:14,"}
+{"t":"02:10:13","activity":"active:1,idle:14,"}
+{"t":"02:10:18","activity":"active:1,idle:14,"}
+{"t":"02:10:23","activity":"active:1,idle:14,"}
+{"t":"02:10:28","activity":"active:1,idle:14,"}
+{"t":"02:10:33","activity":"active:1,idle:14,"}
+{"t":"02:10:38","activity":"active:1,idle:14,"}
+{"t":"02:10:43","activity":"active:1,idle:14,"}
+{"t":"02:10:48","activity":"active:1,idle:14,"}
+{"t":"02:10:53","activity":"active:1,idle:14,"}
+{"t":"02:10:58","activity":"active:1,idle:14,"}
+{"t":"02:11:03","activity":"active:1,idle:14,"}
+{"t":"02:11:08","activity":"active:1,idle:14,"}
+{"t":"02:11:13","activity":"active:1,idle:14,"}
+{"t":"02:11:19","activity":"active:1,idle:14,"}
+{"t":"02:11:24","activity":"active:1,idle:14,"}
+{"t":"02:11:29","activity":"active:1,idle:14,"}
+{"t":"02:11:34","activity":"active:1,idle:14,"}
+{"t":"02:11:39","activity":"active:1,idle:14,"}
+{"t":"02:11:44","activity":"active:1,idle:14,"}
+{"t":"02:11:49","activity":"active:1,idle:14,"}
+{"t":"02:11:54","activity":"active:1,idle:14,"}
+{"t":"02:11:59","activity":"active:1,idle:14,"}
+{"t":"02:12:04","activity":"active:1,idle:14,"}
+{"t":"02:12:09","activity":"active:1,idle:14,"}
+{"t":"02:12:14","activity":"active:1,idle:14,"}
+{"t":"02:12:19","activity":"active:1,idle:14,"}
+{"t":"02:12:24","activity":"active:1,idle:14,"}
+{"t":"02:12:29","activity":"active:1,idle:14,"}
+{"t":"02:12:34","activity":"active:1,idle:14,"}
+{"t":"02:12:39","activity":"active:1,idle:1,"}
+{"t":"02:12:44","activity":"active:1,"}
+{"t":"02:12:49","activity":"active:1,"}
+{"t":"02:12:54","activity":"active:1,"}
+{"t":"02:12:59","activity":"active:1,idle:14,"}
+{"t":"02:13:05","activity":"active:4,idle:23,"}
+{"t":"02:13:10","activity":"active:2,idle:25,"}
+{"t":"02:13:15","activity":"active:2,idle:25,"}
+{"t":"02:13:20","activity":"active:4,idle:21,idle in transaction:2,"}
+{"t":"02:13:25","activity":"active:3,idle:24,"}
+{"t":"02:13:30","activity":"active:3,idle:24,"}
+{"t":"02:13:35","activity":"active:2,idle:22,idle in transaction:3,"}
+{"t":"02:13:41","activity":"active:6,idle:21,"}
+{"t":"02:13:46","activity":"active:2,idle:25,"}
+{"t":"02:13:51","activity":"active:6,idle:22,"}
+{"t":"02:13:56","activity":"active:3,idle:24,"}
+{"t":"02:14:01","activity":"active:3,idle:23,idle in transaction:1,"}
+{"t":"02:14:06","activity":"active:2,idle:25,"}
+{"t":"02:14:11","activity":"active:6,idle:21,"}
+{"t":"02:14:16","activity":"active:2,idle:25,"}
+{"t":"02:14:22","activity":"active:5,idle:22,"}
+{"t":"02:14:27","activity":"active:1,idle:26,"}
+{"t":"02:14:32","activity":"active:3,idle:23,idle in transaction:1,"}
+{"t":"02:14:37","activity":"active:1,idle:26,"}
+{"t":"02:14:42","activity":"active:3,idle:24,"}
+{"t":"02:14:47","activity":"active:1,idle:26,"}
+{"t":"02:14:52","activity":"active:3,idle:24,"}
+{"t":"02:14:57","activity":"active:6,idle:21,"}
+{"t":"02:15:02","activity":"active:3,idle:19,idle in transaction:5,"}
+{"t":"02:15:07","activity":"active:3,idle:24,"}
+{"t":"02:15:12","activity":"active:4,idle:23,"}
+{"t":"02:15:18","activity":"active:9,idle:18,"}
+{"t":"02:15:23","activity":"active:3,idle:23,idle in transaction:1,"}
+{"t":"02:15:28","activity":"active:6,idle:21,"}
+{"t":"02:15:33","activity":"active:6,idle:20,idle in transaction:1,"}
+{"t":"02:15:38","activity":"active:3,idle:24,"}
+{"t":"02:15:43","activity":"active:5,idle:22,"}
+{"t":"02:15:48","activity":"active:1,idle:26,"}
+{"t":"02:15:53","activity":"active:3,idle:21,idle in transaction:3,"}
+{"t":"02:15:58","activity":"active:3,idle:23,idle in transaction:1,"}
+{"t":"02:16:03","activity":"active:3,idle:24,"}
+{"t":"02:16:08","activity":"active:4,idle:23,"}
+{"t":"02:16:14","activity":"active:2,idle:25,"}
+{"t":"02:16:19","activity":"active:1,idle:14,"}
+{"t":"02:16:24","activity":"active:4,idle:11,"}
+{"t":"02:16:29","activity":"active:1,idle:14,"}
+{"t":"02:16:34","activity":"active:1,idle:14,"}
