@@ -1,5 +1,7 @@
 # ADR 0289: LOAD-01 · P4 — اتّصالٌ مُعلَنٌ لشوطِ البثِّ الفوريِّ والتقاطٌ دُفعيٌّ لوظائفِ تيليجرام
 
+> **ملحق (2026-10-18، الدفعةُ العاشرة):** المرشّحُ `gatewayRequest = 6` فوقَ هذا القرارِ قيسَ (250 = PASS، و500 = FAIL على G1) ولم يُعتمَد؛ انظر [`BATCH-10-LOAD01-ACCEPT500.md`](../evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-10-LOAD01-ACCEPT500.md).
+
 **الحالة:** مقبول (يرفعُ الطلبَ المحسوبَ على القاعدةِ اتّصالاً واحداً — مقارنتُه بخطّةِ القاعدةِ قرارُ سعةِ المالكِ، `ADR 0073`).
 **التاريخ:** 2026-10-18
 **المرجع:** [ADR 0073](0073-connection-budget-is-computed-not-narrated.md) · [ADR 0197](0197-request-path-query-deadline-is-client-side-and-gated.md) · [ADR 0288](0288-telegram-update-effect-ledger.md) · `docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-9-LOAD01-P4.md`

@@ -1,5 +1,7 @@
 # الدفعةُ التاسعةُ — LOAD-01 · جدارُ P4 عندَ 500 (CAP-RUN-20261016-CONTINUATION · المرحلة 6)
 
+> **تاريخيٌّ (2026-10-18):** الحكمُ الحاليُّ لـ LOAD-01 في [`BATCH-10-LOAD01-ACCEPT500.md`](BATCH-10-LOAD01-ACCEPT500.md): جُرِّبَ `gatewayRequest = 6` فاجتازَ 250 وفشلَ قبولُ 500 على G1 لتشبُّعِ المقعد، ولم يُعتمَد.
+
 **التاريخ:** 2026-10-18 · **الفرع:** `work/load01-p4-root-cause` (من `main` @ `1ac6b860`) · **الرأسُ المقيسُ للقبولِ:** `8959ed48` (شجرةٌ نظيفةٌ `code_dirty=0`)
 **القرار:** [ADR 0289](../../../../adr/0289-immediate-dispatch-dedicated-connection.md) · **حزمةُ العملِ:** `docs/work-packets/load01-p4-dispatch-queue.json`
 **البروتوكول:** [`ACCEPTANCE-PROTOCOL.md`](ACCEPTANCE-PROTOCOL.md) (حدودُه لم تُمسّ) · **سابقُها (تاريخيٌّ):** [`BATCH-8-LOAD01-P4.md`](BATCH-8-LOAD01-P4.md)
