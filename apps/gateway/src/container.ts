@@ -65,6 +65,7 @@ import type {
 import type { TranslationFailure } from "../../../packages/domain/i18n-translation/index.ts";
 import { DEFAULT_SESSION_POLICY } from "../../../packages/domain/tracking/session.ts";
 import { createSql, type Sql } from "../../../packages/infrastructure/db/client.ts";
+import { createDispatchTrace } from "./background/dispatch-trace.ts";
 import {
   createDispatchRpc,
   createDriverCandidateRepository,
@@ -929,14 +930,26 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    * المخفوضةُ للمدينةِ (ثانيتانِ + مانعُ تداخلٍ) في `background/immediate-redispatch.ts`
    * تُبقي الاستجابةَ للكتابةِ والبثِّ وحدهما، والدوريّةَ (20ث) أرضًا صلبةً.
    */
+  // `LOAD-01 · P4` — أثرٌ تشخيصيٌّ اختياريٌّ (`DISPATCH_TRACE_FILE`)؛ غيابُه = المسارُ الأصلُ حرفيّاً.
+  const dispatchTrace = createDispatchTrace({
+    file: process.env.DISPATCH_TRACE_FILE,
+    sql,
+    probeSql:
+      process.env.DISPATCH_TRACE_FILE !== undefined && process.env.DISPATCH_TRACE_FILE !== ""
+        ? createSql({ connectionString: config.databaseUrl, max: 1 })
+        : null,
+  });
   const immediateRedispatchScheduler = createImmediateRedispatchScheduler({
     run: async (cityId) => {
+      const finder = createSearchingOrderFinder(sql);
+      const pass = dispatchTrace?.beginPass(cityId, finder, matching) ?? null;
       const report = await redispatchSearchingOrders(cityId, {
-        finder: createSearchingOrderFinder(sql),
-        broadcast: matching,
+        finder: pass?.finder ?? finder,
+        broadcast: pass?.broadcast ?? matching,
         limit: IMMEDIATE_REDISPATCH_LIMIT,
         log,
       });
+      pass?.end(report);
       if (!report.ok) {
         log("redispatch.immediate_failed", { cityId, detail: report.error.detail });
         return;
@@ -961,6 +974,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
      * («إعادةُ العرضِ بعدَ الكتابةِ») قائمٌ — لكنهُ غيرُ حاجبٍ للردِّ.
      */
     onDriverBecameDispatchable: async (cityId: CityId): Promise<void> => {
+      dispatchTrace?.onTrigger(cityId, "accepted");
       immediateRedispatchScheduler.trigger(cityId);
     },
   };
@@ -1250,7 +1264,10 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     >`select city_id::text as city_id from orders where id = ${orderId}::uuid`
       .then((rows) => {
         const cityId = rows[0]?.city_id;
-        if (cityId !== undefined) immediateRedispatchScheduler.trigger(cityId as CityId);
+        if (cityId !== undefined) {
+          dispatchTrace?.onTrigger(cityId, "accepted");
+          immediateRedispatchScheduler.trigger(cityId as CityId);
+        }
       })
       .catch((cause: unknown) =>
         log("redispatch.new_order_trigger_failed", {
