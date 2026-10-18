@@ -49,7 +49,12 @@ import {
 import type { TaggedDistance } from "../../domain/quote/distance-kind.ts";
 import { err, ok, type Result } from "../../shared/result/index.ts";
 import type { Sql } from "../db/client.ts";
-import { readOrderPlaceExtras } from "../transport/order-place-extras.ts";
+import {
+  type ExtrasRow,
+  type OrderPlaceExtras,
+  parseOrderPlaceExtrasRow,
+  readOrderPlaceExtras,
+} from "../transport/order-place-extras.ts";
 
 /** مجالُ الرفضِ المغلقُ — يُقابِلُ رموزَ الدوالِّ الثلاثِ و`claim_ride` حرفاً. */
 const REJECTIONS: readonly DriverOfferStoreRejection[] = [
@@ -187,6 +192,110 @@ interface ResultRow {
 }
 
 /**
+ * `LOAD-01` (P4) — صفُّ القراءةِ الموحّدةِ للوحِ: حمولةُ الدالّةِ وملاحقُ الأماكنِ
+ * (خريطةٌ `order_id` → حقولُ الصفِّ) وأعمدةُ الأهليةِ، كلُّ ذلك في جولةِ قاعدةٍ
+ * واحدةٍ. الأهليةُ قد تعدمَ (سائقٌ غيرُ موجودٍ) فأعمدتُهُ معدومةٌ — ويُعادُ لها
+ * المسارُ القديمُ نفسُهُ: قائمةُ أسبابٍ فارغةٌ.
+ */
+interface MergedBoardRow {
+  readonly payload: unknown;
+  readonly verification_status: string | null;
+  readonly has_location: boolean | null;
+  readonly location_quality: string | null;
+  readonly age_seconds: number | null;
+  readonly max_age_seconds: number | null;
+  readonly extras: unknown;
+}
+
+/** أعمدةُ الأهليةِ من الصفِّ الموحّدِ — أو قائمةٌ فارغةٌ إن عدِمَ السائقُ. */
+function eligibilityFromMergedRow(row: MergedBoardRow): readonly DriverEligibilityReason[] {
+  if (row.verification_status === null) return [];
+  return eligibilityReasonsFrom({
+    verificationStatus: row.verification_status,
+    hasLocation: row.has_location === true,
+    ageSeconds: row.age_seconds === null ? null : Number(row.age_seconds),
+    maxAgeSeconds: row.max_age_seconds === null ? 0 : Number(row.max_age_seconds),
+    locationQuality: row.location_quality,
+  });
+}
+
+/**
+ * خريطةُ ملاحقِ الأماكنِ من حمولةِ القراءةِ الموحّدةِ — بناءُ الخريطةِ نفسِهِ لا
+ * يُفسدُ اللوحَ: قيمةٌ غيرُ مقروءةٍ لعرضٍ تُتْرَكُ (البطاقةُ كما هي) كما كانَ في
+ * المسارِ القديمِ تماماً.
+ */
+function parseExtrasJson(value: unknown): ReadonlyMap<string, OrderPlaceExtras> {
+  const found = new Map<string, OrderPlaceExtras>();
+  if (!isRecord(value)) return found;
+  for (const [orderId, fields] of Object.entries(value)) {
+    if (!isRecord(fields)) continue;
+    found.set(orderId, parseOrderPlaceExtrasRow(fields as unknown as ExtrasRow));
+  }
+  return found;
+}
+
+/**
+ * تركيبُ اللوحِ النهائيِّ من حمولةِ الدالّةِ وملاحقِ الأماكنِ والأهليةِ — دالةٌ
+ * واحدةٌ مشتركةٌ بينَ القراءةِ الموحّدةِ (عبارةٌ واحدةٌ) وتركيبِ المسارِ القديمِ
+ * في الاختبارِ، كي يكونَ إثباتُ التكافؤِ عبرَ التركيبِ نفسِهِ لا عبرَ نسخةٍ ثانيةٍ
+ * منه. `LOC-TRUST-01`: الرابطُ الأصليُّ وملاحظاتُ المكانِ لطلباتِ اللوحِ نفسِه وحدَها؛
+ * عرضٌ بلا ملاحقَ يبقى بطاقتَه كما هي (لا يسقطُ ولا يُسكَتُ).
+ */
+export function composeDriverOfferBoard(
+  payload: Record<string, unknown>,
+  parts: {
+    readonly extrasMap: ReadonlyMap<string, OrderPlaceExtras>;
+    readonly eligibilityReasons: readonly DriverEligibilityReason[];
+  },
+): Result<DriverOfferBoard, DriverOfferStoreError> {
+  const serverTime = readInstant(payload.server_time);
+  const blockReasons = readBlockReasons(payload.block_reasons);
+  if (
+    serverTime === null ||
+    blockReasons === null ||
+    typeof payload.is_available !== "boolean" ||
+    typeof payload.is_blocked !== "boolean" ||
+    !Array.isArray(payload.offers)
+  ) {
+    return err(failed("MALFORMED_RESULT"));
+  }
+
+  const offers: DriverOfferCard[] = [];
+  for (const item of payload.offers) {
+    const card = readOfferCard(item);
+    // بطاقةٌ لا تُقرأُ **تُسقِطُ اللوحَ كلَّه**: عرضٌ مُهمَلٌ صامتاً عملٌ
+    // يفوتُ سائقاً بلا أن يعلمَ أحدٌ، وذاكَ أسوأُ من عطبٍ مُعلَنٍ.
+    if (card === null) return err(failed("MALFORMED_RESULT"));
+    offers.push(card);
+  }
+
+  const enriched = offers.map((card): DriverOfferCard => {
+    const found = parts.extrasMap.get(card.orderId);
+    return found === undefined
+      ? card
+      : {
+          ...card,
+          pickupExtras: found.pickup,
+          dropoffExtras: found.dropoff,
+          offerTerms: found.offerTerms,
+        };
+  });
+
+  return ok({
+    serverTime,
+    isAvailable: payload.is_available,
+    availabilityChangedAt:
+      payload.availability_changed_at === null
+        ? null
+        : readInstant(payload.availability_changed_at),
+    isBlocked: payload.is_blocked,
+    blockReasons,
+    eligibilityReasons: parts.eligibilityReasons,
+    offers: enriched,
+  });
+}
+
+/**
  * `WR-11` — أسبابُ الاستبعادِ المعروفةُ بلا طلب، بالقواعدِ نفسِها التي يحكمُ بها التوزيع:
  * التوثيقُ (`NOT_VERIFIED`)، ثمَّ الموضعُ (`NO_LOCATION`)، ثمَّ قِدَمُه بزمنِ الخادمِ
  * `last_location_at` مقابلَ `driver_location_max_age_seconds` لمدينتِه — والصفرُ يُطفئُ الحارس
@@ -310,69 +419,88 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
     const telegramId = asTelegramId(input.telegramUserId);
     if (telegramId === null) return err(failed("MALFORMED_RESULT"));
 
-    let rows: ResultRow[];
+    /**
+     * `LOAD-01` (P4) — قراءةُ اللوحِ بجولةِ قاعدةٍ واحدةٍ لا ثلاثِ جولاتٍ:
+     * اللوحُ والملاحقُ والأهليةُ في عبارةٍ واحدةٍ. عقدُ الاستجابةِ لم يتغيرّ
+     * (نفسُ الحقولِ ونفسُ الدلالاتِ) — تغيّرَ عددُ الذهاباتِ والإياباتِ فقط.
+     *
+     * ملاحظةُ أمانةٍ معماريّةٍ: المسارُ القديمُ كانَ يتسامحُ معَ فشلِ استعلامِ
+     * الملاحقِ أو الأهليةِ (يعيدُ اللوحَ بلا ملاحقَ/بلا أسبابِ)؛ والعبارةُ الواحدةُ
+     * فشلُها واحدٌ. الأعمدةُ المشارُ إليها هنا أقدمُ هجراتٍ من دالةِ اللوحِ نفسِها،
+     * فما دامت الدالةُ موجودةً فالأعمدةُ موجودةٌ — ولا سيناريو واقعيّاً يفشلُ فيهِ
+     * جزءٌ وينجحُ الآخرُ إلا عطبُ القاعدةِ كلِّها وهوَ يُفشلُ اللوحَ في المسارينِ.
+     */
+    let rows: MergedBoardRow[];
     try {
-      rows = await this.#sql<ResultRow[]>`
-        select driver_offer_board(${telegramId}::bigint) as result`;
+      rows = await this.#sql<MergedBoardRow[]>`
+        with board as (
+          select driver_offer_board(${telegramId}::bigint) as payload
+        ),
+        elig as (
+          select d.verification_status::text as verification_status,
+                 d.last_location is not null as has_location,
+                 d.last_location_quality as location_quality,
+                 extract(epoch from (now() - d.last_location_at))::float8 as age_seconds,
+                 (select (s.value #>> '{}')::numeric::float8
+                    from platform_settings s
+                   where s.key = 'driver_location_max_age_seconds' and s.city_id = d.city_id
+                   limit 1) as max_age_seconds
+            from drivers d
+            join users u on u.id = d.user_id
+           where u.telegram_id = ${telegramId}::bigint
+           limit 1
+        ),
+        extras as (
+          select coalesce(jsonb_object_agg(x.order_id, x.fields), '{}'::jsonb) as extras
+          from (
+            select o.id::text as order_id, jsonb_build_object(
+              'id', o.id::text,
+              'pickup_link', o.pickup_link,
+              'pickup_notes', o.pickup_notes,
+              'pickup_lat', st_y(o.pickup::geometry),
+              'pickup_lng', st_x(o.pickup::geometry),
+              'has_dropoff', (o.dropoff is not null),
+              'dropoff_link', o.dropoff_link,
+              'dropoff_notes', o.dropoff_notes,
+              'dropoff_lat', st_y(o.dropoff::geometry),
+              'dropoff_lng', st_x(o.dropoff::geometry),
+              'rider_offer_mode', o.rider_offer_mode,
+              'rider_offer_sar', o.rider_offer_sar,
+              'pickup_at', to_jsonb(o.pickup_at)
+            ) as fields
+            from orders o
+            where o.id in (
+              select (entry->>'order_id')::uuid
+              from board
+              cross join lateral jsonb_array_elements(
+                coalesce(board.payload->'offers', '[]'::jsonb)
+              ) entry
+            )
+          ) x
+        )
+        select board.payload as payload,
+               elig.verification_status as verification_status,
+               elig.has_location as has_location,
+               elig.location_quality as location_quality,
+               elig.age_seconds as age_seconds,
+               elig.max_age_seconds as max_age_seconds,
+               extras.extras as extras
+        from board
+        left join elig on true
+        cross join extras`;
     } catch {
       return err(failed("STORE_ERROR"));
     }
 
-    const payload = rows[0]?.result;
+    const row = rows[0];
+    if (row === undefined) return err(failed("MALFORMED_RESULT"));
+    const payload = row.payload;
     if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
     if (payload.ok !== true) return err(rejectionFrom(payload));
 
-    const serverTime = readInstant(payload.server_time);
-    const blockReasons = readBlockReasons(payload.block_reasons);
-    if (
-      serverTime === null ||
-      blockReasons === null ||
-      typeof payload.is_available !== "boolean" ||
-      typeof payload.is_blocked !== "boolean" ||
-      !Array.isArray(payload.offers)
-    ) {
-      return err(failed("MALFORMED_RESULT"));
-    }
-
-    const offers: DriverOfferCard[] = [];
-    for (const item of payload.offers) {
-      const card = readOfferCard(item);
-      // بطاقةٌ لا تُقرأُ **تُسقِطُ اللوحَ كلَّه**: عرضٌ مُهمَلٌ صامتاً عملٌ
-      // يفوتُ سائقاً بلا أن يعلمَ أحدٌ، وذاكَ أسوأُ من عطبٍ مُعلَنٍ.
-      if (card === null) return err(failed("MALFORMED_RESULT"));
-      offers.push(card);
-    }
-
-    // `LOC-TRUST-01`: الرابطُ الأصليُّ وملاحظاتُ المكانِ — لطلباتِ اللوحِ نفسِه وحدَها.
-    const extras = await readOrderPlaceExtras(
-      this.#sql,
-      offers.map((card) => card.orderId),
-    );
-    const enriched = offers.map((card): DriverOfferCard => {
-      const found = extras.get(card.orderId);
-      return found === undefined
-        ? card
-        : {
-            ...card,
-            pickupExtras: found.pickup,
-            dropoffExtras: found.dropoff,
-            offerTerms: found.offerTerms,
-          };
-    });
-
-    const eligibilityReasons = await readDriverEligibility(this.#sql, telegramId);
-
-    return ok({
-      serverTime,
-      isAvailable: payload.is_available,
-      availabilityChangedAt:
-        payload.availability_changed_at === null
-          ? null
-          : readInstant(payload.availability_changed_at),
-      isBlocked: payload.is_blocked,
-      blockReasons,
-      eligibilityReasons,
-      offers: enriched,
+    return composeDriverOfferBoard(payload, {
+      extrasMap: parseExtrasJson(row.extras),
+      eligibilityReasons: eligibilityFromMergedRow(row),
     });
   }
 
