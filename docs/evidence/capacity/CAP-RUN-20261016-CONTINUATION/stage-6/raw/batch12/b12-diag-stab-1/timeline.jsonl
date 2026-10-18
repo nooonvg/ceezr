@@ -1,0 +1,2 @@
+{"t":"2026-10-18T22:53:00+00:00","event":"round.start","round":"b12-diag-stab-1","profile":[{"name":"wave-500","sec":180,"conc":500}],"drain_sec":180,"code_sha":"ff410234f4035d8e3e49f568a9f9f593db2125a1","code_dirty":0,"docs_dirty":0}
+{"t":"2026-10-18T22:53:00+00:00","event":"gateway.pid","pid":"575"}

@@ -1,0 +1,684 @@
+{
+ "scenarios": 3855,
+ "verdict": "PASS",
+ "failed_gates": [],
+ "gates": {
+  "G1": "100.00% (3855/3855)",
+  "P1": "405ms",
+  "P2": "742ms",
+  "P3": "387ms",
+  "P4": "7210ms",
+  "P7": "74s"
+ },
+ "window_s": 178.7,
+ "cpu_s_in_window": {
+  "gateway": 83.05,
+  "postgres": 167.17,
+  "generator": 19.78,
+  "redis": 7.07,
+  "mock": 1.29,
+  "redis_shim": 18.62,
+  "pg:ceezr:gatewayRequest": 76.58,
+  "pg:ceezr:workerJobs": 41.87,
+  "pg:ceezr:workerLocks": 0.08,
+  "pg:genA": 9.88,
+  "pg:driver-onboarding": 5.73,
+  "pg:ceezr:gatewayDispatch": 32.92,
+  "pg:psql": 0.0,
+  "pg:pg_aux": 0.87
+ },
+ "scenarios_per_s": 21.42,
+ "cpu_ms_per_scenario": {
+  "postgres": 43.7,
+  "gateway": 21.7,
+  "pg:ceezr:gatewayRequest": 20.0,
+  "pg:ceezr:workerJobs": 10.9,
+  "pg:ceezr:gatewayDispatch": 8.6,
+  "generator": 5.2,
+  "redis_shim": 4.9,
+  "pg:genA": 2.6,
+  "redis": 1.8,
+  "pg:driver-onboarding": 1.5,
+  "mock": 0.3,
+  "pg:pg_aux": 0.2,
+  "pg:ceezr:workerLocks": 0.0,
+  "pg:psql": 0.0
+ },
+ "cpu_ms_per_scenario_total_processes": 77.6,
+ "host_cpu_util_pct_of_2vcpu": 83.1,
+ "load1_mean": 3.0,
+ "pg_statements_per_scenario": 111.2,
+ "pg_exec_ms_per_scenario": 50.28,
+ "pg_top_by_exec": [
+  {
+   "calls_per_scenario": 3.86,
+   "exec_ms_per_scenario": 11.22,
+   "share_pct": 22.3,
+   "mean_ms": 2.906,
+   "stddev_ms": 32.78,
+   "max_ms": 3897.7,
+   "query": "select claim_notification_delivery() result"
+  },
+  {
+   "calls_per_scenario": 1.19,
+   "exec_ms_per_scenario": 11.07,
+   "share_pct": 22.0,
+   "mean_ms": 9.288,
+   "stddev_ms": 7.968,
+   "max_ms": 72.1,
+   "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_location::geometry) as lng, (extract($1 from d.last_location_at) * $2):"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "exec_ms_per_scenario": 4.79,
+   "share_pct": 9.5,
+   "mean_ms": 1.737,
+   "stddev_ms": 2.821,
+   "max_ms": 44.4,
+   "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 3.83,
+   "share_pct": 7.6,
+   "mean_ms": 3.827,
+   "stddev_ms": 3.5,
+   "max_ms": 54.0,
+   "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::text::jsonb, $14::text::jsonb, $15) as result"
+  },
+  {
+   "calls_per_scenario": 1.19,
+   "exec_ms_per_scenario": 3.82,
+   "share_pct": 7.6,
+   "mean_ms": 3.21,
+   "stddev_ms": 2.834,
+   "max_ms": 76.5,
+   "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "exec_ms_per_scenario": 2.4,
+   "share_pct": 4.8,
+   "mean_ms": 0.599,
+   "stddev_ms": 0.64,
+   "max_ms": 29.7,
+   "query": "select enqueue_rider_trip_notice($1::uuid, $2::text) as r"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 2.0,
+   "share_pct": 4.0,
+   "mean_ms": 2.004,
+   "stddev_ms": 2.169,
+   "max_ms": 42.2,
+   "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id = $1 and offer_id is not null"
+  },
+  {
+   "calls_per_scenario": 1.44,
+   "exec_ms_per_scenario": 1.29,
+   "share_pct": 2.6,
+   "mean_ms": 0.894,
+   "stddev_ms": 1.337,
+   "max_ms": 54.4,
+   "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.verification_status::text as verification_status, d.last_location is not "
+  },
+  {
+   "calls_per_scenario": 2.93,
+   "exec_ms_per_scenario": 0.96,
+   "share_pct": 1.9,
+   "mean_ms": 0.328,
+   "stddev_ms": 0.224,
+   "max_ms": 6.2,
+   "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.84,
+   "share_pct": 1.7,
+   "mean_ms": 0.838,
+   "stddev_ms": 0.778,
+   "max_ms": 19.7,
+   "query": "select driver_accept_offer($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "exec_ms_per_scenario": 0.61,
+   "share_pct": 1.2,
+   "mean_ms": 0.305,
+   "stddev_ms": 0.523,
+   "max_ms": 23.5,
+   "query": "select (record_attendance($1::uuid, $2, $3) ->> $4)::boolean as ok"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.55,
+   "share_pct": 1.1,
+   "mean_ms": 0.553,
+   "stddev_ms": 0.482,
+   "max_ms": 15.1,
+   "query": "select driver_complete_ride($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.55,
+   "share_pct": 1.1,
+   "mean_ms": 0.549,
+   "stddev_ms": 0.366,
+   "max_ms": 16.4,
+   "query": "select start_trial($1::uuid, $2::subscription_plan) as result where not exists (select $4 from subscriptions s where s.driver_id = $3::uuid)"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.53,
+   "share_pct": 1.0,
+   "mean_ms": 0.526,
+   "stddev_ms": 0.544,
+   "max_ms": 14.2,
+   "query": "select driver_start_ride($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "exec_ms_per_scenario": 0.5,
+   "share_pct": 1.0,
+   "mean_ms": 0.181,
+   "stddev_ms": 0.238,
+   "max_ms": 11.3,
+   "query": "select list_rider_trip_events($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.35,
+   "share_pct": 0.7,
+   "mean_ms": 0.346,
+   "stddev_ms": 0.457,
+   "max_ms": 12.9,
+   "query": "select driver_mark_arrived($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.31,
+   "share_pct": 0.6,
+   "mean_ms": 0.31,
+   "stddev_ms": 0.314,
+   "max_ms": 8.5,
+   "query": "select claim_and_enqueue_telegram_update( $1, $2, $3, $4, $5 ) as result"
+  },
+  {
+   "calls_per_scenario": 0.02,
+   "exec_ms_per_scenario": 0.3,
+   "share_pct": 0.6,
+   "mean_ms": 12.927,
+   "stddev_ms": 20.366,
+   "max_ms": 131.1,
+   "query": "select claim_telegram_update_replies($1::integer, $2::integer) as result"
+  },
+  {
+   "calls_per_scenario": 0.93,
+   "exec_ms_per_scenario": 0.29,
+   "share_pct": 0.6,
+   "mean_ms": 0.312,
+   "stddev_ms": 0.32,
+   "max_ms": 10.8,
+   "query": "select finish_notification_delivery($1::uuid, $2::uuid, $3::text, $4, $5::text) result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.28,
+   "share_pct": 0.5,
+   "mean_ms": 0.275,
+   "stddev_ms": 0.663,
+   "max_ms": 16.8,
+   "query": "insert into users (city_id, telegram_id, full_name, phone, role, language_code) values ((select id from cities where code = $1), $2::bigint, $3, $4, $5::user_ro"
+  }
+ ],
+ "pg_top_by_calls": [
+  {
+   "calls_per_scenario": 6.89,
+   "mean_ms": 0.013,
+   "query": "select status from telegram_update_jobs where bot = $2 and update_id = $1::bigint"
+  },
+  {
+   "calls_per_scenario": 6.0,
+   "mean_ms": 0.008,
+   "query": "select role::text as role, is_blocked, language_code from users where telegram_id = $1"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "mean_ms": 0.013,
+   "query": "select status::text as status, assigned_driver_id::text as assigned from orders where id = $1"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "mean_ms": 0.599,
+   "query": "select enqueue_rider_trip_notice($1::uuid, $2::text) as r"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "mean_ms": 0.02,
+   "query": "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.phone, d.verification_status, a.is_available, (d.last_location is not null) as has_location, "
+  },
+  {
+   "calls_per_scenario": 3.88,
+   "mean_ms": 0.001,
+   "query": "select btrim( regexp_replace( regexp_replace( lower( translate( coalesce(p_input, $2), -- الطيُّ واحداً بواحدٍ ثمَّ الحذفُ (تشكيلٌ وتطويلٌ) في الذيلِ. $3, $4 ) "
+  },
+  {
+   "calls_per_scenario": 3.86,
+   "mean_ms": 2.906,
+   "query": "select claim_notification_delivery() result"
+  },
+  {
+   "calls_per_scenario": 3.86,
+   "mean_ms": 0.015,
+   "query": "select request_id from notification_outbox where id = $1::uuid"
+  },
+  {
+   "calls_per_scenario": 3.86,
+   "mean_ms": 0.008,
+   "query": "select acked_at from rider_trip_event_receipts where delivery_id = $1::uuid"
+  },
+  {
+   "calls_per_scenario": 3.86,
+   "mean_ms": 0.03,
+   "query": "select ru.telegram_id::text as rider_telegram_id, ru.language_code as rider_language, du.full_name as driver_name, d.plate_number as plate, d.vehicle_type::text"
+  },
+  {
+   "calls_per_scenario": 3.0,
+   "mean_ms": 0.043,
+   "query": "select kind, version, accepted_at from list_user_consents($1)"
+  },
+  {
+   "calls_per_scenario": 2.93,
+   "mean_ms": 0.328,
+   "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "mean_ms": 1.737,
+   "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "mean_ms": 0.181,
+   "query": "select list_rider_trip_events($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.55,
+   "mean_ms": 0.004,
+   "query": "select case p_kind -- ١ = حرجٌ: استغاثةٌ، وحالةُ رحلةٍ نشطةٍ، ومطالبةُ إسنادٍ لها مؤقّتٌ يجري. when $2 then $3 when $4 then $5 when $6 then $7 when $8 then $9 w"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "mean_ms": 0.019,
+   "query": "select id, code, name_ar, name_en from cities where is_active = $1 order by name_ar"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "mean_ms": 0.305,
+   "query": "select (record_attendance($1::uuid, $2, $3) ->> $4)::boolean as ok"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "mean_ms": 0.01,
+   "query": "select id from orders where assigned_driver_id = $1::uuid and status in ($2 /*, ... */) limit $3"
+  },
+  {
+   "calls_per_scenario": 1.94,
+   "mean_ms": 0.001,
+   "query": "select $1 in ($2 /*, ... */)"
+  },
+  {
+   "calls_per_scenario": 1.93,
+   "mean_ms": 0.001,
+   "query": "begin"
+  }
+ ],
+ "gateway_cpu_profile": {
+  "file": "CPU.20261018.190610.11342.0.001.cpuprofile",
+  "sampled_s": 276.2,
+  "busy_s": 276.2,
+  "by_category_pct_of_busy": {
+   "bun/runtime (writeBuffered)": 35.3,
+   "bun/runtime (fetch)": 11.2,
+   "postgres.js (البروتوكول)": 7.6,
+   "أخرى": 5.3,
+   "packages/infrastructure": 3.9,
+   "bun/runtime (end)": 2.4,
+   "bun/runtime (subarray)": 2.4,
+   "packages أخرى": 2.2,
+   "bun/runtime (cork)": 1.9,
+   "gateway: http/app": 1.9,
+   "hono (التوجيه)": 1.7,
+   "bun/runtime (?)": 1.6,
+   "bun/runtime (stringify)": 1.5,
+   "bun/runtime (defineProperties)": 1.4,
+   "bun/runtime (log)": 1.3,
+   "bun/runtime (toString)": 1.0,
+   "gateway: background": 0.8,
+   "bun/runtime (readUInt32BE)": 0.7,
+   "packages/application": 0.6,
+   "bun/runtime (onRSDefaultControllerStartFulf)": 0.6,
+   "bun/runtime (close)": 0.6,
+   "bun/runtime (parse)": 0.5,
+   "bun/runtime (concat)": 0.5,
+   "bun/runtime (then)": 0.5,
+   "bun/runtime (setTimeout)": 0.5,
+   "bun/runtime (Response)": 0.5,
+   "bun/runtime (URL)": 0.5,
+   "bun/runtime (Request)": 0.4,
+   "bun/runtime (onDirectConsumeLoopReadFulfill)": 0.4,
+   "socket.io": 0.4,
+   "bun/runtime (send)": 0.4,
+   "bun/runtime (reset)": 0.4,
+   "bun/runtime ((host))": 0.4,
+   "bun/runtime (Buffer)": 0.4,
+   "bun/runtime (json)": 0.3,
+   "bun/runtime (Hmac)": 0.3,
+   "bun/runtime (copyDataProperties)": 0.3,
+   "bun/runtime (set)": 0.3,
+   "bun/runtime (byteLength)": 0.3,
+   "bun/runtime (map)": 0.3,
+   "bun/runtime (entries)": 0.3,
+   "bun/runtime (setImmediate)": 0.2,
+   "bun/runtime (write)": 0.2,
+   "bun/runtime (processTicksAndRejections)": 0.2,
+   "bun/runtime (forEach)": 0.2,
+   "bun/runtime (AbortController)": 0.2,
+   "bun/runtime (takeRawHeaders)": 0.2,
+   "bun/runtime (sort)": 0.2,
+   "bun/runtime (getReader)": 0.2,
+   "bun/runtime (writeHead)": 0.2,
+   "bun/runtime (Array)": 0.2,
+   "bun/runtime (Date)": 0.2,
+   "bun/runtime (asyncFunctionDrive)": 0.2,
+   "bun/runtime (Symbol)": 0.1,
+   "bun/runtime (nextTick)": 0.1,
+   "node_modules أخرى": 0.1,
+   "bun/runtime (clearTimeout)": 0.1,
+   "bun/runtime (update)": 0.1,
+   "bun/runtime (appendFile)": 0.1,
+   "bun/runtime (drain)": 0.1,
+   "bun/runtime (releaseLock)": 0.1,
+   "bun/runtime (toISOString)": 0.1,
+   "bun/runtime (race)": 0.1,
+   "bun/runtime (digest)": 0.1,
+   "bun/runtime (Promise)": 0.1,
+   "bun/runtime (text)": 0.1,
+   "bun/runtime (clearImmediate)": 0.1,
+   "bun/runtime (allocUnsafe)": 0.1,
+   "bun/runtime (Headers)": 0.1,
+   "bun/runtime (Error)": 0.1,
+   "bun/runtime (read)": 0.1,
+   "bun/runtime (filter)": 0.1,
+   "bun/runtime (shift)": 0.1,
+   "workers (مضمَّن)": 0.1,
+   "bun/runtime (bound onwrite)": 0.1,
+   "bun/runtime (get)": 0.1,
+   "bun/runtime (percentile)": 0.1,
+   "bun/runtime (setPrototypeDirect)": 0.1,
+   "bun/runtime (boundDirectClose)": 0.0,
+   "bun/runtime (next)": 0.0,
+   "bun/runtime (cloneObject)": 0.0,
+   "bun/runtime (some)": 0.0,
+   "bun/runtime (onNativeSourceCallCloseMicrota)": 0.0,
+   "bun/runtime (onAsyncIterableSourceNextFulfi)": 0.0,
+   "bun/runtime (has)": 0.0,
+   "bun/runtime (Hash)": 0.0,
+   "bun/runtime (boundDirectWrite)": 0.0,
+   "bun/runtime (randomBytes)": 0.0,
+   "bun/runtime (String)": 0.0,
+   "bun/runtime (handleProxyGetTrapResult)": 0.0,
+   "bun/runtime (randomUUID)": 0.0,
+   "bun/runtime (asyncIterableSourcePull)": 0.0,
+   "bun/runtime (refresh)": 0.0,
+   "bun/runtime (anonymous)": 0.0,
+   "bun/runtime (values)": 0.0,
+   "bun/runtime (URLSearchParams)": 0.0,
+   "bun/runtime (resume)": 0.0,
+   "bun/runtime (performProxyObjectGet)": 0.0,
+   "bun/runtime (bound handle)": 0.0,
+   "bun/runtime (pull)": 0.0,
+   "bun/runtime (find)": 0.0,
+   "bun/runtime (push)": 0.0,
+   "bun/runtime (scryptSync)": 0.0,
+   "bun/runtime (bound match)": 0.0,
+   "bun/runtime (unref)": 0.0,
+   "bun/runtime (copy)": 0.0,
+   "bun/runtime (/^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)": 0.0,
+   "bun/runtime (onDirectEndOfTickFlush)": 0.0,
+   "bun/runtime (drainMicrotasks)": 0.0,
+   "bun/runtime (Number)": 0.0,
+   "bun/runtime (isArray)": 0.0,
+   "bun/runtime (timingSafeEqual)": 0.0,
+   "bun/runtime (asyncIterableSourceClose)": 0.0,
+   "bun/runtime ((unknown))": 0.0,
+   "bun/runtime (/^(?:[A-Za-z][A-Za-z_.-]*|v\\d+)": 0.0,
+   "bun/runtime (decode)": 0.0,
+   "bun/runtime (Set)": 0.0,
+   "bun/runtime (join)": 0.0,
+   "bun/runtime (@lazy)": 0.0,
+   "bun/runtime (addEventListener)": 0.0,
+   "bun/runtime (upgrade)": 0.0,
+   "bun/runtime (/[^\\t\\x20-\\x7e\\x80-\\xff]/)": 0.0,
+   "bun/runtime (memoryUsage)": 0.0,
+   "bun/runtime (bound unsafe)": 0.0,
+   "bun/runtime (performIteration)": 0.0,
+   "bun/runtime (catch)": 0.0,
+   "bun/runtime (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9)": 0.0,
+   "bun/runtime (DateTimeFormat)": 0.0,
+   "bun/runtime ([Symbol.toPrimitive])": 0.0,
+   "bun/runtime (assign)": 0.0,
+   "bun/runtime (/^[\\^_`a-zA-Z\\-0-9!#$%&'*+.|~])": 0.0,
+   "bun/runtime (start)": 0.0,
+   "bun/runtime (/^(127(\\.\\d{1,3}){3}|0\\.0\\.0\\.)": 0.0,
+   "bun/runtime (performPromiseThen)": 0.0,
+   "bun/runtime (add)": 0.0,
+   "bun/runtime (slice)": 0.0,
+   "bun/runtime (replace)": 0.0,
+   "bun/runtime (toJSON)": 0.0,
+   "bun/runtime (TextDecoder)": 0.0,
+   "bun/runtime (/^Bearer\\s+(.+)$/i)": 0.0,
+   "bun/runtime (test)": 0.0,
+   "bun/runtime (getAll)": 0.0,
+   "bun/runtime (bound onPacket)": 0.0,
+   "bun/runtime (bound callApi)": 0.0,
+   "bun/runtime (reduce)": 0.0,
+   "bun/runtime (/\\{(\\w+)#([^{}]+)\\}/g)": 0.0,
+   "bun/runtime (fromEntries)": 0.0,
+   "bun/runtime (finally)": 0.0,
+   "bun/runtime (/^\\d{3,}$/)": 0.0,
+   "bun/runtime (bound onconnection)": 0.0,
+   "bun/runtime (TextEncoder)": 0.0,
+   "bun/runtime (bound #message)": 0.0,
+   "bun/runtime (validateObject)": 0.0,
+   "bun/runtime (/^:[A-Za-z_][A-Za-z0-9_]*$/)": 0.0,
+   "bun/runtime (resolve)": 0.0,
+   "bun/runtime (/^\\d+$/)": 0.0,
+   "bun/runtime (startsWith)": 0.0,
+   "bun/runtime (/^Bearer[ ]+(?<token>[^ ]+)$/)": 0.0,
+   "bun/runtime (all)": 0.0,
+   "bun/runtime (bound onDrain)": 0.0,
+   "bun/runtime (now)": 0.0,
+   "bun/runtime (bind)": 0.0,
+   "bun/runtime (/\\{(\\w+)\\}/g)": 0.0,
+   "bun/runtime (bound begin)": 0.0,
+   "bun/runtime (validateAbortSignal)": 0.0,
+   "bun/runtime (max)": 0.0,
+   "bun/runtime (resolvePromise)": 0.0,
+   "bun/runtime (bound ondecoded)": 0.0,
+   "bun/runtime (apply)": 0.0,
+   "bun/runtime (StrictEventEmitter)": 0.0,
+   "bun/runtime (onRSDefaultControllerPullFulfi)": 0.0,
+   "bun/runtime (every)": 0.0,
+   "bun/runtime (doConnect)": 0.0,
+   "bun/runtime (encode)": 0.0,
+   "bun/runtime (getTime)": 0.0,
+   "bun/runtime (NotTagged)": 0.0,
+   "bun/runtime (jsSetAsyncHooksEnabled)": 0.0,
+   "bun/runtime (/\\p{L}/u)": 0.0,
+   "bun/runtime (bound findNearbyAvailableForDi)": 0.0,
+   "bun/runtime (bound json)": 0.0,
+   "bun/runtime (/^5\\d{8}$/)": 0.0,
+   "bun/runtime (bound openRound)": 0.0,
+   "bun/runtime (Proxy)": 0.0,
+   "bun/runtime (validateNumber)": 0.0,
+   "bun/runtime (return)": 0.0,
+   "bun/runtime (bound findByOrder)": 0.0,
+   "bun/runtime (Uint8Array)": 0.0,
+   "bun/runtime (cpuUsage)": 0.0,
+   "bun/runtime (flatIntoArray)": 0.0,
+   "bun/runtime (delete)": 0.0,
+   "bun/runtime (bound onclose)": 0.0,
+   "bun/runtime (split)": 0.0,
+   "bun/runtime (isRequestTimedOut)": 0.0,
+   "bun/runtime (upgradeToTunnel)": 0.0,
+   "bun/runtime (includes)": 0.0,
+   "bun/runtime (clear)": 0.0,
+   "bun/runtime (newResolvedPromise)": 0.0,
+   "bun/runtime (alloc)": 0.0,
+   "bun/runtime (/[\\u200E\\u200F\\u202A-\\u202E\\u2)": 0.0,
+   "bun/runtime (create)": 0.0,
+   "bun/runtime (bound #close)": 0.0,
+   "bun/runtime (/\\s+/g)": 0.0,
+   "bun/runtime (/^[A-Za-z0-9-]{8,64}$/)": 0.0,
+   "bun/runtime (get length)": 0.0,
+   "bun/runtime (/^[0-9a-f]{64}$/)": 0.0,
+   "bun/runtime (resolvePromiseWithFirstResolvi)": 0.0,
+   "bun/runtime (charCodeAt)": 0.0,
+   "bun/runtime (bound fetch)": 0.0,
+   "bun/runtime (bound onClose)": 0.0,
+   "bun/runtime (Map)": 0.0,
+   "bun/runtime (onDirectPullFulfilled)": 0.0,
+   "bun/runtime (/[-_]/)": 0.0,
+   "bun/runtime (/[\\s\\-()]/g)": 0.0,
+   "bun/runtime (keys)": 0.0,
+   "bun/runtime (bound findById)": 0.0,
+   "bun/runtime (search)": 0.0,
+   "bun/runtime (toLowerCase)": 0.0,
+   "bun/runtime (onAsyncIterableSourceCleanupSe)": 0.0,
+   "bun/runtime (/\\.$/)": 0.0
+  },
+  "top_self_functions_pct_of_busy": [
+   [
+    "writeBuffered @ :-1",
+    35.31
+   ],
+   [
+    "fetch @ :-1",
+    11.24
+   ],
+   [
+    "end @ :-1",
+    2.4
+   ],
+   [
+    "subarray @ :-1",
+    2.39
+   ],
+   [
+    "build @ node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/connection.js:223",
+    2.01
+   ],
+   [
+    "cork @ :-1",
+    1.9
+   ],
+   [
+    "stringify @ :-1",
+    1.47
+   ],
+   [
+    "defineProperties @ :-1",
+    1.39
+   ],
+   [
+    "log @ :-1",
+    1.33
+   ],
+   [
+    "(anon) @ :-1",
+    1.28
+   ],
+   [
+    "toString @ :-1",
+    1.01
+   ],
+   [
+    "Query @ node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/query.js:6",
+    0.91
+   ],
+   [
+    "emit @ node:events:84",
+    0.84
+   ],
+   [
+    "readUInt32BE @ :-1",
+    0.72
+   ],
+   [
+    "DataRow @ node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/connection.js:503",
+    0.67
+   ],
+   [
+    "(anon) @ apps/gateway/src/routes/internal-offers-signal.ts:76",
+    0.63
+   ],
+   [
+    "run @ packages/shared/resilience/dependency-guard.ts:223",
+    0.62
+   ],
+   [
+    "header @ node_modules/.bun/hono@4.13.13/node_modules/hono/dist/context.js:198",
+    0.62
+   ],
+   [
+    "onRSDefaultControllerStartFulfilled @ :-1",
+    0.61
+   ],
+   [
+    "close @ :-1",
+    0.57
+   ],
+   [
+    "parse @ :-1",
+    0.55
+   ],
+   [
+    "concat @ :-1",
+    0.54
+   ],
+   [
+    "then @ :-1",
+    0.51
+   ],
+   [
+    "setTimeout @ :-1",
+    0.48
+   ],
+   [
+    "Response @ :-1",
+    0.47
+   ],
+   [
+    "URL @ :-1",
+    0.46
+   ],
+   [
+    "execute @ node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/connection.js:155",
+    0.46
+   ],
+   [
+    "Request @ :-1",
+    0.44
+   ],
+   [
+    "length @ node_modules/.bun/postgres@3.4.9/node_modules/postgres/src/queue.js:7",
+    0.44
+   ],
+   [
+    "onDirectConsumeLoopReadFulfilled @ :-1",
+    0.43
+   ]
+  ]
+ }
+}
