@@ -515,6 +515,14 @@ export interface ContainerOverrides {
  * الضمانةَ المعلنةَ.
  */
 const IMMEDIATE_REDISPATCH_LIMIT = 50;
+/**
+ * `LOAD-01 · P4` — طلبانِ في آنٍ داخلَ شوطِ المدينةِ الواحدِ (لا شوطانِ). الشوطُ على تجمُّعِ
+ * الطلبِ المشتركِ عمداً فيتباطأُ حينَ يزدحمُ التجمُّعُ ولا يُغرقُه؛ وتسلسلُه التامُّ جعلَ طاقتَه
+ * ~14 طلباً جديداً/ث تحتَ موجةِ 500 (`b9-C1-500`: ~4 رحلاتٍ × ~12ms انتظاراً لكلِّ طلبٍ) دونَ
+ * وصولٍ ~17/ث. القيمةُ مقيسةٌ لا مُخمَّنةٌ — انظرْ أدلّةَ `b9-C2-500` وما بعدها.
+ */
+const IMMEDIATE_REDISPATCH_CONCURRENCY =
+  Number(process.env.DISPATCH_DIAG_PASS_CONCURRENCY ?? "") || 2;
 
 /**
  * حصّةُ مزوّدِ التوجيهِ المُعلَنةُ (`REQ-09` · `ADR 0190`). على `Redis` متى وُجِدَ:
@@ -971,6 +979,8 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         finder: pass?.finder ?? finder,
         broadcast: pass?.broadcast ?? immediateMatching,
         limit: IMMEDIATE_REDISPATCH_LIMIT,
+        concurrency: IMMEDIATE_REDISPATCH_CONCURRENCY,
+        ...(pass ? { aroundOrder: pass.aroundOrder } : {}),
         log,
       });
       pass?.end(report);

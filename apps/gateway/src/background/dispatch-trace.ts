@@ -16,6 +16,7 @@
  * لا يلمسُ Redis: مسارُ البثِّ كلُّه على PostgreSQL (المرشَّحونَ من `drivers.last_location`)،
  * فغيابُ Redis عن الأثرِ حقيقةُ المسارِ لا ثغرةُ قياسٍ.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import { appendFile } from "node:fs/promises";
 import { monitorEventLoopDelay } from "node:perf_hooks";
 import type { BroadcastDependencies } from "../../../../packages/application/dispatch/broadcast-offers.ts";
@@ -34,6 +35,8 @@ interface OrderCtx {
 export interface DispatchPassTrace {
   readonly finder: SearchingOrderFinder;
   readonly broadcast: BroadcastDependencies;
+  /** يلفُّ معالجةَ طلبٍ واحدٍ فتُنسَبُ نداءاتُه إليه ولو تزامنت الطلباتُ داخلَ الشوطِ. */
+  readonly aroundOrder: <T>(orderId: string, fn: () => Promise<T>) => Promise<T>;
   end(report: unknown): void;
 }
 
@@ -134,48 +137,42 @@ export function createDispatchTrace(options: {
       firstAcceptedAt.delete(cityId);
       const startAt = Date.now();
       const passPhases: Record<string, number> = {};
-      let current: OrderCtx | null = null;
+      const als = new AsyncLocalStorage<OrderCtx>();
       let idx = 0;
       let picked = 0;
       let oldestWaitSec: number | null = null;
       let newestWaitSec: number | null = null;
 
-      const closeOrder = (): void => {
-        if (current === null) return;
-        const total = Date.now() - current.startAt;
-        const io = Object.values(current.phases).reduce((a, b) => a + b, 0);
+      const closeOrder = (ctx: OrderCtx): void => {
+        const total = Date.now() - ctx.startAt;
+        const io = Object.values(ctx.phases).reduce((a, b) => a + b, 0);
         emit({
           k: "order",
           passId,
           cityId,
           idx: idx++,
-          orderId: current.orderId,
-          startAt: current.startAt,
+          orderId: ctx.orderId,
+          startAt: ctx.startAt,
           totalMs: total,
           ioMs: io,
           cpuMs: Math.max(0, total - io),
-          calls: current.calls,
-          phases: current.phases,
+          calls: ctx.calls,
+          phases: ctx.phases,
         });
-        current = null;
       };
 
       const timed =
-        <A extends unknown[], R>(
-          phase: Phase,
-          fn: (...args: A) => Promise<R>,
-          onCall?: (...args: A) => void,
-        ) =>
+        <A extends unknown[], R>(phase: Phase, fn: (...args: A) => Promise<R>) =>
         async (...args: A): Promise<R> => {
-          onCall?.(...args);
           const t0 = performance.now();
           try {
             return await fn(...args);
           } finally {
             const ms = performance.now() - t0;
-            const target: Record<string, number> = current?.phases ?? passPhases;
+            const ctx = als.getStore();
+            const target: Record<string, number> = ctx?.phases ?? passPhases;
             target[phase] = (target[phase] ?? 0) + ms;
-            if (current) current.calls += 1;
+            if (ctx) ctx.calls += 1;
           }
         };
 
@@ -184,10 +181,7 @@ export function createDispatchTrace(options: {
         ...b,
         orders: {
           ...b.orders,
-          findById: timed("findById", b.orders.findById.bind(b.orders), (orderId: unknown) => {
-            closeOrder();
-            current = { orderId: String(orderId), startAt: Date.now(), phases: {}, calls: 0 };
-          }),
+          findById: timed("findById", b.orders.findById.bind(b.orders)),
         },
         settings: {
           ...b.settings,
@@ -229,8 +223,15 @@ export function createDispatchTrace(options: {
       return {
         finder: wrappedFinder,
         broadcast: wrapped,
+        aroundOrder: async (orderId, fn) => {
+          const ctx: OrderCtx = { orderId, startAt: Date.now(), phases: {}, calls: 0 };
+          try {
+            return await als.run(ctx, fn);
+          } finally {
+            closeOrder(ctx);
+          }
+        },
         end(report) {
-          closeOrder();
           const r = report as {
             ok?: boolean;
             value?: {
