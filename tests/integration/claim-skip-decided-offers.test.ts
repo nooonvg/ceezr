@@ -26,7 +26,11 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
-import { type ActiveCityHandle, ensureActiveCity } from "../support/active-city.ts";
+import {
+  type ActiveCityHandle,
+  ensureActiveCity,
+  restoreCityBaseline,
+} from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 
@@ -184,6 +188,9 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
 
   afterAll(async () => {
     await sql`delete from notification_outbox where dedup_key like 'claimskip-test:%'`;
+    // عقدُ المعينِ (`القاعدةُ ٣`): من استعملَ `ensureActiveCity` ردَّ بهِ — على القاعدةِ
+    // المعزولةِ قبلَ إسقاطِها (لا أثرَ بعدها، لكنّ العقدَ يُقرأُ على النمطِ).
+    await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
     const adminUrl = new URL(DATABASE_URL as string);
     adminUrl.pathname = "/postgres";
