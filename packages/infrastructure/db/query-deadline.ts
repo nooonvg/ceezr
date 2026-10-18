@@ -41,6 +41,16 @@ export interface QueryTiming {
   readonly kind: "query" | "tx" | "txQuery";
   readonly waitMs: number;
   readonly runMs: number;
+  /** أوّلُ 70 حرفًا من نصِّ الاستعلامِ مضغوطَ الفراغ (لا قيمَ: المعاملاتُ لا تدخلُه). */
+  readonly sig?: string | undefined;
+}
+
+function signatureOf(query: unknown): string | undefined {
+  const strings = (query as { strings?: readonly string[] | string }).strings;
+  const head =
+    typeof strings === "string" ? strings : Array.isArray(strings) ? strings[0] : undefined;
+  if (head === undefined) return undefined;
+  return String(head).replace(/\s+/g, " ").trim().slice(0, 70);
 }
 let timingObserver: ((timing: QueryTiming) => void) | null = null;
 export function observeQueryTimings(observer: ((timing: QueryTiming) => void) | null): void {
@@ -164,6 +174,7 @@ function armOnExecute<T>(
           kind,
           waitMs: tDispatch - t0,
           runMs: performance.now() - tDispatch,
+          sig: signatureOf(query),
         });
       }
       if (fired && (cause as { code?: string } | undefined)?.code === "57014") {

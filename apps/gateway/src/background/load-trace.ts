@@ -66,6 +66,8 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
   let window = new Map<string, { ms: number[]; errors: number }>();
   // توقيتُ الاستعلاماتِ لكلِّ تجمُّعٍ ونوعٍ: انتظارُ المقعدِ وزمنُ التنفيذِ/الاحتجاز.
   let dbWindow = new Map<string, { wait: number[]; run: number[] }>();
+  // عددُ كلِّ استعلامٍ بتوقيعِه وزمنُ احتجازِه المقعدَ — يُصبُّ كاملًا عندَ الإيقاف.
+  const sigWindow = new Map<string, { n: number; runMs: number }>();
   observeQueryTimings((t) => {
     const key = `${t.label}|${t.kind}`;
     let w = dbWindow.get(key);
@@ -75,6 +77,13 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
     }
     w.wait.push(t.waitMs);
     w.run.push(t.runMs);
+    if (t.sig !== undefined) {
+      const sk = `${t.label}|${t.kind}|${t.sig}`;
+      const c = sigWindow.get(sk) ?? { n: 0, runMs: 0 };
+      c.n += 1;
+      c.runMs += t.runMs;
+      sigWindow.set(sk, c);
+    }
   });
   const flush = async (): Promise<void> => {
     if (window.size > 0) {
@@ -181,6 +190,10 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
       if (status >= 500) w.errors += 1;
     },
     stop: async () => {
+      for (const [key, c] of sigWindow) {
+        const [pool, kind, ...rest] = key.split("|");
+        emit({ k: "sig", pool, kind, sig: rest.join("|"), n: c.n, runMs: Math.round(c.runMs) });
+      }
       clearInterval(timer);
       clearInterval(lagTimer);
       observeQueryTimings(null);
