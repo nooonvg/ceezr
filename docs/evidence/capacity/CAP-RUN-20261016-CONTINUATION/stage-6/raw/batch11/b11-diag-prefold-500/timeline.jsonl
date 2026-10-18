@@ -1,0 +1,2 @@
+{"t":"2026-10-18T19:59:53+00:00","event":"round.start","round":"b11-diag-prefold-500","profile":[{"name":"wave-500","sec":180,"conc":500}],"drain_sec":180,"code_sha":"ea9f16a618c4d273df640b2a8e0152ae72d556c2","code_dirty":0,"docs_dirty":0}
+{"t":"2026-10-18T19:59:53+00:00","event":"gateway.pid","pid":"25223"}

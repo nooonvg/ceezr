@@ -70,7 +70,14 @@ export interface RiderTripFactsReader {
 
 /** إيداعُ إشعارِ طورٍ في صندوقِ الصادرِ. `null` ⇐ لا طلبَ بهذا المعرّف. */
 export interface RiderTripNoticeOutbox {
-  enqueue(orderId: string, event: RiderTripEvent): Promise<{ readonly created: boolean } | null>;
+  /**
+   * `riderTelegramId` (LOAD-01 · الدفعةُ الحاديةَ عشرةَ): معرّفُ تيليجرامِ الراكبِ من الإيداعِ نفسِه
+   * (`null` لحسابٍ مُجهَّل، و`undefined` لمنفذٍ لا يُعيدُه) — فلا استعلامَ ثانٍ للإشارةِ اللحظيّة.
+   */
+  enqueue(
+    orderId: string,
+    event: RiderTripEvent,
+  ): Promise<{ readonly created: boolean; readonly riderTelegramId?: string | null } | null>;
 }
 
 export interface RiderTripNoticeDeps {

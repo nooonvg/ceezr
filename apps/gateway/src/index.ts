@@ -163,6 +163,7 @@ import { assertEgressEnvironment } from "../../../packages/shared/wasla/egress-g
 import { jobHealthExpectations } from "../../workers/src/container.ts";
 import { createAdminAuthPort } from "./admin/auth.ts";
 import { mountAdminSurface } from "./admin/mount.ts";
+import { createLoadTrace, type LoadTrace } from "./background/load-trace.ts";
 import { createTelegramReplyPool } from "./background/telegram-reply-pool.ts";
 import {
   parseTelegramDrainLanes,
@@ -405,6 +406,8 @@ let embeddedWorker: EmbeddedWorkerHandle | null = null;
  * التصريفِ بعدَ انتظارِ الشوطِ الجاري.
  */
 let updateDrainer: TelegramUpdateDrainer | null = null;
+// يُعلَنُ هنا لا عندَ إنشائه: `close()` قد يُستدعى أثناءَ الإقلاعِ قبلَ سطرِ الإنشاءِ (لا TDZ).
+let loadTrace: LoadTrace | null = null;
 
 /**
  * مقبضُ خادمِ HTTP من Node — يُملأ آخرَ الإقلاع. التصريفُ الرشيقُ يقرؤه عبر الإغلاقِ
@@ -444,6 +447,7 @@ const lifecycle = createLifecycle({
         await updateDrainer.stop();
         updateDrainer = null;
       }
+      await loadTrace?.stop();
       // العاملُ أولاً: مهمّةٌ جاريةٌ تستعلمُ القاعدةَ، وإغلاقُ التجمّعِ تحتها يجعلها
       // تفشلُ بخطأِ اتصالٍ لا معنىً له بدلَ أن تنتهي أو تُوقَفَ نظيفة.
       if (embeddedWorker !== null) await embeddedWorker.stop();
@@ -2006,6 +2010,8 @@ for (const [audience, token] of [
  * لا إيقاظَ له: إعادةٌ مؤجّلةٌ بـ`next_attempt_at`، أو صفٌّ أودعته نسخةٌ أخرى. والدرينرُ
  * يفرغُ الطابورَ كاملاً في كلِّ شوطٍ (claim حتى null)، ومانعُ التداخلِ باقٍ.
  */
+// LOAD-01 (الدفعةُ الحاديةَ عشرةَ): أثرُ كلفةِ السيناريو — بغيابِ `DISPATCH_TRACE_FILE` هو `null` ولا أثرَ له.
+loadTrace = createLoadTrace(process.env.DISPATCH_TRACE_FILE);
 const drainLanes = parseTelegramDrainLanes(process.env.TELEGRAM_DRAIN_LANES);
 if (drainLanes.invalid)
   log("telegram.drainer.lanes_invalid", {
@@ -2022,6 +2028,7 @@ updateDrainer = startTelegramUpdateDrainer(
     lanes: drainLanes.lanes,
     // CAP-RUN-20261015 / D2+D3: توزيعُ المساراتِ بين البوتين وتجديدُ إيجارِ المحجوزِ المنتظر.
     fairBots: ["driver", "rider"],
+    ...(loadTrace === null ? {} : { timing: loadTrace.drainer }),
     // S5 (ADR 0288 §ملحق): الردُّ لا يحجزُ مسارَ الوظيفةِ — `r11-wave-500` أثبتَ أنَّ انتظارَه
     // جعلَ إتمامَ وظائفِ إثباتِ الهاتفِ بمعدّلِ دلوِ البوتِ (22ث → 62ث).
     replyPool: createTelegramReplyPool({
@@ -2056,10 +2063,22 @@ const httpHandler = createHttpBridge(
       }
 
       inFlightRequests += 1;
+      if (loadTrace === null) {
+        try {
+          return await app.fetch(request, server);
+        } finally {
+          inFlightRequests -= 1;
+        }
+      }
+      const t0 = performance.now();
+      let status = 500;
       try {
-        return await app.fetch(request, server);
+        const response = await app.fetch(request, server);
+        status = response.status;
+        return response;
       } finally {
         inFlightRequests -= 1;
+        loadTrace.onHttp(pathname, request.method, performance.now() - t0, status);
       }
     },
   },

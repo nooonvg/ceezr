@@ -1,0 +1,169 @@
+{
+  "gen": "genA",
+  "phase": "post",
+  "sinceT0Sec": 1,
+  "snapshot": {
+    "at": "2026-10-18T19:26:19.630Z",
+    "ordersByStatus": {
+      "completed": 3829
+    },
+    "telegramUpdates": {
+      "jobs": 3829,
+      "jobsByStatus": {
+        "done": 3829
+      },
+      "repliesByStatus": {
+        "done": 3500,
+        "sending": 329
+      },
+      "jobDoneLatencySec": {
+        "p50": 13.9,
+        "p95": 16.5,
+        "max": 17.3
+      }
+    },
+    "offersByStatus": {
+      "cancelled": 20116,
+      "accepted": 3829
+    },
+    "availability": {
+      "available": 0,
+      "total": 3829
+    },
+    "outbox": {
+      "byStatus": {
+        "dead": 20490,
+        "pending": 4754,
+        "delivered": 14017
+      },
+      "byKind": {
+        "offer": {
+          "total": 23945,
+          "delivered": 0,
+          "pending": 3455,
+          "dead": 20490
+        },
+        "rider_trip_notice": {
+          "total": 15316,
+          "delivered": 14017,
+          "pending": 1299,
+          "dead": 0
+        }
+      },
+      "byKindAllTime": {
+        "offer": {
+          "total": 23945,
+          "delivered": 0,
+          "pending": 3455,
+          "dead": 20490
+        },
+        "rider_trip_notice": {
+          "total": 15316,
+          "delivered": 14017,
+          "pending": 1299,
+          "dead": 0
+        }
+      },
+      "oldestPendingSec": 62
+    },
+    "egress": {
+      "byBot": {
+        "driver": {
+          "accepted": 3480,
+          "rejected": 0
+        },
+        "rider": {
+          "accepted": 3433,
+          "rejected": 0
+        }
+      }
+    },
+    "engagedDuplicates": 0,
+    "activeRides": 0,
+    "riderTripChannel": {
+      "phaseRows": 15316,
+      "miniappAck": 10584,
+      "telegram": 3433,
+      "pending": 1299,
+      "other": 0,
+      "receipts": 10584,
+      "lateReceiptsAfterTelegram": 0,
+      "duplicateReceipts": 0,
+      "ackLatencySec": {
+        "p50": 0.9,
+        "p95": 2,
+        "p99": 2.6
+      },
+      "telegramLatencySec": {
+        "p50": 39.2,
+        "p95": 55.8,
+        "p99": 58.8
+      }
+    }
+  },
+  "preSnapshot": {
+    "at": "2026-10-18T19:22:48.033Z",
+    "ordersByStatus": {},
+    "telegramUpdates": {
+      "jobs": 0,
+      "jobsByStatus": {},
+      "repliesByStatus": {},
+      "jobDoneLatencySec": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      }
+    },
+    "offersByStatus": {},
+    "availability": {
+      "available": 0,
+      "total": 0
+    },
+    "outbox": {
+      "byStatus": {},
+      "byKind": {},
+      "byKindAllTime": {},
+      "oldestPendingSec": null
+    },
+    "egress": null,
+    "engagedDuplicates": 0,
+    "activeRides": 0,
+    "riderTripChannel": {
+      "phaseRows": 0,
+      "miniappAck": 0,
+      "telegram": 0,
+      "pending": 0,
+      "other": 0,
+      "receipts": 0,
+      "lateReceiptsAfterTelegram": 0,
+      "duplicateReceipts": 0,
+      "ackLatencySec": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "telegramLatencySec": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      }
+    }
+  },
+  "diff": {
+    "availabilityLeftover": 0,
+    "activeRidesDelta": 0,
+    "ordersDelta": {
+      "completed": 3829
+    }
+  },
+  "outcomes": {
+    "total": 3829,
+    "verified": 3829,
+    "failed": 0,
+    "closeDeadlineHits": 0
+  },
+  "mismatches": [],
+  "failuresDetail": [],
+  "violations": [],
+  "verdict": "CLEAN"
+}

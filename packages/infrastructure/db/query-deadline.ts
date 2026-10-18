@@ -27,6 +27,34 @@ export interface QueryDeadlineOptions {
   /** ما يُسلَّمُ للتجمُّعِ في آنٍ — سقفُه نفسُه، فلا يُخطَّطُ استعلامٌ خلفَ آخرَ. */
   readonly slots: number;
   readonly onDeadline?: ((info: { readonly deadlineMs: number }) => void) | undefined;
+  /** اسمُ التجمُّعِ في أثرِ التوقيتِ التشخيصيِّ (`observeQueryTimings`) وحدَه. */
+  readonly label?: string | undefined;
+}
+
+/**
+ * LOAD-01 (الدفعةُ الحاديةَ عشرةَ) — مراقبُ توقيتٍ تشخيصيٌّ اختياريّ: لكلِّ استعلامٍ انتظارُه مقعدَ
+ * البوّابةِ (`waitMs`) وزمنُه من الإرسالِ حتى الحسمِ (`runMs`)، ولكلِّ معاملةٍ/حجزٍ انتظارُه وزمنُ
+ * احتجازِه المقعدَ (`holdMs`). بلا مراقبٍ (الافتراض) لا قياسَ ولا كلفة.
+ */
+export interface QueryTiming {
+  readonly label: string;
+  readonly kind: "query" | "tx" | "txQuery";
+  readonly waitMs: number;
+  readonly runMs: number;
+  /** أوّلُ 70 حرفًا من نصِّ الاستعلامِ مضغوطَ الفراغ (لا قيمَ: المعاملاتُ لا تدخلُه). */
+  readonly sig?: string | undefined;
+}
+
+function signatureOf(query: unknown): string | undefined {
+  const strings = (query as { strings?: readonly string[] | string }).strings;
+  const head =
+    typeof strings === "string" ? strings : Array.isArray(strings) ? strings[0] : undefined;
+  if (head === undefined) return undefined;
+  return String(head).replace(/\s+/g, " ").trim().slice(0, 70);
+}
+let timingObserver: ((timing: QueryTiming) => void) | null = null;
+export function observeQueryTimings(observer: ((timing: QueryTiming) => void) | null): void {
+  timingObserver = observer;
 }
 
 /** الشكلُ الأدنى من `Query` في `postgres` الذي تمسُّه المهلةُ. */
@@ -93,7 +121,12 @@ function createGate(capacity: number): Gate {
  * يُنتظَرُ الاستعلامُ؛ فالشظيّةُ داخلَ استعلامٍ آخرَ لا تُنفَّذُ ولا تُسلَّحُ. والمتابعةُ بـ`then` الأصليِّ
  * كي لا يُطلِقَ التنفيذَ هوَ نفسُه.
  */
-function armOnExecute<T>(value: T, gate: Gate, options: QueryDeadlineOptions): T {
+function armOnExecute<T>(
+  value: T,
+  gate: Gate,
+  options: QueryDeadlineOptions,
+  kind: "query" | "txQuery" = "query",
+): T {
   if (!isQuery(value)) return value;
   const query = value;
   const execute = query.handle.bind(query);
@@ -104,6 +137,9 @@ function armOnExecute<T>(value: T, gate: Gate, options: QueryDeadlineOptions): T
     armed = true;
     let dispatched = false;
     let fired = false;
+    const observer = timingObserver;
+    const t0 = observer === null ? 0 : performance.now();
+    let tDispatch = 0;
     let retry: ReturnType<typeof setInterval> | undefined;
     const cancelOnce = () => {
       // `canceller` يُلتقَطُ قبلَ أوّلِ `cancel()` لأنّه يُصفِّرُه — فتصحُّ الإعادةُ.
@@ -112,6 +148,7 @@ function armOnExecute<T>(value: T, gate: Gate, options: QueryDeadlineOptions): T
     };
     const withdraw = gate.acquire(() => {
       dispatched = true;
+      if (observer !== null) tDispatch = performance.now();
       void execute();
     });
     const timer = setTimeout(() => {
@@ -131,6 +168,15 @@ function armOnExecute<T>(value: T, gate: Gate, options: QueryDeadlineOptions): T
       clearTimeout(timer);
       if (retry !== undefined) clearInterval(retry);
       if (dispatched) gate.release();
+      if (observer !== null && dispatched) {
+        observer({
+          label: options.label ?? "?",
+          kind,
+          waitMs: tDispatch - t0,
+          runMs: performance.now() - tDispatch,
+          sig: signatureOf(query),
+        });
+      }
       if (fired && (cause as { code?: string } | undefined)?.code === "57014") {
         options.onDeadline?.({ deadlineMs: options.deadlineMs });
       }
@@ -148,15 +194,27 @@ function armOnExecute<T>(value: T, gate: Gate, options: QueryDeadlineOptions): T
 function acquireSlot(gate: Gate, options: QueryDeadlineOptions): Promise<() => void> {
   return new Promise((resolve, reject) => {
     let released = false;
+    const observer = timingObserver;
+    const t0 = observer === null ? 0 : performance.now();
+    let tGrant = 0;
     const release = () => {
       if (released) return;
       released = true;
       gate.release();
+      if (observer !== null) {
+        observer({
+          label: options.label ?? "?",
+          kind: "tx",
+          waitMs: tGrant - t0,
+          runMs: performance.now() - tGrant,
+        });
+      }
     };
     let granted = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const withdraw = gate.acquire(() => {
       granted = true;
+      if (observer !== null) tGrant = performance.now();
       if (timer !== undefined) clearTimeout(timer);
       resolve(release);
     });
@@ -184,6 +242,7 @@ export function withQueryDeadline(sql: AnySql, options: QueryDeadlineOptions): A
           Reflect.apply(target as (...a: unknown[]) => unknown, thisArg, args),
           gate,
           options,
+          root ? "query" : "txQuery",
         );
       },
       get(target, property, receiver) {
@@ -191,7 +250,8 @@ export function withQueryDeadline(sql: AnySql, options: QueryDeadlineOptions): A
         if (typeof member !== "function") return member;
         const bound = (member as (...a: unknown[]) => unknown).bind(target);
         if (property === "unsafe" || property === "file") {
-          return (...args: unknown[]) => armOnExecute(bound(...args), gate, options);
+          return (...args: unknown[]) =>
+            armOnExecute(bound(...args), gate, options, root ? "query" : "txQuery");
         }
         if (property === "begin" || property === "savepoint") {
           // داخلَ المعاملةِ تتشاركُ نقاطُ الحفظِ بوّابتَها: الاتّصالُ واحدٌ.

@@ -35,7 +35,10 @@ case "${1:-status}" in
     for _ in $(seq 1 50); do $NSX bash -c 'ss -ltn | grep -q ":54300 "' || break; sleep 0.2; done
     # CODE_DIR يسمح بتشغيل نسخة أخرى من الكود (مثل PR #558 الأصلي لقياس «قبل»)، والحارس من هذه النسخة دائمًا
     echo "{\"t\":\"$(date -Is)\",\"event\":\"gateway.start\",\"code_dir\":\"${CODE_DIR:-$REPO}\",\"sha\":\"$(git -C "${CODE_DIR:-$REPO}" rev-parse HEAD)\",\"dirty\":$(git -C "${CODE_DIR:-$REPO}" status --porcelain | grep -c .)}" >> "$RUN_DIR/evidence/gateway-starts.jsonl"
-    CODE_DIR=${CODE_DIR:-$REPO} start_bg gateway bun --preload "$HERE/mocks/telegram-egress-guard.ts" apps/gateway/src/index.ts ;;
+    # GATEWAY_BUN_FLAGS (تشخيصٌ فقط، مثل `--cpu-prof --cpu-prof-dir=…`): يُسجَّلُ في gateway-starts ولا يُستعمَلُ في القبول.
+    echo "{\"t\":\"$(date -Is)\",\"event\":\"gateway.flags\",\"flags\":\"${GATEWAY_BUN_FLAGS:-}\"}" >> "$RUN_DIR/evidence/gateway-starts.jsonl"
+    # shellcheck disable=SC2086
+    CODE_DIR=${CODE_DIR:-$REPO} start_bg gateway bun ${GATEWAY_BUN_FLAGS:-} --preload "$HERE/mocks/telegram-egress-guard.ts" apps/gateway/src/index.ts ;;
   kill-gateway) sudo -n ip netns exec ceezrsbx2 pkill -9 -f "[a]pps/gateway/src/index.ts" ;;
   stop-gateway) sudo -n ip netns exec ceezrsbx2 pkill -TERM -f "[a]pps/gateway/src/index.ts" ;;
   stop-mock) sudo -n ip netns exec ceezrsbx2 pkill -TERM -f "[t]elegram-mock-server.ts" ;;

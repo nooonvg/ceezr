@@ -1456,6 +1456,17 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     criticalPath: null,
     documentedIn: null,
   },
+  {
+    migration: "20261018150000_load01_rider_trip_notice_returns_chat.sql",
+    change: "revoke_function:enqueue_rider_trip_notice(2)",
+    why: "الهجرةُ `20261018150000` (`LOAD-01` · الدفعةُ الحاديةَ عشرةَ) تُعيدُ تعريفَ `enqueue_rider_trip_notice(uuid, text)` **بالتوقيعِ والمردِّ نفسِهما**: ضمٌّ يساريٌّ لـ`users` في القراءةِ القائمةِ وحقلٌ إضافيٌّ `rider_telegram_id` في الردّ، فتستغني البوّابةُ عن استعلامٍ ثانٍ لكلِّ طور. الأحداثُ المقبولةُ ومفتاحُ منعِ التكرارِ و`created`/`delivery_id` حرفيًّا كما كانت، والمستدعي الأقدمُ يتجاهلُ الحقلَ الزائد. والسحبُ بعدَ `create or replace` إعادةُ قفلٍ كما كانَ (لـ`service_role` وحدَها). والعودةُ إعادةُ تطبيقِ النصِّ من آخرِ تعريفٍ سابقٍ (`20261013000800_wr_22_search_expiry`) — والكودُ الجديدُ يقرأُ غيابَ الحقلِ `null` فلا يُشيرُ لحظيًّا (العاملُ يُشيرُ ثمّ تيليجرام) — تراجعٌ سلوكيٌّ بحتٌ لا فقدُ عقد.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    documentedIn: null,
+  },
 ];
 
 /**

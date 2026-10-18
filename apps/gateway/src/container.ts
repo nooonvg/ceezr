@@ -547,6 +547,9 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    */
   const sql = createSql({
     connectionString: config.databaseUrl,
+    // اسمُ الدورِ في `pg_stat_activity.application_name`: يُنسَبُ به CPU كلِّ خادمٍ خلفيٍّ
+    // إلى تجمُّعِه (LOAD-01 · الدفعةُ الحاديةَ عشرة)، ولا يغيّرُ سلوكاً.
+    applicationName: "ceezr:gatewayRequest",
     queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayRequest,
     onQueryDeadline: ({ deadlineMs }) =>
       log("db.query_deadline_exceeded", { pool: "gatewayRequest", deadlineMs }),
@@ -948,6 +951,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
   const dispatchSql = createSql({
     connectionString: config.databaseUrl,
     max: DB_POOL_MAX.gatewayDispatch,
+    applicationName: "ceezr:gatewayDispatch",
     queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayDispatch,
     onQueryDeadline: ({ deadlineMs }) =>
       log("db.query_deadline_exceeded", { pool: "gatewayDispatch", deadlineMs }),
@@ -1073,16 +1077,18 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         const notify = riderTripSignal.notify;
         // ADR 0287 — إشارةٌ لحظيةٌ للطورِ الجديدِ وحدَه، بعدَ ثباتِ صفِّه، وبلا
         // انتظارٍ: فشلُها لا يمسُّ الانتقالَ (العاملُ يُشيرُ ثانيةً ثم تيليجرامُ).
+        // LOAD-01 (الدفعةُ الحاديةَ عشرةَ): معرّفُ الراكبِ يأتي في ردِّ الإيداعِ نفسِه
+        // (20261018150000) — كانَ استعلامًا ثانيًا على تجمُّعِ الطلبِ لكلِّ طورٍ (4 لكلِّ رحلة).
         if (result?.created === true && notify !== null && RIDER_TRIP_APP_FIRST_EVENTS.has(event)) {
-          void sql<{ telegram_id: string }[]>`
-            select u.telegram_id::text as telegram_id
-              from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id
-             where o.id = ${orderId}::uuid`
-            .then((rows) => {
-              const tg = rows[0]?.telegram_id;
-              if (tg !== undefined && tg !== null) notify(tg, orderId);
-            })
-            .catch(() => undefined);
+          const tg = result.riderTelegramId;
+          if (typeof tg === "string") {
+            // كما كانَ تمامًا: فشلُ الإشارةِ لا يمسُّ الانتقال (كانَ `.catch(() => undefined)`).
+            try {
+              notify(tg, orderId);
+            } catch {
+              // لا شيء: العاملُ يُشيرُ ثانيةً ثم تيليجرام.
+            }
+          }
         }
         return result;
       },

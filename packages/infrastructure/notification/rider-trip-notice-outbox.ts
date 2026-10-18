@@ -15,7 +15,13 @@ import type { Sql } from "../db/client.ts";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 interface EnqueueRow {
-  readonly r: { readonly ok: boolean; readonly created?: boolean; readonly error?: string };
+  readonly r: {
+    readonly ok: boolean;
+    readonly created?: boolean;
+    readonly error?: string;
+    /** 20261018150000 — معرّفُ تيليجرامِ الراكبِ نصًّا، أو `null` لحسابٍ مُجهَّل. */
+    readonly rider_telegram_id?: string | null;
+  };
 }
 
 export function createRiderTripNoticeOutbox(sql: Sql): RiderTripNoticeOutbox {
@@ -30,7 +36,11 @@ export function createRiderTripNoticeOutbox(sql: Sql): RiderTripNoticeOutbox {
         if (result.error === "ORDER_NOT_FOUND") return null;
         throw new Error(`enqueue_rider_trip_notice: ${result.error ?? "unknown"}`);
       }
-      return { created: result.created === true };
+      const tg = result.rider_telegram_id;
+      return {
+        created: result.created === true,
+        riderTelegramId: typeof tg === "string" && tg.length > 0 ? tg : null,
+      };
     },
   };
 }

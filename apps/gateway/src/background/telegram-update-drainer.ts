@@ -79,6 +79,48 @@ export interface TelegramUpdateDrainDeps {
    * مسارِ الوظيفةِ (السلوكُ السابقُ)، فيصيرُ معدّلُ إتمامِ الوظائفِ معدّلَ دلوِ البوتِ.
    */
   readonly replyPool?: TelegramReplyPool;
+  /**
+   * LOAD-01 (الدفعةُ الحاديةَ عشرةَ) — أثرُ توقيتٍ تشخيصيٌّ اختياريٌّ: لكلِّ وظيفةٍ لحظةُ التقاطِها
+   * وبدءُ معالجتِها وأطوارُها، ولكلِّ شوطٍ بدؤه وآخرُ التقاطٍ فيه ونهايتُه. غيابُه = لا كلفةَ ولا سلوكَ مختلف.
+   */
+  readonly timing?: DrainerTiming;
+}
+
+export interface DrainerJobTiming {
+  readonly bot: string;
+  readonly updateId: number;
+  /** لحظاتٌ بـ`performance.timeOrigin + performance.now()` (مللي ثانية). */
+  readonly claimedAt: number;
+  readonly startedAt: number;
+  readonly endedAt: number;
+  /** أطوارُ المسارِ الدائم: فحصُ الأثرِ، والتحضيرُ (المعالج)، وختمُ الأثر. */
+  readonly effectCheckMs: number | null;
+  readonly prepareMs: number | null;
+  readonly recordMs: number | null;
+  readonly ok: boolean;
+}
+
+export interface DrainerSweepTiming {
+  readonly startedAt: number;
+  readonly lastClaimAt: number | null;
+  readonly endedAt: number;
+  readonly claimed: number;
+  readonly claimTrips: number;
+  readonly claimMs: number;
+  readonly truncated: boolean;
+}
+
+export interface DrainerTiming {
+  readonly onJob: (timing: DrainerJobTiming) => void;
+  readonly onSweep: (timing: DrainerSweepTiming) => void;
+}
+
+const wallNow = (): number => performance.timeOrigin + performance.now();
+
+interface PhaseClock {
+  effectCheckMs: number | null;
+  prepareMs: number | null;
+  recordMs: number | null;
 }
 
 /** حقلٌ من حمولةِ تيليجرام يحملُ مُرسِلًا أو محادثة — كلُّ ما يلزمُ مفتاحَ المسار. */
@@ -137,6 +179,7 @@ export interface DrainReport {
  */
 export async function drainTelegramUpdateJobsOnce(
   deps: TelegramUpdateDrainDeps,
+  laneState?: DrainLaneState,
 ): Promise<DrainReport> {
   let claimed = 0;
   let done = 0;
@@ -145,7 +188,7 @@ export async function drainTelegramUpdateJobsOnce(
 
   const maxJobsPerRun = deps.maxJobsPerRun ?? TELEGRAM_JOB_CONSUMER_CONCURRENCY;
   const lanes = Math.max(1, Math.trunc(deps.lanes ?? 1));
-  if (lanes > 1) return drainConcurrently(deps, maxJobsPerRun, lanes);
+  if (lanes > 1) return drainConcurrently(deps, maxJobsPerRun, lanes, laneState);
 
   for (;;) {
     if (claimed >= maxJobsPerRun) {
@@ -177,7 +220,32 @@ export async function drainTelegramUpdateJobsOnce(
  * معالجةُ وظيفةٍ ملتقَطةٍ واحدةٍ وختمُها — مشتركةٌ بينَ المسارِ التسلسليِّ والمتوازي
  * فلا يختلفُ بينهما معنى «تمّ» ولا «فشل». تعيدُ `true` إن عولجَت وخُتمَت.
  */
-async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob): Promise<boolean> {
+async function processClaimedJob(
+  deps: TelegramUpdateDrainDeps,
+  job: ClaimedJob,
+  claimedAt?: number,
+): Promise<boolean> {
+  if (deps.timing === undefined) return processClaimedJobUntimed(deps, job, null);
+  const startedAt = wallNow();
+  const phases: PhaseClock = { effectCheckMs: null, prepareMs: null, recordMs: null };
+  const ok = await processClaimedJobUntimed(deps, job, phases);
+  deps.timing.onJob({
+    bot: job.bot,
+    updateId: job.updateId,
+    claimedAt: claimedAt ?? startedAt,
+    startedAt,
+    endedAt: wallNow(),
+    ...phases,
+    ok,
+  });
+  return ok;
+}
+
+async function processClaimedJobUntimed(
+  deps: TelegramUpdateDrainDeps,
+  job: ClaimedJob,
+  phases: PhaseClock | null,
+): Promise<boolean> {
   const lease = { bot: job.bot, updateId: job.updateId, claimToken: job.claimToken };
   const ledger = deps.queue.ledger;
   if (
@@ -185,7 +253,7 @@ async function processClaimedJob(deps: TelegramUpdateDrainDeps, job: ClaimedJob)
     deps.handler.prepare !== undefined &&
     deps.handler.deliver !== undefined
   ) {
-    return processDurably(deps, job, lease, ledger);
+    return processDurably(deps, job, lease, ledger, phases);
   }
   try {
     const handled = await deps.handler.handle(job.bot as BotKind, job.payload);
@@ -220,10 +288,14 @@ async function processDurably(
   job: ClaimedJob,
   lease: { bot: string; updateId: number; claimToken: string },
   ledger: TelegramUpdateEffectLedger,
+  phases: PhaseClock | null = null,
 ): Promise<boolean> {
   const bot = job.bot as BotKind;
   try {
-    if (await ledger.effectRecorded(job.bot, job.updateId)) {
+    let t = performance.now();
+    const alreadyRecorded = await ledger.effectRecorded(job.bot, job.updateId);
+    if (phases !== null) phases.effectCheckMs = performance.now() - t;
+    if (alreadyRecorded) {
       const replay = await ledger.recordEffect(lease, []);
       deps.log?.("telegram.drainer.effect_replay_skipped", {
         bot: job.bot,
@@ -232,10 +304,12 @@ async function processDurably(
       });
       return replay.ok;
     }
+    t = performance.now();
     const prepared = await (deps.handler.prepare as NonNullable<UpdateHandler["prepare"]>)(
       bot,
       job.payload,
     );
+    if (phases !== null) phases.prepareMs = performance.now() - t;
     if (!prepared.handled) {
       await deps.queue.finish(lease, false, "NOT_HANDLED").catch(() => {});
       deps.log?.("telegram.drainer.stamp_failed", {
@@ -245,7 +319,9 @@ async function processDurably(
       });
       return false;
     }
+    t = performance.now();
     const recorded = await ledger.recordEffect(lease, prepared.replies);
+    if (phases !== null) phases.recordMs = performance.now() - t;
     if (!recorded.ok) {
       deps.log?.("telegram.drainer.effect_record_failed", {
         bot: job.bot,
@@ -368,6 +444,29 @@ export async function drainTelegramUpdateRepliesOnce(
 type ClaimedJob = NonNullable<Awaited<ReturnType<TelegramUpdateQueue["claim"]>>["job"]>;
 
 /**
+ * LOAD-01 (الدفعةُ الحاديةَ عشرةَ) — حالةُ المساراتِ الممتدّةُ عبرَ الأشواط: سلاسلُ كلِّ مستخدمٍ،
+ * والجاري، والمحجوزُ المنتظرُ تجديدَ إيجارِه، وانشغالُ كلِّ بوت.
+ *
+ * **المقيسُ قبلَها** (`b11-diag-base-500`): الشوطُ المقطوعُ عندَ سقفِه (100) كانَ ينتظرُ آخرَ
+ * وظائفِه والمساراتُ تفرغُ (`await Promise.all(inflight)`) قبلَ أن يلتقطَ الشوطُ التالي —
+ * ~1.05ث من كلِّ ~5.2ث، فانشغالُ المساراتِ 57% والطابورُ p50 16ث. وكانَ ذلك الانتظارُ هو ما
+ * يصونُ ترتيبَ المستخدمِ الواحدِ بينَ شوطين (الالتقاطُ الدُّفعيُّ لا يستثني مستخدمًا له وظيفةٌ
+ * محجوزة). فبامتدادِ السلاسلِ عبرَ الأشواطِ تبقى وظيفةُ المستخدمِ التاليةُ خلفَ سابقتِه أيًّا كانَ
+ * شوطُ التقاطِها، ويستأنفُ الشوطُ التالي الالتقاطَ فورًا. والسقفُ يبقى حدَّ الشوطِ (يُسمَعُ فيه
+ * `stop`)، والمساراتُ حدُّ الجاري كلِّه لا جاري الشوطِ الواحد.
+ */
+export interface DrainLaneState {
+  readonly tails: Map<string, Promise<void>>;
+  readonly inflight: Set<Promise<void>>;
+  readonly held: Map<string, { bot: string; updateId: number; claimToken: string }>;
+  readonly busy: Map<string, number>;
+}
+
+export function createDrainLaneState(): DrainLaneState {
+  return { tails: new Map(), inflight: new Set(), held: new Map(), busy: new Map() };
+}
+
+/**
  * SANDBOX-SOAK-01 — استنزافٌ متوازٍ بمساراتٍ لكلِّ مستخدم. يلتقطُ حتى `lanes` وظيفةً جاريةً،
  * ويُسلسِلُ وظائفَ المفتاحِ الواحدِ (البوت+المستخدم) خلفَ بعضِها بترتيبِ الالتقاطِ (= created_at).
  */
@@ -375,15 +474,21 @@ async function drainConcurrently(
   deps: TelegramUpdateDrainDeps,
   maxJobsPerRun: number,
   lanes: number,
+  carry?: DrainLaneState,
 ): Promise<DrainReport> {
+  const state = carry ?? createDrainLaneState();
   let claimed = 0;
   let done = 0;
   let failed = 0;
   let truncated = false;
-  const tails = new Map<string, Promise<void>>();
-  const inflight = new Set<Promise<void>>();
-  // D3: كلُّ محجوزٍ لم يُختَم بعدُ (ينتظرُ مسارَه أو يُعالَج) يُجدَّدُ إيجارُه دوريًّا.
-  const held = new Map<string, { bot: string; updateId: number; claimToken: string }>();
+  const sweepStartedAt = deps.timing === undefined ? 0 : wallNow();
+  let lastClaimAt: number | null = null;
+  let claimTrips = 0;
+  let claimMs = 0;
+  const { tails, inflight } = state;
+  // D3: كلُّ محجوزٍ لم يُختَم بعدُ (ينتظرُ مسارَه أو يُعالَج) يُجدَّدُ إيجارُه دوريًّا — ومنه
+  // ما حُمِلَ من شوطٍ سابقٍ مقطوع.
+  const held = state.held;
   const renewEvery = Math.max(MIN_DRAINER_LEASE_RENEW_MS, deps.leaseRenewEveryMs ?? 10_000);
   const renewTimer =
     deps.queue.renew === undefined
@@ -410,7 +515,7 @@ async function drainConcurrently(
     deps.fairBots !== undefined && deps.fairBots.length > 1 && deps.queue.claimFor !== undefined
       ? [...deps.fairBots]
       : null;
-  const busy = new Map<string, number>();
+  const busy = state.busy;
   const drained = new Set<string>();
   /**
    * LOAD-01 (الدفعةُ السابعةُ) — التقاطٌ دُفعيٌّ: رحلةٌ واحدةٌ تجلبُ حتى عددِ المساراتِ الفارغةِ
@@ -435,7 +540,10 @@ async function drainConcurrently(
           Math.max(1, Math.ceil(lanes / fair.length)),
           Math.max(1, maxJobsPerRun - claimed),
         );
+        const t0 = performance.now();
         const { jobs } = await batchClaim.call(deps.queue, bot, room);
+        claimTrips += 1;
+        claimMs += performance.now() - t0;
         if (jobs.length > 0) {
           batched.push(...jobs.slice(1));
           return jobs[0] as ClaimedJob;
@@ -467,6 +575,8 @@ async function drainConcurrently(
       if (job === null) break;
       claimed += 1;
       const claimedJob = job;
+      const claimedAt = deps.timing === undefined ? undefined : wallNow();
+      if (claimedAt !== undefined) lastClaimAt = claimedAt;
       const heldKey = `${claimedJob.bot}:${claimedJob.updateId}`;
       held.set(heldKey, {
         bot: claimedJob.bot,
@@ -477,7 +587,7 @@ async function drainConcurrently(
       const key = laneKeyOf(claimedJob.bot, claimedJob.payload, String(claimedJob.updateId));
       const prev = tails.get(key) ?? Promise.resolve();
       const run = prev.then(async () => {
-        if (await processClaimedJob(deps, claimedJob)) done += 1;
+        if (await processClaimedJob(deps, claimedJob, claimedAt)) done += 1;
         else failed += 1;
       });
       tails.set(key, run);
@@ -489,10 +599,22 @@ async function drainConcurrently(
       });
       inflight.add(tracked);
     }
-    await Promise.all(inflight);
+    // شوطٌ مقطوعٌ بحالةٍ ممتدّةٍ لا ينتظرُ ذيلَه: الشوطُ التالي يُستأنَفُ فورًا (`rerun`) والسلاسلُ
+    // تصونُ الترتيب. وما عداه (فرغَ الطابورُ، أو فشلَ الالتقاط، أو شوطٌ منفردٌ بلا حالة) ينتظرُ
+    // جاريَه كما كان، فلا دوَرانَ فارغٌ ولا وظيفةٌ تُتركُ بلا تجديدِ إيجار.
+    if (!(truncated && carry !== undefined)) await Promise.all(inflight);
   } finally {
     if (renewTimer !== null) clearInterval(renewTimer);
   }
+  deps.timing?.onSweep({
+    startedAt: sweepStartedAt,
+    lastClaimAt,
+    endedAt: wallNow(),
+    claimed,
+    claimTrips,
+    claimMs,
+    truncated,
+  });
   return { claimed, done, failed, truncated };
 }
 
@@ -535,13 +657,15 @@ export function startTelegramUpdateDrainer(
   let rerun = false;
   let stopped = false;
   let timer: ReturnType<typeof setInterval> | null = null;
+  // LOAD-01 (الدفعةُ الحاديةَ عشرةَ): المساراتُ تمتدُّ عبرَ أشواطِ هذا الدرينر.
+  const laneState = createDrainLaneState();
 
   const tick = async (): Promise<void> => {
     if (running) return; // مانعُ التداخلِ: لا شوطٌ فوقَ شوطٍ.
     running = true;
     rerun = false;
     try {
-      const report = await drainTelegramUpdateJobsOnce(deps);
+      const report = await drainTelegramUpdateJobsOnce(deps, laneState);
       if (report.claimed > 0) {
         deps.log?.("telegram.drainer.sweep_completed", { ...report });
       }
@@ -625,6 +749,10 @@ export function startTelegramUpdateDrainer(
       // إن كان شوطٌ جارٍ، انتظرْه. لا نُهملُ وظيفةً محجوزةً.
       while (running) {
         await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      // وما حُمِلَ من شوطٍ مقطوعٍ يُكمَلُ قبلَ إغلاقِ القاعدة (لا تُتركُ وظيفةٌ محجوزةٌ في منتصفِها).
+      while (laneState.inflight.size > 0) {
+        await Promise.allSettled([...laneState.inflight]);
       }
     },
   };
