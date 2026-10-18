@@ -24,7 +24,8 @@ export interface OrderPlaceExtras {
   readonly offerTerms: DriverOfferTerms;
 }
 
-interface ExtrasRow {
+/** صفُّ استعلامِ الملاحقِ — مُصدَّرٌ لمشاركتهِ مع القراءةِ الموحّدةِ للوحِ. */
+export interface ExtrasRow {
   readonly id: string;
   readonly pickup_link: string | null;
   readonly pickup_notes: string | null;
@@ -57,6 +58,35 @@ function instant(value: Date | string | null): string | null {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * محلّلُ صفِّ ملاحقِ مكانٍ واحدٍ — مشتركٌ بينَ مسارَي القراءةِ (المستقلُّ والمموّجُ في
+ * استعلامٍ واحدٍ) كي لا يظهرَ للمكانِ الواحدِ تعريفانِ مختلفانِ. الحقولُ
+ * هنا أسماءُ أعمدةِ الاستعلامِ لا أسماءَ واجهةٍ؛ فمن يغيّرُ العمودَ يغيّرُ المحلّلَ.
+ */
+export function parseOrderPlaceExtrasRow(row: ExtrasRow): OrderPlaceExtras {
+  return {
+    pickup: {
+      link: text(row.pickup_link),
+      notes: text(row.pickup_notes),
+      latitude: num(row.pickup_lat),
+      longitude: num(row.pickup_lng),
+    },
+    dropoff: row.has_dropoff
+      ? {
+          link: text(row.dropoff_link),
+          notes: text(row.dropoff_notes),
+          latitude: num(row.dropoff_lat),
+          longitude: num(row.dropoff_lng),
+        }
+      : null,
+    offerTerms: {
+      mode: isOfferMode(row.rider_offer_mode) ? row.rider_offer_mode : null,
+      offerSar: num(row.rider_offer_sar),
+      pickupAt: instant(row.pickup_at),
+    },
+  };
+}
+
 export async function readOrderPlaceExtras(
   sql: Sql,
   orderIds: readonly string[],
@@ -80,27 +110,7 @@ export async function readOrderPlaceExtras(
     return found;
   }
   for (const row of rows) {
-    found.set(row.id, {
-      pickup: {
-        link: text(row.pickup_link),
-        notes: text(row.pickup_notes),
-        latitude: num(row.pickup_lat),
-        longitude: num(row.pickup_lng),
-      },
-      dropoff: row.has_dropoff
-        ? {
-            link: text(row.dropoff_link),
-            notes: text(row.dropoff_notes),
-            latitude: num(row.dropoff_lat),
-            longitude: num(row.dropoff_lng),
-          }
-        : null,
-      offerTerms: {
-        mode: isOfferMode(row.rider_offer_mode) ? row.rider_offer_mode : null,
-        offerSar: num(row.rider_offer_sar),
-        pickupAt: instant(row.pickup_at),
-      },
-    });
+    found.set(row.id, parseOrderPlaceExtrasRow(row));
   }
   return found;
 }
