@@ -1582,6 +1582,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/driver-offer-board-single-read.test.ts",
+    suites: ["لوحُ العروضِ بجولةِ قاعدةٍ واحدةٍ — LOAD-01 (P4)"],
+    skipped: 4,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "يُثبِتُ أنّ جلبَ لوحِ عروضِ السائقِ صارَ عبارةً قاعدةٍ واحدةً (CTE) بدلَ ثلاثِ جولاتٍ، معَ تكافؤٍ حرفيٍّ مع المسارِ القديمِ عبرَ composeDriverOfferBoard — عددُ العباراتِ فوقَ المحرّكِ لا يُثبَتُ ببديلٍ في الذاكرةِ، والتكافؤُ الحرفيُّ يقتضي قاعدةً حقيقيةً بنفسِ بذرةِ المقعدِ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/outbox-claim-index.test.ts",
     suites: ["LOAD-01 — التزامُ صندوقِ الصادرِ: خطة معلمة عامة بفهرس، لا فحصًا كاملًا"],
     skipped: 1,
