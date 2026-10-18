@@ -26,10 +26,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
-import {
-  type ActiveCityHandle,
-  ensureActiveCity,
-} from "../support/active-city.ts";
+import { type ActiveCityHandle, ensureActiveCity } from "../support/active-city.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
 
