@@ -50,6 +50,17 @@ interface Snapshot {
    * المتأخرةُ (إيصالٌ على صفٍّ أُغلقَ بتيليجرامَ) تُعدُّ وحدَها — وزمنُ الإقرارِ
    * منَ الإدراجِ إلى الإيصالِ (p50/p95/p99 بالثواني).
    */
+  /**
+   * S5 (ADR 0288 §ملحق) — وظائفُ تحديثاتِ تيليجرامَ في نافذةِ الموجةِ: زمنُ إتمامِ الوظيفةِ
+   * (الاستلامُ ⇐ \`done\`) منفصلًا عن حالةِ الردِّ (زمنُ الردِّ لا يُخزَّنُ: يُمحى ختمُ الالتقاطِ عندَ النجاحِ، فلا يُختلَقُ). \`r11-wave-500\` فشلَ لأنَّ الأوّلَ
+   * صارَ تابعًا للثاني. رصدٌ لا بوابةٌ جديدةٌ؛ \`null\` على قاعدةٍ قبلَ S5.
+   */
+  readonly telegramUpdates: {
+    readonly jobs: number;
+    readonly jobsByStatus: Readonly<Record<string, number>>;
+    readonly repliesByStatus: Readonly<Record<string, number>>;
+    readonly jobDoneLatencySec: { p50: number | null; p95: number | null; max: number | null };
+  } | null;
   readonly riderTripChannel: {
     phaseRows: number;
     miniappAck: number;
@@ -145,6 +156,33 @@ async function snapshot(): Promise<Snapshot> {
   // الملفِّ) — يقرأُ آخرَ ما أمكنَهُ من الصفوفِ بكفاءةٍ (الملفُ حلقةٌ متراكمةٌ).
   const egress = readMockEgress(sinceMs);
   const since = sinceMs === null ? new Date(0) : new Date(sinceMs);
+  let telegramUpdates: Snapshot["telegramUpdates"] = null;
+  try {
+    const [t] = await sql<Record<string, string | null>[]>`
+      with j as (
+        select status, reply_status, created_at, completed_at
+          from telegram_update_jobs where created_at >= ${since}
+      )
+      select
+        (select count(*) from j)::text as jobs,
+        (select coalesce(jsonb_object_agg(status, c), '{}'::jsonb)::text
+           from (select status, count(*) c from j group by 1) x) as by_status,
+        (select coalesce(jsonb_object_agg(coalesce(reply_status, 'none'), c), '{}'::jsonb)::text
+           from (select reply_status, count(*) c from j group by 1) x) as by_reply,
+        (select percentile_cont(0.5) within group (order by extract(epoch from completed_at - created_at)) from j where status = 'done')::text as job_p50,
+        (select percentile_cont(0.95) within group (order by extract(epoch from completed_at - created_at)) from j where status = 'done')::text as job_p95,
+        (select max(extract(epoch from completed_at - created_at)) from j where status = 'done')::text as job_max`;
+    const n = (v: string | null | undefined) =>
+      v === null || v === undefined ? null : Math.round(Number(v) * 10) / 10;
+    telegramUpdates = {
+      jobs: Number(t?.jobs ?? 0),
+      jobsByStatus: JSON.parse(t?.by_status ?? "{}"),
+      repliesByStatus: JSON.parse(t?.by_reply ?? "{}"),
+      jobDoneLatencySec: { p50: n(t?.job_p50), p95: n(t?.job_p95), max: n(t?.job_max) },
+    };
+  } catch {
+    telegramUpdates = null;
+  }
   let riderTripChannel: Snapshot["riderTripChannel"] = null;
   try {
     const [ch] = await sql<Record<string, string | null>[]>`
@@ -198,6 +236,7 @@ async function snapshot(): Promise<Snapshot> {
   return {
     at: new Date().toISOString(),
     ordersByStatus: byStatus(orders),
+    telegramUpdates,
     offersByStatus: byStatus(offers),
     availability: {
       available: Number(avail[0]?.available ?? "0"),

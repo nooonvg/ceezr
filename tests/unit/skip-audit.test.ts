@@ -964,11 +964,11 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // المطابقةِ عندَ 250 متزامنةً (r7-wave-250) — الترتيبُ والتجويعُ والمصنَّفاتُ
     // أحكامُ قاعدةٍ لا تُقاسُ إلا على PostgreSQL حقيقيٍّ — خطوتُها في وظيفةِ
     // التكاملِ على قاعدةٍ حقيقيّةٍ.
-    // والآنَ 197 و1659 — سبعُ حالاتٍ في `rider-trip-app-ack.test.ts` (ADR 0287: إقرارُ
-    // تطبيقِ الراكبِ) وستٌّ في `s5-update-effect-ledger.test.ts` (ADR 0288: دفترُ الأثرِ)،
+    // والآنَ 197 و1661 — سبعُ حالاتٍ في `rider-trip-app-ack.test.ts` (ADR 0287: إقرارُ
+    // تطبيقِ الراكبِ) وثمانٍ في `s5-update-effect-ledger.test.ts` (ADR 0288: دفترُ الأثرِ، اثنتانِ منها لملحقِ المُرسِلِ الفوريِّ)،
     // كلُّها خلفَ TEST_DATABASE_URL وتجري في CI على قاعدةٍ حقيقيّةٍ.
     expect(SKIP_REGISTRY).toHaveLength(197);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1659);
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1661);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {

@@ -147,6 +147,11 @@ import {
   describeConnectionBudget,
 } from "../../../packages/shared/config/connection-budget.ts";
 import { CORE_EVENT_TRANSPORT_ENV } from "../../../packages/shared/config/core-event-transport.ts";
+import {
+  TELEGRAM_REPLY_POOL_CONCURRENCY,
+  TELEGRAM_REPLY_POOL_MAX_QUEUED,
+  TELEGRAM_REPLY_POOL_MAX_WAIT_MS,
+} from "../../../packages/shared/config/domain-ingress.ts";
 import { missingEnvKeys, tryLoadConfig } from "../../../packages/shared/config/index.ts";
 import {
   DECIDED_EVENT_DISTRIBUTION,
@@ -158,6 +163,7 @@ import { assertEgressEnvironment } from "../../../packages/shared/wasla/egress-g
 import { jobHealthExpectations } from "../../workers/src/container.ts";
 import { createAdminAuthPort } from "./admin/auth.ts";
 import { mountAdminSurface } from "./admin/mount.ts";
+import { createTelegramReplyPool } from "./background/telegram-reply-pool.ts";
 import {
   parseTelegramDrainLanes,
   startTelegramUpdateDrainer,
@@ -2016,6 +2022,14 @@ updateDrainer = startTelegramUpdateDrainer(
     lanes: drainLanes.lanes,
     // CAP-RUN-20261015 / D2+D3: توزيعُ المساراتِ بين البوتين وتجديدُ إيجارِ المحجوزِ المنتظر.
     fairBots: ["driver", "rider"],
+    // S5 (ADR 0288 §ملحق): الردُّ لا يحجزُ مسارَ الوظيفةِ — `r11-wave-500` أثبتَ أنَّ انتظارَه
+    // جعلَ إتمامَ وظائفِ إثباتِ الهاتفِ بمعدّلِ دلوِ البوتِ (22ث → 62ث).
+    replyPool: createTelegramReplyPool({
+      concurrency: TELEGRAM_REPLY_POOL_CONCURRENCY,
+      maxQueued: TELEGRAM_REPLY_POOL_MAX_QUEUED,
+      maxWaitMs: TELEGRAM_REPLY_POOL_MAX_WAIT_MS,
+      log,
+    }),
   },
   { intervalMs: TELEGRAM_DRAINER_FALLBACK_INTERVAL_MS },
 );

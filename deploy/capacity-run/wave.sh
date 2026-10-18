@@ -19,7 +19,8 @@ export RUN_DIR GATEWAY_URL=${GATEWAY_URL:-http://127.0.0.1:54300} GEN_ID=${GEN_I
   DRAIN_SEC="$DRAIN" PROFILE="$PROFILE" MATCH_WAIT_MS=${MATCH_WAIT_MS:-120000}
 for kv in "$@"; do export "$kv"; done
 export RIDER_SEQ_START=$((6200000+WAVEIDX*100000)) DRIVER_SEQ_START=$((8200000+WAVEIDX*100000))
-echo "{\"t\":\"$(date -Is)\",\"event\":\"round.start\",\"round\":\"$ROUND\",\"profile\":$PROFILE,\"drain_sec\":$DRAIN,\"code_sha\":\"$(git -C "$REPO" rev-parse HEAD)\",\"code_dirty\":$(git -C "$REPO" status --porcelain | grep -c .)}" > "$RUN_DIR/evidence/timeline.jsonl"
+# code_dirty يعدُّ الشيفرةَ وحدَها؛ نسخُ أدلةِ موجةٍ سابقةٍ إلى docs/ لا يجعلُ الشيفرةَ «متّسخةً» (r11-wave-500).
+echo "{\"t\":\"$(date -Is)\",\"event\":\"round.start\",\"round\":\"$ROUND\",\"profile\":$PROFILE,\"drain_sec\":$DRAIN,\"code_sha\":\"$(git -C "$REPO" rev-parse HEAD)\",\"code_dirty\":$(git -C "$REPO" status --porcelain -- . ':(exclude)docs' | grep -c .),\"docs_dirty\":$(git -C "$REPO" status --porcelain -- docs | grep -c .)}" > "$RUN_DIR/evidence/timeline.jsonl"
 # هويةُ البوابةِ **قبلَ** الموجةِ: انهيارُها أثناءَ الموجةِ وإعادةُ تشغيلها
 # تلقائيًّا (المشرفُ) لا يجوزُ أن يمرَّ صامتًا فيُحسَبَ استقرارًا زائفًا —
 # يُدوَّنُ رقمُ عمليّتِها ويُتحقَّقُ منهُ عندَ الختامِ (finish-wave.sh).
