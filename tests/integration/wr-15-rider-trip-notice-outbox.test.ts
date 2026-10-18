@@ -9,6 +9,7 @@
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
+import { observeQueryTimings } from "../../packages/infrastructure/db/query-deadline.ts";
 import { createRiderTripNoticeOutbox } from "../../packages/infrastructure/notification/rider-trip-notice-outbox.ts";
 
 const DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -96,9 +97,20 @@ describeIf("WR-15 — إشعاراتُ الطورِ في صندوقِ الصاد
 
   it("صفٌّ واحدٌ لكلِّ طلبٍ وطور: الإيداعُ الثاني مكرَّرٌ لا صفٌّ جديد", async () => {
     const outbox = createRiderTripNoticeOutbox(sql);
-    expect(await outbox.enqueue(orderId, "MATCHED")).toEqual({ created: true });
-    expect(await outbox.enqueue(orderId, "MATCHED")).toEqual({ created: false });
-    expect(await outbox.enqueue(orderId, "ARRIVED")).toEqual({ created: true });
+    // LOAD-01 (الدفعةُ الحاديةَ عشرةَ): الردُّ يحملُ معرّفَ تيليجرامِ الراكبِ، فلا استعلامَ ثانٍ له.
+    const tg = String(RIDER_TELEGRAM);
+    expect(await outbox.enqueue(orderId, "MATCHED")).toEqual({
+      created: true,
+      riderTelegramId: tg,
+    });
+    expect(await outbox.enqueue(orderId, "MATCHED")).toEqual({
+      created: false,
+      riderTelegramId: tg,
+    });
+    expect(await outbox.enqueue(orderId, "ARRIVED")).toEqual({
+      created: true,
+      riderTelegramId: tg,
+    });
     const rows = await sql<{ dedup_key: string; recipient_user_id: string; status: string }[]>`
       select dedup_key, recipient_user_id::text, status from notification_outbox
        where kind = 'rider_trip_notice' and order_id = ${orderId}::uuid order by created_at`;
@@ -157,6 +169,26 @@ describeIf("WR-15 — إشعاراتُ الطورِ في صندوقِ الصاد
     const count = await sql<{ n: number }[]>`
       select count(*)::int as n from notification_outbox where kind = 'rider_trip_notice' and order_id = ${orderId}::uuid`;
     expect(count[0]?.n).toBe(0);
+  });
+
+  it("LOAD-01: الإيداعُ رحلةٌ واحدةٌ إلى القاعدةِ ويُعيدُ معرّفَ الراكب (كانَ استعلامًا ثانيًا لكلِّ طور)", async () => {
+    const seen: string[] = [];
+    observeQueryTimings((t) => seen.push(t.sig ?? "?"));
+    const counted = createSql({
+      connectionString: DATABASE_URL as string,
+      max: 1,
+      queryDeadlineMs: 10_000,
+      applicationName: "wr15-count",
+    });
+    try {
+      const result = await createRiderTripNoticeOutbox(counted).enqueue(orderId, "COMPLETED");
+      expect(result).toEqual({ created: true, riderTelegramId: String(RIDER_TELEGRAM) });
+      expect(seen).toHaveLength(1);
+      expect(seen[0]).toContain("enqueue_rider_trip_notice");
+    } finally {
+      observeQueryTimings(null);
+      await counted.end();
+    }
   });
 
   it("الإيداعُ لـservice_role وحدَه", async () => {
