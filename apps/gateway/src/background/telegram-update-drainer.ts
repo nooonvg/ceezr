@@ -179,6 +179,7 @@ export interface DrainReport {
  */
 export async function drainTelegramUpdateJobsOnce(
   deps: TelegramUpdateDrainDeps,
+  laneState?: DrainLaneState,
 ): Promise<DrainReport> {
   let claimed = 0;
   let done = 0;
@@ -187,7 +188,7 @@ export async function drainTelegramUpdateJobsOnce(
 
   const maxJobsPerRun = deps.maxJobsPerRun ?? TELEGRAM_JOB_CONSUMER_CONCURRENCY;
   const lanes = Math.max(1, Math.trunc(deps.lanes ?? 1));
-  if (lanes > 1) return drainConcurrently(deps, maxJobsPerRun, lanes);
+  if (lanes > 1) return drainConcurrently(deps, maxJobsPerRun, lanes, laneState);
 
   for (;;) {
     if (claimed >= maxJobsPerRun) {
@@ -443,6 +444,29 @@ export async function drainTelegramUpdateRepliesOnce(
 type ClaimedJob = NonNullable<Awaited<ReturnType<TelegramUpdateQueue["claim"]>>["job"]>;
 
 /**
+ * LOAD-01 (الدفعةُ الحاديةَ عشرةَ) — حالةُ المساراتِ الممتدّةُ عبرَ الأشواط: سلاسلُ كلِّ مستخدمٍ،
+ * والجاري، والمحجوزُ المنتظرُ تجديدَ إيجارِه، وانشغالُ كلِّ بوت.
+ *
+ * **المقيسُ قبلَها** (`b11-diag-base-500`): الشوطُ المقطوعُ عندَ سقفِه (100) كانَ ينتظرُ آخرَ
+ * وظائفِه والمساراتُ تفرغُ (`await Promise.all(inflight)`) قبلَ أن يلتقطَ الشوطُ التالي —
+ * ~1.05ث من كلِّ ~5.2ث، فانشغالُ المساراتِ 57% والطابورُ p50 16ث. وكانَ ذلك الانتظارُ هو ما
+ * يصونُ ترتيبَ المستخدمِ الواحدِ بينَ شوطين (الالتقاطُ الدُّفعيُّ لا يستثني مستخدمًا له وظيفةٌ
+ * محجوزة). فبامتدادِ السلاسلِ عبرَ الأشواطِ تبقى وظيفةُ المستخدمِ التاليةُ خلفَ سابقتِه أيًّا كانَ
+ * شوطُ التقاطِها، ويستأنفُ الشوطُ التالي الالتقاطَ فورًا. والسقفُ يبقى حدَّ الشوطِ (يُسمَعُ فيه
+ * `stop`)، والمساراتُ حدُّ الجاري كلِّه لا جاري الشوطِ الواحد.
+ */
+export interface DrainLaneState {
+  readonly tails: Map<string, Promise<void>>;
+  readonly inflight: Set<Promise<void>>;
+  readonly held: Map<string, { bot: string; updateId: number; claimToken: string }>;
+  readonly busy: Map<string, number>;
+}
+
+export function createDrainLaneState(): DrainLaneState {
+  return { tails: new Map(), inflight: new Set(), held: new Map(), busy: new Map() };
+}
+
+/**
  * SANDBOX-SOAK-01 — استنزافٌ متوازٍ بمساراتٍ لكلِّ مستخدم. يلتقطُ حتى `lanes` وظيفةً جاريةً،
  * ويُسلسِلُ وظائفَ المفتاحِ الواحدِ (البوت+المستخدم) خلفَ بعضِها بترتيبِ الالتقاطِ (= created_at).
  */
@@ -450,7 +474,9 @@ async function drainConcurrently(
   deps: TelegramUpdateDrainDeps,
   maxJobsPerRun: number,
   lanes: number,
+  carry?: DrainLaneState,
 ): Promise<DrainReport> {
+  const state = carry ?? createDrainLaneState();
   let claimed = 0;
   let done = 0;
   let failed = 0;
@@ -459,10 +485,10 @@ async function drainConcurrently(
   let lastClaimAt: number | null = null;
   let claimTrips = 0;
   let claimMs = 0;
-  const tails = new Map<string, Promise<void>>();
-  const inflight = new Set<Promise<void>>();
-  // D3: كلُّ محجوزٍ لم يُختَم بعدُ (ينتظرُ مسارَه أو يُعالَج) يُجدَّدُ إيجارُه دوريًّا.
-  const held = new Map<string, { bot: string; updateId: number; claimToken: string }>();
+  const { tails, inflight } = state;
+  // D3: كلُّ محجوزٍ لم يُختَم بعدُ (ينتظرُ مسارَه أو يُعالَج) يُجدَّدُ إيجارُه دوريًّا — ومنه
+  // ما حُمِلَ من شوطٍ سابقٍ مقطوع.
+  const held = state.held;
   const renewEvery = Math.max(MIN_DRAINER_LEASE_RENEW_MS, deps.leaseRenewEveryMs ?? 10_000);
   const renewTimer =
     deps.queue.renew === undefined
@@ -489,7 +515,7 @@ async function drainConcurrently(
     deps.fairBots !== undefined && deps.fairBots.length > 1 && deps.queue.claimFor !== undefined
       ? [...deps.fairBots]
       : null;
-  const busy = new Map<string, number>();
+  const busy = state.busy;
   const drained = new Set<string>();
   /**
    * LOAD-01 (الدفعةُ السابعةُ) — التقاطٌ دُفعيٌّ: رحلةٌ واحدةٌ تجلبُ حتى عددِ المساراتِ الفارغةِ
@@ -573,7 +599,10 @@ async function drainConcurrently(
       });
       inflight.add(tracked);
     }
-    await Promise.all(inflight);
+    // شوطٌ مقطوعٌ بحالةٍ ممتدّةٍ لا ينتظرُ ذيلَه: الشوطُ التالي يُستأنَفُ فورًا (`rerun`) والسلاسلُ
+    // تصونُ الترتيب. وما عداه (فرغَ الطابورُ، أو فشلَ الالتقاط، أو شوطٌ منفردٌ بلا حالة) ينتظرُ
+    // جاريَه كما كان، فلا دوَرانَ فارغٌ ولا وظيفةٌ تُتركُ بلا تجديدِ إيجار.
+    if (!(truncated && carry !== undefined)) await Promise.all(inflight);
   } finally {
     if (renewTimer !== null) clearInterval(renewTimer);
   }
@@ -628,13 +657,15 @@ export function startTelegramUpdateDrainer(
   let rerun = false;
   let stopped = false;
   let timer: ReturnType<typeof setInterval> | null = null;
+  // LOAD-01 (الدفعةُ الحاديةَ عشرةَ): المساراتُ تمتدُّ عبرَ أشواطِ هذا الدرينر.
+  const laneState = createDrainLaneState();
 
   const tick = async (): Promise<void> => {
     if (running) return; // مانعُ التداخلِ: لا شوطٌ فوقَ شوطٍ.
     running = true;
     rerun = false;
     try {
-      const report = await drainTelegramUpdateJobsOnce(deps);
+      const report = await drainTelegramUpdateJobsOnce(deps, laneState);
       if (report.claimed > 0) {
         deps.log?.("telegram.drainer.sweep_completed", { ...report });
       }
@@ -718,6 +749,10 @@ export function startTelegramUpdateDrainer(
       // إن كان شوطٌ جارٍ، انتظرْه. لا نُهملُ وظيفةً محجوزةً.
       while (running) {
         await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      // وما حُمِلَ من شوطٍ مقطوعٍ يُكمَلُ قبلَ إغلاقِ القاعدة (لا تُتركُ وظيفةٌ محجوزةٌ في منتصفِها).
+      while (laneState.inflight.size > 0) {
+        await Promise.allSettled([...laneState.inflight]);
       }
     },
   };
