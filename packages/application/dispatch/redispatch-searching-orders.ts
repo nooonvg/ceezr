@@ -41,6 +41,16 @@ import { type BroadcastDependencies, broadcastOffers } from "./broadcast-offers.
  * `matchOrder` — ويوم يتغيّر أحدهما يبقى الثاني، فيُبَثّ ما لا يجوز بثّه أو يُحجَب
  * ما يجب عرضه، بلا إنذار.
  */
+/**
+ * `LOAD-01 · P4` — مهلةُ السماحِ للجولةِ الحيّةِ قبلَ أن تنافسَ على مقعدٍ في النافذةِ العادلةِ.
+ *
+ * جولةٌ فُتحت للتوِّ يحتاجُ سائقوها إلى أن يروا العرضَ ويقبلوه: قيسَ ظهورُه على اللوحِ
+ * p99 ≈ 2.0ث (دورةُ تحديثٍ واحدةٌ) والقبولُ p95 ≈ 0.2ث، فـ3ث تغطّيهما. قبلَها يتأخّرُ
+ * الطلبُ خلفَ ما سواه (لا يُستبعَد)، وبعدَها يعودُ إلى ترتيبِ العمرِ. ليست مهلةَ العرضِ
+ * (`offer_timeout_seconds`) ولا تغيّرُها: لا يُلمَسُ عقدُ العرضِ ولا انقضاؤه.
+ */
+export const LIVE_ROUND_ESCALATION_GRACE_SECONDS = 3;
+
 export interface SearchingOrderRef {
   readonly orderId: OrderId;
   readonly cityId: CityId;
@@ -70,7 +80,7 @@ export interface SearchingOrderFinder {
      * ذاتَ سائقٍ مؤهّلٍ لم تُخدم في 120ث لأنّ ترتيبَ الدورةِ الأدنى قدّم كلَّ
      * جديدٍ عليها). غيابُ المعامل = السلوكُ القائمُ حرفيًا (توافقٌ خلفيّ).
      */
-    opts?: { readonly maxBroadcastRounds?: number },
+    opts?: { readonly maxBroadcastRounds?: number; readonly liveRoundGraceSeconds?: number },
   ): Promise<Result<readonly SearchingOrderRef[], PortFailureError>>;
 }
 
@@ -118,11 +128,18 @@ export async function redispatchSearchingOrders(
    * تعذّرَتِ القراءةُ أو فشلَ التفسير؟ النافذةُ القائمةُ دونَ تغييرٍ (السلوكُ
    * المتحفّظُ لا فشلٌ صامتٌ يوقفُ إعادةَ العرضِ عن المدينةِ كلِّها).
    */
-  let fairWindow: { readonly maxBroadcastRounds: number } | undefined;
+  let fairWindow:
+    | { readonly maxBroadcastRounds: number; readonly liveRoundGraceSeconds: number }
+    | undefined;
   const rawSettings = await deps.broadcast.settings.findByCity(cityId);
   if (rawSettings.ok) {
     const parsed = parseCitySettings(cityId, rawSettings.value);
-    if (parsed.ok) fairWindow = { maxBroadcastRounds: parsed.value.maxBroadcastRounds };
+    if (parsed.ok) {
+      fairWindow = {
+        maxBroadcastRounds: parsed.value.maxBroadcastRounds,
+        liveRoundGraceSeconds: LIVE_ROUND_ESCALATION_GRACE_SECONDS,
+      };
+    }
   }
   const found = await deps.finder.findSearching(cityId, deps.limit, fairWindow);
   if (!found.ok) return found;

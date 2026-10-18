@@ -8,11 +8,12 @@
  * إعادةِ بثِّها بعدَ ≤3.8ث من سابقتِها، وانتظرَ الطلبُ الجديدُ ~35ث قبلَ أوّلِ معالجةٍ.
  *
  * يُثبَتُ هنا على القاعدةِ الحقيقيّةِ:
- *  1. الطلبُ الجديدُ (دورةُ 0) يدخلُ نافذةً يملؤها ما هو أقدمُ منه وجولتُه حيّة — كانَ يسقطُ.
- *  2. لا تجويعَ: الأقدمُ المنقضيةُ جولتُه يسبقُ الجديدَ (قابلٌ للعرضِ وأقدمُ).
- *  3. لا استبعادَ: الحيُّ يملأُ ما فضلَ من النافذةِ، والمستنفدُ يبقى آخراً.
+ *  1. الطلبُ الجديدُ (دورةُ 0) يدخلُ نافذةً يملؤها أقدمُ منه جولتُه حيّةٌ حديثةٌ — كانَ يسقطُ.
+ *  2. لا تجويعَ: الحيُّ بعدَ مهلةِ السماحِ (فاتَت جولتُه سائقَه) والمنقضيةُ جولتُه يسبقانِ الأحدثَ.
+ *  3. لا استبعادَ: الحيُّ الحديثُ يملأُ ما فضلَ من النافذةِ، والمستنفدُ يبقى آخراً.
  */
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { LIVE_ROUND_ESCALATION_GRACE_SECONDS } from "../../packages/application/dispatch/redispatch-searching-orders.ts";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
 import { createSearchingOrderFinder } from "../../packages/infrastructure/dispatch/dispatch-adapters.ts";
 import type { CityId } from "../../packages/shared/kernel/index.ts";
@@ -95,42 +96,54 @@ async function order(round: number, agoSec: number): Promise<string> {
   return o.id;
 }
 
-/** عرضٌ معلَّقٌ في الجولةِ الحاليّةِ؛ `expiresInSec` سالبٌ = انقضت مهلتُه. */
-async function pendingOffer(orderId: string, round: number, expiresInSec: number): Promise<void> {
+/**
+ * عرضٌ معلَّقٌ في الجولةِ الحاليّةِ؛ `expiresInSec` سالبٌ = انقضت مهلتُه، و`openedAgoSec`
+ * عمرُ الجولةِ (حديثةٌ دونَ مهلةِ السماحِ أو أقدمُ منها).
+ */
+async function pendingOffer(
+  orderId: string,
+  round: number,
+  expiresInSec: number,
+  openedAgoSec = 0,
+): Promise<void> {
   await sql`
-    insert into order_offers (city_id, order_id, driver_id, round, score, distance_km, status, expires_at)
+    insert into order_offers (city_id, order_id, driver_id, round, score, distance_km, status, expires_at, created_at)
     values (${cityId}::uuid, ${orderId}::uuid, ${driverRowId}::uuid, ${round}, 1, 0.1, 'pending',
-            now() + make_interval(secs => ${expiresInSec}))`;
+            now() + make_interval(secs => ${expiresInSec}), now() - make_interval(secs => ${openedAgoSec}))`;
 }
 
 async function window(limit: number): Promise<string[]> {
   const found = await createSearchingOrderFinder(sql).findSearching(cityId, limit, {
     maxBroadcastRounds: MAX_ROUNDS,
+    liveRoundGraceSeconds: LIVE_ROUND_ESCALATION_GRACE_SECONDS,
   });
   if (!found.ok) throw new Error(found.error.detail);
   return found.value.map((o) => o.orderId).filter((id) => created.includes(id));
 }
 
 describeIf("LOAD-01 P4 — الجولة الحية لا تحجب الطلب الذي لم يُعرَض", () => {
-  it("الجديدُ يدخلُ نافذةً يملؤها أقدمُ منه جولتُه حيّة، والمنقضيةُ جولتُه تسبقُه، والحيُّ يملأُ الفائضَ", async () => {
-    const live: string[] = [];
+  it("الجولةُ الحيّةُ الحديثةُ تتأخّرُ، والحيّةُ بعدَ مهلةِ السماحِ والمنقضيةُ والجديدُ بترتيبِ العمرِ، والمستنفدُ آخراً", async () => {
+    const freshLive: string[] = [];
     for (let i = 0; i < 4; i += 1) {
       const id = await order(1, 300 - i);
-      await pendingOffer(id, 1, 40);
-      live.push(id);
+      await pendingOffer(id, 1, 44, 0); // فُتحت للتوِّ: سائقُها لم يرَها بعدُ
+      freshLive.push(id);
     }
+    // فاتَتْ جولتُها سائقَها: حيّةٌ (35ث باقيةٌ) لكنْ أقدمُ من مهلةِ السماحِ — مستحقّةٌ الآنَ.
+    const staleLive = await order(1, 250);
+    await pendingOffer(staleLive, 1, 35, LIVE_ROUND_ESCALATION_GRACE_SECONDS + 7);
     const expired = await order(1, 200);
-    await pendingOffer(expired, 1, -5);
+    await pendingOffer(expired, 1, -5, 50);
     const exhausted = await order(MAX_ROUNDS, 400);
     const fresh = await order(0, 1);
 
-    // نافذةٌ بقدرِ الحيِّ: قبلَ الإصلاحِ = الأقدمُ الأربعةُ الحيّةُ، فلا الجديدُ ولا المنقضي.
+    // نافذةٌ بقدرِ الحيِّ الحديثِ: قبلَ الإصلاحِ = الأربعةُ الأقدمُ الحديثةُ الجولةِ وحدَها،
+    // وتأخيرُ كلِّ حيٍّ حتى انقضائِه (التجربةُ «أ») كانَ يُسقِطُ staleLive خلفَ الجديدِ.
     const narrow = await window(4);
-    expect(narrow).toContain(fresh);
-    expect(narrow.slice(0, 2)).toEqual([expired, fresh]);
+    expect(narrow.slice(0, 3)).toEqual([staleLive, expired, fresh]);
 
-    // نافذةٌ واسعةٌ: لا استبعاد — الحيُّ كلُّه بعدَ القابلِ للعرضِ، والمستنفدُ آخراً.
+    // نافذةٌ واسعةٌ: لا استبعاد.
     const wide = await window(50);
-    expect(wide).toEqual([expired, fresh, ...live, exhausted]);
+    expect(wide).toEqual([staleLive, expired, fresh, ...freshLive, exhausted]);
   });
 });
