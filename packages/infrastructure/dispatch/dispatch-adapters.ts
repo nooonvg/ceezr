@@ -595,10 +595,26 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
            -- (تبقى searching حتى يلغيها الراكب) تملأ نافذةَ الـlimit في كلّ شوط فلا يُفحَص طلبٌ جديد
            -- أبداً («examined=50 rebroadcast=0 exhausted=50»). تقديمُ الدورة الأدنى ترتيبٌ لا فتوى:
            -- لا يُستبعَد أحد، والحكمُ بالاستنفاد يبقى في المجال (hasExhaustedBroadcastRounds).
+           -- LOAD-01 · P4 (2026-10-18): داخلَ النافذةِ العادلةِ يتقدّمُ ما لا جولةَ حيّةً له
+           -- (لم يُعرَض بعدُ، أو انقضت جولتُه أو رُفضت كلُّها) على ما جولتُه الأخيرةُ ما زالت
+           -- حيّةً (عرضٌ معلَّقٌ لم تنتهِ مهلتُه)، والأقدمُ أولاً داخلَ كلِّ صنفٍ. قيسَ في موجةِ
+           -- 500 على 1ac6b860 أنَّ 38.6% من مقاعدِ الشوطِ ذهبت لإعادةِ بثِّ طلباتٍ جولتُها حيّةٌ
+           -- (1508 جولةً فُتحت بعدَ ≤3.8ث من سابقتِها والمهلةُ 45ث)، فانتظرَ الطلبُ الجديدُ
+           -- ~35ث قبلَ أوّلِ معالجةٍ تستغرقُ ~15ms. لا يُستبعَدُ أحدٌ: الحيُّ يملأُ ما فضلَ من
+           -- النافذةِ، فإعادةُ البثِّ لسائقٍ وصلَ حديثاً باقيةٌ كما هي، والأقدمُ القابلُ للعرضِ
+           -- (ومنه المنقضيةُ جولتُه — عيبُ التجويعِ المقيسُ في موجةِ 250) يسبقُ الجديدَ دائماً.
            order by
              ${
                fairWindow
-                 ? sql`(o.broadcast_round >= ${maxRounds}) asc, o.created_at asc`
+                 ? sql`(o.broadcast_round >= ${maxRounds}) asc,
+                       exists (
+                         select 1 from order_offers f
+                          where f.order_id = o.id
+                            and f.round = o.broadcast_round
+                            and f.status = 'pending'
+                            and f.expires_at > now()
+                       ) asc,
+                       o.created_at asc`
                  : sql`o.broadcast_round asc, o.created_at asc`
              }
            limit ${limit}
