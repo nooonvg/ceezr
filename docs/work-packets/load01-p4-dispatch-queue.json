@@ -21,7 +21,8 @@
     "tests/unit/check-connection-budget.test.ts",
     "tests/unit/telegram-update-drainer-batch-claim.test.ts",
     "deploy/capacity-run/monitor/p4-decompose.py",
-    "tests/unit/skip-audit.test.ts"
+    "tests/unit/skip-audit.test.ts",
+    "tests/integration/agent-core-support-advice.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md", "docs/ROADMAP-MASTER.md"],

@@ -43,7 +43,7 @@ const config: AppConfig = testConfig({
 
 let sql: Sql;
 let app: ReturnType<typeof createServer>;
-let container: ReturnType<typeof buildContainer>;
+let container: ReturnType<typeof buildContainer> | undefined;
 let driverSent: SentMessage[];
 let cityId: string;
 let cityHandle: ActiveCityHandle | undefined;
@@ -102,13 +102,15 @@ describeIf("القسم ج — اقتراح آلي على تذكرة دعم حق�
   afterAll(async () => {
     // تنظيفٌ نهائي: الـbeforeEach يمسح قبل كل اختبار لكن لا شيء يمسح بعد الأخير
     // فيبقى سائق/راكب هذا الملف يلوّث الملفات المتوازية اللاحقة
-    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا.
+    // (CI-01 — خارطة استكمال CAP-RUN-20261016، المرحلة 9). قبل sql.end عمدًا،
+    // وبعدَ إغلاقِ الحاويةِ (شوطُها الخلفيُّ لا يسابقُ المسحَ — انظر beforeEach).
+    await container?.close();
+    container = undefined;
     await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, support_tickets, unsubscribed_claims,
                              unsubscribed_negotiations, order_offers, orders,
                              subscriptions, driver_capabilities, driver_availability,
                              drivers, riders, users restart identity cascade`;
 
-    await container.close();
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
     delete process.env.AGENT_CORE_ENABLED;
@@ -117,6 +119,13 @@ describeIf("القسم ج — اقتراح آلي على تذكرة دعم حق�
   });
 
   beforeEach(async () => {
+    // حاويةُ الاختبارِ السابقِ تُغلَقُ قبلَ المسحِ: شوطُ البثِّ الفوريِّ الذي حفّزَه `/available`
+    // يجري في الخلفيّةِ على اتّصالِه (`gatewayDispatch`، ADR 0289)، فإن بقيَ حيًّا سابقَ
+    // `truncate` على الأقفالِ (deadlock 40P01). `end` ينتظرُ الاستعلامَ الجاريَ ثمّ يُغلق.
+    if (container !== undefined) {
+      await container.close();
+      container = undefined;
+    }
     await sql`truncate table agent_outcomes, agent_decisions, audit_log, attendance_log, support_tickets, unsubscribed_claims,
                              unsubscribed_negotiations, order_offers, orders,
                              subscriptions, driver_capabilities, driver_availability,
