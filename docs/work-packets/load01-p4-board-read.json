@@ -1,0 +1,37 @@
+{
+  "id": "load01-p4-board-read",
+  "goal": "LOAD-01 (P4) · الدفعةُ الثامنةُ من CAP-RUN-20261016-CONTINUATION — الإصلاحُ الأولُ: قراءةُ لوحِ عروضِ السائقِ بجولةِ قاعدةٍ واحدةٍ (عبارةٌ واحدةٌ بـCTE بدلَ ثلاثِ جولاتٍ: اللوحُ + الملاحقُ + الأهليةُ) لخفضِ ضغطِ مجمّعِ اتصالاتِ البوابةِ تحتَ استطلاعِ السائقينَ، بعقدِ الاستجابةِ ودلالاتِه كما هما.",
+  "canonical_source": [
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-8-LOAD01-P4.md",
+    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"
+  ],
+  "implementation": [
+    ".github/workflows/ci.yml",
+    "scripts/lib/skip-registry.ts",
+    "packages/infrastructure/driver/driver-offers-store.ts",
+    "packages/infrastructure/transport/order-place-extras.ts",
+    "tests/integration/driver-offer-board-single-read.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md",
+    "docs/work-packets/load01-p4-board-read.json"
+  ],
+  "decision": "دمجُ الجولاتِ الثلاثِ في عبارةٍ واحدةٍ عبرَ CTE معَ تصديرِ composeDriverOfferBoard للتركيبِ الحرفيِّ نفسِه: المسارُ القديمُ صارَ رقيقًا فوقَ الدالةِ المُصدَّرةِ فالتكافؤُ قابلٌ للإثباتِ بالاختبارِ لا بالمراجعةِ وحدَها. لا تغييرَ في عقدِ الاستجابةِ ولا في دلالاتِ الأهليةِ أو الملاحقِ.",
+  "tests": [
+    "bun test tests/integration/driver-offer-board-single-read.test.ts (4/4 على PostgreSQL حقيقيةٍ: عدّادُ عباراتٍ = 1 · تكافؤٌ حرفيٌّ مع المسارِ القديمِ · اللوحُ الفارغُ · رفضُ USER_NOT_FOUND)",
+    "المجموعةُ الكاملةُ على PG حقيقيةٍ في المقعدِ المعزولِ — مجموعةُ الفشلِ مطابقةٌ لخطِّ الأساسِ على main في المقعدِ نفسِهِ (اختباراتُ CORE المؤجلةُ واختبارُ الصمودِ الحساسُ لـautovacuum وحدَها)",
+    "موجةُ القياسِ fixA500 (500 متزامنًا · 180ث): P4 = 37.0ث مقابلَ أساسِ 37.5ث — لا اجتيازَ لحدِّ 30ث وحدهُ"
+  ],
+  "evidence": "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-8-LOAD01-P4.md (فرعُ الأدلةِ) — القياسُ المنفردُ والمجموعُ وقبولُ الموجتَينِ.",
+  "constraints": [
+    "لا تغييرَ في عقدِ الاستجابةِ ولا في دلالاتِ القراءةِ",
+    "لا رفعَ لمعدلِ الاستطلاعِ ولا تخفيفًا لبروتوكولِ القبولِ",
+    "لا قاعدةَ إنتاجٍ ولا بوتًا حقيقيًّا في الاختباراتِ",
+    "حدُّ P4=30ث لا يتغيّرُ ولا تعريفُ التزامنِ ولا نافذةُ القياسِ ولا عبءُ الحملِ"
+  ],
+  "limitations": "الإصلاحُ وحدَهُ لا يجتازُ حدَّ P4 عندَ 500 متزامنٍ (37.0ث) — العنقُ زمنُ بثِّ العرضِ لا جولاتُ القراءةِ، والتفصيلُ في دليلِ الدفعةِ.",
+  "scope_note": "إصلاحٌ واحدٌ منطقيٌّ مستقلٌّ (قراءةُ اللوحِ) على فرعٍ منفصلٍ من main؛ رفيقُهُ تخطي المحسومِ في الالتقاطِ على فرعٍ آخرَ."
+}
