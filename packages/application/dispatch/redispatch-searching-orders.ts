@@ -41,6 +41,16 @@ import { type BroadcastDependencies, broadcastOffers } from "./broadcast-offers.
  * `matchOrder` — ويوم يتغيّر أحدهما يبقى الثاني، فيُبَثّ ما لا يجوز بثّه أو يُحجَب
  * ما يجب عرضه، بلا إنذار.
  */
+/**
+ * `LOAD-01 · P4` — مهلةُ السماحِ للجولةِ الحيّةِ قبلَ أن تنافسَ على مقعدٍ في النافذةِ العادلةِ.
+ *
+ * جولةٌ فُتحت للتوِّ يحتاجُ سائقوها إلى أن يروا العرضَ ويقبلوه: قيسَ ظهورُه على اللوحِ
+ * p99 ≈ 2.0ث (دورةُ تحديثٍ واحدةٌ) والقبولُ p95 ≈ 0.2ث، فـ3ث تغطّيهما. قبلَها يتأخّرُ
+ * الطلبُ خلفَ ما سواه (لا يُستبعَد)، وبعدَها يعودُ إلى ترتيبِ العمرِ. ليست مهلةَ العرضِ
+ * (`offer_timeout_seconds`) ولا تغيّرُها: لا يُلمَسُ عقدُ العرضِ ولا انقضاؤه.
+ */
+export const LIVE_ROUND_ESCALATION_GRACE_SECONDS = 3;
+
 export interface SearchingOrderRef {
   readonly orderId: OrderId;
   readonly cityId: CityId;
@@ -70,7 +80,7 @@ export interface SearchingOrderFinder {
      * ذاتَ سائقٍ مؤهّلٍ لم تُخدم في 120ث لأنّ ترتيبَ الدورةِ الأدنى قدّم كلَّ
      * جديدٍ عليها). غيابُ المعامل = السلوكُ القائمُ حرفيًا (توافقٌ خلفيّ).
      */
-    opts?: { readonly maxBroadcastRounds?: number },
+    opts?: { readonly maxBroadcastRounds?: number; readonly liveRoundGraceSeconds?: number },
   ): Promise<Result<readonly SearchingOrderRef[], PortFailureError>>;
 }
 
@@ -85,6 +95,8 @@ export interface RedispatchDependencies {
    */
   readonly limit: number;
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
+  /** خطّافُ قياسٍ اختياريٌّ يلفُّ معالجةَ كلِّ طلبٍ (أثرُ التشخيصِ)؛ غيابُه = نداءٌ مباشر. */
+  readonly aroundOrder?: <T>(orderId: OrderId, fn: () => Promise<T>) => Promise<T>;
 }
 
 export interface RedispatchReport {
@@ -118,14 +130,43 @@ export async function redispatchSearchingOrders(
    * تعذّرَتِ القراءةُ أو فشلَ التفسير؟ النافذةُ القائمةُ دونَ تغييرٍ (السلوكُ
    * المتحفّظُ لا فشلٌ صامتٌ يوقفُ إعادةَ العرضِ عن المدينةِ كلِّها).
    */
-  let fairWindow: { readonly maxBroadcastRounds: number } | undefined;
+  let fairWindow:
+    | { readonly maxBroadcastRounds: number; readonly liveRoundGraceSeconds: number }
+    | undefined;
   const rawSettings = await deps.broadcast.settings.findByCity(cityId);
   if (rawSettings.ok) {
     const parsed = parseCitySettings(cityId, rawSettings.value);
-    if (parsed.ok) fairWindow = { maxBroadcastRounds: parsed.value.maxBroadcastRounds };
+    if (parsed.ok) {
+      fairWindow = {
+        maxBroadcastRounds: parsed.value.maxBroadcastRounds,
+        liveRoundGraceSeconds: LIVE_ROUND_ESCALATION_GRACE_SECONDS,
+      };
+    }
   }
   const found = await deps.finder.findSearching(cityId, deps.limit, fairWindow);
   if (!found.ok) return found;
+
+  /**
+   * `LOAD-01 · P4` — **إعداداتُ المدينةِ تُقرَأُ مرّةً للشوطِ لا مرّةً لكلِّ طلبٍ.** الشوطُ
+   * تسلسليٌّ على تجمُّعِ البوابةِ المشتركِ، وكلُّ رحلةٍ إلى القاعدةِ فيه تنتظرُ اتّصالاً: قيسَ
+   * في موجةِ 500 (`b9-fixA2-500`) أنَّ متوسّطَ النداءِ ~9–13ms جُلُّه انتظارُ التجمُّعِ (`select 1`
+   * عبرَه 28ms وعلى اتّصالٍ مخصَّصٍ 2.4ms)، والطلبُ يكلّفُ خمسَ رحلاتٍ إحداها إعادةُ قراءةِ
+   * الإعداداتِ نفسِها التي قرأها الشوطُ للتوِّ. القراءةُ الأولى للشوطِ هي المصدرُ: نجاحُها
+   * يُعادُ لكلِّ طلبٍ في المدينةِ نفسِها، وفشلُها لا يُخزَّنُ (يقرأُ كلُّ طلبٍ لنفسِه كما كانَ،
+   * فلا يتحوّلُ عطلٌ عابرٌ إلى رفضِ شوطٍ كاملٍ). عمرُ النسخةِ عمرُ الشوطِ (ثوانٍ)، وهو أضيقُ
+   * من نافذةِ أيِّ تعديلٍ إداريٍّ على الإعداداتِ؛ ومسارُ إنشاءِ الطلبِ خارجَ الشوطِ لا يتغيّر.
+   */
+  const passSettings = rawSettings;
+  const broadcast: BroadcastDependencies = passSettings.ok
+    ? {
+        ...deps.broadcast,
+        settings: {
+          ...deps.broadcast.settings,
+          findByCity: async (id) =>
+            id === cityId ? passSettings : deps.broadcast.settings.findByCity(id),
+        },
+      }
+    : deps.broadcast;
 
   const rebroadcast: OrderId[] = [];
   const stillNoDriver: OrderId[] = [];
@@ -133,13 +174,14 @@ export async function redispatchSearchingOrders(
   const raced: OrderId[] = [];
   let failed = 0;
 
+  /**
+   * `broadcastOffers` هي نفسُها المستخدمةُ عند إنشاء الطلب، ولا تُمرَّر لها
+   * معاملاتٌ إضافيّة. فكلُّ ما يحكم دورةَ إعادةٍ يحكم الدورةَ الأولى: نصفُ
+   * القطر، والوزنان، وحجمُ الدفعة، وحدُّ الدورات، واستبعادُ من له عرضٌ حيّ.
+   */
   for (const order of found.value) {
-    /**
-     * `broadcastOffers` هي نفسُها المستخدمةُ عند إنشاء الطلب، ولا تُمرَّر لها
-     * معاملاتٌ إضافيّة. فكلُّ ما يحكم دورةَ إعادةٍ يحكم الدورةَ الأولى: نصفُ
-     * القطر، والوزنان، وحجمُ الدفعة، وحدُّ الدورات، واستبعادُ من له عرضٌ حيّ.
-     */
-    const result = await broadcastOffers({ orderId: order.orderId }, deps.broadcast);
+    const work = () => broadcastOffers({ orderId: order.orderId }, broadcast);
+    const result = await (deps.aroundOrder ? deps.aroundOrder(order.orderId, work) : work());
 
     if (result.ok) {
       rebroadcast.push(order.orderId);

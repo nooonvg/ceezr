@@ -187,7 +187,10 @@ import {
 import { createRideRequestCommand } from "../../../packages/infrastructure/transport/ride-request-store.ts";
 import type { RoutingProvider, RoutingQuota } from "../../../packages/maps/index.ts";
 import { createOsrmProvider } from "../../../packages/maps/index.ts";
-import { DB_QUERY_DEADLINE_MS } from "../../../packages/shared/config/connection-budget.ts";
+import {
+  DB_POOL_MAX,
+  DB_QUERY_DEADLINE_MS,
+} from "../../../packages/shared/config/connection-budget.ts";
 import type { AppConfig } from "../../../packages/shared/config/index.ts";
 import { type CityId, systemClock } from "../../../packages/shared/kernel/index.ts";
 import { resolveGpsPolicy } from "../../../packages/tracking/config.ts";
@@ -197,6 +200,7 @@ import {
   createSupportAdvicePublisher,
   createTicketAdvisor,
 } from "./agent-advisor.ts";
+import { createDispatchTrace } from "./background/dispatch-trace.ts";
 import {
   createImmediateRedispatchScheduler,
   IMMEDIATE_REDISPATCH_DEBOUNCE_MS,
@@ -291,6 +295,8 @@ export { asIdentifyingSender, asOutboundSender, asSupportSender };
 export interface Container {
   readonly handler: UpdateHandler;
   readonly sql: Sql;
+  /** `ADR 0289` — اتّصالُ شوطِ البثِّ الفوريِّ (`gatewayDispatch`)؛ يُغلَقُ مع `sql` عندَ الإيقافِ. */
+  readonly dispatchSql: Sql;
   /**
    * ADR 0287 — خطّافُ الإشارةِ الآنيةِ لأطوارِ الرحلةِ: يُركَّبُ في `index.ts` بعدَ
    * إنشاءِ القناةِ؛ فإن أُودِعَ طورٌ جديدٌ بُثَّ `trip:update` للراكبِ فورًا (لا
@@ -929,14 +935,46 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    * المخفوضةُ للمدينةِ (ثانيتانِ + مانعُ تداخلٍ) في `background/immediate-redispatch.ts`
    * تُبقي الاستجابةَ للكتابةِ والبثِّ وحدهما، والدوريّةَ (20ث) أرضًا صلبةً.
    */
+  // `LOAD-01 · P4` — أثرٌ تشخيصيٌّ اختياريٌّ (`DISPATCH_TRACE_FILE`)؛ غيابُه = المسارُ الأصلُ حرفيّاً.
+  const dispatchTrace = createDispatchTrace({ file: process.env.DISPATCH_TRACE_FILE, sql });
+  /**
+   * `LOAD-01 · P4` · `ADR 0289` — **شوطُ البثِّ الفوريِّ على اتّصالِه المُعلَنِ** (`gatewayDispatch`)
+   * لا على تجمُّعِ الطلبِ. الشوطُ تسلسليٌّ لكلِّ مدينةٍ، فطاقتُه = 1 ÷ مجموعِ رحلاتِ الطلبِ الواحدِ،
+   * وكلُّ رحلةٍ على تجمُّعِ الطلبِ كانت تنتظرُ اتّصالاً خلفَ حركةِ الراكبِ والسائقِ. تجربةُ العزلِ
+   * بمتغيّرٍ واحدٍ (`b9-isoPool1-500`): انتظارُ ما قبلَ أوّلِ معالجةٍ p95 من ~35ث إلى ~3ث.
+   * المنافذُ هي منافذُ `matching` نفسُها مبنيّةً على هذا الاتّصالِ (والعدّادُ على كاتبِ العروضِ
+   * باقٍ)، فلا يتغيّرُ معنى عرضٍ ولا جولةٍ: الذرّيّةُ في `open_offer_round` و`driver_accept_offer`.
+   */
+  const dispatchSql = createSql({
+    connectionString: config.databaseUrl,
+    max: DB_POOL_MAX.gatewayDispatch,
+    queryDeadlineMs: DB_QUERY_DEADLINE_MS.gatewayDispatch,
+    onQueryDeadline: ({ deadlineMs }) =>
+      log("db.query_deadline_exceeded", { pool: "gatewayDispatch", deadlineMs }),
+  });
+  const immediateMatching = {
+    ...matching,
+    orders: createOrderRepository(dispatchSql),
+    offers: createOfferRepository(dispatchSql),
+    candidates: createDriverCandidateRepository(dispatchSql),
+    settings: createSettingsRepository(dispatchSql),
+    offerWriter:
+      overrides.metrics === undefined
+        ? createOfferWriter(dispatchSql)
+        : instrumentOfferWriter(createOfferWriter(dispatchSql), overrides.metrics),
+  };
   const immediateRedispatchScheduler = createImmediateRedispatchScheduler({
     run: async (cityId) => {
+      const finder = createSearchingOrderFinder(dispatchSql);
+      const pass = dispatchTrace?.beginPass(cityId, finder, immediateMatching) ?? null;
       const report = await redispatchSearchingOrders(cityId, {
-        finder: createSearchingOrderFinder(sql),
-        broadcast: matching,
+        finder: pass?.finder ?? finder,
+        broadcast: pass?.broadcast ?? immediateMatching,
         limit: IMMEDIATE_REDISPATCH_LIMIT,
+        ...(pass ? { aroundOrder: pass.aroundOrder } : {}),
         log,
       });
+      pass?.end(report);
       if (!report.ok) {
         log("redispatch.immediate_failed", { cityId, detail: report.error.detail });
         return;
@@ -961,6 +999,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
      * («إعادةُ العرضِ بعدَ الكتابةِ») قائمٌ — لكنهُ غيرُ حاجبٍ للردِّ.
      */
     onDriverBecameDispatchable: async (cityId: CityId): Promise<void> => {
+      dispatchTrace?.onTrigger(cityId, "accepted");
       immediateRedispatchScheduler.trigger(cityId);
     },
   };
@@ -1250,7 +1289,10 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     >`select city_id::text as city_id from orders where id = ${orderId}::uuid`
       .then((rows) => {
         const cityId = rows[0]?.city_id;
-        if (cityId !== undefined) immediateRedispatchScheduler.trigger(cityId as CityId);
+        if (cityId !== undefined) {
+          dispatchTrace?.onTrigger(cityId, "accepted");
+          immediateRedispatchScheduler.trigger(cityId as CityId);
+        }
       })
       .catch((cause: unknown) =>
         log("redispatch.new_order_trigger_failed", {
@@ -1293,6 +1335,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
         : {}),
     }),
     sql,
+    dispatchSql,
     driverSender,
     financial,
     trackingTokens: trackingTokens,
@@ -1354,7 +1397,7 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     },
     close: async () => {
       distributedTrackingBus?.stop();
-      await sql.end({ timeout: 5 });
+      await Promise.all([sql.end({ timeout: 5 }), dispatchSql.end({ timeout: 5 })]);
     },
   };
 }

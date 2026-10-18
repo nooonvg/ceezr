@@ -58,6 +58,7 @@ export const JOB_CONCURRENCY = 4;
  */
 export const DB_POOL_ROLES = [
   "gatewayRequest",
+  "gatewayDispatch",
   "workerJobs",
   "workerLocks",
   "adminRequest",
@@ -77,6 +78,15 @@ export const DB_POOL_MAX: Readonly<Record<DbPoolRole, number>> = Object.freeze({
    * `apps/gateway/src/admin/mount.ts` يستقبلُ `sql` ولا يُنشئُ تجمُّعاً).
    */
   gatewayRequest: 5,
+  /**
+   * `LOAD-01 · P4` · `ADR 0289` — اتّصالُ شوطِ البثِّ الفوريِّ (المُرسِلُ لكلِّ مدينةٍ). الشوطُ
+   * تسلسليٌّ لا يحملُ أكثرَ من استعلامٍ في آنٍ، فاتّصالٌ واحدٌ يسعُه كاملاً؛ وعلى تجمُّعِ الطلبِ
+   * كانَ كلُّ استعلامٍ من ~4 لكلِّ طلبٍ ينتظرُ اتّصالاً خلفَ حركةِ الطلبِ (قيسَ `select 1`
+   * 11–28ms عبرَه مقابلَ 1.4–2.4ms مباشرةً) فوقفت طاقتُه عندَ ~14 طلباً جديداً/ث دونَ وصولٍ
+   * ~16–17/ث وانتظرَ الطلبُ ~35ث قبلَ أوّلِ معالجةٍ (`b9-trace500`). **يرفعُ الطلبَ المحسوبَ
+   * اتّصالاً واحداً**؛ ومقارنتُه بخطّةِ القاعدةِ قرارُ سعةٍ يملكُه المالكُ (`ADR 0073`).
+   */
+  gatewayDispatch: 1,
   /** تجمُّعُ استعلاماتِ المهامِّ الدوريّةِ في عمليةِ العاملِ. */
   workerJobs: 5,
   /**
@@ -117,6 +127,8 @@ export const DB_POOL_MAX: Readonly<Record<DbPoolRole, number>> = Object.freeze({
  */
 export const DB_QUERY_DEADLINE_MS = Object.freeze({
   gatewayRequest: 8_000,
+  // استعلاماتُ الشوطِ هي استعلاماتُ مسارِ الطلبِ نفسُها (`broadcastOffers`) فمهلتُها مهلتُه.
+  gatewayDispatch: 8_000,
   workerJobs: null,
   workerLocks: null,
   adminRequest: 8_000,
@@ -145,7 +157,7 @@ export type BudgetedProcess = (typeof BUDGETED_PROCESSES)[number];
 
 /** أيُّ عمليةٍ تحملُ أيَّ دورٍ في الحالةِ المستقرّةِ. */
 const STEADY_STATE_POOLS: Readonly<Record<BudgetedProcess, readonly DbPoolRole[]>> = Object.freeze({
-  gateway: ["gatewayRequest"],
+  gateway: ["gatewayRequest", "gatewayDispatch"],
   worker: ["workerJobs", "workerLocks"],
   admin: ["adminRequest"],
 });

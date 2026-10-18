@@ -1,0 +1,2 @@
+{"t":"2026-10-18T09:51:37+00:00","event":"round.start","round":"b9-trace500","profile":[{"name":"wave-500","sec":180,"conc":500}],"drain_sec":180,"code_sha":"337c827c7a716836b56f342aee439c24aef3d323","code_dirty":0,"docs_dirty":0}
+{"t":"2026-10-18T09:51:37+00:00","event":"gateway.pid","pid":"7298"}
