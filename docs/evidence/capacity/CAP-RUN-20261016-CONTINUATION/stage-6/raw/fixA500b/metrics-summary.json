@@ -1,0 +1,12 @@
+{
+  "round": "fixA500b",
+  "window_source": "mtime(mock-stats-pre.json) → mtime(mock-stats-post.json) — الالتقاطان الفعليان للعدادات",
+  "window_seconds": 211,
+  "delta_sendmessage": 5822,
+  "delta_api_total": 5865,
+  "sendmessage_rate_per_s": 27.59,
+  "pool_samples_window": "نفس النافذة (قصّ عينات pool-samples.jsonl عليها)",
+  "pool_peak_active": 7,
+  "pool_samples_in_window": 42,
+  "note": "قابلٌ لإعادةِ الحسابِ: الأصلُ mock-stats-{pre,post}.json وpool-samples.jsonl في هذا الدليلِ؛ النافذةُ من أوقاتِ ملفاتِ الالتقاطِ نفسِها (لا تقديرٌ)."
+}

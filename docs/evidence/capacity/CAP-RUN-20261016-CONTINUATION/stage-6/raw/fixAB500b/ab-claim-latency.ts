@@ -76,6 +76,11 @@ const [def] = await pool<{ len: string; hasSkip: boolean }[]>`
   select length(prosrc)::text as len, prosrc like '%decided%' as "hasSkip"
   from pg_proc where proname = 'claim_notification_delivery'`;
 console.log(`AB_DEF len=${def?.len} hasSkipMarker=${def?.hasSkip}`);
+if (def?.hasSkip !== true) {
+  throw new Error(
+    "التعريفُ لا يحملُ وسمَ التخطي — قِستَ الدالةَ القديمةَ على قاعدةِ المرشّحِ أو العكس؛ تحقق من القاعدةِ.",
+  );
+}
 
 // (٠.٥) تنظيفُ أيِّ بقايا جولةٍ سابقةٍ (القياسُ قابلٌ للإعادةِ)
 await cleanup();
