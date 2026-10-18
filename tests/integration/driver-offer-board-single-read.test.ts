@@ -72,16 +72,26 @@ let riderId: string;
  */
 function countedEngine(): { engine: Sql; count: () => number } {
   let n = 0;
-  const tagged = ((strings: TemplateStringsArray, ...values: readonly unknown[]): unknown => {
+  // الوكيلُ فوقَ دالةِ العدّ مباشرةً: نداءُ القالبِ يُعَدّ ثمّ يمرّ، وكلُّ خاصيةٍ
+  // أخرى (`array` وغيرُها) تُمرَّرُ إلى المحرّكِ الحقيقيِّ — بلا تمريرٍ كانَ استعلامُ
+  // الملاحقِ يُبتلَعُ (`sql.array` غيرُ معرّفٍ فيرفعُ داخلَ try فيُقنَّعُ) فيَنقصُ العدُّ.
+  const counting = ((strings: TemplateStringsArray, ...values: readonly unknown[]): unknown => {
     n += 1;
     return (
       sql as unknown as (strings: TemplateStringsArray, ...values: readonly unknown[]) => unknown
     )(strings, ...values);
   }) as unknown as Sql;
-  return { engine: tagged, count: () => n };
-}
-
-/** ترتيبٌ مستقرٌّ للمقارنةِ الحرفيةِ — المصفوفاتُ والخرائطُ لا تُقارَنُ مرتَّبةً. */
+  const engine = new Proxy(counting, {
+    get(_target, prop) {
+      if (prop === "then") return undefined;
+      const value = Reflect.get(sql as object, prop, sql);
+      return typeof value === "function"
+        ? (value as (...args: unknown[]) => unknown).bind(sql)
+        : value;
+    },
+  }) as unknown as Sql;
+  return { engine, count: () => n };
+} /** ترتيبٌ مستقرٌّ للمقارنةِ الحرفيةِ — المصفوفاتُ والخرائطُ لا تُقارَنُ مرتَّبةً. */
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (value !== null && typeof value === "object") {
@@ -224,19 +234,29 @@ describeIf("لوحُ العروضِ بجولةِ قاعدةٍ واحدةٍ — L
     expect(merged.ok).toBe(true);
     if (!merged.ok) throw new Error("تعذّرت قراءةُ اللوحِ الموحّدةِ");
 
-    // المسارُ القديمُ بجولاتِهِ الثلاثِ — على البياناتِ نفسِها.
-    const [fn] = await sql<{ result: unknown }[]>`
+    // المسارُ القديمُ بجولاتِهِ الثلاثِ — على البياناتِ نفسِها، **معدودةً بالعدّادِ
+    // نفسِهِ** (3 عباراتٍ: اللوحُ ثمّ الملاحقُ ثمّ الأهليةُ) في مقابلِ الواحدةِ أعلاه.
+    const legacyEngine = countedEngine();
+    const [fn] = await legacyEngine.engine<{ result: unknown }[]>`
       select driver_offer_board(${DRIVER_TELEGRAM_ID}::bigint) as result`;
     const legacyPayload = fn?.result as {
       ok: true;
       offers: readonly { order_id: string }[];
     } & Record<string, unknown>;
     expect(legacyPayload.ok).toBe(true);
+    // الملاحقُ تُستعلمُ فقطَ لقائمةِ عروضٍ غيرِ فارغةٍ — نُثبتُها هنا كي يكونَ عددُ
+    // العباراتِ (3) مقيسًا على المسارِ الكاملِ لا على حالتِهِ الفارغةِ.
+    expect(legacyPayload.offers.length).toBeGreaterThan(0);
     const legacyExtras = await readOrderPlaceExtras(
-      sql,
+      legacyEngine.engine,
       legacyPayload.offers.map((card) => card.order_id),
     );
-    const legacyEligibility = await readDriverEligibility(sql, String(DRIVER_TELEGRAM_ID));
+    const legacyEligibility = await readDriverEligibility(
+      legacyEngine.engine,
+      String(DRIVER_TELEGRAM_ID),
+    );
+    // العددُ المقيسُ للمسارِ القديمِ: ثلاثُ عباراتٍ — في مقابلِ الواحدةِ للمسارِ الموحّدِ.
+    expect(legacyEngine.count()).toBe(3);
 
     // `server_time` هوَ لحظةُ القراءةِ بذاتِها (تتقدّمُ بينَ القراءتينِ) فلا يصحُّ
     // في تكافؤٍ حرفيٍّ — يُقارنُ وحدهُ بقربٍ لا بالمساواةِ، ويُقارنُ الباقي حرفياً.

@@ -55,6 +55,7 @@ let riderUserId = "";
 let riderId = "";
 let decidedOutboxId = "";
 let liveOutboxId = "";
+let isoDatabaseName = "";
 
 async function seedOrderWithOffer(
   offerStatus: "accepted" | "pending",
@@ -110,7 +111,30 @@ async function claimOnce(): Promise<ClaimEnvelope> {
 
 describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ", () => {
   beforeAll(async () => {
-    sql = createSql({ connectionString: DATABASE_URL as string });
+    // **عزلٌ حتميٌّ:** ترتيبُ الالتقاطِ (أولويةُ النوعِ ثمّ القِدَمُ) لا يضمنُ أسبقيةَ
+    // صفوفِنا في قاعدةٍ مشتركةٍ فيها صفوفُ اختباراتٍ أخرى — فننشئُ لكلِّ جولةٍ قاعدةً
+    // خاصةً (قالبًا من قاعدةِ الاختبارِ نفسِها بعدَ إنهاءِ اتصالاتِها الأخرى)، وفيها
+    // صفوفُنا وحدَها: المحسومُ الأقدمُ والحيُّ الأحدثُ — فالأقدميةُ والنتائجُ حتميةٌ.
+    const sourceUrl = new URL(DATABASE_URL as string);
+    const sourceDb = sourceUrl.pathname.replace(/^\//, "");
+    // اسمُ القاعدةِ مشتقٌّ من مسارِ الرابطِ (مُدخَلٌ مضبوطٌ) — يُنقّى ويُدمجُ عبرَ
+    // `unsafe` (عباراتُ DDL لا تقبلُ معاملاتٍ)، والتنقيةُ تمنعُ أيَّ تسميعٍ.
+    const safe = (name: string): string => {
+      if (!/^[a-z0-9_]+$/.test(name)) throw new Error(`اسمُ قاعدةٍ غيرُ آمنٍ: ${name}`);
+      return name;
+    };
+    const adminUrl = new URL(DATABASE_URL as string);
+    adminUrl.pathname = "/postgres";
+    const admin = createSql({ connectionString: adminUrl.toString() });
+    await admin`select pg_terminate_backend(pid) from pg_stat_activity where datname = ${sourceDb} and pid <> pg_backend_pid()`;
+    const isoDb = `${safe(sourceDb)}_claimskip_iso`;
+    await admin.unsafe(`drop database if exists "${isoDb}" with (force)`);
+    await admin.unsafe(`create database "${isoDb}" encoding 'UTF8' template "${safe(sourceDb)}"`);
+    await admin.end({ timeout: 5 });
+    const isoUrl = new URL(DATABASE_URL as string);
+    isoUrl.pathname = `/${isoDb}`;
+    isoDatabaseName = isoDb;
+    sql = createSql({ connectionString: isoUrl.toString() });
     // نظافةُ بقايا جولةٍ سابقةٍ لنفسِ المعرفاتِ (اختبارٌ محليٌّ معاد).
     await sql`delete from notification_outbox where dedup_key like 'claimskip-test:%' or recipient_user_id in (
       select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint))`;
@@ -164,19 +188,15 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
 
   afterAll(async () => {
     await sql`delete from notification_outbox where dedup_key like 'claimskip-test:%'`;
-    await sql`delete from order_offers where order_id in (
-      select o.id from orders o join riders r on r.id = o.rider_id join users u on u.id = r.user_id
-      where u.telegram_id = ${RIDER_TELEGRAM_ID}::bigint)`;
-    await sql`delete from orders where rider_id in (
-      select id from riders where user_id in (
-        select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint)))`;
-    await sql`delete from riders where user_id in (
-      select id from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint))`;
-    await sql`delete from drivers where user_id in (
-      select id from users where telegram_id = ${DRIVER_TELEGRAM_ID}::bigint)`;
-    await sql`delete from users where telegram_id in (${DRIVER_TELEGRAM_ID}::bigint, ${RIDER_TELEGRAM_ID}::bigint)`;
+    // عقدُ المعينِ (`القاعدةُ ٣`): من استعملَ `ensureActiveCity` ردَّ بهِ — على القاعدةِ
+    // المعزولةِ قبلَ إسقاطِها (لا أثرَ بعدها، لكنّ العقدَ يُقرأُ على النمطِ).
     await restoreCityBaseline(sql, cityHandle);
     await sql.end({ timeout: 5 });
+    const adminUrl = new URL(DATABASE_URL as string);
+    adminUrl.pathname = "/postgres";
+    const admin = createSql({ connectionString: adminUrl.toString() });
+    await admin.unsafe(`drop database if exists "${isoDatabaseName}" with (force)`);
+    await admin.end({ timeout: 5 });
   });
 
   it("١) المحسومُ لا يُلتقطُ: صفُّهُ يبقى `pending` بعدَّدِ محاولاتٍ كما هو", async () => {
@@ -243,14 +263,14 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
   });
 
   it("٥) تزامنُ مُلتقطَينِ على قائمةٍ فيها محسومٌ `pending`: لا واحدٌ منهما يعودُ بالمحسومِ، والحيُّ يُلتقطُ مرةً واحدةً بالضبطِ", async () => {
-    // عزلٌ حتميٌّ: نُعيدُ الحيَّ والمحسومَ `pending` (الاختبارُ ٤ وسَمَ المحسومَ `dead`)
-    // ونُؤرّخُ الحيَّ أقدمَ صفِّ عروضٍ مؤهّلٍ (created_at من ساعتَينِ) — فأولُ التقاطٍ
-    // يستهدفُهُ حتمًا، والثاني المتزامنُ يتخطّاهُ المقفولَ (`for update skip locked`).
-    // الاستبعادُ الجديدُ يمنعُ المحسومَ `pending` من كليهما — وهذا جوهرُ الإصلاحِ تحتَ
-    // التزامنِ، بلا حاجةٍ إلى إعادةِ صفوفِ اختباراتٍ أخرى إلى الطابورِ.
+    // القاعدةُ المعزولةُ فيها صفوفُنا وحدَها: المحسومُ الأقدمُ (وهو ما يستهدفُهُ تعديلُ
+    // D8: محسومٌ أقدمُ يحجبُ حيًّا أحدثَ) والحيُّ الأحدثُ — فالأقدميةُ حتميةٌ بلا تأريخٍ.
+    // نُعيدُ الاثنَينِ `pending` (الاختبارُ ٤ وسَمَ المحسومَ `dead`) ثمّ نُطلقُ التقاطَينِ
+    // معًا: الاستبعادُ الجديدُ يمنعُ المحسومَ `pending` من كليهما — وهذا جوهرُ الإصلاحِ
+    // تحتَ التزامنِ. الأولُ يأخذُ الحيَّ (الوحيدَ المؤهّلَ)، والثاني يجدُ الطابورَ خاليًا
+    // فيعيدُ خلوًا — فالحيُّ مُلتقَطٌ مرةً واحدةً بالضبطِ داخلَ الزوجِ المتزامنِ نفسِهِ.
     await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, dead_reason=null where id = ${liveOutboxId}::uuid`;
     await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, dead_reason=null, attempts=0 where id = ${decidedOutboxId}::uuid`;
-    await sql`update notification_outbox set created_at = now() - make_interval(hours => 2) where id = ${liveOutboxId}::uuid`;
     const decidedAttemptsBefore = (
       await sql<
         { attempts: number }[]
@@ -263,8 +283,8 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
         expect(envelope.delivery.delivery_id).not.toBe(decidedOutboxId);
       }
     }
-    // بالتأريخِ أعلاه: واحدٌ من الالتقاطَينِ المتزامنَينِ حصلَ على الحيِّ بالضبطِ،
-    // والآخرُ تخطّاهُ المقفولَ فأخذَ غيرَهُ أو أعادَ خلوًّا — لا التقطاهُ الاثنانِ أبدًا.
+    // في القاعدةِ المعزولةِ: الأولُ أخذَ الحيَّ (الوحيدَ المؤهّلَ بعدَ استبعادِ المحسومِ)
+    // والثاني أعادَ خلوًّا (الطابورُ فرغَ) — التقاطٌ واحدٌ بالضبطِ داخلَ الزوجِ المتزامنِ.
     const claimedIds = [a.delivery?.delivery_id, b.delivery?.delivery_id].filter(
       (v) => v !== undefined,
     );
@@ -273,8 +293,8 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
       select attempts, status from notification_outbox where id = ${decidedOutboxId}::uuid`;
     expect(decided[0]?.status).toBe("pending");
     expect(decided[0]?.attempts).toBe(decidedAttemptsBefore);
-    // إعادةُ الحيِّ إلى الطابورِ لل اختبارِ التالي (بلا تأريخٍ — دورتُهُ العاديةُ).
-    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, created_at = now() - make_interval(secs => 30) where id = ${liveOutboxId}::uuid`;
+    // إعادةُ الحيِّ إلى الطابورِ للاختبارِ التالي (بلا تأريخٍ — دورتُهُ العاديةُ).
+    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null where id = ${liveOutboxId}::uuid`;
   });
 
   it("٦) مسارُ إعادةِ المحاولةِ للحيِّ سليمٌ — دورةُ العدّادِ موثّقةٌ بالقيمِ، والمحسومُ لا يعودُ بالترتيبِ", async () => {
@@ -283,8 +303,7 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     // من جديدٍ. نُثبتُ كلَّ خطوةٍ بقيمتِها، والمحسومُ لا يدخلُ الدورةَ أصلًا.
     await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, next_attempt_at=now(), attempts=0 where id = ${liveOutboxId}::uuid`;
     await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, dead_reason=null, attempts=0 where id = ${decidedOutboxId}::uuid`;
-    // عزلٌ حتميٌّ: تأريخُ الحيِّ أقدمَ صفٍّ مؤهّلٍ فأولُ التقاطٍ يستهدفُهُ مباشرةً.
-    await sql`update notification_outbox set created_at = now() - make_interval(hours => 2) where id = ${liveOutboxId}::uuid`;
+    // القاعدةُ المعزولةُ: الحيُّ هوَ الوحيدَ المؤهّلَ — أولُ التقاطٍ يستهدفُهُ مباشرةً.
     const decidedAttemptsBefore = (
       await sql<
         { attempts: number }[]
@@ -334,7 +353,7 @@ describeIf("LOAD-01 — الالتقاطُ لا يستهلكُ المحسومَ"
     )[0];
     expect(decidedAfter?.status).toBe("pending");
     expect(decidedAfter?.attempts).toBe(decidedAttemptsBefore);
-    // إعادةُ الحيِّ إلى دورتِهِ العاديةِ (بلا تأريخٍ) لما بعدَ الاختبارِ.
-    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null, created_at = now() - make_interval(secs => 30) where id = ${liveOutboxId}::uuid`;
+    // إعادةُ الحيِّ إلى دورتِهِ العاديةِ لما بعدَ الاختبارِ.
+    await sql`update notification_outbox set status='pending', claim_token=null, claimed_at=null where id = ${liveOutboxId}::uuid`;
   });
 });
