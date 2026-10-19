@@ -1981,6 +1981,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/tracking-duty-and-trip-reader.test.ts",
+    suites: ["القارئ الموحّد للخدمة والرحلة النشطة — على PostgreSQL حقيقي"],
+    skipped: 5,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "يُثبِت تكافؤَ القارئِ الموحّدِ (`DriverDutyAndTripReader` — استعلامٌ واحدٌ للخدمةِ والرحلةِ النشطةِ) معَ القارئينِ المنفصلينِ عبرَ كلِّ حالةٍ يمرُّ بها سائقٌ حقيقيٌّ، وعقدَ السباقِ الذي حفظهُ الإصلاحُ (إسنادٌ بعدَ لقطةِ الإصلاحةِ تراهُ الإصلاحةُ التاليةُ وتُرفِقُهُ عبرَ مسارِ الويب هوكِ الكاملِ). والمقصودُ سلوكُ المحرّكِ نفسِهِ — الفروعُ المُرسّبةُ وحالاتُ عدمِ الوجودِ وعددُ الرحلاتِ إلى القاعدةِ — لا سلوكُ محاكاةٍ نكتبُهُ نحن؛ فمزدوجُ الذاكرةِ يقرّرُ الجوابَ بيدِهِ فلا يشهدُ على شيءٍ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجرات مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً بحاويةِ postgres.",
+    owner: "منفّذ المستودع",
+    criticalPath: "التتبّعُ وموقعُ السائق",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/tracking-sequence.test.ts",
     suites: ["ترتيبُ أحداثِ التتبُّعِ على PostgreSQL حقيقيٍّ — BUG-009 / ADR 0053"],
     skipped: 8,

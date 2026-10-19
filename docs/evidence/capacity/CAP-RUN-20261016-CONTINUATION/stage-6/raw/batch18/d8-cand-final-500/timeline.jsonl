@@ -1,0 +1,2 @@
+{"t":"2026-10-19T08:43:22+00:00","event":"round.start","round":"d8-cand-final-500","profile":[{"name":"wave-500","sec":90,"conc":500}],"drain_sec":180,"code_sha":"872afca5242bc97840987aa08a1da7884cbeb2d3","code_dirty":0,"docs_dirty":0}
+{"t":"2026-10-19T08:43:22+00:00","event":"gateway.pid","pid":"21108"}

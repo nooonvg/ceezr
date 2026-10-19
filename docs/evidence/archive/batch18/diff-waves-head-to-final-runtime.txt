@@ -1,0 +1,44 @@
+diff --git a/packages/application/tracking/live-tracking.ts b/packages/application/tracking/live-tracking.ts
+index c7dff405..5bdd67aa 100644
+--- a/packages/application/tracking/live-tracking.ts
++++ b/packages/application/tracking/live-tracking.ts
+@@ -249,8 +249,15 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+     }
+ 
+     if (existing === null) {
+-      const trip =
+-        preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
++      /**
++       * فتحُ الجلسةِ لا يقبلُ لقطةً قديمةً غيرَ فارغةٍ: الرحلةُ في اللقطةِ قد
++       * تنتهي في النافذةِ بينَ اللقطةِ والفتحِ، وبدءُ جلسةٍ على رحلةٍ منتهيةٍ هو
++       * بعينِهِ التسريبُ الذي يمنعُهُ مسارُ الإغلاقِ (`closeByTrip`). فاللقطةُ
++       * تُستعملُ للفتحِ خاليةً (لا رحلةَ لا يمكن أن تكونَ منتهيةً) وعندَ غيرِ
++       * ذلكَ تُقرأُ الرحلةُ قراءةً طازجةً كما كانَ المسارُ الأصليُّ حرفيًا.
++       * وهذا ليسَ مسارًا حارًّا: يقعُ مرةً في عمرِ الجلسةِ لا في كلِّ إصلاحة.
++       */
++      const trip = preReadTripId === null ? null : await deps.trips.activeTripOf(driverId);
+       return { record: await deps.sessions.open(driverId, trip, startAtMs), opened: true };
+     }
+ 
+@@ -260,12 +267,16 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+      * وربطُها مرّةً واحدة كان سيُبقي الجلسة على رحلةٍ انتهت — فيستمرّ عميلُها
+      * في رؤية السائق وهو في رحلة غيره. وهذا تسريبٌ لا تفصيل.
+      *
+-     * والمراجعةُ هنا بلقطةِ الإصلاحةِ نفسِها عند توافرِها: فالإسنادُ الذي يقعُ
+-     * بعدَها تراهُ الإصلاحةُ التاليةُ — وهو الترتيبُ الذي يضمنُهُ مسارُ الإرفاقِ
+-     * أصلًا. ومن لا يوفّرُ اللقطةَ يقرأُ هنا كما كان حرفيًا.
++     * وحكمُ الإرفاقِ هنا **بالقراءةِ المتأخرةِ كما في المسارِ الأصليِّ حرفيًا**،
++     * لا بلقطةِ الإصلاحةِ: فالرحلةُ قد تنتهي أو يُعادَ إسنادُها في النافذةِ
++     * بينَ اللقطةِ وهذه القراءةِ — وحتى لو تساوتِ اللقطةُ معَ رحلةِ الجلسةِ
++     * (البقاءُ ظاهرُهُ السكونُ) فإنّ انتهاءَها هنا يفصلُ الربطَ فورًا كما في
++     * الأصلِ. فتوحيدُ القراءةِ اقتصرَ على ما لا يمسُّ هذا الحكمَ: قراءةُ
++     * الخدمةِ والرحلةِ في استعلامٍ واحدٍ عندَ البوّابةِ والفتحِ، وبقيتِ
++     * القراءةُ المتأخرةُ للحكمِ على الإرفاقِ — فالمكسبُ المحسومُ هو جولةُ
++     * الخدمةِ، لا السلامةُ.
+      */
+-    const trip =
+-      preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
++    const trip = await deps.trips.activeTripOf(driverId);
+     if (trip !== existing.facts.tripId) {
+       const attached = await deps.sessions.attachTrip(driverId, trip);
+       if (attached !== null) return { record: attached, opened: false };

@@ -104,6 +104,24 @@ export interface DriverDutyReader {
   isOnDuty(driverId: string): Promise<boolean>;
 }
 
+/**
+ * قارئ الحالتين معًا في رحلة قاعدةٍ واحدة: «في الخدمة؟» و«أيّ رحلةٍ نشطة؟».
+ *
+ * ## لماذا وُجد هذا القارئ بعد أن وُجد القارئان قبله
+ *
+ * لأنّ مستهلكَه الوحيدَ (`onFix`) يحتاج الإجابتين في اللحظة نفسِها، وكان
+ * يقرؤهما في رحلتين متتاليتين على مجموعة الطلبات المشبعة، فيدفعُ انتظارَ
+ * طابورِها مرتينِ في كل إصلاحة موقع. هذا القارئ يجمعُهما في استعلامٍ واحدٍ
+ * على لقطةٍ واحدة، فلا يُدفع الانتظار إلا مرةً ولا تُقرأ الحقيقة مرتين.
+ * ومن لا يملكه يبقى على القارئين كما كان — لا سلوكَ جديدًا عليه.
+ */
+export interface DriverDutyAndTripReader {
+  dutyAndActiveTrip(driverId: string): Promise<{
+    readonly onDuty: boolean;
+    readonly activeTripId: string | null;
+  }>;
+}
+
 export interface LiveTrackingDeps {
   readonly sessions: TrackingSessionStore;
   readonly publisher: TrackingEventPublisher;
@@ -113,6 +131,12 @@ export interface LiveTrackingDeps {
    * العيب صامتاً في الإنتاج، والاختبارات خضراء. فالمُترجِم هو من يمنع النسيان.
    */
   readonly duty: DriverDutyReader;
+  /**
+   * اختياريّ بقصدٍ لا نسيانًا: مستهلكُه الوحيدُ (`onFix`) يقرأ الحالتين معًا.
+   * من يوفّرُه يقرؤهما في رحلةٍ واحدة، ومن لا يوفّرُه يبقى على القارئين
+   * المنفصلين كما كان — فالسلوكُ القديمُ هو الحالةُ الاسميةُ لا الاستثناء.
+   */
+  readonly dutyAndTrip?: DriverDutyAndTripReader;
   readonly clock: { now(): Date };
   readonly policy?: SessionPolicy;
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
@@ -207,6 +231,16 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
     }
 
     if (existing === null) {
+      /**
+       * فتحُ الجلسةِ يقرأُ الرحلةَ قراءةً طازجةً **دائمًا**، ولا يستعملُ لقطةَ
+       * الإصلاحةِ ولو كانت فارغة (الدفعة 19). فالنافذةُ بينَ اللقطةِ وعودةِ
+       * `openSessionOf` تعملُ في الاتجاهين: رحلةٌ في اللقطةِ قد تنتهي فيها
+       * (فبدءُ جلسةٍ عليها تسريبٌ يمنعُهُ `closeByTrip`)، ولقطةٌ فارغةٌ قد يقعُ
+       * بعدَها إسنادٌ — وفتحُ الجلسةِ عندئذٍ على `null` ينشرُ `session_started`
+       * وأولَ `location_updated` بلا رحلةٍ والإسنادُ قائمٌ، وهذا خلافُ المسارِ
+       * المرجعيِّ على `main` (`tests/unit/live-tracking-open-race.test.ts` (ج)).
+       * والكلفةُ قراءةٌ واحدةٌ في عمرِ الجلسةِ لا في كلِّ إصلاحة.
+       */
       const trip = await deps.trips.activeTripOf(driverId);
       return { record: await deps.sessions.open(driverId, trip, startAtMs), opened: true };
     }
@@ -216,6 +250,15 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
      * منتصف جلسة تتبّعٍ واحدة (يبدأ يومه متاحاً بلا رحلة، ثم رحلة، ثم أخرى).
      * وربطُها مرّةً واحدة كان سيُبقي الجلسة على رحلةٍ انتهت — فيستمرّ عميلُها
      * في رؤية السائق وهو في رحلة غيره. وهذا تسريبٌ لا تفصيل.
+     *
+     * وحكمُ الإرفاقِ هنا **بالقراءةِ المتأخرةِ كما في المسارِ الأصليِّ حرفيًا**،
+     * لا بلقطةِ الإصلاحةِ: فالرحلةُ قد تنتهي أو يُعادَ إسنادُها في النافذةِ
+     * بينَ اللقطةِ وهذه القراءةِ — وحتى لو تساوتِ اللقطةُ معَ رحلةِ الجلسةِ
+     * (البقاءُ ظاهرُهُ السكونُ) فإنّ انتهاءَها هنا يفصلُ الربطَ فورًا كما في
+     * الأصلِ. فتوحيدُ القراءةِ اقتصرَ على ما لا يمسُّ هذا الحكمَ: قراءةُ
+     * الخدمةِ والرحلةِ في استعلامٍ واحدٍ عندَ البوّابةِ والفتحِ، وبقيتِ
+     * القراءةُ المتأخرةُ للحكمِ على الإرفاقِ — فالمكسبُ المحسومُ هو جولةُ
+     * الخدمةِ، لا السلامةُ.
      */
     const trip = await deps.trips.activeTripOf(driverId);
     if (trip !== existing.facts.tripId) {
@@ -240,9 +283,24 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
          * والفرق مقصود: من يرسل موقعه ليصير متاحاً (والبوت يطلب منه ذلك صراحةً
          * في `driver.available_needs_location`) يجب أن يُحفظ موقعه ولو لم تُفتح له جلسة.
          */
+        /**
+         * الحالتان تُقرآن في لقطةٍ واحدةٍ عند توافر القارئ الموحّد: بوابة الخدمة
+         * ورحلتُها النشطةُ حقيقةٌ واحدةٌ في لحظةٍ واحدة، وقراءتُهما في رحلتينِ
+         * متتاليتينِ كانت تجمعُ بينهما طابورَ الانتظارِ نفسَهُ مرتينِ على كلِّ
+         * إصلاحة — واللقطةُ الموحّدةُ أبعدُ عن التمزّقِ لا أقربُ: لا تُقرأُ
+         * الحقيقةُ قبلَ الطابورِ وتُعادُ قراءتُهُ بعدَهُ فيختلفَ الحُكمُ بينهما.
+         * ومن لا يوفّرُ القارئَ يبقى على القارئينِ كما كان حرفيًا.
+         */
+        const state =
+          deps.dutyAndTrip !== undefined
+            ? await deps.dutyAndTrip.dutyAndActiveTrip(fix.driverId)
+            : {
+                onDuty: await deps.duty.isOnDuty(fix.driverId),
+                activeTripId: await deps.trips.activeTripOf(fix.driverId),
+              };
         const duty: DriverDutyState = {
-          isOnDuty: await deps.duty.isOnDuty(fix.driverId),
-          hasActiveTrip: (await deps.trips.activeTripOf(fix.driverId)) !== null,
+          isOnDuty: state.onDuty,
+          hasActiveTrip: state.activeTripId !== null,
         };
         if (!sessionShouldRun(duty)) {
           const open = await deps.sessions.openSessionOf(fix.driverId);

@@ -1,0 +1,2 @@
+{"t":"2026-10-19T09:14:30+00:00","event":"round.start","round":"d9-cand-hardened-500","profile":[{"name":"wave-500","sec":90,"conc":500}],"drain_sec":180,"code_sha":"b68bba869f560cca4ea7972c3de66f9e91c54f90","code_dirty":0,"docs_dirty":0}
+{"t":"2026-10-19T09:14:30+00:00","event":"gateway.pid","pid":"666"}

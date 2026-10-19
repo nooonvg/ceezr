@@ -1,0 +1,744 @@
+diff --git a/apps/gateway/src/container.ts b/apps/gateway/src/container.ts
+index 5e9e905e..d9a0bcba 100644
+--- a/apps/gateway/src/container.ts
++++ b/apps/gateway/src/container.ts
+@@ -169,6 +169,7 @@ import {
+ import { createTrackingSessionRepository } from "../../../packages/infrastructure/tracking/session-repository.ts";
+ import {
+   createActiveTripReader,
++  createDriverDutyAndTripReader,
+   createDriverDutyReader,
+   createDriverTripCardReader,
+   createTrackingProofReader,
+@@ -917,6 +918,14 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides
+     publisher: trackingBus,
+     trips: createActiveTripReader(sql),
+     duty: createDriverDutyReader(sql),
++    /**
++     * القارئُ الموحّد: يقرأُ بوابةَ الخدمةِ والرحلةَ النشطةَ في استعلامٍ واحدٍ
++     * في مسارِ `POST /v1/driver/location` — فلا تعبرَ الإصلاحةُ الواحدةُ طابورَ
++     * مجموعةِ الطلباتِ ثلاثَ مراتٍ كما كانت (بوابةُ الخدمةِ ثمّ الرحلةُ للجلسةِ
++     * ثمّ الرحلةُ للإرفاق). مسارٌ ساخنٌ بلا شرطِ منتجٍ يتغيّر: نفسُ الجداولِ
++     * ونفسُ الأحكامِ ولقطةٌ واحدةٌ أبعدُ عن التمزّق.
++     */
++    dutyAndTrip: createDriverDutyAndTripReader(sql),
+     clock: systemClock,
+     log,
+   });
+diff --git a/packages/application/tracking/live-tracking.ts b/packages/application/tracking/live-tracking.ts
+index 99bd10bd..c7dff405 100644
+--- a/packages/application/tracking/live-tracking.ts
++++ b/packages/application/tracking/live-tracking.ts
+@@ -104,6 +104,24 @@ export interface DriverDutyReader {
+   isOnDuty(driverId: string): Promise<boolean>;
+ }
+ 
++/**
++ * قارئ الحالتين معًا في رحلة قاعدةٍ واحدة: «في الخدمة؟» و«أيّ رحلةٍ نشطة؟».
++ *
++ * ## لماذا وُجد هذا القارئ بعد أن وُجد القارئان قبله
++ *
++ * لأنّ مستهلكَه الوحيدَ (`onFix`) يحتاج الإجابتين في اللحظة نفسِها، وكان
++ * يقرؤهما في رحلتين متتاليتين على مجموعة الطلبات المشبعة، فيدفعُ انتظارَ
++ * طابورِها مرتينِ في كل إصلاحة موقع. هذا القارئ يجمعُهما في استعلامٍ واحدٍ
++ * على لقطةٍ واحدة، فلا يُدفع الانتظار إلا مرةً ولا تُقرأ الحقيقة مرتين.
++ * ومن لا يملكه يبقى على القارئين كما كان — لا سلوكَ جديدًا عليه.
++ */
++export interface DriverDutyAndTripReader {
++  dutyAndActiveTrip(driverId: string): Promise<{
++    readonly onDuty: boolean;
++    readonly activeTripId: string | null;
++  }>;
++}
++
+ export interface LiveTrackingDeps {
+   readonly sessions: TrackingSessionStore;
+   readonly publisher: TrackingEventPublisher;
+@@ -113,6 +131,12 @@ export interface LiveTrackingDeps {
+    * العيب صامتاً في الإنتاج، والاختبارات خضراء. فالمُترجِم هو من يمنع النسيان.
+    */
+   readonly duty: DriverDutyReader;
++  /**
++   * اختياريّ بقصدٍ لا نسيانًا: مستهلكُه الوحيدُ (`onFix`) يقرأ الحالتين معًا.
++   * من يوفّرُه يقرؤهما في رحلةٍ واحدة، ومن لا يوفّرُه يبقى على القارئين
++   * المنفصلين كما كان — فالسلوكُ القديمُ هو الحالةُ الاسميةُ لا الاستثناء.
++   */
++  readonly dutyAndTrip?: DriverDutyAndTripReader;
+   readonly clock: { now(): Date };
+   readonly policy?: SessionPolicy;
+   readonly log?: (message: string, meta: Record<string, unknown>) => void;
+@@ -193,6 +217,24 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+     driverId: string,
+     nowMs: number,
+     startAtMs: number,
++    /**
++     * رحلةٌ قُرئت في اللقطةِ نفسِها التي قُرئت فيها بوابةُ الخدمة (`onFix`).
++     * `undefined` = لا لقطةَ موحّدةً (القارئان المنفصلان) فتُقرأُ هنا كما كان.
++     *
++     * ## لماذا تُستعملُ اللقطةُ نفسُها ولا تُعادُ قراءتُها
++     *
++     * لأنّ إعادةَ القراءةِ كانت تجري بعدَ طابورِ الانتظارِ نفسِهِ الذي عبرَتهُ
++     * القراءةُ الأولى — فتجمعُ الإصلاحةُ الواحدةُ انتظارَينِ لا واحدٍ، وتقرأُ
++     * الحقيقةَ مرتينِ قد تختلفانِ. واللقطةُ الموحّدةُ تحفظُ الترتيبَ الذي يحميهُ
++     * مسارُ الإرفاقِ أصلًا: إسنادٌ يقعُ بعدَ لقطةِ الإصلاحةِ تراهُ الإصلاحةُ
++     * **التالية** وتُرفِقُهُ — وهذا عينُ ما يفعلهُ الكودُ اليومَ لو وقعَ الإسنادُ
++     * بينَ القراءتينِ القديمتينِ، فالسلوكُ محفوظٌ والنافذةُ أضيقُ لا أوسعُ.
++     *
++     * وفرعُ الخَلَفِ بعدَ الإغلاقِ (`EXPIRED`) يبقى على قراءتِهِ الطازجةِ كما
++     * هو: مسارٌ نادرٌ لا يدخلُ في حسابِ الحمل، وقراءتُهُ تقعُ بعدَ إغلاقٍ
++     * ونشرٍ كاملينِ فبعدُها عن اللقطةِ مقصودٌ لا سهوًا.
++     */
++    preReadTripId: string | null | undefined,
+   ): Promise<{ readonly record: TrackingSessionRecord; readonly opened: boolean }> => {
+     const existing = await deps.sessions.openSessionOf(driverId);
+     if (existing !== null && !acceptsFixes(existing.facts, nowMs, policy)) {
+@@ -207,7 +249,8 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+     }
+ 
+     if (existing === null) {
+-      const trip = await deps.trips.activeTripOf(driverId);
++      const trip =
++        preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
+       return { record: await deps.sessions.open(driverId, trip, startAtMs), opened: true };
+     }
+ 
+@@ -216,8 +259,13 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+      * منتصف جلسة تتبّعٍ واحدة (يبدأ يومه متاحاً بلا رحلة، ثم رحلة، ثم أخرى).
+      * وربطُها مرّةً واحدة كان سيُبقي الجلسة على رحلةٍ انتهت — فيستمرّ عميلُها
+      * في رؤية السائق وهو في رحلة غيره. وهذا تسريبٌ لا تفصيل.
++     *
++     * والمراجعةُ هنا بلقطةِ الإصلاحةِ نفسِها عند توافرِها: فالإسنادُ الذي يقعُ
++     * بعدَها تراهُ الإصلاحةُ التاليةُ — وهو الترتيبُ الذي يضمنُهُ مسارُ الإرفاقِ
++     * أصلًا. ومن لا يوفّرُ اللقطةَ يقرأُ هنا كما كان حرفيًا.
+      */
+-    const trip = await deps.trips.activeTripOf(driverId);
++    const trip =
++      preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
+     if (trip !== existing.facts.tripId) {
+       const attached = await deps.sessions.attachTrip(driverId, trip);
+       if (attached !== null) return { record: attached, opened: false };
+@@ -240,9 +288,24 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+          * والفرق مقصود: من يرسل موقعه ليصير متاحاً (والبوت يطلب منه ذلك صراحةً
+          * في `driver.available_needs_location`) يجب أن يُحفظ موقعه ولو لم تُفتح له جلسة.
+          */
++        /**
++         * الحالتان تُقرآن في لقطةٍ واحدةٍ عند توافر القارئ الموحّد: بوابة الخدمة
++         * ورحلتُها النشطةُ حقيقةٌ واحدةٌ في لحظةٍ واحدة، وقراءتُهما في رحلتينِ
++         * متتاليتينِ كانت تجمعُ بينهما طابورَ الانتظارِ نفسَهُ مرتينِ على كلِّ
++         * إصلاحة — واللقطةُ الموحّدةُ أبعدُ عن التمزّقِ لا أقربُ: لا تُقرأُ
++         * الحقيقةُ قبلَ الطابورِ وتُعادُ قراءتُهُ بعدَهُ فيختلفَ الحُكمُ بينهما.
++         * ومن لا يوفّرُ القارئَ يبقى على القارئينِ كما كان حرفيًا.
++         */
++        const state =
++          deps.dutyAndTrip !== undefined
++            ? await deps.dutyAndTrip.dutyAndActiveTrip(fix.driverId)
++            : {
++                onDuty: await deps.duty.isOnDuty(fix.driverId),
++                activeTripId: await deps.trips.activeTripOf(fix.driverId),
++              };
+         const duty: DriverDutyState = {
+-          isOnDuty: await deps.duty.isOnDuty(fix.driverId),
+-          hasActiveTrip: (await deps.trips.activeTripOf(fix.driverId)) !== null,
++          isOnDuty: state.onDuty,
++          hasActiveTrip: state.activeTripId !== null,
+         };
+         if (!sessionShouldRun(duty)) {
+           const open = await deps.sessions.openSessionOf(fix.driverId);
+@@ -263,7 +326,12 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+          * سيمرّ من كل اختبارٍ بساعةٍ واحدة، ولا يظهر إلا بساعتين مختلفتين.
+          */
+         const startAtMs = Math.min(nowMs, fix.recordedAtMs);
+-        const { record, opened } = await currentSession(fix.driverId, nowMs, startAtMs);
++        const { record, opened } = await currentSession(
++          fix.driverId,
++          nowMs,
++          startAtMs,
++          state.activeTripId,
++        );
+         const facts = record.facts;
+ 
+         if (opened) {
+diff --git a/packages/infrastructure/tracking/tracking-queries.ts b/packages/infrastructure/tracking/tracking-queries.ts
+index 94c964b0..7daceb86 100644
+--- a/packages/infrastructure/tracking/tracking-queries.ts
++++ b/packages/infrastructure/tracking/tracking-queries.ts
+@@ -22,6 +22,7 @@ import type {
+ } from "../../application/tracking/driver-trip-card.ts";
+ import type {
+   ActiveTripReader,
++  DriverDutyAndTripReader,
+   DriverDutyReader,
+ } from "../../application/tracking/live-tracking.ts";
+ import type { DriverTripStatus } from "../../domain/tracking/driver-trip-view.ts";
+@@ -108,6 +109,40 @@ export function createDriverDutyReader(sql: Sql): DriverDutyReader {
+   };
+ }
+ 
++/**
++ * القارئ الموحّد: بوابةُ الخدمةِ والرحلةُ النشطةُ في استعلامٍ واحدٍ ولقطةٍ واحدة.
++ *
++ * ## لماذا لا يُبنى على القارئينِ السابقينِ ولا يُبنيانِ عليه
++ *
++ * لأنّ أسئلتَهما مختلفةٌ لمن يحتاجُ أحدَها وحده — وهذا يجمعُهما لمن يحتاجهما
++ * معًا في اللحظةِ نفسِها (`onFix`) فيرحلةٍ واحدةٍ على مجموعةِ الطلباتِ بدلَ
++ * رحلتينِ متتاليتينِ تدفعانِ طابورَ الانتظارِ مرتينِ في كلِّ إصلاحةِ موقع.
++ * والفروعُ المُرسَبةُ (`scalar subquery`) تُقرأُ الحقيقةَ نفسَها من الجدولينِ
++ * نفسِهما اللذينِ يقرؤهما القارئانِ — لا مصدرَ ثالثًا ولا مفهومًا جديدًا.
++ */
++export function createDriverDutyAndTripReader(sql: Sql): DriverDutyAndTripReader {
++  return {
++    dutyAndActiveTrip: async (driverId) => {
++      const rows = await sql<{ on_duty: boolean; active_trip_id: string | null }[]>`
++        select coalesce(
++                 (select a.is_available from driver_availability a
++                   where a.driver_id = ${driverId}::uuid),
++                 false
++               ) as on_duty,
++               (select o.id::text from orders o
++                 where o.assigned_driver_id = ${driverId}::uuid
++                   and o.status in ('matched', 'in_progress')
++                 limit 1) as active_trip_id
++      `;
++      const row = rows[0];
++      return {
++        onDuty: row?.on_duty === true,
++        activeTripId: row?.active_trip_id ?? null,
++      };
++    },
++  };
++}
++
+ /**
+  * المرحلة ١٢ — بطاقة رحلة السائق من المصدر القانوني: `orders` و`drivers`.
+  *
+diff --git a/tests/integration/tracking-duty-and-trip-reader.test.ts b/tests/integration/tracking-duty-and-trip-reader.test.ts
+new file mode 100644
+index 00000000..a1f0f516
+--- /dev/null
++++ b/tests/integration/tracking-duty-and-trip-reader.test.ts
+@@ -0,0 +1,288 @@
++/**
++ * الغرض: `WASLA — الدورة ٤` — إثباتُ صحةِ القارئِ الموحّدِ
++ *   (`createDriverDutyAndTripReader`) على PostgreSQL حقيقيٍّ لا على مزدوجٍ في
++ *   الذاكرة، وأنّهُ يُطابقُ القارئينِ المنفصلينِ (`createActiveTripReader` +
++ *   `createDriverDutyReader`) في كلِّ حالةٍ يمرُّ بها سائقٌ حقيقيٌّ.
++ *
++ *   ولماذا هذا الملفُّ لا زيادةٌ في `tests/unit`؟ لأنّ ما يُقاس هنا هو
++ *   **استعلامٌ واحدٌ على قاعدةٍ حقيقية** بفروعِهِ المُرسَبةِ وحالاتِ عدمِ
++ *   الوجودِ (`لا صفَّ إتاحة`، `لا رحلة`، `رحلةٌ منتهية`) — ومزدوجُ الذاكرةِ
++ *   يُقرِّرُ الجوابَ بيدِهِ فلا يشهدُ على شيءٍ. ولأنّ الفرقَ بينَ القارئينِ
++ *   هنا هو **عددُ الرحلاتِ إلى القاعدة** — وهو عينُ الإصلاحِ (رحلةٌ واحدةٌ
++ *   بدلَ اثنتينِ في كلّ إصلاحةِ موقعٍ) — فقد صُنعَ `sql` مُحصاةُ النداءاتِ
++ *   ليشهدَ على العددِ لا على الظهورِ وحده.
++ *
++ *   ويُختبرُ معَهُ عقدُ السباقِ الذي حفظَهُ الإصلاحُ: إسنادٌ يقعُ بعدَ لقطةِ
++ *   الإصلاحةِ تراهُ الإصلاحةُ التاليةُ وتُرفِقُهُ (مسارُ الإرفاقِ القائمُ)،
++ *   من خلالِ المسارِ الحقيقيِّ كاملًا (ويبهوك ← حوار ← تطبيق ← قاعدة ← ناقل).
++ *
++ * الحالة: اختبار تكامل فعلي — يتطلب TEST_DATABASE_URL.
++ * ينتمي إلى: tests/integration
++ * يُتوقع أن يستخدمه لاحقاً: CI، وأيُّ تعديلٍ على `tracking-queries.ts` أو
++ *   على تركيبِ `dutyAndTrip` في `live-tracking.ts` أو `container.ts`.
++ */
++
++import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
++import { buildContainer } from "../../apps/gateway/src/container.ts";
++import {
++  createActiveTripReader,
++  createDriverDutyAndTripReader,
++  createDriverDutyReader,
++} from "../../packages/infrastructure/tracking/tracking-queries.ts";
++import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
++import type { AppConfig } from "../../packages/shared/config/index.ts";
++import type { TrackingEvent } from "../../packages/tracking/types.ts";
++import {
++  type ActiveCityHandle,
++  ensureActiveCity,
++  restoreCityBaseline,
++} from "../support/active-city.ts";
++import { testConfig } from "../support/config.ts";
++import { capturing } from "../support/telegram-capture.ts";
++
++const DATABASE_URL = process.env.TEST_DATABASE_URL;
++const DRIVER_CHAT = 131_404;
++const RIDER_CHAT = 231_404;
++
++const JEDDAH = { latitude: 21.5471, longitude: 39.1751 };
++
++let updateIdCounter = 0;
++function nextUpdateId(): number {
++  return ++updateIdCounter;
++}
++
++const MS_PER_SECOND = 1000;
++
++const config: AppConfig = testConfig({
++  port: 3997,
++  telegramWebhookSecret: "duty-and-trip-secret",
++});
++
++let sql: Sql;
++let cityHandle: ActiveCityHandle | undefined;
++let cityId: string;
++
++/** تُنشأ في beforeAll وتُقفل في afterAll — لا تُقفل في afterEach (لا فائدة). */
++let container: ReturnType<typeof buildContainer> | undefined;
++let events: TrackingEvent[] = [];
++let driverSent: ReturnType<typeof capturing> extends never ? never : Array<unknown> = [];
++
++/** مُحصاةُ النداءاتِ على نفسِ مجموعةِ الاتصالاتِ — تشهدُ على العددِ لا الظهور. */
++let queryCount = 0;
++const countingSql: Sql = ((strings: TemplateStringsArray, ...values: unknown[]) => {
++  queryCount += 1;
++  return sql(strings, ...values);
++}) as Sql;
++// التوقيعُ المُتبقّى من `Sql` (التزاماتُ المعاملاتِ وغيرُها) يمرُّ كما هو:
++Object.assign(countingSql, sql);
++
++async function seedUser(chat: number, role: "driver" | "rider"): Promise<string> {
++  const rows = await sql<{ id: string }[]>`
++    insert into users (city_id, telegram_id, full_name, phone, language_code, role)
++    values (${cityId}, ${chat}::bigint, ${`مستخدم ${chat}`}, ${`+9665${chat}`}, 'ar', ${role})
++    returning id
++  `;
++  const id = rows[0]?.id;
++  if (id === undefined) throw new Error("تعذّر إنشاء المستخدم");
++  return id;
++}
++
++async function seedDriver(chat: number, onDuty: boolean): Promise<string> {
++  const userId = await seedUser(chat, "driver");
++  const drivers = await sql<{ id: string }[]>`
++    insert into drivers (city_id, user_id, verification_status, vehicle_type, plate_number)
++    values (${cityId}, ${userId}::uuid, 'verified', 'sedan', ${`س ${chat}`})
++    returning id
++  `;
++  const driverId = drivers[0]?.id;
++  if (driverId === undefined) throw new Error("تعذّر إنشاء السائق");
++  if (onDuty) {
++    await sql`select record_attendance(${driverId}::uuid, true, 'test_seed')`;
++  }
++  return driverId;
++}
++
++async function seedOrderFor(
++  riderChat: number,
++  driverId: string,
++  status: string,
++  assigned: boolean,
++): Promise<string> {
++  const userId = await seedUser(riderChat, "rider");
++  const riderRows = await sql<{ id: string }[]>`
++    insert into riders (city_id, user_id)
++    values (${cityId}, ${userId}::uuid)
++    returning id
++  `;
++  const riderId = riderRows[0]?.id;
++  if (riderId === undefined) throw new Error("تعذّر إنشاء الراكب");
++  const rows = await sql<{ id: string }[]>`
++    insert into orders (
++      city_id, rider_id, assigned_driver_id, service, status, pickup,
++      created_at, updated_at
++    )
++    values (
++      ${cityId}, ${riderId}::uuid, ${assigned ? driverId : null}::uuid,
++      'transport', ${status}::order_status,
++      ST_SetSRID(ST_MakePoint(39.1728, 21.5433), 4326)::geography,
++      now() - make_interval(mins => 5), now() - make_interval(mins => 5)
++    )
++    returning id
++  `;
++  const id = rows[0]?.id;
++  if (id === undefined) throw new Error("تعذّر إنشاء الطلب");
++  return id;
++}
++
++describe("القارئ الموحّد للخدمة والرحلة النشطة — على PostgreSQL حقيقي", () => {
++  beforeAll(() => {
++    if (DATABASE_URL === undefined) throw new Error("TEST_DATABASE_URL مطلوب");
++    sql = createSql({ connectionString: DATABASE_URL, max: 4, prepare: false });
++  });
++
++  afterAll(async () => {
++    await (container as ReturnType<typeof buildContainer> | undefined)?.close();
++    await restoreCityBaseline(sql, cityHandle);
++    await sql.end({ timeout: 5 });
++  });
++
++  beforeEach(async () => {
++    await sql`truncate table tracking_sessions, agent_outcomes, agent_decisions, audit_log,
++                             attendance_log, ratings, support_tickets,
++                             unsubscribed_claims, unsubscribed_negotiations, order_offers, orders,
++                             subscriptions, driver_capabilities, driver_availability,
++                             admin_sessions, admin_login_codes,
++                             drivers, riders, users restart identity cascade`;
++    cityHandle = await ensureActiveCity(sql, { prior: cityHandle });
++    const cityRows = await sql<{ id: string }[]>`select id from cities order by id limit 1`;
++    cityId = cityRows[0]?.id ?? "";
++    queryCount = 0;
++    events = [];
++    driverSent = [];
++  });
++
++  afterEach(async () => {
++    await (container as ReturnType<typeof buildContainer> | undefined)?.close();
++  });
++
++  it("يُطابقُ القارئينِ المنفصلينِ في كلِّ حالةٍ — واستعلامٌ واحدٌ لا اثنانِ", async () => {
++    /**
++     * مصفوفةُ الحالاتِ التي يمرُّ بها سائقٌ حقيقيٌّ: على الخدمةِ وبدونِها،
++     * برحلةٍ نشطةٍ (matched/in_progress) وبدونِها، وبحثالةٍ منتهيةٍ (completed)
++     * لا تُحسَبُ رحلةً نشطةً، وبلا صفِّ إتاحةٍ أصلًا (سائقٌ لم يُعلن إتاحتَهُ
++     * قطّ = خارجَ الخدمةِ).
++     */
++    const unified = createDriverDutyAndTripReader(countingSql);
++    const separateTrips = createActiveTripReader(countingSql);
++    const separateDuty = createDriverDutyReader(countingSql);
++
++    // ١) سائقٌ على الخدمةِ بلا أيِّ طلبٍ: الخدمةُ حقيقيةٌ والرحلةُ معدومة.
++    const d1 = await seedDriver(501, true);
++    const before = queryCount;
++    const u1 = await unified.dutyAndActiveTrip(d1);
++    const queriesForUnified = queryCount - before; // استعلامٌ واحد.
++    const t1 = await separateTrips.activeTripOf(d1);
++    const duty1 = await separateDuty.isOnDuty(d1);
++    expect(u1).toEqual({ onDuty: true, activeTripId: null });
++    expect(t1).toBeNull();
++    expect(duty1).toBe(true);
++    expect(queriesForUnified).toBe(1);
++
++    // ٢) رحلةٌ نشطةٌ (matched) مُسندةٌ إليه: تظهرُ في القارئَينِ بالقيمةِ نفسِها.
++    const orderId = await seedOrderFor(601, d1, "matched", true);
++    const u2 = await unified.dutyAndActiveTrip(d1);
++    const t2 = await separateTrips.activeTripOf(d1);
++    expect(u2.activeTripId).toBe(orderId);
++    expect(t2).toBe(orderId);
++    expect(u2.onDuty).toBe(true);
++
++    // ٣) رحلةٌ منتهيةٌ (completed) لا تُحسَبُ رحلةً نشطةً في القارئَينِ معًا.
++    await seedOrderFor(602, d1, "completed", true);
++    const others = await unified.dutyAndActiveTrip(d1);
++    const t3 = await separateTrips.activeTripOf(d1);
++    expect(others.activeTripId).toBe(orderId); // النشطةُ (matched) تبقى هي الجواب.
++    expect(t3).toBe(orderId);
++
++    // ٤) سائقٌ خارجَ الخدمةِ (is_available = false): الحكمُ واحدٌ في القارئَينِ.
++    await sql`select record_attendance(${d1}::uuid, false, 'test_seed')`;
++    const u4 = await unified.dutyAndActiveTrip(d1);
++    const duty4 = await separateDuty.isOnDuty(d1);
++    expect(u4.onDuty).toBe(false);
++    expect(duty4).toBe(false);
++
++    // ٥) سائقٌ بلا صفِّ إتاحةٍ أصلًا: خارجَ الخدمةِ — coalesce في القارئَينِ.
++    const d5 = await seedDriver(505, false);
++    const u5 = await unified.dutyAndActiveTrip(d5);
++    const duty5 = await separateDuty.isOnDuty(d5);
++    expect(u5.onDuty).toBe(false);
++    expect(duty5).toBe(false);
++    expect(u5.activeTripId).toBeNull();
++  });
++
++  it("عقدُ السباقِ محفوظٌ: إسنادٌ بعدَ لقطةِ الإصلاحةِ تراهُ الإصلاحةُ التاليةُ وتُرفِقُهُ", async () => {
++    /**
++     * هذا هو الضمانُ الذي لا يجوزُ أن يتزعزعَ بالقراءةِ الموحّدةِ: الجلسةُ
++     * تُفتحُ على لقطةِ إصلاحتِها، والإسنادُ الذي يقعُ بعدَها لا يُضيعُ —
++     * الإصلاحةُ التاليةُ تراهُ وتُرفِقُهُ بمسارِ الإرفاقِ القائمِ. والمسارُ
++     * هنا حقيقيٌّ كاملًا: ويبهوكُ تلغرام ← الحوارُ ← التطبيقُ ← القاعدةُ ←
++     * ناقلُ الأحداثِ — بلا اختصارٍ في منتصفِ الطريقِ.
++     */
++    container = buildContainer(config, {
++      driverSender: capturing(driverSent),
++      riderSender: capturing([]),
++    });
++    container.tracking.bus.subscribe(
++      { kind: "operations", scope: { kind: "all_cities" } },
++      {
++        deliver: (event) => {
++          events.push(event);
++        },
++      },
++    );
++
++    const driverId = await seedDriver(502, true);
++
++    // نبضةُ الموقعِ الأولى: لا رحلةَ بعدُ — الجلسةُ تُفتحُ بلا رحلةٍ.
++    const first = await container.handler.handle("driver", {
++      update_id: nextUpdateId(),
++      message: {
++        chat: { id: 502 },
++        from: { id: 502, language_code: "ar" },
++        location: { ...JEDDAH, horizontal_accuracy: 8 },
++        date: Math.floor(Date.now() / MS_PER_SECOND) - 1,
++      },
++    });
++    expect(first).toBe(true);
++    let session = await sql<{ trip_id: string | null }[]>`
++      select trip_id from tracking_sessions where driver_id = ${driverId}::uuid
++    `;
++    expect(session.length).toBe(1);
++    expect(session[0]?.trip_id).toBeNull();
++    const startedEvents = events.filter((e) => e.type === "session_started");
++    expect(startedEvents.length).toBe(1);
++    expect(startedEvents[0]?.tripId).toBeNull();
++
++    // الإسنادُ يقعُ **بعدَ** لقطةِ الإصلاحةِ الأولى.
++    const orderId = await seedOrderFor(603, driverId, "matched", true);
++
++    // النبضةُ الثانيةُ: ترى الإسنادَ في لقطتِها وتُرفِقُهُ بالجلسةِ نفسِها.
++    const second = await container.handler.handle("driver", {
++      update_id: nextUpdateId(),
++      message: {
++        chat: { id: 502 },
++        from: { id: 502, language_code: "ar" },
++        location: { ...JEDDAH, horizontal_accuracy: 8 },
++        date: Math.floor(Date.now() / MS_PER_SECOND),
++      },
++    });
++    expect(second).toBe(true);
++    session = await sql<{ trip_id: string | null }[]>`
++      select trip_id from tracking_sessions where driver_id = ${driverId}::uuid
++    `;
++    expect(session.length).toBe(1);
++    expect(session[0]?.trip_id).toBe(orderId);
++    // ولا جلسةَ ثانيةً تُفتحُ — الإرفاقُ على الجلسةِ القائمةِ لا بديلًا عنها.
++    expect(events.filter((e) => e.type === "session_started").length).toBe(1);
++    expect(events.filter((e) => e.type === "location_updated").length).toBe(2);
++  });
++});
+diff --git a/tests/unit/live-tracking-unified-read.test.ts b/tests/unit/live-tracking-unified-read.test.ts
+new file mode 100644
+index 00000000..a5d336b9
+--- /dev/null
++++ b/tests/unit/live-tracking-unified-read.test.ts
+@@ -0,0 +1,231 @@
++/**
++ * الغرض: `WASLA — الدورة ٤` — إثباتُ أنّ القارئَ الموحّدَ (`dutyAndTrip`) في
++ *   `live-tracking.ts` يُنتجُ سلوكَ المسارِ القديمِ **حرفيًا** في القراراتِ
++ *   والنشرِ، وأنّ كلَّ نداءٍ صارَ أقلَّ: استعلامٌ واحدٌ بدلَ اثنينِ في كلِّ
++ *   إصلاحةِ موقعٍ على مسارِ `POST /v1/driver/location`.
++ *
++ *   ولماذا اختبارُ وحدةٍ هنا؟ لأنّ ما يُقاسُ هو **قرارُ التركيبِ** (أيُّ قارئٍ
++ *   يُستعملُ ومتى) لا القاعدةَ نفسَها — وقرارُ التركيبِ يُختبرُ بمزدوجاتٍ
++ *   مُحصاةِ النداءاتِ. أمّا صحةُ الاستعلامِ الموحّدِ نفسِهِ على قاعدةٍ حقيقيةٍ
++ *   فدليلُهُ المستقلُّ في `tests/integration/tracking-duty-and-trip-reader.test.ts`.
++ *
++ *   والضماناتُ التي لا يجوزُ أن تتزعزعَ هنا:
++ *   - بوّابةُ الخدمةِ قبلَ فتحِ الجلسةِ (المرحلة ١٢): خارجَ الخدمةِ = لا جلسةَ
++ *     ولا بثًّ، وموقعُهُ محفوظٌ لا يُمسّ.
++ *   - ترتيبُ النشرِ: نهايةٌ ثمّ بدايةُ الخَلَفِ، وبدايةٌ ثمّ موقعٌ (`BUG-009`).
++ *   - الإرفاقُ عندَ تغيّرِ الرحلةِ في منتصفِ الجلسةِ (لا تسريبَ بثًّ لرحلةِ غيره).
++ *   - فرعُ الخَلَفِ بعدَ `EXPIRED` يبقى على قراءتِهِ الطازجةِ كما كان.
++ *
++ * الحالة: اختبار وحدة فعلي — لا يتطلب قاعدة.
++ * ينتمي إلى: tests/unit
++ * يُتوقع أن يستخدمه لاحقاً: أيُّ تعديلٍ على `dutyAndTrip` أو مسارِ `onFix`.
++ */
++
++import { describe, expect, it } from "bun:test";
++import {
++  createLiveTracking,
++  type DriverDutyAndTripReader,
++  type StoredFix,
++} from "../../packages/application/tracking/live-tracking.ts";
++import { createMemoryTrackingSessionStore } from "../../packages/tracking/session-store.ts";
++import type { TrackingEvent } from "../../packages/tracking/types.ts";
++
++const DRIVER = "driver-1";
++const CITY = "city-jed";
++const TRIP = "trip-1";
++const OTHER_TRIP = "trip-2";
++
++const fixAt = (recordedAtMs: number, over: Partial<StoredFix> = {}): StoredFix => ({
++  driverId: DRIVER,
++  cityId: CITY,
++  latitude: 21.5471,
++  longitude: 39.1751,
++  recordedAtMs,
++  accuracyMeters: 8,
++  verdict: "ACCEPT",
++  findings: [],
++  ...over,
++});
++
++interface Counters {
++  dutyAndTrip: number;
++  activeTripOf: number;
++  isOnDuty: number;
++}
++
++interface Harness {
++  live: ReturnType<typeof createLiveTracking>;
++  events: TrackingEvent[];
++  counters: Counters;
++  store: ReturnType<typeof createMemoryTrackingSessionStore>;
++}
++
++/**
++ * التركيبُ نفسُهُ في كلِّ الاختباراتِ: قارئٌ موحّدٌ **مُحصاةٌ نداءاتُهُ**
++ * وقارئانِ منفصلانِ **مُحصاةٌ نداءاتُهما**، ليُقاسَ عددُ الرحلاتِ لا ظهورُها
++ * فقط. `useUnified` يقررُ المسارَ، والحالةُ (خدمة/رحلة) تُمرَّرُ للقارئَينِ
++ * معًا فلا يختلفَ الحكمُ بينَ المسارينِ إلا بتركيبِ القراءةِ وحده.
++ */
++function buildHarness(
++  nowMsRef: { value: number },
++  state: { onDuty: boolean; activeTripId: string | null },
++  useUnified: boolean,
++): Harness {
++  const counters: Counters = { dutyAndTrip: 0, activeTripOf: 0, isOnDuty: 0 };
++  const events: TrackingEvent[] = [];
++  const store = createMemoryTrackingSessionStore();
++  const dutyAndTrip: DriverDutyAndTripReader = {
++    dutyAndActiveTrip: async () => {
++      counters.dutyAndTrip += 1;
++      return { onDuty: state.onDuty, activeTripId: state.activeTripId };
++    },
++  };
++  const live = createLiveTracking({
++    sessions: store,
++    publisher: {
++      publish: async (event) => {
++        events.push(event);
++      },
++    },
++    trips: {
++      activeTripOf: async () => {
++        counters.activeTripOf += 1;
++        return state.activeTripId;
++      },
++    },
++    duty: {
++      isOnDuty: async () => {
++        counters.isOnDuty += 1;
++        return state.onDuty;
++      },
++    },
++    ...(useUnified ? { dutyAndTrip } : {}),
++    clock: { now: () => new Date(nowMsRef.value) },
++  });
++  return { live, events, counters, store };
++}
++
++/**
++ * معرّفُ الجلسةِ رقمٌ يولّدُهُ المخزنُ عشوائيًا، فلا يصحُّ أن يفرِّقَ بينَ مسارينِ
++ * صحيحينِ — يُوحَّدُ في المقارنةِ ويبقى كلُّ ما عدا ذلكَ (النوعُ والترتيبُ
++ * والرقمُ والرحلةُ والطوابعُ) خاضعًا للمساواةِ الصارمةِ.
++ */
++const comparable = (events: TrackingEvent[]) =>
++  events.map((event) => ({ ...event, sessionId: "normalized" }));
++
++describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () => {
++  it("المسار الموحّد: استعلامٌ واحدٌ لا اثنانِ، والقراراتُ والنشرُ كما في المسار القديمِ حرفيًا", async () => {
++    const now = { value: 10_000_000 };
++    const state = { onDuty: true, activeTripId: null };
++    const unified = buildHarness(now, state, true);
++    const legacy = buildHarness(now, state, false);
++
++    await unified.live.onFix(fixAt(now.value));
++    await legacy.live.onFix(fixAt(now.value));
++
++    // عددُ الرحلاتِ: الموحّدُ استعلامٌ واحد، والقديمُ اثنانِ (خدمةٌ ثمّ رحلة).
++    expect(unified.counters).toEqual({ dutyAndTrip: 1, activeTripOf: 0, isOnDuty: 0 });
++    expect(legacy.counters).toEqual({ dutyAndTrip: 0, activeTripOf: 1, isOnDuty: 1 });
++
++    // والسلوكُ واحدٌ: نفسُ أحداثِ النشرِ بنفسِ ترتيبِها ومضمونِها.
++    expect(comparable(unified.events)).toEqual(comparable(legacy.events));
++    expect(unified.events.map((e) => e.type)).toEqual(["session_started", "location_updated"]);
++  });
++
++  it("جلسةٌ تُفتحُ على رحلةٍ نشطةٍ من اللقطةِ الموحّدةِ نفسِها", async () => {
++    const now = { value: 10_000_000 };
++    const state = { onDuty: true, activeTripId: TRIP };
++    const unified = buildHarness(now, state, true);
++
++    await unified.live.onFix(fixAt(now.value));
++
++    const open = await unified.store.openSessionOf(DRIVER);
++    expect(open?.facts.tripId).toBe(TRIP);
++    expect(unified.counters.activeTripOf).toBe(0);
++    const started = unified.events.find((e) => e.type === "session_started");
++    expect(started?.tripId).toBe(TRIP);
++  });
++
++  it("تغيّرُ الرحلةِ بينَ إصلاحتينِ يُرفَقُ بلقطةِ الإصلاحةِ نفسِها — لا تسريبَ بثًّا لرحلةِ غيره", async () => {
++    const now = { value: 10_000_000 };
++    const state = { onDuty: true, activeTripId: TRIP };
++    const h = buildHarness(now, state, true);
++
++    await h.live.onFix(fixAt(now.value));
++    expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(TRIP);
++
++    // الإسنادُ تغيّرَ بعدَ لقطةِ الإصلاحةِ الأولى (أو بينَها وبينَ الثانية).
++    state.activeTripId = OTHER_TRIP;
++    now.value += 20_000;
++    await h.live.onFix(fixAt(now.value));
++
++    // الإصلاحةُ الثانيةُ رأت الرحلةَ الجديدةَ في لقطتِها وأرفقتها.
++    expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(OTHER_TRIP);
++    // وكلُّ ذلكَ برحلةِ قاعدةٍ واحدةٍ في كلّ إصلاحة (لا إعادةِ قراءةٍ).
++    expect(h.counters.dutyAndTrip).toBe(2);
++    expect(h.counters.activeTripOf).toBe(0);
++  });
++
++  it("خارجَ الخدمةِ: لا جلسةَ ولا بثًّ — والموقعُ محفوظٌ — كما في المسارِ القديمِ", async () => {
++    const now = { value: 10_000_000 };
++    const state = { onDuty: false, activeTripId: null };
++    const unified = buildHarness(now, state, true);
++    const legacy = buildHarness(now, state, false);
++
++    await unified.live.onFix(fixAt(now.value));
++    await legacy.live.onFix(fixAt(now.value));
++
++    expect(unified.events).toEqual(legacy.events);
++    expect(unified.events).toEqual([]);
++    expect(await unified.store.openSessionOf(DRIVER)).toBeNull();
++  });
++
++  it("فرعُ الخَلَفِ بعدَ السقفِ (`EXPIRED`) يبقى على قراءتِهِ الطازجةِ — لا على اللقطةِ الموحّدةِ", async () => {
++    const now = { value: 10_000_000 };
++    const state = { onDuty: true, activeTripId: TRIP };
++    const h = buildHarness(now, state, true);
++
++    await h.live.onFix(fixAt(now.value));
++    expect(h.counters.activeTripOf).toBe(0);
++
++    // أكثرَ من سقفِ الجلسةِ (١٢ ساعةً): فرعُ الإغلاقِ والخَلَفِ النادرُ.
++    now.value += 13 * 60 * 60 * 1000;
++    await h.live.onFix(fixAt(now.value));
++
++    // الخَلَفُ قرأَ الرحلةَ قراءةً طازجةً كما كان — اللقطةُ الموحّدةُ لا تمسُّ هذا الفرع.
++    expect(h.counters.activeTripOf).toBe(1);
++    const replacement = await h.store.openSessionOf(DRIVER);
++    expect(replacement?.facts.tripId).toBe(TRIP);
++    const started = h.events.filter((e) => e.type === "session_started");
++    expect(started.length).toBe(2);
++  });
++
++  it("تقاربُ المسارينِ على مصفوفةِ الحالاتِ: أحداثُ النشرِ لا تختلفُ بتركيبِ القراءةِ", async () => {
++    const cases: Array<{ name: string; onDuty: boolean; trip: string | null }> = [
++      { name: "على الخدمة بلا رحلة", onDuty: true, trip: null },
++      { name: "على الخدمة برحلة", onDuty: true, trip: TRIP },
++      { name: "خارج الخدمة", onDuty: false, trip: null },
++      { name: "خارج الخدمة برحلة", onDuty: false, trip: TRIP },
++    ];
++    /**
++     * لكلِّ مسارٍ ساعاتُهُ المستقلةُ: مزامنةُ ساعةٍ واحدةٍ بينَ تركيبينِ تجعلُ
++     * طابعَ الأحداثِ تابعًا لترتيبِ التنفيذِ لا للحالةِ نفسِها — وهذا عيبٌ في
++     * الاختبارِ لا في المُختبَرِ. فكلُّ تركيبٍ يعيشُ زمنَهُ الخاصَّ بنفسِ الخطواتِ.
++     */
++    const T0 = 10_000_000;
++    for (const c of cases) {
++      const state = { onDuty: c.onDuty, activeTripId: c.trip };
++      const unifiedNow = { value: T0 };
++      const legacyNow = { value: T0 };
++      const unified = buildHarness(unifiedNow, state, true);
++      const legacy = buildHarness(legacyNow, state, false);
++      await unified.live.onFix(fixAt(unifiedNow.value));
++      await legacy.live.onFix(fixAt(legacyNow.value));
++      unifiedNow.value += 20_000;
++      legacyNow.value += 20_000;
++      await unified.live.onFix(fixAt(unifiedNow.value));
++      await legacy.live.onFix(fixAt(legacyNow.value));
++      expect(comparable(unified.events), c.name).toEqual(comparable(legacy.events));
++    }
++  });
++});

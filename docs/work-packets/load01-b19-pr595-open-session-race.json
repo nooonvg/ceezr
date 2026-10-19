@@ -1,0 +1,33 @@
+{
+  "id": "load01-b19-pr595-open-session-race",
+  "goal": "تدقيقٌ مستقلٌّ لـ PR #595: إعادةُ إنتاجِ سباقِ إسنادٍ يقعُ أثناءَ انتظارِ openSessionOf (اللقطةُ فارغة) وإصلاحُه بقراءةٍ طازجةٍ دائمةٍ عندَ فتحِ الجلسة كما في main، باختباراتِ وحدةٍ وتكاملٍ على PostgreSQL حقيقيّ؛ دونَ تغييرِ حكمِ LOAD-01.",
+  "canonical_source": [
+    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/ACCEPTANCE-PROTOCOL.md"
+  ],
+  "implementation": [
+    "packages/application/tracking/live-tracking.ts",
+    "tests/unit/live-tracking-open-race.test.ts",
+    "tests/unit/live-tracking-unified-read.test.ts",
+    "tests/integration/tracking-duty-and-trip-reader.test.ts",
+    "scripts/lib/skip-registry.ts",
+    "tests/unit/skip-audit.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md", "docs/roadmap/execution/STATUS.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/SYSTEM_STATE.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-19-PR595-OPEN-SESSION-RACE.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-18-LOAD01-CYCLE4-ONFIX-UNIFIED-READ.md",
+    "docs/work-packets/load01-b19-pr595-open-session-race.json",
+    "docs/evidence/archive/batch19/SHA256SUMS",
+    "docs/evidence/archive/batch19/integration-all.log.gz",
+    "docs/evidence/archive/batch19/integration-race-on-fix.txt",
+    "docs/evidence/archive/batch19/integration-race-on-pr595-a1ef73b5.txt",
+    "docs/evidence/archive/batch19/race-on-main-d9632d1f.txt",
+    "docs/evidence/archive/batch19/race-on-pr595-a1ef73b5.txt",
+    "docs/evidence/archive/batch19/unit-all-summary.txt",
+    "docs/evidence/archive/batch19/unit-all.log.gz"
+  ]
+}
