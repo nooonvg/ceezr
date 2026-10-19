@@ -1,0 +1,62 @@
+[
+ {
+  "round": "b19b-r1-ref-500",
+  "sha": "d9632d1f",
+  "verdict": "PASS",
+  "verified": "4008/4008",
+  "failed": [],
+  "loc_n": 4008,
+  "loc_med": 2548.0,
+  "loc_p95": 3153,
+  "ingest_med": 1970.0,
+  "P1": "742ms",
+  "P2": "808ms",
+  "P3": "748ms",
+  "P4": "11875ms"
+ },
+ {
+  "round": "b19b-c1-cand-500",
+  "sha": "b5e92f3e",
+  "verdict": "PASS",
+  "verified": "3806/3806",
+  "failed": [],
+  "loc_n": 3806,
+  "loc_med": 2348.0,
+  "loc_p95": 3067,
+  "ingest_med": 1757.5,
+  "P1": "772ms",
+  "P2": "801ms",
+  "P3": "803ms",
+  "P4": "12324ms"
+ },
+ {
+  "round": "b19b-c2-cand-500",
+  "sha": "b5e92f3e",
+  "verdict": "PASS",
+  "verified": "3930/3933",
+  "failed": [],
+  "loc_n": 3933,
+  "loc_med": 2248,
+  "loc_p95": 3004,
+  "ingest_med": 1678,
+  "P1": "539ms",
+  "P2": "592ms",
+  "P3": "537ms",
+  "P4": "7093ms"
+ },
+ {
+  "round": "b19b-r2-ref-500",
+  "sha": "d9632d1f",
+  "verdict": "PASS",
+  "verified": "3802/3802",
+  "failed": [],
+  "loc_n": 3802,
+  "loc_med": 2622.0,
+  "loc_p95": 3512,
+  "ingest_med": 2042.0,
+  "P1": "820ms",
+  "P2": "854ms",
+  "P3": "825ms",
+  "P4": "13043ms"
+ }
+]
