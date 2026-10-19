@@ -292,6 +292,55 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
     expect(legacy).toBeNull();
   });
 
+  it("السباقُ الحتميّ: الرحلةُ نفسُها تنتهي في النافذةِ واللقطةُ تساوي رحلةَ الجلسةِ (B→B) — يُفصَلُ الربطُ كما في الأصلِ", async () => {
+    // الفرعُ الذي لا يظهرُ فيه تغيّرٌ في اللقطةِ (تساويها معَ رحلةِ الجلسةِ): لا
+    // يكفي أن تساويَ اللقطةُ الرحلةَ ليكونَ كلُّ شيءٍ ساكنًا — فالرحلةُ قد تنتهي
+    // داخلَ نافذةِ انتظارِ الجلسةِ، والقراءةُ المتأخرةُ (الباقيةُ كما في الأصلِ
+    // حرفيًا) هي التي ترى الانتهاءَ فتفصلُ الربطَ في الإصلاحةِ نفسِها. المسارُ
+    // الموحّدُ والقديمُ يتطابقانِ هنا بالبنيةِ لا بالمصادفةِ.
+    const runRace = async (useUnified: boolean) => {
+      const now = { value: 10_000_000 };
+      const state: { onDuty: boolean; activeTripId: string | null } = {
+        onDuty: true,
+        activeTripId: null,
+      };
+      const activeTrips = new Set<string>();
+      let sessionOnTrip = false;
+      const h = buildHarness(now, state, useUnified, {
+        tripActivity: (tripId) => activeTrips.has(tripId),
+        onBeforeOpenSessionOf: () => {
+          // الرحلةُ نفسُها تنتهي هنا — واللقطةُ (المأخوذةُ قبلَ النافذةِ) ما
+          // تزالُ تحملُها. (لا يُنفَّذُ إلا بعدَ أن تكونَ الجلسةُ على الرحلةِ —
+          // فتحُ الأولى لا يدخلِ في السباقِ.)
+          if (!sessionOnTrip) return;
+          activeTrips.delete(TRIP);
+          state.activeTripId = null;
+        },
+      });
+
+      // الإصلاحةُ الأولى: جلسةٌ على الرحلةِ.
+      activeTrips.add(TRIP);
+      state.activeTripId = TRIP;
+      await h.live.onFix(fixAt(now.value));
+      expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(TRIP);
+      sessionOnTrip = true;
+
+      // إصلاحةٌ لاحقةٌ: لقطتُها تحملُ الرحلةَ نفسَها — وتنتهي في النافذةِ.
+      now.value += 20_000;
+      await h.live.onFix(fixAt(now.value));
+
+      return (await h.store.openSessionOf(DRIVER))?.facts.tripId ?? null;
+    };
+
+    const unified = await runRace(true);
+    const legacy = await runRace(false);
+
+    // القراءةُ المتأخرةُ رأتِ الانتهاءَ ففصلتِ الربطَ في المسارينِ — لا بقاءَ على
+    // رحلةٍ انتهت ولو تساوتِ اللقطةُ.
+    expect(unified).toBeNull();
+    expect(legacy).toBeNull();
+  });
+
   it("خارجَ الخدمةِ: لا جلسةَ ولا بثًّ — والموقعُ محفوظٌ — كما في المسارِ القديمِ", async () => {
     const now = { value: 10_000_000 };
     const state = { onDuty: false, activeTripId: null };

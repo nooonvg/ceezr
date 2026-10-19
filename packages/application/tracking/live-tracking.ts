@@ -267,24 +267,19 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
      * وربطُها مرّةً واحدة كان سيُبقي الجلسة على رحلةٍ انتهت — فيستمرّ عميلُها
      * في رؤية السائق وهو في رحلة غيره. وهذا تسريبٌ لا تفصيل.
      *
-     * والحكمُ هنا بلقطةِ الإصلاحةِ عندَ توافرِها **في المسارِ الحارّ**: فالإصلاحةُ
-     * التي لم تتغيّرْ رحلتُها لا تقرأُ شيئًا — وهذا بعينُهُ الربحُ المقيسُ. أما
-     * عندَ تغيّرِ الرحلةِ (حدثٌ نادرٌ: مرةً في عمرِ كلِّ رحلة، لا في كلِّ إصلاحةٍ)
-     * فالقرارُ لا يُتّخذُ منَ اللقطةِ بل منَ قراءةٍ طازجةٍ كما كانَ المسارُ
-     * الأصليُّ حرفيًا: فالرحلةُ قد تنتهي أو يُعادَ إسنادُها في النافذةِ بينَ
-     * اللقطةِ وهذه القراءةِ، والإسنادُ الجديدُ تراهُ الإصلاحةُ التاليةُ كذلك.
-     * فالمسارُ الموحّدُ لا يفتحُ بابًا للربطِ على رحلةٍ زالتْ نشطتُها بينَ
-     * اللقطتينِ لم يكنَ المسارُ الأصليُّ يفتحُهُ.
+     * وحكمُ الإرفاقِ هنا **بالقراءةِ المتأخرةِ كما في المسارِ الأصليِّ حرفيًا**،
+     * لا بلقطةِ الإصلاحةِ: فالرحلةُ قد تنتهي أو يُعادَ إسنادُها في النافذةِ
+     * بينَ اللقطةِ وهذه القراءةِ — وحتى لو تساوتِ اللقطةُ معَ رحلةِ الجلسةِ
+     * (البقاءُ ظاهرُهُ السكونُ) فإنّ انتهاءَها هنا يفصلُ الربطَ فورًا كما في
+     * الأصلِ. فتوحيدُ القراءةِ اقتصرَ على ما لا يمسُّ هذا الحكمَ: قراءةُ
+     * الخدمةِ والرحلةِ في استعلامٍ واحدٍ عندَ البوّابةِ والفتحِ، وبقيتِ
+     * القراءةُ المتأخرةُ للحكمِ على الإرفاقِ — فالمكسبُ المحسومُ هو جولةُ
+     * الخدمةِ، لا السلامةُ.
      */
-    const trip =
-      preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
+    const trip = await deps.trips.activeTripOf(driverId);
     if (trip !== existing.facts.tripId) {
-      const fresh = preReadTripId !== undefined ? await deps.trips.activeTripOf(driverId) : trip;
-      if (fresh !== existing.facts.tripId) {
-        const attached = await deps.sessions.attachTrip(driverId, fresh);
-        if (attached !== null) return { record: attached, opened: false };
-      }
-      return { record: existing, opened: false };
+      const attached = await deps.sessions.attachTrip(driverId, trip);
+      if (attached !== null) return { record: attached, opened: false };
     }
     return { record: existing, opened: false };
   };
