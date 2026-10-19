@@ -6,6 +6,7 @@
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-15-ROUND-PLAN.md"
   ],
   "implementation": [
+    ".github/workflows/ci.yml",
     "apps/gateway/src/container.ts",
     "packages/application/driver/driver-offers.ts",
     "packages/application/driver/offer-ports.ts",
