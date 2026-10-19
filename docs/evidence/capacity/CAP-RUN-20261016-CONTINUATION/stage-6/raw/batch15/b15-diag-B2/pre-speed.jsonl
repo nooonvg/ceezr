@@ -1,0 +1,3 @@
+{"t": 1792382727607, "workers": [{"wall_ms": 401.2, "cpu_ms": 401.1}, {"wall_ms": 404.4, "cpu_ms": 401.6}], "max_wall_ms": 404.4, "total_ms": 405.5}
+{"t": 1792382728957, "workers": [{"wall_ms": 401.4, "cpu_ms": 401.4}, {"wall_ms": 405.5, "cpu_ms": 401.1}], "max_wall_ms": 405.5, "total_ms": 406.7}
+{"t": 1792382730310, "workers": [{"wall_ms": 414.7, "cpu_ms": 402.5}, {"wall_ms": 403.7, "cpu_ms": 401.4}], "max_wall_ms": 414.7, "total_ms": 415.9}
