@@ -525,44 +525,98 @@ async function drainConcurrently(
    */
   const batched: ClaimedJob[] = [];
   const batchClaim = deps.queue.claimBatchFor;
-  const nextClaim = async (): Promise<ClaimedJob | null> => {
-    const buffered = batched.shift();
-    if (buffered !== undefined) return buffered;
-    if (fair === null) return (await deps.queue.claim()).job;
-    for (;;) {
-      const open = fair.filter((b) => !drained.has(b));
-      if (open.length === 0) return null;
-      open.sort((a, b) => (busy.get(a) ?? 0) - (busy.get(b) ?? 0));
-      const bot = open[0] as string;
-      if (batchClaim !== undefined) {
-        const room = Math.min(
-          Math.max(1, lanes - inflight.size),
-          Math.max(1, Math.ceil(lanes / fair.length)),
-          Math.max(1, maxJobsPerRun - claimed),
-        );
+  /**
+   * LOAD-01 (الدفعةُ 20) — **التقاطٌ مسبقٌ في الخلفية.** المقيسُ (`b20-trace-base-750`): التنفيذُ
+   * p50 ‏0.8ث وانتظارُ المسارِ 0، لكنَّ 97% من زمنِ الشوطِ رحلاتُ التقاطٍ متسلسلةٌ (~200ms للرحلةِ
+   * انتظارًا على تجمّعِ `gatewayRequest`) تجلبُ كلٌّ منها ما فرغَ من المساراتِ لحظتَها فقط (~6)،
+   * فتفرغُ المساراتُ أثناءَ الرحلةِ (إشغالٌ ~63%) والإتمامُ ~27/ث < الواردِ ~34/ث.
+   * فالرحلةُ التاليةُ تبدأُ ما دامَ المخزَّنُ دونَ نصيبِ البوتِ — والمساراتُ تعملُ — بحجمِ النصيبِ
+   * كاملًا، رحلةٌ واحدةٌ في آنٍ (لا ضغطَ إضافيٌّ على التجمّع). والثوابت: المخزَّنُ محجوزٌ في `held`
+   * فيُجدَّدُ إيجارُه؛ و`claimed + المخزَّن + الرحلةُ الجارية ≤ maxJobsPerRun` فلا يبقى محجوزٌ بلا
+   * مسارٍ عندَ قطعِ الشوط؛ والترتيبُ ترتيبُ الالتقاطِ (= created_at) والسلاسلُ تصونُه لكلِّ مستخدم.
+   * مُختبَر: telegram-update-drainer-prefetch.test.ts
+   */
+  const share = fair === null ? lanes : Math.max(1, Math.ceil(lanes / fair.length));
+  let trip: Promise<void> | null = null;
+  let tripError: unknown = null;
+  const openBots = (): string[] => (fair === null ? [] : fair.filter((b) => !drained.has(b)));
+  const startTrip = (): void => {
+    if (fair === null || batchClaim === undefined || trip !== null || tripError !== null) return;
+    const room = Math.min(share, maxJobsPerRun - claimed - batched.length);
+    if (room <= 0 || openBots().length === 0) return;
+    trip = (async () => {
+      for (;;) {
+        const open = openBots();
+        if (open.length === 0) return;
+        open.sort((a, b) => (busy.get(a) ?? 0) - (busy.get(b) ?? 0));
+        const bot = open[0] as string;
         const t0 = performance.now();
         const { jobs } = await batchClaim.call(deps.queue, bot, room);
         claimTrips += 1;
         claimMs += performance.now() - t0;
-        if (jobs.length > 0) {
-          batched.push(...jobs.slice(1));
-          return jobs[0] as ClaimedJob;
+        if (jobs.length === 0) {
+          drained.add(bot);
+          continue;
         }
-        drained.add(bot);
-        continue;
+        for (const j of jobs) {
+          held.set(`${j.bot}:${j.updateId}`, {
+            bot: j.bot,
+            updateId: j.updateId,
+            claimToken: j.claimToken,
+          });
+          batched.push(j);
+        }
+        return;
       }
+    })()
+      .catch((error: unknown) => {
+        tripError = error;
+      })
+      .finally(() => {
+        trip = null;
+      });
+  };
+  const prefetch = (): void => {
+    if (batched.length < share) startTrip();
+  };
+  const nextClaim = async (): Promise<ClaimedJob | null> => {
+    if (fair !== null && batchClaim !== undefined) {
+      for (;;) {
+        const buffered = batched.shift();
+        // لا إطلاقَ هنا: المُخرَجُ لم يُحسَب بعدُ في `claimed` فتزيدُ السعةُ واحدًا فيتسرّبُ محجوز.
+        if (buffered !== undefined) return buffered;
+        if (trip !== null) {
+          await trip;
+          continue;
+        }
+        if (tripError !== null) {
+          const error = tripError;
+          tripError = null;
+          throw error;
+        }
+        startTrip();
+        if (trip === null) return null;
+      }
+    }
+    if (fair === null) return (await deps.queue.claim()).job;
+    for (;;) {
+      const open = openBots();
+      if (open.length === 0) return null;
+      open.sort((a, b) => (busy.get(a) ?? 0) - (busy.get(b) ?? 0));
+      const bot = open[0] as string;
       const job = (await deps.queue.claimFor?.(bot))?.job ?? null;
       if (job !== null) return job;
       drained.add(bot);
     }
   };
-
   try {
     for (;;) {
       if (claimed >= maxJobsPerRun) {
         truncated = true;
         break;
       }
+      // الرحلةُ التاليةُ تجري والمساراتُ ممتلئة — لا تنتظرُ فراغَ مسار.
+      prefetch();
       while (inflight.size >= lanes) await Promise.race(inflight);
       let job: ClaimedJob | null;
       try {

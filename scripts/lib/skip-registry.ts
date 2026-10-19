@@ -210,6 +210,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/telegram-update-drainer-prefetch.test.ts",
+    suites: ["الدرينرُ بالالتقاطِ المسبقِ — قاعدةٌ حقيقيّة"],
+    skipped: 3,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "الدرينرُ بالالتقاطِ المسبقِ (LOAD-01، الدفعة 20): لا فقدَ ولا تكرارَ وترتيبُ المستخدمِ عبرَ أشواطٍ مقطوعةٍ ودرينرانِ متزامنانِ والإيقافُ — سلوكُ PostgreSQL الحقيقيِّ (skip locked، الإيصال، الختم) لا سلوكُ محاكٍ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجراتِ مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً.",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/telegram-update-batch-claim.test.ts",
     suites: ["الالتقاطُ الدُّفعيُّ لوظائفِ تحديثِ تيليجرام — قاعدةٌ حقيقيّة"],
     skipped: 3,
