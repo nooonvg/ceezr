@@ -24,7 +24,9 @@
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { buildContainer } from "../../apps/gateway/src/container.ts";
+import { createLiveTracking } from "../../packages/application/tracking/live-tracking.ts";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
+import { createTrackingSessionRepository } from "../../packages/infrastructure/tracking/session-repository.ts";
 import {
   createActiveTripReader,
   createDriverDutyAndTripReader,
@@ -293,5 +295,68 @@ describeIf("القارئ الموحّد للخدمة والرحلة النشطة
     // ولا جلسةَ ثانيةً تُفتحُ — الإرفاقُ على الجلسةِ القائمةِ لا بديلًا عنها.
     expect(events.filter((e) => e.type === "session_started").length).toBe(1);
     expect(events.filter((e) => e.type === "location_updated").length).toBe(2);
+  });
+
+  it("الدفعة 19 — إسنادٌ بعدَ اللقطةِ وأثناءَ انتظارِ openSessionOf: الجلسةُ تُفتحُ على الرحلةِ في المسارينِ (عقدُ main)", async () => {
+    /**
+     * السباقُ الذي كشفَهُ تدقيقُ PR #595: اللقطةُ (القارئُ الموحّدُ أو المنفصلانِ)
+     * ترى السائقَ بلا رحلة، ثمّ يُسنَدُ إليه طلبٌ **فعليًّا في القاعدة** أثناءَ
+     * انتظارِ `openSessionOf`، ثمّ تعودُ القراءةُ بلا جلسةٍ سابقة. على `main`
+     * تُقرأُ الرحلةُ قراءةً طازجةً عندَ الإنشاءِ فتُفتحُ الجلسةُ عليها؛ وعلى رأسِ
+     * `a1ef73b5` كانت تُفتحُ على `null`. والإثباتُ هنا من صفِّ `tracking_sessions`
+     * نفسِهِ ومن أحداثِ النشرِ، على المستودعِ الحقيقيِّ والقارئاتِ الحقيقية.
+     */
+    for (const useUnified of [true, false]) {
+      await sql`truncate table tracking_sessions, order_offers, orders restart identity cascade`;
+      const chat = useUnified ? 511 : 512;
+      const driverId = await seedDriver(chat, true);
+      // الطلبُ موجودٌ قبلَ اللقطةِ غيرَ مُسنَد، ويُسنَدُ داخلَ النافذة.
+      const orderId = await seedOrderFor(chat + 100, driverId, "searching", false);
+      const store = createTrackingSessionRepository(sql);
+      let windowHits = 0;
+      const published: TrackingEvent[] = [];
+      const live = createLiveTracking({
+        sessions: {
+          ...store,
+          openSessionOf: async (id) => {
+            if (windowHits === 0) {
+              windowHits += 1;
+              await sql`update orders set assigned_driver_id = ${driverId}::uuid,
+                                          status = 'matched'::order_status
+                         where id = ${orderId}::uuid`;
+            }
+            return store.openSessionOf(id);
+          },
+        },
+        publisher: { publish: async (event) => void published.push(event) },
+        trips: createActiveTripReader(sql),
+        duty: createDriverDutyReader(sql),
+        ...(useUnified ? { dutyAndTrip: createDriverDutyAndTripReader(sql) } : {}),
+        clock: { now: () => new Date() },
+      });
+
+      await live.onFix({
+        driverId,
+        cityId,
+        latitude: JEDDAH.latitude,
+        longitude: JEDDAH.longitude,
+        recordedAtMs: Date.now() - MS_PER_SECOND,
+        accuracyMeters: 8,
+        verdict: "ACCEPT",
+        findings: [],
+      });
+
+      expect(windowHits).toBe(1);
+      const rows = await sql<{ trip_id: string | null }[]>`
+        select trip_id from tracking_sessions
+         where driver_id = ${driverId}::uuid and ended_at is null
+      `;
+      expect(rows.length).toBe(1);
+      expect(rows[0]?.trip_id).toBe(orderId);
+      expect(published.map((e) => [e.type, e.tripId])).toEqual([
+        ["session_started", orderId],
+        ["location_updated", orderId],
+      ]);
+    }
   });
 });

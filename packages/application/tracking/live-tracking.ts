@@ -217,24 +217,6 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
     driverId: string,
     nowMs: number,
     startAtMs: number,
-    /**
-     * رحلةٌ قُرئت في اللقطةِ نفسِها التي قُرئت فيها بوابةُ الخدمة (`onFix`).
-     * `undefined` = لا لقطةَ موحّدةً (القارئان المنفصلان) فتُقرأُ هنا كما كان.
-     *
-     * ## لماذا تُستعملُ اللقطةُ نفسُها ولا تُعادُ قراءتُها
-     *
-     * لأنّ إعادةَ القراءةِ كانت تجري بعدَ طابورِ الانتظارِ نفسِهِ الذي عبرَتهُ
-     * القراءةُ الأولى — فتجمعُ الإصلاحةُ الواحدةُ انتظارَينِ لا واحدٍ، وتقرأُ
-     * الحقيقةَ مرتينِ قد تختلفانِ. واللقطةُ الموحّدةُ تحفظُ الترتيبَ الذي يحميهُ
-     * مسارُ الإرفاقِ أصلًا: إسنادٌ يقعُ بعدَ لقطةِ الإصلاحةِ تراهُ الإصلاحةُ
-     * **التالية** وتُرفِقُهُ — وهذا عينُ ما يفعلهُ الكودُ اليومَ لو وقعَ الإسنادُ
-     * بينَ القراءتينِ القديمتينِ، فالسلوكُ محفوظٌ والنافذةُ أضيقُ لا أوسعُ.
-     *
-     * وفرعُ الخَلَفِ بعدَ الإغلاقِ (`EXPIRED`) يبقى على قراءتِهِ الطازجةِ كما
-     * هو: مسارٌ نادرٌ لا يدخلُ في حسابِ الحمل، وقراءتُهُ تقعُ بعدَ إغلاقٍ
-     * ونشرٍ كاملينِ فبعدُها عن اللقطةِ مقصودٌ لا سهوًا.
-     */
-    preReadTripId: string | null | undefined,
   ): Promise<{ readonly record: TrackingSessionRecord; readonly opened: boolean }> => {
     const existing = await deps.sessions.openSessionOf(driverId);
     if (existing !== null && !acceptsFixes(existing.facts, nowMs, policy)) {
@@ -250,14 +232,16 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
 
     if (existing === null) {
       /**
-       * فتحُ الجلسةِ لا يقبلُ لقطةً قديمةً غيرَ فارغةٍ: الرحلةُ في اللقطةِ قد
-       * تنتهي في النافذةِ بينَ اللقطةِ والفتحِ، وبدءُ جلسةٍ على رحلةٍ منتهيةٍ هو
-       * بعينِهِ التسريبُ الذي يمنعُهُ مسارُ الإغلاقِ (`closeByTrip`). فاللقطةُ
-       * تُستعملُ للفتحِ خاليةً (لا رحلةَ لا يمكن أن تكونَ منتهيةً) وعندَ غيرِ
-       * ذلكَ تُقرأُ الرحلةُ قراءةً طازجةً كما كانَ المسارُ الأصليُّ حرفيًا.
-       * وهذا ليسَ مسارًا حارًّا: يقعُ مرةً في عمرِ الجلسةِ لا في كلِّ إصلاحة.
+       * فتحُ الجلسةِ يقرأُ الرحلةَ قراءةً طازجةً **دائمًا**، ولا يستعملُ لقطةَ
+       * الإصلاحةِ ولو كانت فارغة (الدفعة 19). فالنافذةُ بينَ اللقطةِ وعودةِ
+       * `openSessionOf` تعملُ في الاتجاهين: رحلةٌ في اللقطةِ قد تنتهي فيها
+       * (فبدءُ جلسةٍ عليها تسريبٌ يمنعُهُ `closeByTrip`)، ولقطةٌ فارغةٌ قد يقعُ
+       * بعدَها إسنادٌ — وفتحُ الجلسةِ عندئذٍ على `null` ينشرُ `session_started`
+       * وأولَ `location_updated` بلا رحلةٍ والإسنادُ قائمٌ، وهذا خلافُ المسارِ
+       * المرجعيِّ على `main` (`tests/unit/live-tracking-open-race.test.ts` (ج)).
+       * والكلفةُ قراءةٌ واحدةٌ في عمرِ الجلسةِ لا في كلِّ إصلاحة.
        */
-      const trip = preReadTripId === null ? null : await deps.trips.activeTripOf(driverId);
+      const trip = await deps.trips.activeTripOf(driverId);
       return { record: await deps.sessions.open(driverId, trip, startAtMs), opened: true };
     }
 
@@ -337,12 +321,7 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
          * سيمرّ من كل اختبارٍ بساعةٍ واحدة، ولا يظهر إلا بساعتين مختلفتين.
          */
         const startAtMs = Math.min(nowMs, fix.recordedAtMs);
-        const { record, opened } = await currentSession(
-          fix.driverId,
-          nowMs,
-          startAtMs,
-          state.activeTripId,
-        );
+        const { record, opened } = await currentSession(fix.driverId, nowMs, startAtMs);
         const facts = record.facts;
 
         if (opened) {

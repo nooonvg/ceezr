@@ -143,9 +143,11 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
     await unified.live.onFix(fixAt(now.value));
     await legacy.live.onFix(fixAt(now.value));
 
-    // عددُ الرحلاتِ: الموحّدُ استعلامٌ واحد، والقديمُ اثنانِ (خدمةٌ ثمّ رحلة).
-    expect(unified.counters).toEqual({ dutyAndTrip: 1, activeTripOf: 0, isOnDuty: 0 });
-    expect(legacy.counters).toEqual({ dutyAndTrip: 0, activeTripOf: 1, isOnDuty: 1 });
+    // عددُ الرحلاتِ: البوابةُ في الموحّدِ استعلامٌ واحد، وفي القديمِ اثنانِ (خدمةٌ
+    // ثمّ رحلة). وفتحُ الجلسةِ يقرأُ الرحلةَ قراءةً طازجةً في المسارينِ كما في
+    // `main` — ولو كانت اللقطةُ فارغةً (الدفعة 19، `live-tracking-open-race.test.ts`).
+    expect(unified.counters).toEqual({ dutyAndTrip: 1, activeTripOf: 1, isOnDuty: 0 });
+    expect(legacy.counters).toEqual({ dutyAndTrip: 0, activeTripOf: 2, isOnDuty: 1 });
 
     // والسلوكُ واحدٌ: نفسُ أحداثِ النشرِ بنفسِ ترتيبِها ومضمونِها.
     expect(comparable(unified.events)).toEqual(comparable(legacy.events));

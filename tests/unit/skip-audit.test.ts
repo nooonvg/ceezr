@@ -984,7 +984,9 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // عقدُ السباقِ: إسنادٌ بعدَ اللقطةِ تراهُ الإصلاحةُ التاليةُ) — أحكامُ محرّكٍ لا تُقاسُ إلا على
     // PostgreSQL حقيقيٍّ، وتجري في وظيفةِ التكامل.
     expect(SKIP_REGISTRY).toHaveLength(203);
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1688);
+    // زيادةٌ (الدفعةُ 19 · تدقيقُ PR #595): 1689 — حالةُ سباقِ فتحِ الجلسةِ على PostgreSQL
+    // حقيقيٍّ في `tracking-duty-and-trip-reader.test.ts` (تعملُ في وظيفةِ التكاملِ).
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1689);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {
