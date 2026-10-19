@@ -30,6 +30,16 @@ mkdirSync(EV, { recursive: true });
 const DB_URL = process.env.DATABASE_URL ?? "";
 const CITY = process.env.CITY ?? "JED";
 const B = "/srv/ceezr-cap-20261016";
+/**
+ * خلفياتُ البوابةِ في `pg_stat_activity`: كلُّ تجمُّعٍ يُسمّي نفسَه `ceezr:<دور>`
+ * (`ceezr:gatewayRequest` · `ceezr:gatewayDispatch` · `ceezr:workerJobs` …، `apps/gateway/src/container.ts`).
+ * الاسمُ القديمُ `postgres.js` لم يعُد يطابقُ شيئاً — فكانَ القتلُ يقتلُ صفراً والحكمُ ينجحُ (عيبٌ
+ * مُكتشَفٌ 2026-10-19 على `main` @ e3e4b39c). جلسةُ التجربةِ `pg-recovery-exp` خارجَ النمطِ عمداً.
+ */
+const GATEWAY_BACKENDS = "ceezr:%";
+/** سجلُّ البوابةِ — قد لا يكونُ في `RUN_DIR` هذا (البوابةُ تُطلَقُ بـ`RUN_DIR` آخر)؛ غيابُه نقصٌ مُعلَنٌ لا صفرٌ. */
+const GATEWAY_LOG =
+  process.env.GATEWAY_LOG ?? `${process.env.RUN_DIR ?? "/tmp/cap-run"}/evidence/gateway.log`;
 const RIDER_BASE = Number(process.env.PGR_RIDER_BASE ?? 10_200_000);
 const DRIVER_BASE = Number(process.env.PGR_DRIVER_BASE ?? 11_200_000);
 const sql = postgres(`${DB_URL}?application_name=pg-recovery-exp`, {
@@ -373,11 +383,21 @@ async function businessCycle(
   };
 }
 
+/** خلفياتُ البوابةِ لكلِّ دورٍ الآن (`ceezr:%`) — دليلُ أنَّ القتلَ أصابَها وأنَّها عادَت. */
+async function gatewayBackends(): Promise<Record<string, number>> {
+  const rows = await sql<{ app: string; n: number }[]>`
+    select application_name as app, count(*)::int as n from pg_stat_activity
+     where datname = current_database() and application_name like ${GATEWAY_BACKENDS}
+     group by 1 order by 1
+  `;
+  return Object.fromEntries(rows.map((r) => [r.app, r.n]));
+}
+
 /** فحوصاتُ ما بعدَ التعافي: لا معاملاتٍ عالقةٍ ولا مهامَّ مستولى عليها متقادمةٍ. */
 async function postRecoveryChecks(): Promise<Record<string, unknown>> {
   const stuckTx = await sql<{ n: string }[]>`
     select count(*)::text as n from pg_stat_activity
-     where state = 'idle in transaction' and application_name = 'postgres.js'
+     where state = 'idle in transaction' and application_name like ${GATEWAY_BACKENDS}
        and xact_start < now() - interval '30 seconds'
   `;
   const jobsStuck = await sql<{ n: string }[]>`
@@ -427,21 +447,26 @@ async function main(): Promise<void> {
     gatewayPids: pidsBefore,
     postmasterPid: postmasterPid(),
   });
-  const gatewayLogPath = `${EV}/gateway.log`;
-  const logStartOffset = existsSync(gatewayLogPath) ? statSync(gatewayLogPath).size : 0;
+  const gatewayLogPath = GATEWAY_LOG;
+  const gatewayLogReadable = existsSync(gatewayLogPath);
+  const logStartOffset = gatewayLogReadable ? statSync(gatewayLogPath).size : 0;
+  const backendsBefore = await gatewayBackends();
+  log({ event: "experiment.gateway_backends", gatewayLogPath, gatewayLogReadable, backendsBefore });
 
   /* ── التجربةُ (أ): قتلُ خلفياتِ البوابةِ فقط — أثناءَ عملٍ جارٍ ── */
   const pidsA = await gatewayPids();
   log({ event: "expA.start", gatewayPidsBefore: pidsA, postmasterPid: postmasterPid() });
   // العطلُ يُطلقُ بعدَ إنشاءِ الطلبِ وإعلانِ توفّرِ السائقِ — أي أثناءَ استطلاعِ
   // لوحِ العروضِ والبوابةُ تنشطُ في الإرسالِ (طلبٌ باحثٌ + مُصرِفٌ يعملُ).
+  let killedA = 0;
   const cycleA = await businessCycle("A", 0, async () => {
     await sleep(1_000); // الاستطلاعُ بدأَ فعلًا
     const killed = await sql<{ n: number }[]>`
       select count(*)::int as n from (select pg_terminate_backend(pid) from pg_stat_activity
         where datname=current_database() and pid<>pg_backend_pid()
-          and application_name='postgres.js') x
+          and application_name like ${GATEWAY_BACKENDS}) x
     `;
+    killedA = killed[0]?.n ?? 0;
     // جاهزيةُ البوابةِ في لحظةِ ما بعدَ القتلِ مباشرةً (قد لا تنكسرَ أصلًا)
     const readyRightAfter = await readyOk();
     log({
@@ -453,16 +478,24 @@ async function main(): Promise<void> {
   const pidsAAfter = await gatewayPids();
   const pidSameA = pidsAAfter.join(",") === pidsA.join(",");
   const checksA = await postRecoveryChecks();
+  // البوابةُ أعادَت فتحَ اتصالاتِها فعلاً — لا يكفي أنَّ دورةً اكتملَت (قد تكتملُ عبرَ تجمُّعٍ لم يُقتَل).
+  const backendsAfterA = await gatewayBackends();
+  // فشلٌ مغلقٌ: بلا عطلٍ مُحقَنٍ لا حكمَ نجاح — الصفرُ «لم يُختبَر» لا «نجا».
+  const verdictA =
+    killedA === 0
+      ? "NO_FAULT_INJECTED"
+      : cycleA.completed && pidSameA && cycleA.orderCountForRider === 1
+        ? "BACKENDS_TERMINATED_GATEWAY_SURVIVED"
+        : "NOT_PROVEN";
   log({
     event: "expA.end",
     ...cycleA,
     gatewayPidsAfter: pidsAAfter,
     pidSame: pidSameA,
     postRecovery: checksA,
-    verdict:
-      cycleA.completed && pidSameA && cycleA.orderCountForRider === 1
-        ? "BACKENDS_TERMINATED_GATEWAY_SURVIVED"
-        : "NOT_PROVEN",
+    backendsKilled: killedA,
+    backendsAfter: backendsAfterA,
+    verdict: verdictA,
   });
 
   /* ── التجربةُ (ب): إيقافُ PG كاملًا وإعادتُه بالأداةِ المصححةِ ── */
@@ -534,6 +567,10 @@ async function main(): Promise<void> {
   // دورةُ أعمالٍ كاملةٌ **بعدَ التعافي** — منَ الواجهةِ حتى الحالةِ النهائيةِ.
   const cycleB = await businessCycle("B", 5);
   const checksB = await postRecoveryChecks();
+  const verdictB =
+    cycleB.completed && pidSameB && cycleB.orderCountForRider === 1 && pgBeforeGateway
+      ? "PG_RESTART_RECOVERED_BUSINESS_CYCLE_COMPLETED"
+      : "NOT_PROVEN";
   log({
     event: "expB.end",
     ...cycleB,
@@ -546,25 +583,37 @@ async function main(): Promise<void> {
     pgBeforeGateway,
     toolRecord,
     postRecovery: checksB,
-    verdict:
-      cycleB.completed && pidSameB && cycleB.orderCountForRider === 1 && pgBeforeGateway
-        ? "PG_RESTART_RECOVERED_BUSINESS_CYCLE_COMPLETED"
-        : "NOT_PROVEN",
+    verdict: verdictB,
   });
 
   /* سجلُّ البوابةِ: لا انهيارٌ غيرُ ملتقطٍ خلالَ التجربتين */
   let uncaught = 0;
   let unhandled = 0;
-  try {
-    const tail = readFileSync(gatewayLogPath, "utf8").slice(logStartOffset);
-    uncaught = (tail.match(/uncaughtException/g) ?? []).length;
-    unhandled = (tail.match(/unhandledRejection/g) ?? []).length;
-  } catch {
-    // السجلُّ غيرُ مقروءٍ — يُسجَّلَ النقصُ
+  let logScanned = false;
+  if (gatewayLogReadable) {
+    try {
+      const tail = readFileSync(gatewayLogPath, "utf8").slice(logStartOffset);
+      uncaught = (tail.match(/uncaughtException/g) ?? []).length;
+      unhandled = (tail.match(/unhandledRejection/g) ?? []).length;
+      logScanned = true;
+    } catch {
+      // غيرُ مقروءٍ — يبقى logScanned=false فيسقطُ الحكمُ الكلّيُّ إلى NOT_PROVEN
+    }
   }
   log({
     event: "experiment.done",
-    gatewayLogScan: { uncaughtException: uncaught, unhandledRejection: unhandled },
+    gatewayLogScan: logScanned
+      ? { readable: true, uncaughtException: uncaught, unhandledRejection: unhandled }
+      : { readable: false, path: gatewayLogPath },
+    // الحكمُ الكلّيُّ: لا ينجحُ إلّا بعطلٍ مُحقَنٍ في (أ)، وسجلٍّ مقروءٍ بلا انهيار.
+    verdict:
+      verdictA === "BACKENDS_TERMINATED_GATEWAY_SURVIVED" &&
+      verdictB === "PG_RESTART_RECOVERED_BUSINESS_CYCLE_COMPLETED" &&
+      logScanned &&
+      uncaught === 0 &&
+      unhandled === 0
+        ? "RECOVERY_PROVEN"
+        : "NOT_PROVEN",
   });
   await sql.end({ timeout: 5 });
 }
