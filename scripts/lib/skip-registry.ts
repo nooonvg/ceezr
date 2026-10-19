@@ -210,6 +210,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/telegram-update-batch-claim-lane-order.test.ts",
+    suites: ["ترتيبُ المستخدمِ (D4) في الالتقاطِ الدُّفعيّ — قاعدةٌ حقيقيّة"],
+    skipped: 3,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "شرطُ D4 في الالتقاطِ الدُّفعيِّ (LOAD-01، الدفعة 20): وظيفةٌ أقدمُ معلّقةٌ أو محجوزةٌ تحجبُ لاحقةَ المستخدمِ نفسِه — سلوكُ PostgreSQL (skip locked والاستعلامُ الفرعيُّ على lane_key) لا سلوكُ محاكٍ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجراتِ مطبَّقة (ومنها 20261020090000). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً.",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/telegram-update-batch-claim.test.ts",
     suites: ["الالتقاطُ الدُّفعيُّ لوظائفِ تحديثِ تيليجرام — قاعدةٌ حقيقيّة"],
     skipped: 3,

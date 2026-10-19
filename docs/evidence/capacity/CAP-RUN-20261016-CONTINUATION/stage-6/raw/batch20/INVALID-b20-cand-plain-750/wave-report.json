@@ -1,0 +1,178 @@
+{
+  "runDir": "/srv/ceezr-cap-20261016/runs/b20-cand-plain-750",
+  "total": 4081,
+  "verified": 4023,
+  "verdict": "FAIL",
+  "failedGates": [
+    "G1",
+    "P1",
+    "P2",
+    "P3"
+  ],
+  "gates": [
+    {
+      "id": "G1",
+      "rule": "دورات مكتملة مثبتة من القاعدة",
+      "value": "98.58% (4023/4081)",
+      "limit": "≥ 99.0%",
+      "pass": false
+    },
+    {
+      "id": "G2",
+      "rule": "إسناد مزدوج",
+      "value": "0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "G3",
+      "rule": "تجاوز نافذة الختام / عالقون عند الإغلاق",
+      "value": "0 + 0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "G4",
+      "rule": "تدقيق ما بعد الموجة",
+      "value": "CLEAN",
+      "limit": "CLEAN",
+      "pass": true
+    },
+    {
+      "id": "G5",
+      "rule": "سائقون بقوا متاحين بعد الجولة",
+      "value": "0",
+      "limit": "≤ 20 (0.5%)",
+      "pass": true
+    },
+    {
+      "id": "G6",
+      "rule": "إسناد لسائق سيناريو آخر",
+      "value": "0.00% (0)",
+      "limit": "≤ 0.5%",
+      "pass": true
+    },
+    {
+      "id": "G7",
+      "rule": "5xx من الطلبات",
+      "value": "0.00%",
+      "limit": "≤ 0.5%",
+      "pass": true
+    },
+    {
+      "id": "G8",
+      "rule": "تعثر قراءة لوح العروض",
+      "value": "0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "I1-identities",
+      "rule": "هويات فريدة من أحداث المولد (راكب + سائق لكل سيناريو)",
+      "value": "riders 4081/4081 · drivers 4081/4081",
+      "limit": "= 4081 + 4081",
+      "pass": true
+    },
+    {
+      "id": "GW-STABILITY",
+      "rule": "البوابة نفس العملية عبر الموجة (لا انهيار خفي)",
+      "value": "stable",
+      "limit": "stable",
+      "pass": true
+    },
+    {
+      "id": "EGRESS-CLASSIFIED",
+      "rule": "كل إرسالية في المحاكي مصنفة لبوتها (لا unknown)",
+      "value": "unknown +0",
+      "limit": "= 0",
+      "pass": true
+    },
+    {
+      "id": "CONC-peak",
+      "rule": "ذروة السيناريوهات المتزامنة الفعلية من لقطات المولد",
+      "value": "peak 750 / target 750",
+      "limit": "≥ 750",
+      "pass": true
+    }
+  ],
+  "perf": [
+    {
+      "id": "P1",
+      "rule": "p95 إنشاء الرحلة",
+      "value": "1904ms",
+      "limit": "≤ 1000ms",
+      "pass": false
+    },
+    {
+      "id": "P2",
+      "rule": "p95 قبول العرض",
+      "value": "1879ms",
+      "limit": "≤ 1000ms",
+      "pass": false
+    },
+    {
+      "id": "P3",
+      "rule": "p95 قراءة لوح العروض",
+      "value": "1914ms",
+      "limit": "≤ 1000ms",
+      "pass": false
+    },
+    {
+      "id": "P4",
+      "rule": "p95 ظهور العرض على اللوح",
+      "value": "12296ms",
+      "limit": "≤ 30000ms",
+      "pass": true
+    },
+    {
+      "id": "P5",
+      "rule": "p95 دورة السيناريو كاملة",
+      "value": "28287ms",
+      "limit": "≤ 120000ms",
+      "pass": true
+    },
+    {
+      "id": "P6a",
+      "rule": "p99 إنشاء الرحلة",
+      "value": "2292ms",
+      "limit": "≤ 2500ms",
+      "pass": true
+    },
+    {
+      "id": "P6b",
+      "rule": "p99 قبول العرض",
+      "value": "2072ms",
+      "limit": "≤ 2500ms",
+      "pass": true
+    },
+    {
+      "id": "P6c",
+      "rule": "p99 قراءة اللوح",
+      "value": "2311ms",
+      "limit": "≤ 2500ms",
+      "pass": true
+    },
+    {
+      "id": "P7",
+      "rule": "أقدم مهمة إشعار معلقة عند التدقيق",
+      "value": "44s",
+      "limit": "≤ 120s",
+      "pass": true
+    },
+    {
+      "id": "P8",
+      "rule": "429 واجهات Mini App",
+      "value": "0.00%",
+      "limit": "≤ 2%",
+      "pass": true
+    },
+    {
+      "id": "P9",
+      "rule": "أخطاء شبكة",
+      "value": "0.00%",
+      "limit": "≤ 1%",
+      "pass": true
+    }
+  ],
+  "auditViolations": []
+}
