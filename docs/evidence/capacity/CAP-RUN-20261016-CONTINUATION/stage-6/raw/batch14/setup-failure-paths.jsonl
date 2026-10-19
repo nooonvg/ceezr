@@ -1,0 +1,7 @@
+{"case": "pg_start", "verdict": "PASS", "rc": 1, "line": "PASS pg_start (rc=1, «PG_START_FAIL»، بلا INFRA_OK)"}
+{"case": "redis_ready", "verdict": "PASS", "rc": 1, "line": "PASS redis_ready (rc=1, «REDIS_READY_FAIL»، بلا INFRA_OK)"}
+{"case": "extension_missing", "verdict": "PASS", "rc": 1, "line": "PASS extension_missing (rc=1, «EXTENSION_CREATE_FAIL»، بلا DB_OK)"}
+{"case": "migrate_no_db", "verdict": "PASS", "rc": 1, "line": "PASS migrate_no_db (rc=1, «MIGRATE_FAIL»، بلا MIGRATE_OK)"}
+{"case": "migrate_sql_error", "verdict": "PASS", "rc": 1, "line": "PASS migrate_sql_error (rc=1, «MIGRATE_FAIL»، بلا MIGRATE_OK)"}
+{"case": "db_happy_control", "verdict": "PASS", "rc": 0, "line": "PASS db_happy_control (rc=0, DB_OK)"}
+{"summary": "SUMMARY passes=6 fails=0", "base_sha": "4e8f4727"}
