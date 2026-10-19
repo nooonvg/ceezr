@@ -48,7 +48,11 @@ import {
   type DriverOfferStoreError,
   isDriverOfferRejection,
 } from "./offer-ports.ts";
-import { noticeRiderOfTrip, type RiderTripNoticeDeps } from "./rider-trip-notice.ts";
+import {
+  noticeRiderOfTrip,
+  type RiderTripNoticeDeps,
+  recordRiderTripDeposit,
+} from "./rider-trip-notice.ts";
 
 /**
  * رموزُ العطبِ المنشورةُ — **قائمةٌ تُقرأُ في زمنِ التشغيلِ** لا اتّحادٌ وحدَه،
@@ -225,11 +229,29 @@ export async function acceptDriverOffer(
   const offerId = readOfferId(input.offerId);
   if (offerId === null) return err(rejection("OFFER_ID_INVALID"));
 
-  const claimed = await deps.store.accept({ telegramUserId: session.value, offerId });
+  // LOAD-01 (الدفعةُ الخامسةَ عشرةَ) — حينَ يُطلَبُ إشعارُ الراكبِ ويدعمُ المخزنُ ذلك: القبولُ وإيداعُ
+  // MATCHED في عبارةٍ واحدة (كانا حجزَين متتاليَين لمقعدِ التجمُّعِ قبلَ الردّ). القبولُ نفسُه بلا تغيير.
+  const combined =
+    deps.riderNotice !== undefined && deps.store.acceptWithMatchedNotice !== undefined
+      ? await deps.store.acceptWithMatchedNotice({ telegramUserId: session.value, offerId })
+      : undefined;
+  const claimed =
+    combined === undefined
+      ? await deps.store.accept({ telegramUserId: session.value, offerId })
+      : combined.ok
+        ? ok(combined.value.claim)
+        : combined;
   if (!claimed.ok) return err(publicCodeFrom(claimed.error));
   // `WR-09` — الحجزُ ليسَ إسناداً: إشعارُ المرشَّحِ أودعَته القاعدةُ في معاملتِه.
   if (claimed.value.pendingRider !== true) {
-    await noticeRiderOfTrip(deps.riderNotice, claimed.value.orderId, "MATCHED");
+    const deposit = combined?.ok === true ? combined.value.matchedNotice : undefined;
+    if (deposit !== undefined) {
+      recordRiderTripDeposit(deps.riderNotice, claimed.value.orderId, "MATCHED", deposit);
+    } else {
+      // لا إيداعَ في العبارةِ (منفذٌ قديمٌ أو ردٌّ بلا الحقل) ⇒ المسارُ المستقلُّ؛ ومفتاحُ منعِ
+      // التكرارِ `rider_trip:<order>:MATCHED` يجعلُ أيَّ تكرارٍ صفّاً واحداً.
+      await noticeRiderOfTrip(deps.riderNotice, claimed.value.orderId, "MATCHED");
+    }
     return ok(claimed.value);
   }
   // الباقي يُحسَبُ ههنا بساعةِ الخادمِ ولا تُنشَرُ لحظةُ الانتهاءِ للعميل

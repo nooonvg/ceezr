@@ -35,6 +35,7 @@ import type {
   DriverOfferStoreError,
   DriverOfferStoreRejection,
 } from "../../application/driver/offer-ports.ts";
+import type { RiderTripDepositOutcome } from "../../application/driver/rider-trip-notice.ts";
 import {
   type DriverEligibilityReason,
   type DriverOfferBoard,
@@ -592,21 +593,77 @@ export class PostgresDriverOfferStore implements DriverOfferStore {
     } catch {
       return err(failed("STORE_ERROR"));
     }
+    return claimFrom(rows[0]?.result);
+  }
 
+  /**
+   * LOAD-01 (الدفعةُ الخامسةَ عشرةَ) — `driver_accept_offer_with_matched_notice`: القبولُ **نفسُه**
+   * (`driver_accept_offer` بلا تغيير) وإيداعُ MATCHED في معاملتِه، في رحلةٍ واحدة. ردُّ القبولِ يُقرأُ
+   * بالقارئِ نفسِه حرفاً؛ و`rider_notice` غائبٌ ⇒ لا إيداعَ في العبارة.
+   */
+  async acceptWithMatchedNotice(input: {
+    readonly telegramUserId: string;
+    readonly offerId: string;
+  }): Promise<
+    Result<
+      { readonly claim: DriverOfferClaim; readonly matchedNotice?: RiderTripDepositOutcome },
+      DriverOfferStoreError
+    >
+  > {
+    const telegramId = asTelegramId(input.telegramUserId);
+    if (telegramId === null) return err(failed("MALFORMED_RESULT"));
+
+    let rows: ResultRow[];
+    try {
+      rows = await this.#sql<ResultRow[]>`
+        select driver_accept_offer_with_matched_notice(${telegramId}::bigint, ${input.offerId}::uuid) as result`;
+    } catch {
+      return err(failed("STORE_ERROR"));
+    }
     const payload = rows[0]?.result;
-    if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
-    if (payload.ok !== true) return err(rejectionFrom(payload));
-
-    const orderId = readText(payload.order_id);
-    if (orderId === null) return err(failed("MALFORMED_RESULT"));
+    const claim = claimFrom(payload);
+    if (!claim.ok) return claim;
+    const matchedNotice = isRecord(payload) ? depositOutcomeFrom(payload.rider_notice) : undefined;
     return ok({
-      orderId,
-      // لحظةُ المطابقةِ من القاعدةِ — وغيابُها **يُقالُ عَدَماً** ولا يُستبدَلُ
-      // بساعةِ العمليّةِ: ختمٌ من ساعتَينِ مختلفتَينِ في سجلٍّ واحدٍ كذبٌ لطيفٌ.
-      matchedAt: readInstant(payload.matched_at),
-      // `WR-09` — حالُ الانتظارِ كما أعادَته القاعدة؛ غيابُه إسنادٌ فوريٌّ.
-      pendingRider: payload.pending_rider === true,
-      expiresAt: readInstant(payload.expires_at),
+      claim: claim.value,
+      ...(matchedNotice === undefined ? {} : { matchedNotice }),
     });
   }
+}
+
+/** ردُّ `driver_accept_offer` كما كانَ يُقرأُ في `accept` حرفاً — قارئٌ واحدٌ للمسارَين. */
+function claimFrom(payload: unknown): Result<DriverOfferClaim, DriverOfferStoreError> {
+  if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
+  if (payload.ok !== true) return err(rejectionFrom(payload));
+
+  const orderId = readText(payload.order_id);
+  if (orderId === null) return err(failed("MALFORMED_RESULT"));
+  return ok({
+    orderId,
+    // لحظةُ المطابقةِ من القاعدةِ — وغيابُها **يُقالُ عَدَماً** ولا يُستبدَلُ
+    // بساعةِ العمليّةِ: ختمٌ من ساعتَينِ مختلفتَينِ في سجلٍّ واحدٍ كذبٌ لطيفٌ.
+    matchedAt: readInstant(payload.matched_at),
+    // `WR-09` — حالُ الانتظارِ كما أعادَته القاعدة؛ غيابُه إسنادٌ فوريٌّ.
+    pendingRider: payload.pending_rider === true,
+    expiresAt: readInstant(payload.expires_at),
+  });
+}
+
+/**
+ * `rider_notice` = ردُّ `enqueue_rider_trip_notice` حرفاً، أو `{ok:false, error:'ENQUEUE_EXCEPTION'}`
+ * من نقطةِ الحفظ. غيابُه ⇒ `undefined` (لا إيداعَ)؛ وشكلٌ غيرُ مفهومٍ ⇒ فشلٌ مُعلَنٌ لا نجاحٌ مُفترَض.
+ */
+function depositOutcomeFrom(value: unknown): RiderTripDepositOutcome | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!isRecord(value)) return { kind: "failed", error: "MALFORMED_NOTICE" };
+  if (value.ok === true) {
+    const tg = value.rider_telegram_id;
+    return {
+      kind: "deposited",
+      created: value.created === true,
+      riderTelegramId: typeof tg === "string" && tg.length > 0 ? tg : null,
+    };
+  }
+  if (value.error === "ORDER_NOT_FOUND") return { kind: "order_missing" };
+  return { kind: "failed", error: typeof value.error === "string" ? value.error : "UNKNOWN" };
 }
