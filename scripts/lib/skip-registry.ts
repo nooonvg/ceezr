@@ -707,6 +707,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/accept-with-matched-notice.test.ts",
+    suites: ["القبولُ مع إيداعِ MATCHED في رحلةٍ واحدة"],
+    skipped: 8,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في LOAD-01 (الدفعةُ 15 · ADR 0290) أنَّ `driver_accept_offer_with_matched_notice` تُعيدُ ردَّ القبولِ حرفاً وتودِعُ MATCHED في معاملتِه، وأنَّ فشلَ الإيداعِ تتراجعُ عنه نقطةُ الحفظِ وحدَه والقبولُ يُثبَّت (ADR 0265 §2)، وأنَّ السباقَ بينَ سائقَين وI1 يبقيانِ فائزاً واحداً وصفَّ إشعارٍ واحداً — نقطةُ الحفظِ والقفلُ ومحفِّزُ الرفضِ لا تُقاسُ إلّا على محرِّكٍ حقيقيّ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبَّقة (ومنها 20261019120000). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: "دورةُ الرحلةِ والإسناد",
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/driver-offers.test.ts",
     suites: [
       "لوحُ العروضِ — هويّةٌ أوّلاً ثمَّ لوحٌ مفسَّرٌ",

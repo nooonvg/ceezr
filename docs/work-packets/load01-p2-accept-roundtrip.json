@@ -12,6 +12,7 @@
     "packages/application/driver/rider-trip-notice.ts",
     "packages/infrastructure/db/schema-contract.ts",
     "packages/infrastructure/driver/driver-offers-store.ts",
+    "scripts/lib/skip-registry.ts",
     "supabase/migrations/20261019120000_load01_accept_with_matched_notice.sql",
     "tests/integration/accept-with-matched-notice.test.ts",
     "tests/unit/accept-with-matched-notice.test.ts"
