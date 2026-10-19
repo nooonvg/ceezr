@@ -340,4 +340,84 @@ describeIf("القارئ الموحّد للخدمة والرحلة النشطة
     const detached = await sessions.attachTrip(driverId, null);
     expect(detached?.facts.tripId).toBeNull();
   });
+
+  it("سباقُ انتظارِ القفلِ: الإرفاقُ ينتظرُ قفلَ صفِّ الجلسةِ والرحلةُ تنتهي أثناءَ الانتظارِ — توثيقٌ حتميٌّ للنافذةِ", async () => {
+    /**
+     * التداخلُ الذي لا يختبرهُ سباقُ الذاكرةِ: جملةُ الإرفاقِ تنتظرُ قفلًا على
+     * صفِّ الجلسةِ، والرحلةُ تنتهي أثناءَ الانتظارِ. شرطُ النشاطِ يُقرأُ بلقطةِ
+     * الجملةِ، والسؤالُ الحتميُّ: هل يرى انتهاءَها بعدَ الانتظارِ أم يربطُها؟
+     * والجوابُ يُوثَّق كما قيسَ (انظر التقريرَ: هذه نافذةٌ مرجعيةٌ موجودةٌ في
+     * المسارِ الأصليِّ بالقدرِ نفسِهِ — القراءةُ المتأخرةُ هناك وقعتْ قبلَ
+     * الانتظارِ فرأتِ الرحلةَ نشطةً ثمّ ربطها الانتظارُ بعدَ نهايتِها).
+     */
+    const driverId = await seedDriver(801, true);
+    const sessions = createTrackingSessionRepository(sql);
+    await sessions.open(driverId, null, Date.now());
+    const endedTrip = await seedOrderFor(802, driverId, "matched", true);
+
+    // اتصالٌ يحملُ قفلَ صفِّ الجلسةِ ولا يُفلِتُهُ حتى تكتملَ المشاهدُ.
+    const locker = createSql({ connectionString: DATABASE_URL ?? "", max: 1, prepare: false });
+    await locker`begin`;
+    await locker`update tracking_sessions set updated_at = updated_at
+                   where driver_id = ${driverId}::uuid`;
+
+    // الإرفاقُ يبدأُ في اتصالٍ مستقلٍّ — سيدخلُ في الانتظارِ على القفلِ.
+    const attachSql = createSql({ connectionString: DATABASE_URL ?? "", max: 1, prepare: false });
+    const attachSessions = createTrackingSessionRepository(attachSql);
+    const attachPromise = attachSessions.attachTrip(driverId, endedTrip);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    // الرحلةُ تنتهي (وتُنفَّذَ خطوةُ الإغلاقِ الحقيقيةُ للعقدِ — الجلسةُ غيرُ
+    // مرفقةٍ بها فلا تُغلق، وهذا جزءٌ من المشهدِ قيدَ الفحصِ).
+    await sql`update orders set status = 'completed' where id = ${endedTrip}::uuid`;
+    const closed = await sessions.closeByTrip(endedTrip, "TRIP_COMPLETED", Date.now());
+    expect(closed).toEqual([]);
+
+    // تحريرُ القفلِ — الإرفاقُ يستأنفُ ويُحسم.
+    await locker`commit`;
+    await attachPromise;
+    await locker.end({ timeout: 5 });
+    await attachSql.end({ timeout: 5 });
+
+    const row = await sql<{ trip_id: string | null }[]>`
+      select trip_id from tracking_sessions where driver_id = ${driverId}::uuid
+    `;
+
+    // والجملةُ الأصليةُ بلا شرطِ النشاطِ (ما كانَ المسارُ القديمُ ينفّذُهُ):
+    // التداخلُ نفسُهُ — تربطُ الرحلةَ المنتهيةَ بلا التفاتٍ.
+    const driverId2 = await seedDriver(803, true);
+    const sessions2 = createTrackingSessionRepository(sql);
+    await sessions2.open(driverId2, null, Date.now());
+    const endedTrip2 = await seedOrderFor(804, driverId2, "matched", true);
+    const locker2 = createSql({ connectionString: DATABASE_URL ?? "", max: 1, prepare: false });
+    await locker2`begin`;
+    await locker2`update tracking_sessions set updated_at = updated_at
+                    where driver_id = ${driverId2}::uuid`;
+    const legacyPromise = (async () => {
+      const legacySql = createSql({ connectionString: DATABASE_URL ?? "", max: 1, prepare: false });
+      const result = legacySql`update tracking_sessions set trip_id = ${endedTrip2}::uuid,
+                                  updated_at = now()
+                                where driver_id = ${driverId2}::uuid and ended_at is null`;
+      await result;
+      await legacySql.end({ timeout: 5 });
+    })();
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await sql`update orders set status = 'completed' where id = ${endedTrip2}::uuid`;
+    await locker2`commit`;
+    await legacyPromise;
+    await locker2.end({ timeout: 5 });
+    const row2 = await sql<{ trip_id: string | null }[]>`
+      select trip_id from tracking_sessions where driver_id = ${driverId2}::uuid
+    `;
+
+    // التوثيقُ الحتميُّ المقيسُ: **النافذةُ موجودةٌ في المسارينِ معًا** — جملةُ
+    // الإرفاقِ (الموحّدةُ والأصليةُ) تنتظرُ القفلَ بلقطةِ جملتِها، فالرحلةُ التي
+    // تنتهي أثناءَ الانتظارِ تُربطُ في الاثنَينِ. هذا قيدٌ مرجعيٌّ موثقٌ لا
+    // ادعاءَ لإصلاحِهِ في هذه الدورةِ، وتخفيفُهُ بمسارينِ مستقلينِ عنِ
+    // الإرفاقِ: مسارُ الإغلاقِ (`closeByTrip`) يغلقُ الجلسةَ المرفقةَ بالرحلةِ
+    // عندَ إنهائِها، والإصلاحةُ التاليةُ تفصلُ الربطَ بلقطةٍ ترى الانتهاءَ
+    // (فصلًا ذاتيَّ التصحيحِ في المسارينِ).
+    expect(row[0]?.trip_id).toBe(endedTrip);
+    expect(row2[0]?.trip_id).toBe(endedTrip2);
+  });
 });

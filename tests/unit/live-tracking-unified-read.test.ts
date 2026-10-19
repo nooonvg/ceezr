@@ -186,12 +186,14 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
     now.value += 20_000;
     await h.live.onFix(fixAt(now.value));
 
-    // الإصلاحةُ الثانيةُ رأت الرحلةَ الجديدةَ في لقطتِها وأرفقتها.
+    // الإصلاحةُ الثانيةُ رأت الرحلةَ الجديدةَ في لقطتِها فتحقّقت منها بقراءةٍ
+    // طازجةٍ (تغيّرُ رحلةٍ نادرٌ: مرةً في عمرِ كلِّ رحلة) وأرفقتها.
     expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(OTHER_TRIP);
-    // وكلُّ ذلكَ برحلةِ قاعدةٍ واحدةٍ في الإصلاحاتِ التاليةِ (لا إعادةِ قراءةٍ) —
-    // والفتحُ الأولُ وحدهُ تحقّقَ برحلةٍ طازجةٍ (مرةً في عمرِ الجلسةِ).
+    // وكلُّ ذلكَ باستعلامِ خدمةٍ ورحلةٍ واحدٍ في كلِّ إصلاحةٍ (لا إعادةِ قراءةٍ
+    // في المسارِ الحارّ) — والفتحُ الأولُ وتغيّرُ الرحلةِ وحدَهما تحقّقا
+    // بقراءةٍ طازجةٍ.
     expect(h.counters.dutyAndTrip).toBe(2);
-    expect(h.counters.activeTripOf).toBe(1);
+    expect(h.counters.activeTripOf).toBe(2);
   });
 
   it("السباقُ الحتميّ: رحلةٌ تنتهي داخلَ انتظارِ الجلسةِ (بعدَ اللقطةِ وقبلَ الإرفاقِ) فلا تُرفَقُ — المسارانِ معًا", async () => {
@@ -234,12 +236,60 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
     const unified = await runRace(true);
     const legacy = await runRace(false);
 
-    // لا جلسةَ على رحلةٍ منتهيةٍ في المسارينِ.
+    // ولا جلسةَ على رحلةٍ منتهيةٍ في المسارينِ.
     expect(unified.session?.facts.tripId).toBeNull();
     expect(legacy.session?.facts.tripId).toBeNull();
     // ولا حدثَ نشرَ يحملُ الرحلةَ التي انتهت داخلَ النافذةِ.
     expect(unified.eventsWithEndedTrip).toEqual([]);
     expect(legacy.eventsWithEndedTrip).toEqual([]);
+  });
+
+  it("السباقُ الحتميّ: رحلةُ الإسنادِ الجديدِ تنتهي في النافذةِ والجلسةُ على رحلةٍ سابقةٍ — تُفصَلُ كما في الأصلِ لا تبقى على غيرِها", async () => {
+    // الحالةُ الثانيةُ للنافذةِ: الجلسةُ مرفقةٌ أصلًا برحلةٍ أولى، والإسنادُ
+    // الجديدُ تراهُ لقطةُ الإصلاحةِ ثمّ ينتهي داخلَ نافذةِ انتظارِ الجلسةِ. الحكمُ
+    // هنا لا يُتّخذُ منَ اللقطةِ: قراءةٌ طازجةٌ (كما في الأصلِ حرفيًا) ترى
+    // انتهاءَهُ فتفصلُ الجلسةَ عن الرحلةِ السابقةِ — لا أن تبقى مرفقةً برحلةٍ
+    // زالتْ نشطتُها أو صارتْ لسائقٍ آخرَ.
+    const runRace = async (useUnified: boolean) => {
+      const now = { value: 10_000_000 };
+      const state: { onDuty: boolean; activeTripId: string | null } = {
+        onDuty: true,
+        activeTripId: null,
+      };
+      const activeTrips = new Set<string>();
+      const h = buildHarness(now, state, useUnified, {
+        tripActivity: (tripId) => activeTrips.has(tripId),
+        onBeforeOpenSessionOf: () => {
+          // الإسنادُ الجديدُ ينتهي هنا — داخلَ نافذةِ الجلسةِ، بعدَ اللقطةِ.
+          // (لا يُنفَّذُ إلا في إصلاحةِ الإسنادِ الجديدِ — لا في فتحِ الأولى.)
+          if (state.activeTripId !== OTHER_TRIP) return;
+          activeTrips.delete(OTHER_TRIP);
+          state.activeTripId = null;
+        },
+      });
+
+      // الإصلاحةُ الأولى: جلسةٌ على الرحلةِ الأولى.
+      activeTrips.add(TRIP);
+      state.activeTripId = TRIP;
+      await h.live.onFix(fixAt(now.value));
+      expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(TRIP);
+
+      // إسنادٌ جديدٌ يقعُ، ثمّ إصلاحةٌ تراهُ في لقطتِها — وينتهي في النافذةِ.
+      activeTrips.add(OTHER_TRIP);
+      state.activeTripId = OTHER_TRIP;
+      now.value += 20_000;
+      await h.live.onFix(fixAt(now.value));
+
+      return (await h.store.openSessionOf(DRIVER))?.facts.tripId ?? null;
+    };
+
+    const unified = await runRace(true);
+    const legacy = await runRace(false);
+
+    // المسارُ الموحّدُ فصلَ الجلسةَ كما في الأصلِ — لا بقيتْ على الرحلةِ الأولىِ
+    // التي قد تكونُ صارتْ لسائقٍ آخرَ.
+    expect(unified).toBeNull();
+    expect(legacy).toBeNull();
   });
 
   it("خارجَ الخدمةِ: لا جلسةَ ولا بثًّ — والموقعُ محفوظٌ — كما في المسارِ القديمِ", async () => {

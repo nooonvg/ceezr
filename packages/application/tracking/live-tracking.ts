@@ -267,15 +267,24 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
      * وربطُها مرّةً واحدة كان سيُبقي الجلسة على رحلةٍ انتهت — فيستمرّ عميلُها
      * في رؤية السائق وهو في رحلة غيره. وهذا تسريبٌ لا تفصيل.
      *
-     * والمراجعةُ هنا بلقطةِ الإصلاحةِ نفسِها عند توافرِها: فالإسنادُ الذي يقعُ
-     * بعدَها تراهُ الإصلاحةُ التاليةُ — وهو الترتيبُ الذي يضمنُهُ مسارُ الإرفاقِ
-     * أصلًا. ومن لا يوفّرُ اللقطةَ يقرأُ هنا كما كان حرفيًا.
+     * والحكمُ هنا بلقطةِ الإصلاحةِ عندَ توافرِها **في المسارِ الحارّ**: فالإصلاحةُ
+     * التي لم تتغيّرْ رحلتُها لا تقرأُ شيئًا — وهذا بعينُهُ الربحُ المقيسُ. أما
+     * عندَ تغيّرِ الرحلةِ (حدثٌ نادرٌ: مرةً في عمرِ كلِّ رحلة، لا في كلِّ إصلاحةٍ)
+     * فالقرارُ لا يُتّخذُ منَ اللقطةِ بل منَ قراءةٍ طازجةٍ كما كانَ المسارُ
+     * الأصليُّ حرفيًا: فالرحلةُ قد تنتهي أو يُعادَ إسنادُها في النافذةِ بينَ
+     * اللقطةِ وهذه القراءةِ، والإسنادُ الجديدُ تراهُ الإصلاحةُ التاليةُ كذلك.
+     * فالمسارُ الموحّدُ لا يفتحُ بابًا للربطِ على رحلةٍ زالتْ نشطتُها بينَ
+     * اللقطتينِ لم يكنَ المسارُ الأصليُّ يفتحُهُ.
      */
     const trip =
       preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
     if (trip !== existing.facts.tripId) {
-      const attached = await deps.sessions.attachTrip(driverId, trip);
-      if (attached !== null) return { record: attached, opened: false };
+      const fresh = preReadTripId !== undefined ? await deps.trips.activeTripOf(driverId) : trip;
+      if (fresh !== existing.facts.tripId) {
+        const attached = await deps.sessions.attachTrip(driverId, fresh);
+        if (attached !== null) return { record: attached, opened: false };
+      }
+      return { record: existing, opened: false };
     }
     return { record: existing, opened: false };
   };
