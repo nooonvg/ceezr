@@ -1,0 +1,21 @@
+{
+ "samples": 219,
+ "steal_mean": 0.21,
+ "steal_max_1s": 1.49,
+ "siblings_mean": 0.03,
+ "foreign_mean": 0.33,
+ "iowait_mean": 0.1,
+ "throttled": 0,
+ "foreign_top": [
+  "/usr/local/bin/python3 /usr/local/bin/asi-cli-telemetry flush"
+ ],
+ "steal_10s_rolling_max": 0.5,
+ "post_speed_probe_median_ms": 415.9,
+ "post_pg_probe_median_ms": 343.9,
+ "host_busy_mean_pct": 81.2,
+ "procs_running_mean": 4.72,
+ "validity_version": "B12-V2",
+ "mode": "inflight",
+ "violations": [],
+ "verdict": "VALID"
+}

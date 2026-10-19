@@ -13,13 +13,13 @@
 | البرمجيات | bun 1.4.3، PostgreSQL 18.6، Redis 8.0.5 |
 | `run.env` | sha256 `9cc2765d…99acd` (مطابق لـ`main`، بلا تعديل) |
 | حدود الصلاحية | `validity.json` = **B12-V2**، sha256 `69cf5d19…dc29b`، مطابق بالبايت لـ`raw/batch12/tools/validity.json` |
-| إعدادات PG | [`raw/batch17/seat/pg-settings.txt`](raw/batch17/seat/pg-settings.txt): `max_connections=200`، `shared_buffers=65536` (512MB)، `shared_preload_libraries=pg_stat_statements` |
+| إعدادات PG | [`raw/batch17/seat/pg-settings.md`](raw/batch17/seat/pg-settings.md): `max_connections=200`، `shared_buffers=65536` (512MB)، `shared_preload_libraries=pg_stat_statements` |
 
 ## التجهيز والعزل
 
 1. أُرشف مقعد الدفعة 15، وأُوقف PostgreSQL وRedis النظاميان (المثبَّتان من الحزم، خارج المقعد) لأنهما حمل أجنبي.
 2. شغّلتُ `deploy/capacity-run/setup-env-20261016.sh all` من الرأس، فخرج `INFRA_OK` و`DB_OK` و`MIGRATE_OK` (288 هجرة على القاعدتين). راجعتُ نطاقه قبل التشغيل: يكتب تحت `/srv/ceezr-cap-20261016` فقط، وnetns بواجهة lo فقط، والأسرار وهمية محلية بصلاحية 600، وحذف القواعد محصور في العنقود المعزول.
-3. ثم [`seat-extras-b17.sh`](raw/batch17/tools/seat-extras-b17.sh): يحمّل `pg_stat_statements` مسبقاً كما في مقعد الدفعة 12، ويضيف `INTERNAL_SIGNAL_SECRET` الذي يشترطه `wave.sh`، وينشئ القالب `ceezr_cap_tpl` (القاعدة المُهاجَرة + `seat-seed.sql`، 5 مدن نشطة)، وينسخ أدوات المقعد. الأدوات [مطابقة بالبايت](raw/batch17/seat/tools-provenance.txt) لنسخ الأدلة بعد إعادة كتابة المسارات وحدها.
+3. ثم [`seat-extras-b17.sh`](raw/batch17/tools/seat-extras-b17.sh): يحمّل `pg_stat_statements` مسبقاً كما في مقعد الدفعة 12، ويضيف `INTERNAL_SIGNAL_SECRET` الذي يشترطه `wave.sh`، وينشئ القالب `ceezr_cap_tpl` (القاعدة المُهاجَرة + `seat-seed.sql`، 5 مدن نشطة)، وينسخ أدوات المقعد. الأدوات [مطابقة بالبايت](raw/batch17/seat/tools-provenance.md) لنسخ الأدلة بعد إعادة كتابة المسارات وحدها.
 4. `svc.sh assert`: `ISOLATION_OK` (PG وRedis هذا المقعد، netns بلا مسار). من داخل netns: `api.telegram.org` لا يُحلّ، و`1.1.1.1:443` غير قابل للوصول. Telegram محاكى عبر حارس خروج (`telegram-egress-guard.ts`) يرفض الإقلاع إن لم يكن `MOCK_TELEGRAM_URL` loopback، والرموز وهمية.
 
 ## مرجع الخمول (البوابة والمولّد متوقفان)
