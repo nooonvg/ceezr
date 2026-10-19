@@ -1,17 +1,10 @@
 {
   "id": "ci01-b19-verdict",
   "goal": "CI-01: حكمٌ مقيسٌ على سجلِّ تشغيلاتِ CI الفعليّة عبرَ PR (الحزمةُ الكاملةُ على PostgreSQL حقيقيّ) بشرطِ القبولِ كما هو.",
-  "canonical_source": [
-    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"
-  ],
+  "canonical_source": ["docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"],
   "implementation": [],
-  "state": [
-    "docs/SYSTEM_STATE.md",
-    "docs/roadmap/execution/STATUS.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md", "docs/roadmap/execution/STATUS.md"],
+  "roadmap": ["ROADMAP.md"],
   "affected_docs": [
     "docs/SYSTEM_STATE.md",
     "docs/roadmap/execution/STATUS.md",
