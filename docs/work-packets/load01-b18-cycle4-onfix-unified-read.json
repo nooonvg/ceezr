@@ -12,12 +12,8 @@
     "tests/unit/live-tracking-unified-read.test.ts",
     "tests/integration/tracking-duty-and-trip-reader.test.ts"
   ],
-  "state": [
-    "docs/SYSTEM_STATE.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
   "affected_docs": [
     "docs/SYSTEM_STATE.md",
     "docs/evidence/archive/batch18/SHA256SUMS",
