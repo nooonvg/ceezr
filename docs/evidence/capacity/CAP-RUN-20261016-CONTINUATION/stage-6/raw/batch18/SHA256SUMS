@@ -35,6 +35,16 @@ d0e7b79c3d9420d1b6a03bc20efcf63df363156e1fc98cd0d61a3d399ef0b282  ./d11-atomic-a
 7cc9af125676bb3a311d20609ea0365415ec32729860532bee9b612021f920b4  ./d11-atomic-attach-500/timeline.jsonl
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./d11-atomic-attach-500/wave-report.err
 58c2ae37994789ef49cbd53eb49de6929151787f8e0e4819f47467d6d0606ea5  ./d11-atomic-attach-500/wave-report.json
+d0f5c68613a68f792a4ca1c50e34f318929c136f5798ccb5a89a8e3786300916  ./d12-atomic-attach2-500/db-audit-post.json
+8ec210d802a0e4c1ba1e736ad757416d12d498587d19dd70004b2aa5de657fae  ./d12-atomic-attach2-500/db-audit-pre.json
+786b847f6c6e8d9fbc2defd8954312fbd9b9532fdf9993c88fa15bbbf2b86549  ./d12-atomic-attach2-500/load-events.jsonl.gz
+0d069e3eea82e4b18130d2b838dc0f8784dc025e0bcd89a95fbc45b1d8cd4ebc  ./d12-atomic-attach2-500/miniapp-load-events.jsonl.gz
+f0d3da673119671b176b407ee41f49dd9a698065160bc66dae0fafcc1961ab05  ./d12-atomic-attach2-500/mock-stats-post.json
+0eaa408b832e08557f42aab40bc188b39b0185076794684d19dbb6aeee4632e5  ./d12-atomic-attach2-500/mock-stats-pre.json
+75539a3d5382b1788d0f31b735961f11740ad18d29870f0f0e28a98904be8c52  ./d12-atomic-attach2-500/telegram-mock.jsonl.gz
+ba4b7f9cc02bf47d8b400da8504f4b82a384230126109cd434d7dd5eb4bfedab  ./d12-atomic-attach2-500/timeline.jsonl
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./d12-atomic-attach2-500/wave-report.err
+7737ac73bf4dd16f883d176e4873e91993247bf2982846c0bd2c067035629853  ./d12-atomic-attach2-500/wave-report.json
 f1223c26666918b05eb7615878fd2ff746a146862f27f6f88dbd0383ee9ebf9b  ./d4-cand-500/db-audit-post.json
 5db68eb4072fbcce42c770c2bc5850d91a0e385543dbffe3a3bc857c429198ea  ./d4-cand-500/db-audit-pre.json
 3a8d94af921e8aca6a496661bdfd6cab045cacf716bcde55eaa7b32a5c106dc6  ./d4-cand-500/diag-env.txt.gz
@@ -133,6 +143,7 @@ d6791c42db4c202e8e8d565ac52373941cd68b8ccd4e5d03aedc94bd586ab94e  ./tools/pg-act
 787ab35201456dd718752f5a42104ede2ece98dece55a713178fbb6ceac1120c  ./traces/trace-d1.load.jsonl
 6a93e05f84f765bae6a20876e8ff77715c35b0b5569438fecdd7ec22a7a148c1  ./traces/trace-d10final.load.jsonl
 e1ec9a0c902ea3f0c014cd7f83bee93a2fb348fbdb2749b479337ca8750e2ff4  ./traces/trace-d11-atomic.load.jsonl
+a809da64d8797cb113000f97b60bf6ad3138da289937993686a2fd5cb029cc84  ./traces/trace-d12-final.load.jsonl
 424b9ab4a9db01540260c62be6df2963fd0c9563393e48cc9ded5477b5062dc1  ./traces/trace-d4cand.load.jsonl
 f8ccb5c8be94281c8561b921a5ba2317e83b42dcd69a8142b01ff616eaa2fb30  ./traces/trace-d5cand2.load.jsonl
 1c9a9a212d6048b0d87e5f08120aa5d739dda4ddbf5a8a4f53483ce28d8c914a  ./traces/trace-d6ref.jsonl

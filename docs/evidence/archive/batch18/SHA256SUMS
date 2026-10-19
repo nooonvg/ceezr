@@ -7,9 +7,9 @@ a29f0d84fd24888b41684120a96cac4f15032f4d46c132b5dd3a78431f8e9adf  ./ci-logs/lint
 1d2eab826c2d6fe9dc51a6507073fceee13fcb8af2ae1d09126e051ede4e010e  ./ci-logs/unit-tests-atomic-attach.log.gz
 ed470b4097ec3ec7e233a2e708c94b56550d8d01e958789898dc2a6218a37753  ./ci-logs/unit-tests.log.gz
 c951dde9b8238a9a8d1394912af6ca4632a1f7d2a7cd055c52a91d317b265e2f  ./diff-confirm-head-to-branch-tests.txt
-b4083787ee2918e8b39e751bca532786cb2bc71b6fd755d9ada6dc0afb3c7467  ./diff-ref-to-cand.txt
+8df70ab46e0d6969cb3e49270294f4e34698b2792fb99ae90fb21f11cca24940  ./diff-ref-to-cand.txt
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./diff-waves-head-to-branch-runtime.txt
-a15b93695d4c430ce175272bbcba860a8b2db6b0e63344ed85d2a37834d55cf6  ./diff-waves-head-to-final-runtime.txt
+fb5d42ecb0a2d9460ecb84a14631d7b7371fad05aca7d530ddab3da810cac02a  ./diff-waves-head-to-final-runtime.txt
 7ecdf3a2d79287d02e703251c0257580a87e68d75e63c2b3dd56c7dcf9b959ed  ./integration-tests-clean.log.gz
 5caa069591369c239d9b991b640b76136ec437114f1acd67b18b61df8e6fb00d  ./integration-tests.log.gz
 10695208c3f2604254baf0dbabcbcd69ea316e713648f03a388fe661caa77a0e  ./ref-fails.txt
@@ -23,6 +23,8 @@ c540bfc93332607c29b11ae4d1378d391774ffadbc662c6c6ecbc662e02b61a7  ./run-logs/c3.
 794beede29e7f0a0878be7a59a32db74187aca25aac6df5aa7c92294b1504405  ./run-logs/c6.log.gz
 5dd7629caad3f805961f1bf4745ccefc7aaa0f00061c9548d8d3b4874d8d327b  ./run-logs/d11-fresh.log.gz
 026b58807eb14028f34563ee09e35aab1b091bea894886e6b37773bf32fab226  ./run-logs/d11.log.gz
+3bec4bdbf316ce0dcefc431d53a799aff70930002dcafb4c81a1b476d3095e26  ./run-logs/d12-fresh.log.gz
+3d2e4ac304b71e9b53c8ffa95ddc06da5c8e463b5fdfd9d4405533f6dc47b2c8  ./run-logs/d12.log.gz
 3e1f78689d3ce044b32df2e53ef4449c1df880357fe99f6a6ebb854f58381a52  ./run-logs/d2-fresh.log.gz
 2d90bee51b64ed5d415156f3c1c29c443cc1047ab7f34d583cb7f364a9632077  ./run-logs/d3-fresh.log.gz
 29ade5f55e34b6d494ab403332f53aab26f436135b318788eb7f08f1059f99cf  ./run-logs/r2.log.gz
