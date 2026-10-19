@@ -4,7 +4,11 @@ bd44da6c0d3494d07ebc3fc05194a6e561d257bfdf2d67b8bc9eb4a9a1f3b583  ./ci-logs/buil
 b46aec46b3228efd24e9d2d2b3b37836419cdd2ceb7a056d6b0fafe40f5dfaa9  ./ci-logs/lint.log
 68d452ac925effef813bc520437f1d621567cc41d52fbadcd254b3d2f1138e74  ./ci-logs/typecheck.log
 e10a5488df91317792ae50de69b89033a4398d471eccb5c7c0d2ed0653250873  ./ci-logs/unit-tests.log
+c951dde9b8238a9a8d1394912af6ca4632a1f7d2a7cd055c52a91d317b265e2f  ./diff-confirm-head-to-branch-tests.txt
 b4083787ee2918e8b39e751bca532786cb2bc71b6fd755d9ada6dc0afb3c7467  ./diff-ref-to-cand.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./diff-waves-head-to-branch-runtime.txt
+a15b93695d4c430ce175272bbcba860a8b2db6b0e63344ed85d2a37834d55cf6  ./diff-waves-head-to-final-runtime.txt
+9c85acc35c54a1b6f067b132aef52384f0d6c42d81433bb31aa42e132ba470f3  ./integration-tests-clean.log
 2b643fc10a8901e35d42e1c6ff5e98bb2ea8cbe8545fb1ee8eeceb5e9185ba37  ./integration-tests.log
 10695208c3f2604254baf0dbabcbcd69ea316e713648f03a388fe661caa77a0e  ./ref-fails.txt
 ea9dac744f40147afbfb4e9f96e8aa7897d9fc014fdfcd1298fa7d63a3375c1a  ./run-logs/c1.log

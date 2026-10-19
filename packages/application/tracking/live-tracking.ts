@@ -249,8 +249,15 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
     }
 
     if (existing === null) {
-      const trip =
-        preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
+      /**
+       * فتحُ الجلسةِ لا يقبلُ لقطةً قديمةً غيرَ فارغةٍ: الرحلةُ في اللقطةِ قد
+       * تنتهي في النافذةِ بينَ اللقطةِ والفتحِ، وبدءُ جلسةٍ على رحلةٍ منتهيةٍ هو
+       * بعينِهِ التسريبُ الذي يمنعُهُ مسارُ الإغلاقِ (`closeByTrip`). فاللقطةُ
+       * تُستعملُ للفتحِ خاليةً (لا رحلةَ لا يمكن أن تكونَ منتهيةً) وعندَ غيرِ
+       * ذلكَ تُقرأُ الرحلةُ قراءةً طازجةً كما كانَ المسارُ الأصليُّ حرفيًا.
+       * وهذا ليسَ مسارًا حارًّا: يقعُ مرةً في عمرِ الجلسةِ لا في كلِّ إصلاحة.
+       */
+      const trip = preReadTripId === null ? null : await deps.trips.activeTripOf(driverId);
       return { record: await deps.sessions.open(driverId, trip, startAtMs), opened: true };
     }
 

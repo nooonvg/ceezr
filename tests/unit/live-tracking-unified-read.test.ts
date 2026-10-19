@@ -132,7 +132,7 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
     expect(unified.events.map((e) => e.type)).toEqual(["session_started", "location_updated"]);
   });
 
-  it("جلسةٌ تُفتحُ على رحلةٍ نشطةٍ من اللقطةِ الموحّدةِ نفسِها", async () => {
+  it("جلسةٌ تُفتحُ برحلةٍ محقّقةٍ بقراءةٍ طازجةٍ — لا على لقطةٍ قد تنتهي", async () => {
     const now = { value: 10_000_000 };
     const state = { onDuty: true, activeTripId: TRIP };
     const unified = buildHarness(now, state, true);
@@ -141,7 +141,9 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
 
     const open = await unified.store.openSessionOf(DRIVER);
     expect(open?.facts.tripId).toBe(TRIP);
-    expect(unified.counters.activeTripOf).toBe(0);
+    // الفتحُ لا يقبلُ لقطةً غيرَ فارغةٍ: رحلةٌ طازجةٌ تحقّقَ منها (مرةً في عمرِ الجلسة).
+    expect(unified.counters.dutyAndTrip).toBe(1);
+    expect(unified.counters.activeTripOf).toBe(1);
     const started = unified.events.find((e) => e.type === "session_started");
     expect(started?.tripId).toBe(TRIP);
   });
@@ -161,9 +163,10 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
 
     // الإصلاحةُ الثانيةُ رأت الرحلةَ الجديدةَ في لقطتِها وأرفقتها.
     expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(OTHER_TRIP);
-    // وكلُّ ذلكَ برحلةِ قاعدةٍ واحدةٍ في كلّ إصلاحة (لا إعادةِ قراءةٍ).
+    // وكلُّ ذلكَ برحلةِ قاعدةٍ واحدةٍ في الإصلاحاتِ التاليةِ (لا إعادةِ قراءةٍ) —
+    // والفتحُ الأولُ وحدهُ تحقّقَ برحلةٍ طازجةٍ (مرةً في عمرِ الجلسةِ).
     expect(h.counters.dutyAndTrip).toBe(2);
-    expect(h.counters.activeTripOf).toBe(0);
+    expect(h.counters.activeTripOf).toBe(1);
   });
 
   it("خارجَ الخدمةِ: لا جلسةَ ولا بثًّ — والموقعُ محفوظٌ — كما في المسارِ القديمِ", async () => {
@@ -186,14 +189,15 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
     const h = buildHarness(now, state, true);
 
     await h.live.onFix(fixAt(now.value));
-    expect(h.counters.activeTripOf).toBe(0);
+    // الفتحُ الأولُ على لقطةٍ غيرِ فارغةٍ تحقّقَ برحلةٍ طازجةٍ (مرةً في عمرِ الجلسةِ).
+    expect(h.counters.activeTripOf).toBe(1);
 
     // أكثرَ من سقفِ الجلسةِ (١٢ ساعةً): فرعُ الإغلاقِ والخَلَفِ النادرُ.
     now.value += 13 * 60 * 60 * 1000;
     await h.live.onFix(fixAt(now.value));
 
     // الخَلَفُ قرأَ الرحلةَ قراءةً طازجةً كما كان — اللقطةُ الموحّدةُ لا تمسُّ هذا الفرع.
-    expect(h.counters.activeTripOf).toBe(1);
+    expect(h.counters.activeTripOf).toBe(2);
     const replacement = await h.store.openSessionOf(DRIVER);
     expect(replacement?.facts.tripId).toBe(TRIP);
     const started = h.events.filter((e) => e.type === "session_started");
