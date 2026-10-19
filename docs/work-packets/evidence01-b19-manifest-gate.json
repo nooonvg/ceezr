@@ -7,7 +7,8 @@
     "scripts/lib/evidence-manifest-exceptions.ts",
     "scripts/check-evidence-manifests.ts",
     "tests/unit/check-evidence-manifests.test.ts",
-    ".github/workflows/ci.yml"
+    ".github/workflows/ci.yml",
+    "package.json"
   ],
   "state": ["docs/SYSTEM_STATE.md", "docs/roadmap/execution/STATUS.md"],
   "roadmap": ["ROADMAP.md"],
