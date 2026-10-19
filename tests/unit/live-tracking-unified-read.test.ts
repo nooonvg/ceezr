@@ -27,6 +27,7 @@ import {
   type DriverDutyAndTripReader,
   type StoredFix,
 } from "../../packages/application/tracking/live-tracking.ts";
+import type { TrackingSessionStore } from "../../packages/tracking/session-store.ts";
 import { createMemoryTrackingSessionStore } from "../../packages/tracking/session-store.ts";
 import type { TrackingEvent } from "../../packages/tracking/types.ts";
 
@@ -70,10 +71,34 @@ function buildHarness(
   nowMsRef: { value: number },
   state: { onDuty: boolean; activeTripId: string | null },
   useUnified: boolean,
+  race?: {
+    /**
+     * عرّفُ نشاطِ الرحلةِ الذي يشترطُهُ الإرفاقُ الذرّيُّ في المخزنِ — يُقلَبُ
+     * في السباقِ الحتميّ أثناءَ انتظارِ الجلسةِ فلا يُرفَقُ ما انتهى.
+     */
+    tripActivity: (tripId: string) => boolean;
+    /**
+     * يُنفَّذُ داخلَ انتظارِ `openSessionOf` — اللحظةُ التي تنتهي فيها الرحلةُ
+     * بينَ اللقطةِ والإرفاقِ، ويُمرّرُ للقارئَينِ معًا فيتصرفانِ بالتسلسلِ نفسِه.
+     */
+    onBeforeOpenSessionOf?: () => void;
+  },
 ): Harness {
   const counters: Counters = { dutyAndTrip: 0, activeTripOf: 0, isOnDuty: 0 };
   const events: TrackingEvent[] = [];
-  const store = createMemoryTrackingSessionStore();
+  const store = createMemoryTrackingSessionStore(race?.tripActivity);
+  const sessions: TrackingSessionStore =
+    race?.onBeforeOpenSessionOf === undefined
+      ? store
+      : {
+          ...store,
+          openSessionOf: async (driverId) => {
+            // الرحلةُ تنتهي هُنا — بعدَ اللقطةِ وقبلَ قرارِ الإرفاقِ، فيمرُّ
+            // closeByTrip فلا يجدُ جلسةً مرفقةً بها.
+            race.onBeforeOpenSessionOf?.();
+            return store.openSessionOf(driverId);
+          },
+        };
   const dutyAndTrip: DriverDutyAndTripReader = {
     dutyAndActiveTrip: async () => {
       counters.dutyAndTrip += 1;
@@ -81,7 +106,7 @@ function buildHarness(
     },
   };
   const live = createLiveTracking({
-    sessions: store,
+    sessions,
     publisher: {
       publish: async (event) => {
         events.push(event);
@@ -167,6 +192,54 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
     // والفتحُ الأولُ وحدهُ تحقّقَ برحلةٍ طازجةٍ (مرةً في عمرِ الجلسةِ).
     expect(h.counters.dutyAndTrip).toBe(2);
     expect(h.counters.activeTripOf).toBe(1);
+  });
+
+  it("السباقُ الحتميّ: رحلةٌ تنتهي داخلَ انتظارِ الجلسةِ (بعدَ اللقطةِ وقبلَ الإرفاقِ) فلا تُرفَقُ — المسارانِ معًا", async () => {
+    // التسلسلُ الذي يُغلقُهُ الإرفاقُ الذرّيُّ: لقطةٌ ترى رحلةً نشطةً، ثمّ تنتهي
+    // الرحلةُ أثناءَ انتظارِ الجلسةِ (يمرُّ closeByTrip فلا يجدُ جلسةً مرفقةً)،
+    // ثمّ يُتّخذَ قرارُ الإرفاقِ منَ اللقطةِ القديمةِ. في المسارِ الموحّدِ يُرفَقُ
+    // منَ اللقطةِ فيرتدّهُ شرطُ النشاطِ؛ وفي المسارِ القديمِ تُعيدُ قراءتُهُ المتأخرةُ
+    // رحلةً منتهيةً فلا إرفاقَ. النتيجةُ واحدةٌ في الاثنَينِ: الجلسةُ لا تبقى على
+    // رحلةٍ منتهيةٍ، ولا حدثَ يحملُ رحلةً انتهت.
+    const runRace = async (useUnified: boolean) => {
+      const now = { value: 10_000_000 };
+      const state: { onDuty: boolean; activeTripId: string | null } = {
+        onDuty: true,
+        activeTripId: null,
+      };
+      const activeTrips = new Set<string>();
+      const h = buildHarness(now, state, useUnified, {
+        tripActivity: (tripId) => activeTrips.has(tripId),
+        onBeforeOpenSessionOf: () => {
+          // الرحلةُ تنتهي هنا — داخلَ انتظارِ الجلسةِ، بعدَ اللقطةِ.
+          activeTrips.delete(TRIP);
+          state.activeTripId = null;
+        },
+      });
+
+      // الإصلاحةُ الأولى: جلسةٌ بلا رحلة، ثمّ إسنادٌ.
+      await h.live.onFix(fixAt(now.value));
+      activeTrips.add(TRIP);
+      state.activeTripId = TRIP;
+      now.value += 20_000;
+      await h.live.onFix(fixAt(now.value));
+
+      const session = await h.store.openSessionOf(DRIVER);
+      const eventsWithEndedTrip = h.events.filter(
+        (event) => "tripId" in event && event.tripId === TRIP,
+      );
+      return { session, eventsWithEndedTrip };
+    };
+
+    const unified = await runRace(true);
+    const legacy = await runRace(false);
+
+    // لا جلسةَ على رحلةٍ منتهيةٍ في المسارينِ.
+    expect(unified.session?.facts.tripId).toBeNull();
+    expect(legacy.session?.facts.tripId).toBeNull();
+    // ولا حدثَ نشرَ يحملُ الرحلةَ التي انتهت داخلَ النافذةِ.
+    expect(unified.eventsWithEndedTrip).toEqual([]);
+    expect(legacy.eventsWithEndedTrip).toEqual([]);
   });
 
   it("خارجَ الخدمةِ: لا جلسةَ ولا بثًّ — والموقعُ محفوظٌ — كما في المسارِ القديمِ", async () => {

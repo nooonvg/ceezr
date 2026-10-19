@@ -136,11 +136,28 @@ export function createTrackingSessionRepository(sql: Sql): TrackingSessionStore 
     },
 
     attachTrip: async (driverId, tripId) => {
+      /**
+       * الإرفاقُ ذرّيٌّ ومتحققٌ من نشاطِ الرحلةِ لحظةَ الكتابةِ نفسِها: الجلسةَ لا
+       * تُربطُ برحلةٍ انتهت — لا لأنّ القارئَ رأها نشطةً فحسب، بل لأنّ الإرفاقَ
+       * لا يقعُ أصلًا إلا إن كانتِ الرحلةُ نشطةً في الجملةِ ذاتِها. وبهذا
+       * يُغلقُ سباقُ النافذةِ (لقطةٌ قديمةٌ + رحلةٌ تنتهي أثناءَ انتظارِ الجلسةِ
+       * فيَمرُّ `closeByTrip` قبلَ الإرفاقِ فلا يجدْها) — وهو سباقٌ كانَ قائمًا
+       * حتى في المسارِ الأصليِّ بينَ قراءتِهِ المتأخرةِ والإرفاقِ. والفصلُ بـ
+       * `null` يبقى بلا شرطٍ: فكُّ الربطِ لا يسرّبُ شيئًا.
+       */
       const rows = await sql<SessionRow[]>`
         update tracking_sessions
            set trip_id = ${tripId === null ? null : sql`${tripId}::uuid`},
                updated_at = now()
          where driver_id = ${driverId}::uuid and ended_at is null
+           and (
+             ${tripId === null}
+             or exists (
+               select 1 from orders o
+                where o.id = ${tripId === null ? null : sql`${tripId}::uuid`}
+                  and o.status in ('matched', 'in_progress')
+             )
+           )
         returning ${sql.unsafe(SELECT_COLUMNS)}
       `;
       const row = rows[0];

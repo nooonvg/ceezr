@@ -25,6 +25,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "bun:test";
 import { buildContainer } from "../../apps/gateway/src/container.ts";
 import { createSql, type Sql } from "../../packages/infrastructure/db/client.ts";
+import { createTrackingSessionRepository } from "../../packages/infrastructure/tracking/session-repository.ts";
 import {
   createActiveTripReader,
   createDriverDutyAndTripReader,
@@ -293,5 +294,39 @@ describeIf("القارئ الموحّد للخدمة والرحلة النشطة
     // ولا جلسةَ ثانيةً تُفتحُ — الإرفاقُ على الجلسةِ القائمةِ لا بديلًا عنها.
     expect(events.filter((e) => e.type === "session_started").length).toBe(1);
     expect(events.filter((e) => e.type === "location_updated").length).toBe(2);
+  });
+
+  it("الإرفاقُ الذرّيُّ على القاعدةِ: لا يربطُ جلسةً برحلةٍ انتهت — والفصلُ بـnull بلا شرط", async () => {
+    /**
+     * عقدُ `attachTrip` على PostgreSQL نفسِهِ: الشرطُ جزءٌ من الجملةِ الواحدةِ
+     * (ذرّيًّا)، فالربطُ برحلةٍ منتهيةٍ لا يقعُ ولو كانتِ اللقطةُ التي حُكمَ منها
+     * قديمةً — وهو ما يغلقُ سباقَ النافذةِ بينَ اللقطةِ والإرفاقِ. والفصلُ بـ
+     * `null` يبقى بلا شرطٍ: فكُّ الربطِ لا يسرّبُ شيئًا.
+     */
+    const driverId = await seedDriver(701, true);
+    const sessions = createTrackingSessionRepository(sql);
+
+    // جلسةٌ مفتوحةٌ بلا رحلة.
+    await sessions.open(driverId, null, Date.now());
+
+    // رحلةٌ منتهيةٌ (طلبٌ مكتملٌ مُسندٌ للسائقِ) ورحلةٌ نشطةٌ.
+    const endedTrip = await seedOrderFor(702, driverId, "completed", true);
+    const activeTrip = await seedOrderFor(703, driverId, "matched", true);
+
+    // الإرفاقُ برحلةٍ منتهيةٍ: مرفوضٌ ذرّيًّا — لا تغييرَ ولا إعادةَ سجلّ.
+    const rejected = await sessions.attachTrip(driverId, endedTrip);
+    expect(rejected).toBeNull();
+    const row = await sql<{ trip_id: string | null }[]>`
+      select trip_id from tracking_sessions where driver_id = ${driverId}::uuid
+    `;
+    expect(row[0]?.trip_id).toBeNull();
+
+    // والإرفاقُ برحلةٍ نشطةٍ: يقعُ.
+    const attached = await sessions.attachTrip(driverId, activeTrip);
+    expect(attached?.facts.tripId).toBe(activeTrip);
+
+    // والفصلُ بـ`null` بلا شرطٍ حتى على رحلةٍ نشطة.
+    const detached = await sessions.attachTrip(driverId, null);
+    expect(detached?.facts.tripId).toBeNull();
   });
 });

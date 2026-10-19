@@ -95,6 +95,14 @@ export interface TrackingSessionStore {
    *
    * **ولا يستهلك رقماً**: لا حدثَ يُنشَر عن الربطِ، ورقمٌ يُستهلَك بلا حدثٍ فجوةٌ
    * مصطنعةٌ تُرسل كلَّ مستهلكٍ إلى لقطةٍ بلا سببٍ (`ADR 0053` §٣-ب).
+   *
+   * **والربطُ برحلةٍ مشروطٌ بنشاطِها لحظةَ الكتابةِ ذرّيًّا**: الجلسةُ لا
+   * تُربطُ برحلةٍ انتهت — فالإسنادُ الذي وقعَ بعدَ لقطةِ القارئِ ثمّ انتهتْ
+   * رحلتُهُ أثناءَ انتظارِ الجلسةِ يمرُّ `closeByTrip` قبلَ الإرفاقِ فلا يجدُ
+   * جلسةً مرفقةً بها؛ فلو أُرفقتِ الجلسةُ بعدهُ منَ اللقطةِ القديمةِ لبقيتْ على
+   * رحلةٍ منتهيةٍ — وهو بعينِهِ التسريبُ الذي يمنعُهُ هذا المسارُ. فالربطُ لا
+   * يقعُ إلا إن كانتِ الرحلةُ نشطةً، والفصلُ بـ`null` بلا شرطٍ (فكُّ الربطِ لا
+   * يسرّبُ شيئًا).
    */
   attachTrip(driverId: string, tripId: string | null): Promise<TrackingSessionRecord | null>;
 
@@ -139,7 +147,9 @@ export interface TrackingSessionStore {
  * PostgreSQL حقيقيٍّ لهذا السببِ بعينِه. وحضورُه هنا لتبقى اختباراتُ السلوكِ
  * الوحدويّةُ سريعةً بلا قاعدةٍ، لا ليكونَ بديلاً عنها.
  */
-export function createMemoryTrackingSessionStore(): TrackingSessionStore {
+export function createMemoryTrackingSessionStore(
+  tripActivity?: (tripId: string) => boolean,
+): TrackingSessionStore {
   interface Entry {
     readonly sessionId: string;
     readonly facts: TrackingSessionFacts;
@@ -186,6 +196,12 @@ export function createMemoryTrackingSessionStore(): TrackingSessionStore {
     attachTrip: async (driverId, tripId) => {
       const existing = open.get(driverId);
       if (existing === undefined) return null;
+      // عقدُ النشاطِ الذرّيِّ نفسُه: لا ربطَ برحلةٍ انتهت. والعرّفُ اختياريٌّ —
+      // الافتراضيُّ (بلا عرّفٍ) يعدُّ كلَّ رحلةٍ نشطةً فلا يتغيّرُ سلوكُ من لا
+      // يمرّرُه، والاختبارُ الحتميُّ للسباقِ يقلبُها أثناءَ انتظارِ الجلسةِ.
+      if (tripId !== null && tripActivity !== undefined && !tripActivity(tripId)) {
+        return null;
+      }
       return snapshot(put({ ...existing, facts: { ...existing.facts, tripId } }));
     },
 
