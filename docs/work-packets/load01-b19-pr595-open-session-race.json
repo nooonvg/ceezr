@@ -13,13 +13,8 @@
     "scripts/lib/skip-registry.ts",
     "tests/unit/skip-audit.test.ts"
   ],
-  "state": [
-    "docs/SYSTEM_STATE.md",
-    "docs/roadmap/execution/STATUS.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md", "docs/roadmap/execution/STATUS.md"],
+  "roadmap": ["ROADMAP.md"],
   "affected_docs": [
     "docs/SYSTEM_STATE.md",
     "docs/roadmap/execution/STATUS.md",
