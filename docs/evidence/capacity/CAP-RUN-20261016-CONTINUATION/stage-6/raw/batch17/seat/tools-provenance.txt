@@ -1,0 +1,17 @@
+b12-analyse.sh diff_after_path_rewrite=0
+db-export.sh diff_after_path_rewrite=0
+fresh-db.sh diff_after_path_rewrite=0
+gates.sh diff_after_path_rewrite=0
+host-sampler.py diff_after_path_rewrite=0
+idle-baseline.sh diff_after_path_rewrite=0
+pg-probe.sh diff_after_path_rewrite=0
+pgss-dump.sh diff_after_path_rewrite=0
+post-diag.sh diff_after_path_rewrite=0
+qual-check.py diff_after_path_rewrite=0
+qual-summary.py diff_after_path_rewrite=0
+qual-wave.sh diff_after_path_rewrite=0
+res-sampler.py diff_after_path_rewrite=0
+run-wave.sh diff_after_path_rewrite=0
+speed-probe.py diff_after_path_rewrite=0
+validity.json diff_after_path_rewrite=0
+wave-full.sh diff_after_path_rewrite=0

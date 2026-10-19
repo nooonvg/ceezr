@@ -1,0 +1,62 @@
+{
+  "version": "B12-V2",
+  "pinned_before_any_new_wave": true,
+  "reference": {
+    "source": "qual/idle-1 (2026-10-19، البوّابةُ مطفأة، PG/Redis/الوسيط/المحاكي قائمةٌ خاملة)",
+    "speed_probe_median_ms": 406.65,
+    "speed_probe_mad_ms": 2.75,
+    "pg_probe_median_ms": 346.27,
+    "pg_probe_mad_ms": 3.11,
+    "idle_steal_mean_pct": 0.25,
+    "idle_steal_p99_pct": 3.38,
+    "idle_system_slice_mean_pct_1core": 0.07,
+    "idle_foreign_mean_pct_1core": 0.74,
+    "idle_iowait_mean_pct": 0.0
+  },
+  "preflight": {
+    "window_s": 60,
+    "speed_probe_median_max_ms": 447,
+    "pg_probe_median_max_ms": 381,
+    "steal_mean_max_pct": 1.0,
+    "steal_1s_max_pct": 10.0,
+    "siblings_mean_max_pct_1core": 2.0,
+    "foreign_mean_max_pct_1core": 3.0,
+    "iowait_mean_max_pct": 1.0,
+    "procs_blocked_max": 1,
+    "throttled_max": 0,
+    "seat_cpu_max_required": "max 100000",
+    "no_leftover_processes": [
+      "apps/gateway/src/index.ts",
+      "miniapp-load",
+      "capacity-run/load/"
+    ]
+  },
+  "inflight": {
+    "steal_mean_max_pct": 2.0,
+    "steal_10s_rolling_max_pct": 10.0,
+    "siblings_mean_max_pct_1core": 5.0,
+    "foreign_mean_max_pct_1core": 5.0,
+    "iowait_mean_max_pct": 2.0,
+    "throttled_max": 0,
+    "post_speed_probe_median_max_ms": 447,
+    "post_pg_probe_median_max_ms": 381
+  },
+  "rules": [
+    "الحدودُ مشتقّةٌ من المرجعِ وحدَه: سرعةُ المسبارَين ≤ المرجع × 1.10 (≈ p90 المسبارِ في الخمول 447ms)، والسرقةُ والأشقّاءُ والأجنبيُّ بهوامشَ فوقَ الخمولِ لا تُغيِّرُ CPU المتاحَ بأكثرَ من 2–5% من نواة.",
+    "إخفاقُ الفحصِ المسبقِ ⇒ لا حقن: يُحفَظُ السببُ والدليلُ وتُعلَّمُ المحاولةُ PREFLIGHT_INVALID، ولا تُحتسَبُ موجةً.",
+    "إخفاقُ شرطٍ أثناءَ الموجةِ أو بعدَها ⇒ الموجةُ «غيرُ صالحةٍ للتفسير» (INVALID_ENV): لا PASS ولا FAIL منها، والحكمُ NOT PROVEN؛ ولا تُعادُ موجةُ قبولٍ لاختيارِ أفضلِ رقم.",
+    "لا يُعدَّلُ هذا الملفُّ بعدَ أوّلِ موجةٍ في الدفعة؛ أيُّ تعديلٍ إصدارٌ جديدٌ يُبطلُ ما قبلَه لدورةِ القبول.",
+    "حدودُ القبولِ الوظيفيّةُ والأدائيّةُ (ACCEPTANCE-PROTOCOL.md) لا تتغيّر: G1 ≥ 99%، P2 ≤ 1000ms، P4 ≤ 30000ms، G4 = CLEAN، وسائرُ البوابات.",
+    "B12-V2 (2026-10-19، قبلَ الاطّلاعِ على أيِّ مقياسٍ منتَجيٍّ لـ b12-acc-250): الموجةُ INVALID_ENV تُبطِلُ دورتَها كلَّها، ومقاييسُها المنتَجيّةُ لا تُستعمَلُ في أيِّ حكم. تُبدأُ دورةٌ جديدةٌ واحدةٌ فقط (250 ثمّ 500) بالحدودِ نفسِها؛ فإن خرجَت موجةٌ منها INVALID_ENV فالحكمُ NOT PROVEN ولا دورةَ ثالثة."
+  ],
+  "supersedes": "B12-V1 (الحدودُ نفسُها حرفيًّا؛ أُضيفَت قاعدةُ الدورةِ بعدَ موجةٍ غيرِ صالحة)",
+  "cycle_log": [
+    {
+      "cycle": 1,
+      "wave": "b12-acc-250",
+      "verdict": "INVALID_ENV",
+      "violation": "iowait_mean 2.61 > 2.0",
+      "cause": "توقّفاتُ القرصِ الافتراضيّ (io_ms=1000 بلا كتابة) عندَ 115/132/167/178ث، ومعدّلُ الكتابةِ كالتشخيص"
+    }
+  ]
+}
