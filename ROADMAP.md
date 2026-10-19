@@ -1,5 +1,7 @@
 # WASLA MOVE — Roadmap
 
+> **الدفعةُ 17 (2026-10-19، قبولٌ على مقعدٍ مؤهَّلٍ B12-V2، الرأس `275c736a`):** موجةُ 250 **PASS** (P2=379ms، G1=100%) وموجةُ 500 **PASS بكلِّ البوابات** (P2=895ms، P4=10.9ث، G1=100% 3,731/3,731، G4=CLEAN)، والصلاحيةُ VALID قبلَ كلٍّ منهما وأثناءَها وبعدَها. LOAD-01 **يبقى FAIL**: 750 و1000 لم يُقاسا؛ والإنتاجيةُ مشبعةٌ (~3.7 ألف سيناريو/180ث في المستويين). [`BATCH-17`](docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-17-LOAD01-ACCEPTANCE-250-500.md).
+>
 > **D7 (2026-10-19، [`BATCH-16`](docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-16-D7-RECOVERY-RECHECK.md)):** أداةُ تعافي PG صارت تقتلُ صفرَ خلفياتٍ وتعلنُ النجاحَ منذ تسميةِ التجمّعاتِ `ceezr:*` — أُصلحَت لتفشلَ مغلقة، وأُعيدَ الإثباتُ على `main` @ `e3e4b39c`: `RECOVERY_PROVEN` (15 خلفيةً مقتولةً، نفسُ PID، دورتا أعمالٍ كاملتان).
 >
 > **الدفعةُ 15 (2026-10-19، تشخيصيّة، [ADR 0290](docs/adr/0290-accept-deposits-matched-notice-in-one-round-trip.md)، [`BATCH-15`](docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-15-LOAD01-P2-ACCEPT-ROUNDTRIP.md)) — لا تغيّرُ الحكم:** القبولُ وإيداعُ MATCHED في عبارةٍ واحدة (كانا حجزَين متتاليَين لمقعدِ `gatewayRequest`)؛ 4 موجاتٍ A/B متناوبةٍ عند 500 على مقعدٍ أُعيدَ تركيبُه: P2 875/915ms → 513/554ms، ونسبةُ زمنِ القبولِ إلى انتظارِ المقعد 2.09 → 1.06 والانتظارُ ثابت. المقعدُ ليسَ مقعدَ الدفعة 12 فالأرقامُ المطلقةُ لا تُقارَن؛ **LOAD-01 يبقى FAIL** حتى قبولٍ مؤهَّل.

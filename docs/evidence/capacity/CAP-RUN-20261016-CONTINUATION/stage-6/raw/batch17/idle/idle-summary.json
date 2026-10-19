@@ -1,0 +1,198 @@
+{
+ "meta": {
+  "k": "meta",
+  "round": "idle-baseline",
+  "t": 1792387062608,
+  "hz": 100,
+  "ncpu": 2,
+  "seat_cgroup": "space.slice/space-workloads.service/workloads",
+  "seat_cpu_max": "max 100000",
+  "psi_cpu_available": false
+ },
+ "samples": 180,
+ "steal_pct": {
+  "n": 180,
+  "mean": 0.04,
+  "median": 0.0,
+  "p90": 0.0,
+  "p99": 0.5,
+  "max": 1.0,
+  "min": 0.0,
+  "mad": 0.0
+ },
+ "steal_pct_per_core_max": 1.0,
+ "iowait_pct": {
+  "n": 180,
+  "mean": 0.0,
+  "median": 0.0,
+  "p90": 0.0,
+  "p99": 0.0,
+  "max": 0.5,
+  "min": 0.0,
+  "mad": 0.0
+ },
+ "busy_pct": {
+  "n": 180,
+  "mean": 0.24,
+  "median": 0.0,
+  "p90": 0.5,
+  "p99": 1.0,
+  "max": 1.0,
+  "min": 0.0,
+  "mad": 0.0
+ },
+ "procs_running": {
+  "n": 180,
+  "mean": 1.01,
+  "median": 1.0,
+  "p90": 1,
+  "p99": 1,
+  "max": 2,
+  "min": 1,
+  "mad": 0.0
+ },
+ "procs_blocked": {
+  "n": 180,
+  "mean": 0,
+  "median": 0.0,
+  "p90": 0,
+  "p99": 0,
+  "max": 0,
+  "min": 0,
+  "mad": 0.0
+ },
+ "system_slice_pct_1core": {
+  "n": 180,
+  "mean": 0.0,
+  "median": 0.0,
+  "p90": 0.0,
+  "p99": 0.1,
+  "max": 0.1,
+  "min": 0.0,
+  "mad": 0.0
+ },
+ "space_slice_pct_1core": {
+  "n": 180,
+  "mean": 0.52,
+  "median": 0.4,
+  "p90": 0.8,
+  "p99": 1.4,
+  "max": 1.9,
+  "min": 0.3,
+  "mad": 0.1
+ },
+ "init_scope_pct_1core": {
+  "n": 180,
+  "mean": 0.0,
+  "median": 0.0,
+  "p90": 0.0,
+  "p99": 0.0,
+  "max": 0.0,
+  "min": 0.0,
+  "mad": 0.0
+ },
+ "seat_throttled_total": 0,
+ "seat_throttled_usec_total": 0,
+ "psi_cpu_available": false,
+ "foreign_pct_1core": {
+  "n": 36,
+  "mean": 0.06,
+  "median": 0.0,
+  "p90": 0.2,
+  "p99": 0.4,
+  "max": 0.4,
+  "min": 0.0,
+  "mad": 0.0
+ },
+ "foreign_top_seen": [],
+ "disk_write_kb_s": {
+  "n": 180,
+  "mean": 47.58,
+  "median": 0.0,
+  "p90": 60,
+  "p99": 252,
+  "max": 5224,
+  "min": 0,
+  "mad": 0.0
+ },
+ "disk_read_kb_s": {
+  "n": 180,
+  "mean": 0,
+  "median": 0.0,
+  "p90": 0,
+  "p99": 0,
+  "max": 0,
+  "min": 0,
+  "mad": 0.0
+ },
+ "disk_io_ms_per_s": {
+  "n": 180,
+  "mean": 0.07,
+  "median": 0.0,
+  "p90": 0,
+  "p99": 4,
+  "max": 4,
+  "min": 0,
+  "mad": 0.0
+ },
+ "net_lo_bytes_s": {
+  "n": 180,
+  "mean": 0,
+  "median": 0.0,
+  "p90": 0,
+  "p99": 0,
+  "max": 0,
+  "min": 0,
+  "mad": 0.0
+ },
+ "net_other_bytes_s": {
+  "n": 180,
+  "mean": 57.42,
+  "median": 0.0,
+  "p90": 0,
+  "p99": 0,
+  "max": 10252,
+  "min": 0,
+  "mad": 0.0
+ },
+ "ctxt_per_s": {
+  "n": 180,
+  "mean": 124.33,
+  "median": 107.0,
+  "p90": 143,
+  "p99": 543,
+  "max": 567,
+  "min": 81,
+  "mad": 12.0
+ },
+ "speed_probe_max_wall_ms": {
+  "n": 30,
+  "mean": 414.12,
+  "median": 410.0,
+  "p90": 427.6,
+  "p99": 454.1,
+  "max": 454.1,
+  "min": 401.9,
+  "mad": 5.0
+ },
+ "speed_probe_cpu_over_wall": {
+  "n": 30,
+  "mean": 0.99,
+  "median": 1.0,
+  "p90": 1.0,
+  "p99": 1.0,
+  "max": 1.0,
+  "min": 0.98,
+  "mad": 0.0
+ },
+ "pg_probe_ms": {
+  "n": 10,
+  "mean": 350.39,
+  "median": 349.6,
+  "p90": 355.41,
+  "p99": 355.96,
+  "max": 355.96,
+  "min": 342.99,
+  "mad": 2.84
+ }
+}
