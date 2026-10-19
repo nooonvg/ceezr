@@ -1354,6 +1354,13 @@ jobs:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
         run: bun test tests/integration/driver-offer-board-single-read.test.ts
 
+      # `LOAD-01` (P2) · الدفعةُ 15 (ADR 0290): القبولُ وإيداعُ MATCHED في عبارةٍ واحدة —
+      # ردُّ القبولِ حرفاً، ونقطةُ الحفظِ تعزلُ فشلَ الإيداعِ والقبولُ يُثبَّت، وWR-09 والسباقُ وI1.
+      - name: القبولُ وإيداعُ MATCHED في رحلةٍ واحدةٍ على PostgreSQL حقيقيٍّ (LOAD-01 · P2)
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/waslah
+        run: bun test tests/integration/accept-with-matched-notice.test.ts
+
       # `F8-06`: أطوارُ دورةِ حياةِ الدفعِ (نجاحٌ · فشلٌ · معلّقٌ · مكرّرٌ · استرجاعٌ ·
       # تناقضٌ) **يُشغِّلُها المحرِّكُ** لا الحاجزُ الساكنُ. وخطوةٌ باسمِها كي يُقرأَ
       # حُكمُها مفرَداً لا مُبتلَعاً في حزمةٍ من خمسٍ وخمسينَ.
