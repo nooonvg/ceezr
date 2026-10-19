@@ -139,7 +139,8 @@ export function createTrackingSessionRepository(sql: Sql): TrackingSessionStore 
       /**
        * الإرفاقُ ذرّيٌّ ومتحققٌ من نشاطِ الرحلةِ لحظةَ الكتابةِ نفسِها: الجلسةَ لا
        * تُربطُ برحلةٍ انتهت — لا لأنّ القارئَ رأها نشطةً فحسب، بل لأنّ الإرفاقَ
-       * لا يقعُ أصلًا إلا إن كانتِ الرحلةُ نشطةً في الجملةِ ذاتِها. وبهذا
+       * لا يقعُ أصلًا إلا إن كانتِ الرحلةُ نشطةً ومُسندةً للسائقِ نفسِهِ في الجملةِ
+       * ذاتِها — العقدُ نفسُهُ الذي تقرأُهُ `activeTripOf(driverId)` حرفيًا. وبهذا
        * يُغلقُ سباقُ النافذةِ (لقطةٌ قديمةٌ + رحلةٌ تنتهي أثناءَ انتظارِ الجلسةِ
        * فيَمرُّ `closeByTrip` قبلَ الإرفاقِ فلا يجدْها) — وهو سباقٌ كانَ قائمًا
        * حتى في المسارِ الأصليِّ بينَ قراءتِهِ المتأخرةِ والإرفاقِ. والفصلُ بـ
@@ -155,6 +156,7 @@ export function createTrackingSessionRepository(sql: Sql): TrackingSessionStore 
              or exists (
                select 1 from orders o
                 where o.id = ${tripId === null ? null : sql`${tripId}::uuid`}
+                  and o.assigned_driver_id = ${driverId}::uuid
                   and o.status in ('matched', 'in_progress')
              )
            )

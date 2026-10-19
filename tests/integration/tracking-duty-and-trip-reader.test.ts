@@ -325,6 +325,17 @@ describeIf("القارئ الموحّد للخدمة والرحلة النشطة
     const attached = await sessions.attachTrip(driverId, activeTrip);
     expect(attached?.facts.tripId).toBe(activeTrip);
 
+    // ورحلةٌ نشطةٌ لكنها مُسندةٌ لسائقٍ آخر: لا تُرفَقُ — عقدُ activeTripOf
+    // نفسُه (القراءةُ القديمةُ المتأخرةُ كانت تُعطيها لسائقِها الجديدِ لا لسائقِنا).
+    const otherDriver = await seedDriver(704, true);
+    const reassignedTrip = await seedOrderFor(705, otherDriver, "matched", true);
+    const rejectedReassigned = await sessions.attachTrip(driverId, reassignedTrip);
+    expect(rejectedReassigned).toBeNull();
+    const row2 = await sql<{ trip_id: string | null }[]>`
+      select trip_id from tracking_sessions where driver_id = ${driverId}::uuid
+    `;
+    expect(row2[0]?.trip_id).toBe(activeTrip);
+
     // والفصلُ بـ`null` بلا شرطٍ حتى على رحلةٍ نشطة.
     const detached = await sessions.attachTrip(driverId, null);
     expect(detached?.facts.tripId).toBeNull();
