@@ -1,0 +1,26 @@
+{
+  "id": "evidence01-b19-manifest-gate",
+  "goal": "EVIDENCE-01: التحقّقُ الآليُّ من كلِّ SHA256SUMS تحتَ docs/evidence في CI، وإصلاحُ البياناتِ غيرِ المطابقةِ المثبتة (الدفعة 9) وتسميةُ الاستثناءاتِ بأسبابِها — دونَ تغييرِ حكمِ EVIDENCE-01.",
+  "canonical_source": ["docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"],
+  "implementation": [
+    "scripts/lib/evidence-manifests.ts",
+    "scripts/lib/evidence-manifest-exceptions.ts",
+    "scripts/check-evidence-manifests.ts",
+    "tests/unit/check-evidence-manifests.test.ts",
+    ".github/workflows/ci.yml",
+    "package.json"
+  ],
+  "state": ["docs/SYSTEM_STATE.md", "docs/roadmap/execution/STATUS.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/SYSTEM_STATE.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-10/BATCH-19-EVIDENCE01-MANIFEST-GATE.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch9/b9-isoReq6-500/diag-env.env",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch9/b9-isoReq6-500/ANNOTATIONS.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch9/b9-isoReq6W3-500/diag-env.env",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch9/b9-isoReq6W3-500/ANNOTATIONS.md",
+    "docs/work-packets/evidence01-b19-manifest-gate.json"
+  ]
+}
