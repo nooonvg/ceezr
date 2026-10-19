@@ -13,6 +13,12 @@ TEST_DB=ceezr_cap_test_20261016
 export PATH="$PG_BIN:$HOME/.local/bin:$PATH"
 
 step_infra() {
+  # مقعدٌ بلا /srv قابلٍ للكتابةِ يفشلُ هنا بصمتٍ: الأصلُ إنشاءُ القاعدةِ بجذرٍ ثمّ
+  # تسليمُ ملكيّتِها للمستخدمِ، لا افتراضُ مقعدٍ مُهيّأٍ مسبقّاً.
+  if ! mkdir -p "$B" 2>/dev/null; then
+    sudo -n mkdir -p "$B" || { echo "BASE_DIR_FAIL: $B" >&2; exit 1; }
+    sudo -n chown "$(id -un):$(id -gn)" "$B" || { echo "BASE_CHOWN_FAIL: $B" >&2; exit 1; }
+  fi
   mkdir -p "$B/bin" "$B/pids" "$B/pg" "$B/pg-sock" "$B/redis" "$B/runs"
   # nsx: تنفيذ داخل الـnetns
   cat > "$B/bin/nsx" <<EOF
@@ -38,15 +44,25 @@ shared_buffers = 512MB
 ceezr.run_marker = '$RUN_ID'
 EOF
   fi
+  # pg_ctl لا يعمل بامتيازات الجذر: يُشغَّل عبر nsx بالمستخدمِ المالكِ نفسِه (مرصودٌ:
+  # «pg_ctl: cannot be run as root» عند تشغيلِه بجذرٍ داخلَ netns فيفشل الإقلاعُ بصمتٍ).
   if ! sudo -n ip netns exec $NS sh -c "pg_isready -h 127.0.0.1 -p $PG_PORT -q" 2>/dev/null; then
-    sudo -n ip netns exec $NS sh -c "cd $B && setsid $PG_BIN/pg_ctl -D $B/pg -l $B/pg.log start" >/dev/null
+    "$B/bin/nsx" bash -c "cd $B && setsid $PG_BIN/pg_ctl -D $B/pg -l $B/pg.log start" >/dev/null
     for _ in $(seq 1 60); do sudo -n ip netns exec $NS sh -c "pg_isready -h 127.0.0.1 -p $PG_PORT -q" 2>/dev/null && break; sleep 0.5; done
   fi
-  # Redis داخل الـnetns
+  # شرطُ قبولٍ بعديٌّ لا زينة: فشلُ الإقلاعِ يجبُ أن يُسقطَ السكربتَ لا أن يمرَّ صامتاً.
+  sudo -n ip netns exec $NS sh -c "pg_isready -h 127.0.0.1 -p $PG_PORT -q" 2>/dev/null \
+    || { echo "PG_READY_FAIL: لم يستقم postgres داخل $NS" >&2; exit 1; }
+  # Redis داخل الـnetns. `setsid` لا ينقلُ العمليةَ إلى الخلفيةِ بنفسِه: تشغيلُه داخلَ
+  # `sh -c` متزامنٍ مع `--daemonize no` يعلّقُ السكربتَ إلى الأبد (مرصودٌ عمليّاً). فالخلفيةُ
+  # هنا `&` داخلَ `bash -c` و`setsid` يفصلُ الجلسةَ لتنجوَ من إنهاءِ السكربتِ نفسِه.
   if ! sudo -n ip netns exec $NS sh -c "redis-cli -p 56379 ping" 2>/dev/null | rg -q PONG; then
-    sudo -n ip netns exec $NS sh -c "setsid redis-server --port 56379 --dir $B/redis --daemonize no --save '' --appendonly no" >/dev/null 2>&1
+    "$B/bin/nsx" bash -c "setsid redis-server --port 56379 --dir $B/redis --daemonize no --save '' --appendonly no >/dev/null 2>&1 &"
     for _ in $(seq 1 20); do sudo -n ip netns exec $NS sh -c "redis-cli -p 56379 ping" 2>/dev/null | rg -q PONG && break; sleep 0.25; done
   fi
+  # شرطُ قبولٍ بعديٌّ: بلا PONG لا يُطبع INFRA_OK أبداً.
+  sudo -n ip netns exec $NS sh -c "redis-cli -p 56379 ping" 2>/dev/null | rg -q PONG \
+    || { echo "REDIS_READY_FAIL: لم يستقم redis داخل $NS" >&2; exit 1; }
   # الأسرار: تُولَّد مرة واحدة، 600، ولا تُطبع
   if [ ! -f "$B/secrets.env" ]; then
     umask 177
@@ -66,10 +82,16 @@ step_db() {
   $B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -q <<SQL
 select 'stop' where false; -- no-op
 SQL
+  # ON_ERROR_STOP: بلاها يُعيدُ psql صفراً حتى مع فشلِ SQL (مرصودٌ: غيابُ postgis
+  # طبعَ ERROR ثمّ DB_OK). فشلُ أيّ عبارةٍ هنا يجبُ أن يُسقطَ الخطوةَ كلَّها.
   for db in $MAIN_DB $TEST_DB; do
-    $B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -tc "select 1" -d postgres >/dev/null 2>&1
-    $B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -q -c "drop database if exists $db" -c "create database $db encoding 'UTF8' lc_collate 'C.UTF-8' lc_ctype 'C.UTF-8' template template0"
-    $B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -d $db -q <<'SQL'
+    $B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -tc "select 1" -d postgres >/dev/null 2>&1 \
+      || { echo "DB_CONNECT_FAIL: القاعدةُ لا تستجيبُ لـ$db" >&2; exit 1; }
+    $B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -v ON_ERROR_STOP=1 -q \
+      -c "drop database if exists $db" \
+      -c "create database $db encoding 'UTF8' lc_collate 'C.UTF-8' lc_ctype 'C.UTF-8' template template0" \
+      || { echo "DB_CREATE_FAIL: $db" >&2; exit 1; }
+    $B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -d $db -v ON_ERROR_STOP=1 -q <<'SQL'
 do $$ begin
   if not exists (select 1 from pg_roles where rolname='anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated nologin; end if;
@@ -77,13 +99,20 @@ do $$ begin
 end $$;
 create extension if not exists postgis;
 SQL
+    # شرطُ قبولٍ بعديٌّ: الامتدادُ المطلوبُ موجودٌ فعلاً في كلِّ قاعدةٍ قبلَ DB_OK.
+    ext=$($B/bin/nsx psql -h 127.0.0.1 -p $PG_PORT -U postgres -d $db -tAc "select 1 from pg_extension where extname='postgis'")
+    [ "$ext" = "1" ] || { echo "POSTGIS_MISSING: $db (ثبّت postgresql-18-postgis-3 على المقعد)" >&2; exit 1; }
   done
   echo "DB_OK $MAIN_DB $TEST_DB"
 }
 
 step_migrate() {
+  # القاعدةُ داخلَ الـnetns حصراً (lo بلا مسارٍ للخارجِ): الهجراتُ تُطبّقُ عبرَ nsx
+  # لا من مضيفِ المقعدِ، وإلا كانَ الاتصالُ مرفوضاً (مرصودٌ: ECONNREFUSED من الخطوةِ
+  # نفسِها على مقعدٍ نظيفٍ). وbun يُحلّ إلى مسارِهِ المطلقِ لأنّ sudo يصفّرُ PATH.
+  local bun_bin; bun_bin=$(command -v bun) || { echo "BUN_MISSING: ثبّت bun على المقعد" >&2; exit 1; }
   for db in $MAIN_DB $TEST_DB; do
-    DATABASE_URL="postgres://postgres@127.0.0.1:$PG_PORT/$db" bun run scripts/migrate.ts | tail -1
+    "$B/bin/nsx" bash -c "export DATABASE_URL='postgres://postgres@127.0.0.1:$PG_PORT/$db'; cd '$REPO' && exec '$bun_bin' run scripts/migrate.ts" | tail -1
   done
   echo "MIGRATE_OK"
 }
