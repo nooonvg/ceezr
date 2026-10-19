@@ -17,8 +17,9 @@ esac
 mkdir -p "$RUN_DIR/evidence"
 if [ "$PATH_" = pgrec ]; then
   # المرحلة 2ب — كتل هويات مخصصة (10.2م/11.2م) مستقلة عن بقية الجولات
-  setsid $B/bin/nsx bash -c 'export PATH="/home/user/.local/bin:$PATH"; set -a; . "$1"; . "$2"; set +a; export RUN_DIR="$3" GEN_ID="$4" PGR_RIDER_BASE="$5" PGR_DRIVER_BASE="$6"; exec bun run "$7"' _ \
+  setsid $B/bin/nsx bash -c 'export PATH="/home/user/.local/bin:$PATH"; set -a; . "$1"; . "$2"; set +a; export RUN_DIR="$3" GEN_ID="$4" PGR_RIDER_BASE="$5" PGR_DRIVER_BASE="$6" GATEWAY_LOG="$8"; exec bun run "$7"' _ \
   "$HERE/config/run.env" "$B/secrets.env" "$RUN_DIR" "$GEN_ID" "${PGR_RIDER_BASE:-10200000}" "${PGR_DRIVER_BASE:-11200000}" "$SCRIPT" \
+  "${GATEWAY_LOG:-$RUN_DIR/evidence/gateway.log}" \
   >>"$RUN_DIR/evidence/$GEN_ID.out" 2>&1 </dev/null &
 else
   # SCENARIO_DEPTH: assign (إثبات الإسناد فقط) أو full (دورة الرحلة كاملة حتى completed).
