@@ -90,7 +90,8 @@
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch15/tools/pg-probe.sh",
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch15/tools/post-diag.sh",
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch15/tools/run-wave.sh",
-    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch15/tools/wave-full.sh"
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch15/tools/wave-full.sh",
+    "docs/roadmap/execution/STATUS.md"
   ],
   "decision": "ADR 0290: دالة مغلِّفة جديدة تنادي driver_accept_offer وenqueue_rider_trip_notice دون تعديل؛ فشل الإيداع يتراجع عنه وحده والقبول يُثبَّت (ADR 0265 §2).",
   "tests": [
