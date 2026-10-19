@@ -8,15 +8,18 @@ import { readFileSync } from "node:fs";
  * (ب) إيقاف PG كامل وإعادته بالأداة المصححة (monitor/chaos.ts · فعل pg_restart
  * الذي أثبتت المرحلة 2أ إصلاحه). والعقد هنا يمنع رجوع العيوب المكتشفة:
  *
- * 1. القتل يقصد خلفيات البوابة وحدها (application_name='postgres.js') — لا
- *    جلسات التجربة نفسها ولا أداة الفوضى.
+ * 1. القتل يقصد خلفيات البوابة وحدها (application_name like 'ceezr:%' — أسماءُ
+ *    تجمّعاتِها في container.ts) — لا جلسات التجربة نفسها ولا أداة الفوضى. وقتلُ صفرٍ
+ *    حكمُه NO_FAULT_INJECTED لا نجاح (عيبُ 2026-10-19: الاسمُ القديمُ postgres.js لم
+ *    يعُد يطابقُ شيئاً فكانت التجربة (أ) «تنجح» بلا عطل).
  * 2. الحكم يتطلب بقاء العملية نفسها (نفس PID) — لا يكفي أن «البوابة عادت»
  *    بعمليةٍ جديدة.
  * 3. التجربة (ب) تعيد PG بالأداة المصححة نفسها — لا استئناف يدوي.
  * 4. الحكم يتطلب دورة أعمال مكتملة من القاعدة (completed + لا تكرار: طلب
  *    واحد لكل راكب).
  * 5. الترتيب مقيس: جاهزية PG قبل جاهزية البوابة.
- * 6. سجل البوابة يُفحص على uncaughtException — الرقعة تُثبت وصولها للبناء.
+ * 6. سجل البوابة يُفحص على uncaughtException — الرقعة تُثبت وصولها للبناء. وسجلٌّ غيرُ
+ *    مقروءٍ يُسقطُ الحكمَ الكلّيَّ إلى NOT_PROVEN لا إلى «صفر انهيار».
  */
 
 const SCRIPT = "deploy/capacity-run/load/pg-recovery.ts";
@@ -24,8 +27,32 @@ const src = readFileSync(SCRIPT, "utf8");
 
 describe("عقد تجربة تعافي PG (المرحلة 2ب)", () => {
   test("قتل الخلفيات يقصد جلسات البوابة وحدها لا جلسات التجربة", () => {
-    expect(src).toContain("application_name='postgres.js'");
+    expect(src).toContain('const GATEWAY_BACKENDS = "ceezr:%";');
+    expect(src).toMatch(/application_name like \$\{GATEWAY_BACKENDS\}\) x/);
+    expect(src).not.toContain("postgres.js'");
     expect(src).toMatch(/application_name=pg-recovery-exp/);
+    // جلسةُ التجربةِ خارجَ نمطِ البوابة — وإلّا قتلَت نفسَها
+    expect("pg-recovery-exp".startsWith("ceezr:")).toBe(false);
+  });
+
+  test("النمطُ يطابقُ كلَّ تجمُّعٍ تفتحُه البوابةُ فعلاً (لا اسمَ قديماً يُقتَلُ صفراً)", () => {
+    const container = readFileSync("apps/gateway/src/container.ts", "utf8");
+    const names = [...container.matchAll(/applicationName:\s*"([^"]+)"/g)].map((m) => m[1] ?? "");
+    expect(names.length).toBeGreaterThanOrEqual(2);
+    expect(names).toContain("ceezr:gatewayRequest");
+    for (const name of names) expect(name.startsWith("ceezr:")).toBe(true);
+  });
+
+  test("قتلُ صفرٍ = NO_FAULT_INJECTED، والحكمُ الكلّيُّ يتطلّبُ (أ) و(ب) وسجلّاً مقروءاً", () => {
+    expect(src).toMatch(/killedA === 0\s*\?\s*"NO_FAULT_INJECTED"/);
+    expect(src).toContain("backendsKilled: killedA");
+    expect(src).toContain("backendsAfter: backendsAfterA");
+    expect(src).toMatch(/verdictA === "BACKENDS_TERMINATED_GATEWAY_SURVIVED" &&/);
+    expect(src).toMatch(/verdictB === "PG_RESTART_RECOVERED_BUSINESS_CYCLE_COMPLETED" &&/);
+    expect(src).toMatch(/logScanned &&/);
+    expect(src).toContain('"RECOVERY_PROVEN"');
+    expect(src).toContain("readable: false, path: gatewayLogPath");
+    expect(src).toContain("process.env.GATEWAY_LOG");
   });
 
   test("الحكم يتطلب بقاء العملية نفسها — نفس PID قبل وبعد", () => {
