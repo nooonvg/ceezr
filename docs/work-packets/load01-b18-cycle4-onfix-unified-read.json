@@ -10,7 +10,9 @@
     "packages/infrastructure/tracking/tracking-queries.ts",
     "apps/gateway/src/container.ts",
     "tests/unit/live-tracking-unified-read.test.ts",
-    "tests/integration/tracking-duty-and-trip-reader.test.ts"
+    "tests/integration/tracking-duty-and-trip-reader.test.ts",
+    "scripts/lib/skip-registry.ts",
+    "tests/unit/skip-audit.test.ts"
   ],
   "state": ["docs/SYSTEM_STATE.md"],
   "roadmap": ["ROADMAP.md"],
