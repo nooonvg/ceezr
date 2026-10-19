@@ -1070,28 +1070,36 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
    */
   const riderTripSignal: Container["riderTripSignal"] = { notify: null };
   const riderTripOutbox = createRiderTripNoticeOutbox(sql);
+  // ADR 0287 — إشارةٌ لحظيةٌ للطورِ الجديدِ وحدَه، بعدَ ثباتِ صفِّه، وبلا انتظارٍ: فشلُها لا يمسُّ
+  // الانتقالَ (العاملُ يُشيرُ ثانيةً ثم تيليجرامُ). LOAD-01 (الدفعةُ الحاديةَ عشرةَ): معرّفُ الراكبِ يأتي
+  // في ردِّ الإيداعِ نفسِه (20261018150000). والدفعةُ الخامسةَ عشرةَ: الموضعُ الواحدُ للإشارةِ سواءٌ أودَعَ
+  // `enqueue` أم أودعَت عبارةُ القبولِ نفسُها (`deposited`) — فلا يختلفُ السلوكُ باختلافِ المسار.
+  const signalAfterDeposit = (
+    orderId: string,
+    event: Parameters<RiderTripNoticeDeps["outbox"]["enqueue"]>[1],
+    result: { readonly created: boolean; readonly riderTelegramId?: string | null } | null,
+  ): void => {
+    const notify = riderTripSignal.notify;
+    if (result?.created === true && notify !== null && RIDER_TRIP_APP_FIRST_EVENTS.has(event)) {
+      const tg = result.riderTelegramId;
+      if (typeof tg === "string") {
+        // كما كانَ تمامًا: فشلُ الإشارةِ لا يمسُّ الانتقال (كانَ `.catch(() => undefined)`).
+        try {
+          notify(tg, orderId);
+        } catch {
+          // لا شيء: العاملُ يُشيرُ ثانيةً ثم تيليجرام.
+        }
+      }
+    }
+  };
   const riderTripNoticeDeps: RiderTripNoticeDeps = {
     outbox: {
       enqueue: async (orderId, event) => {
         const result = await riderTripOutbox.enqueue(orderId, event);
-        const notify = riderTripSignal.notify;
-        // ADR 0287 — إشارةٌ لحظيةٌ للطورِ الجديدِ وحدَه، بعدَ ثباتِ صفِّه، وبلا
-        // انتظارٍ: فشلُها لا يمسُّ الانتقالَ (العاملُ يُشيرُ ثانيةً ثم تيليجرامُ).
-        // LOAD-01 (الدفعةُ الحاديةَ عشرةَ): معرّفُ الراكبِ يأتي في ردِّ الإيداعِ نفسِه
-        // (20261018150000) — كانَ استعلامًا ثانيًا على تجمُّعِ الطلبِ لكلِّ طورٍ (4 لكلِّ رحلة).
-        if (result?.created === true && notify !== null && RIDER_TRIP_APP_FIRST_EVENTS.has(event)) {
-          const tg = result.riderTelegramId;
-          if (typeof tg === "string") {
-            // كما كانَ تمامًا: فشلُ الإشارةِ لا يمسُّ الانتقال (كانَ `.catch(() => undefined)`).
-            try {
-              notify(tg, orderId);
-            } catch {
-              // لا شيء: العاملُ يُشيرُ ثانيةً ثم تيليجرام.
-            }
-          }
-        }
+        signalAfterDeposit(orderId, event, result);
         return result;
       },
+      deposited: (orderId, event, result) => signalAfterDeposit(orderId, event, result),
     },
     log,
   };

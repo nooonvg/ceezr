@@ -1,0 +1,4 @@
+{"t":"2026-10-19T03:54:08+00:00","event":"gateway.start","code_dir":"/home/user/workspace/wt-main","sha":"4e8f4727e7ba516a393612ff912f4fff8cb735c6","dirty":0}
+{"t":"2026-10-19T03:57:54+00:00","event":"gateway.start","code_dir":"/home/user/workspace/repo","sha":"6731197b24757e5c3c9025d05303fbb1b3769ef2","dirty":0}
+{"t":"2026-10-19T04:01:47+00:00","event":"gateway.start","code_dir":"/home/user/workspace/wt-main","sha":"4e8f4727e7ba516a393612ff912f4fff8cb735c6","dirty":0}
+{"t":"2026-10-19T04:05:31+00:00","event":"gateway.start","code_dir":"/home/user/workspace/repo","sha":"6731197b24757e5c3c9025d05303fbb1b3769ef2","dirty":0}

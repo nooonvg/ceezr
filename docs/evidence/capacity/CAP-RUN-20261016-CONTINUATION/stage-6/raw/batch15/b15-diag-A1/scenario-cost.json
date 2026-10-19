@@ -1,0 +1,558 @@
+{
+ "scenarios": 4153,
+ "verdict": "PASS",
+ "failed_gates": [],
+ "gates": {
+  "G1": "100.00% (4153/4153)",
+  "P1": "521ms",
+  "P2": "875ms",
+  "P3": "536ms",
+  "P4": "7232ms",
+  "P7": "68s"
+ },
+ "window_s": 194.2,
+ "cpu_s_in_window": {
+  "postgres": 180.42,
+  "redis": 7.99,
+  "mock": 1.14,
+  "redis_shim": 19.69,
+  "gateway": 89.08,
+  "generator": 25.71,
+  "pg:pg_aux": 0.26,
+  "pg:ceezr:gatewayRequest": 82.12,
+  "pg:ceezr:workerJobs": 42.87,
+  "pg:ceezr:workerLocks": 0.08,
+  "pg:genA": 11.13,
+  "pg:driver-onboarding": 9.06,
+  "pg:ceezr:gatewayDispatch": 35.05,
+  "pg:psql": 0.0
+ },
+ "scenarios_per_s": 23.07,
+ "cpu_ms_per_scenario": {
+  "postgres": 40.3,
+  "gateway": 19.9,
+  "pg:ceezr:gatewayRequest": 18.3,
+  "pg:ceezr:workerJobs": 9.6,
+  "pg:ceezr:gatewayDispatch": 7.8,
+  "generator": 5.7,
+  "redis_shim": 4.4,
+  "pg:genA": 2.5,
+  "pg:driver-onboarding": 2.0,
+  "redis": 1.8,
+  "mock": 0.3,
+  "pg:pg_aux": 0.1,
+  "pg:ceezr:workerLocks": 0.0,
+  "pg:psql": 0.0
+ },
+ "cpu_ms_per_scenario_total_processes": 72.3,
+ "host_cpu_util_pct_of_2vcpu": 83.4,
+ "load1_mean": 1.98,
+ "pg_statements_per_scenario": 131.1,
+ "pg_exec_ms_per_scenario": 46.5,
+ "pg_top_by_exec": [
+  {
+   "calls_per_scenario": 1.21,
+   "exec_ms_per_scenario": 10.62,
+   "share_pct": 22.8,
+   "mean_ms": 8.775,
+   "stddev_ms": 7.963,
+   "max_ms": 82.8,
+   "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_location::geometry) as lng, (extract($1 from d.last_location_at) * $2):"
+  },
+  {
+   "calls_per_scenario": 2.99,
+   "exec_ms_per_scenario": 8.82,
+   "share_pct": 19.0,
+   "mean_ms": 2.951,
+   "stddev_ms": 34.189,
+   "max_ms": 3701.5,
+   "query": "select claim_notification_delivery() result"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "exec_ms_per_scenario": 4.6,
+   "share_pct": 9.9,
+   "mean_ms": 1.669,
+   "stddev_ms": 2.557,
+   "max_ms": 40.4,
+   "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 3.9,
+   "share_pct": 8.4,
+   "mean_ms": 3.896,
+   "stddev_ms": 3.107,
+   "max_ms": 33.2,
+   "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::text::jsonb, $14::text::jsonb, $15) as result"
+  },
+  {
+   "calls_per_scenario": 1.21,
+   "exec_ms_per_scenario": 3.7,
+   "share_pct": 7.9,
+   "mean_ms": 3.063,
+   "stddev_ms": 2.839,
+   "max_ms": 64.0,
+   "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 2.23,
+   "share_pct": 4.8,
+   "mean_ms": 2.232,
+   "stddev_ms": 2.399,
+   "max_ms": 33.8,
+   "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id = $1 and offer_id is not null"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "exec_ms_per_scenario": 2.19,
+   "share_pct": 4.7,
+   "mean_ms": 0.548,
+   "stddev_ms": 0.466,
+   "max_ms": 13.7,
+   "query": "select enqueue_rider_trip_notice($1::uuid, $2::text) as r"
+  },
+  {
+   "calls_per_scenario": 1.54,
+   "exec_ms_per_scenario": 1.18,
+   "share_pct": 2.5,
+   "mean_ms": 0.765,
+   "stddev_ms": 0.796,
+   "max_ms": 17.8,
+   "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.verification_status::text as verification_status, d.last_location is not "
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.77,
+   "share_pct": 1.7,
+   "mean_ms": 0.772,
+   "stddev_ms": 0.598,
+   "max_ms": 11.5,
+   "query": "select driver_accept_offer($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.12,
+   "exec_ms_per_scenario": 0.68,
+   "share_pct": 1.5,
+   "mean_ms": 0.32,
+   "stddev_ms": 0.203,
+   "max_ms": 8.0,
+   "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "exec_ms_per_scenario": 0.55,
+   "share_pct": 1.2,
+   "mean_ms": 0.275,
+   "stddev_ms": 0.442,
+   "max_ms": 29.4,
+   "query": "select (record_attendance($1::uuid, $2, $3) ->> $4)::boolean as ok"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.52,
+   "share_pct": 1.1,
+   "mean_ms": 0.524,
+   "stddev_ms": 0.247,
+   "max_ms": 9.8,
+   "query": "select start_trial($1::uuid, $2::subscription_plan) as result where not exists (select $4 from subscriptions s where s.driver_id = $3::uuid)"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.52,
+   "share_pct": 1.1,
+   "mean_ms": 0.523,
+   "stddev_ms": 0.437,
+   "max_ms": 15.7,
+   "query": "select driver_complete_ride($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.49,
+   "share_pct": 1.1,
+   "mean_ms": 0.489,
+   "stddev_ms": 0.466,
+   "max_ms": 15.7,
+   "query": "select driver_start_ride($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "exec_ms_per_scenario": 0.47,
+   "share_pct": 1.0,
+   "mean_ms": 0.172,
+   "stddev_ms": 0.222,
+   "max_ms": 10.4,
+   "query": "select list_rider_trip_events($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.4,
+   "share_pct": 0.9,
+   "mean_ms": 0.399,
+   "stddev_ms": 0.27,
+   "max_ms": 7.6,
+   "query": "select claim_and_enqueue_telegram_update( $1, $2, $3, $4, $5 ) as result"
+  },
+  {
+   "calls_per_scenario": 0.02,
+   "exec_ms_per_scenario": 0.36,
+   "share_pct": 0.8,
+   "mean_ms": 17.009,
+   "stddev_ms": 36.093,
+   "max_ms": 235.1,
+   "query": "select claim_telegram_update_replies($1::integer, $2::integer) as result"
+  },
+  {
+   "calls_per_scenario": 1.0,
+   "exec_ms_per_scenario": 0.33,
+   "share_pct": 0.7,
+   "mean_ms": 0.329,
+   "stddev_ms": 0.527,
+   "max_ms": 23.2,
+   "query": "select driver_mark_arrived($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 0.17,
+   "exec_ms_per_scenario": 0.27,
+   "share_pct": 0.6,
+   "mean_ms": 1.59,
+   "stddev_ms": 1.292,
+   "max_ms": 20.6,
+   "query": "select claim_telegram_update_jobs_for_bot($1, $2, $3, $4) as result"
+  },
+  {
+   "calls_per_scenario": 31.15,
+   "exec_ms_per_scenario": 0.26,
+   "share_pct": 0.6,
+   "mean_ms": 0.008,
+   "stddev_ms": 0.041,
+   "max_ms": 14.3,
+   "query": "select status from telegram_update_jobs where bot = $2 and update_id = $1::bigint"
+  }
+ ],
+ "pg_top_by_calls": [
+  {
+   "calls_per_scenario": 31.15,
+   "mean_ms": 0.008,
+   "query": "select status from telegram_update_jobs where bot = $2 and update_id = $1::bigint"
+  },
+  {
+   "calls_per_scenario": 6.0,
+   "mean_ms": 0.007,
+   "query": "select role::text as role, is_blocked, language_code from users where telegram_id = $1"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "mean_ms": 0.012,
+   "query": "select status::text as status, assigned_driver_id::text as assigned from orders where id = $1"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "mean_ms": 0.548,
+   "query": "select enqueue_rider_trip_notice($1::uuid, $2::text) as r"
+  },
+  {
+   "calls_per_scenario": 4.0,
+   "mean_ms": 0.018,
+   "query": "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.phone, d.verification_status, a.is_available, (d.last_location is not null) as has_location, "
+  },
+  {
+   "calls_per_scenario": 3.79,
+   "mean_ms": 0.002,
+   "query": "select btrim( regexp_replace( regexp_replace( lower( translate( coalesce(p_input, $2), -- الطيُّ واحداً بواحدٍ ثمَّ الحذفُ (تشكيلٌ وتطويلٌ) في الذيلِ. $3, $4 ) "
+  },
+  {
+   "calls_per_scenario": 3.0,
+   "mean_ms": 0.04,
+   "query": "select kind, version, accepted_at from list_user_consents($1)"
+  },
+  {
+   "calls_per_scenario": 2.99,
+   "mean_ms": 2.951,
+   "query": "select claim_notification_delivery() result"
+  },
+  {
+   "calls_per_scenario": 2.99,
+   "mean_ms": 0.029,
+   "query": "select ru.telegram_id::text as rider_telegram_id, ru.language_code as rider_language, du.full_name as driver_name, d.plate_number as plate, d.vehicle_type::text"
+  },
+  {
+   "calls_per_scenario": 2.99,
+   "mean_ms": 0.013,
+   "query": "select request_id from notification_outbox where id = $1::uuid"
+  },
+  {
+   "calls_per_scenario": 2.99,
+   "mean_ms": 0.007,
+   "query": "select acked_at from rider_trip_event_receipts where delivery_id = $1::uuid"
+  },
+  {
+   "calls_per_scenario": 2.81,
+   "mean_ms": 0.002,
+   "query": "select case p_kind -- ١ = حرجٌ: استغاثةٌ، وحالةُ رحلةٍ نشطةٍ، ومطالبةُ إسنادٍ لها مؤقّتٌ يجري. when $2 then $3 when $4 then $5 when $6 then $7 when $8 then $9 w"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "mean_ms": 1.669,
+   "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+  },
+  {
+   "calls_per_scenario": 2.76,
+   "mean_ms": 0.172,
+   "query": "select list_rider_trip_events($1::bigint, $2::uuid) as result"
+  },
+  {
+   "calls_per_scenario": 2.12,
+   "mean_ms": 0.32,
+   "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "mean_ms": 0.016,
+   "query": "select id, code, name_ar, name_en from cities where is_active = $1 order by name_ar"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "mean_ms": 0.275,
+   "query": "select (record_attendance($1::uuid, $2, $3) ->> $4)::boolean as ok"
+  },
+  {
+   "calls_per_scenario": 2.0,
+   "mean_ms": 0.009,
+   "query": "select id from orders where assigned_driver_id = $1::uuid and status in ($2 /*, ... */) limit $3"
+  },
+  {
+   "calls_per_scenario": 1.89,
+   "mean_ms": 0.0,
+   "query": "select $1 in ($2 /*, ... */)"
+  },
+  {
+   "calls_per_scenario": 1.87,
+   "mean_ms": 0.001,
+   "query": "begin"
+  }
+ ],
+ "drainer": {
+  "jobs": 4153,
+  "jobs_per_scenario": 1.0,
+  "queue_wait_created_to_claim_ms": {
+   "n": 4153,
+   "p50": 11865.56,
+   "p95": 13801.88,
+   "p99": 14075.86,
+   "mean": 10859.67,
+   "max": 14673.84
+  },
+  "lane_wait_claim_to_start_ms": {
+   "n": 4153,
+   "p50": 0.01,
+   "p95": 0.02,
+   "p99": 0.04,
+   "mean": 0.01,
+   "max": 3.49
+  },
+  "exec_start_to_end_ms": {
+   "n": 4153,
+   "p50": 1085.25,
+   "p95": 1424.35,
+   "p99": 1548.95,
+   "mean": 1028.51,
+   "max": 1610.75
+  },
+  "phase_effect_check_ms": {
+   "n": 4153,
+   "p50": 264.06,
+   "p95": 373.96,
+   "p99": 434.58,
+   "mean": 258.49,
+   "max": 557.99
+  },
+  "phase_prepare_ms": {
+   "n": 4153,
+   "p50": 535.07,
+   "p95": 735.37,
+   "p99": 805.48,
+   "mean": 513.85,
+   "max": 899.33
+  },
+  "phase_record_ms": {
+   "n": 4153,
+   "p50": 258.19,
+   "p95": 366.75,
+   "p99": 417.86,
+   "mean": 256.16,
+   "max": 571.25
+  },
+  "created_to_end_ms": {
+   "n": 4153,
+   "p50": 12961.09,
+   "p95": 14779.35,
+   "p99": 15232.54,
+   "mean": 11888.19,
+   "max": 15682.52
+  },
+  "sweeps": {
+   "n": 44,
+   "claimed": 4153,
+   "duration_ms": {
+    "n": 44,
+    "p50": 4798.2,
+    "p95": 5753.39,
+    "p99": 5964.68,
+    "mean": 4409.96,
+    "max": 5964.68
+   },
+   "tail_after_last_claim_ms": {
+    "n": 43,
+    "p50": 0.01,
+    "p95": 0.02,
+    "p99": 1017.83,
+    "mean": 45.96,
+    "max": 1017.83
+   },
+   "gap_between_sweeps_ms": {
+    "n": 43,
+    "p50": 0.96,
+    "p95": 2.78,
+    "p99": 4.68,
+    "mean": 1.14,
+    "max": 4.68
+   },
+   "claim_trips_per_sweep": 16.1,
+   "claim_ms_per_sweep": 4198.2,
+   "tail_share_of_span_pct": 1.0,
+   "throughput_per_s": 21.4
+  }
+ },
+ "http_server_side": [
+  {
+   "route": "POST /v1/driver/location",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 2336.8,
+   "mean_ms": 2336.8,
+   "p95_of_window_p95_ms": 3325.72
+  },
+  {
+   "route": "POST /v1/driver/availability",
+   "per_scenario": 2.0,
+   "server_ms_per_scenario": 1065.4,
+   "mean_ms": 532.7,
+   "p95_of_window_p95_ms": 829.85
+  },
+  {
+   "route": "POST /v1/session/telegram",
+   "per_scenario": 3.0,
+   "server_ms_per_scenario": 831.7,
+   "mean_ms": 277.2,
+   "p95_of_window_p95_ms": 527.7
+  },
+  {
+   "route": "POST /v1/onboarding/driver",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 798.3,
+   "mean_ms": 798.3,
+   "p95_of_window_p95_ms": 1250.25
+  },
+  {
+   "route": "POST /v1/rides/:id/trip-events/ack",
+   "per_scenario": 2.76,
+   "server_ms_per_scenario": 773.0,
+   "mean_ms": 280.4,
+   "p95_of_window_p95_ms": 463.2
+  },
+  {
+   "route": "GET /v1/rides/:id/trip-events",
+   "per_scenario": 2.76,
+   "server_ms_per_scenario": 756.9,
+   "mean_ms": 274.6,
+   "p95_of_window_p95_ms": 469.2
+  },
+  {
+   "route": "POST /v1/driver/job/:id/complete",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 553.4,
+   "mean_ms": 553.4,
+   "p95_of_window_p95_ms": 862.83
+  },
+  {
+   "route": "POST /v1/driver/job/:id/arrived",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 550.3,
+   "mean_ms": 550.3,
+   "p95_of_window_p95_ms": 856.42
+  },
+  {
+   "route": "POST /v1/driver/job/:id/start",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 547.6,
+   "mean_ms": 547.6,
+   "p95_of_window_p95_ms": 871.85
+  },
+  {
+   "route": "POST /v1/driver/offers/:id/accept",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 543.9,
+   "mean_ms": 543.8,
+   "p95_of_window_p95_ms": 819.61
+  },
+  {
+   "route": "GET /v1/onboarding",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 526.0,
+   "mean_ms": 526.0,
+   "p95_of_window_p95_ms": 873.04
+  },
+  {
+   "route": "GET /v1/driver/offers",
+   "per_scenario": 1.54,
+   "server_ms_per_scenario": 409.9,
+   "mean_ms": 266.1,
+   "p95_of_window_p95_ms": 489.27
+  },
+  {
+   "route": "POST /v1/driver/offers/receipts",
+   "per_scenario": 1.32,
+   "server_ms_per_scenario": 353.4,
+   "mean_ms": 267.9,
+   "p95_of_window_p95_ms": 431.53
+  },
+  {
+   "route": "GET /v1/rides/:id/candidate",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 276.2,
+   "mean_ms": 276.2,
+   "p95_of_window_p95_ms": 472.28
+  },
+  {
+   "route": "POST /v1/rides",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 272.1,
+   "mean_ms": 272.1,
+   "p95_of_window_p95_ms": 440.19
+  },
+  {
+   "route": "POST /webhook/telegram/driver",
+   "per_scenario": 1.0,
+   "server_ms_per_scenario": 267.5,
+   "mean_ms": 267.5,
+   "p95_of_window_p95_ms": 437.72
+  },
+  {
+   "route": "POST /internal/realtime/rider-trip-signal",
+   "per_scenario": 2.51,
+   "server_ms_per_scenario": 0.4,
+   "mean_ms": 0.1,
+   "p95_of_window_p95_ms": 0.49
+  },
+  {
+   "route": "POST /internal/realtime/offers-signal",
+   "per_scenario": 0.0,
+   "server_ms_per_scenario": 0.0,
+   "mean_ms": 0.8,
+   "p95_of_window_p95_ms": 0.78
+  }
+ ],
+ "http_requests_per_scenario": 25.9,
+ "http_server_ms_per_scenario": 10862.8
+}

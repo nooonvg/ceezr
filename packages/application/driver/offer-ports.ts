@@ -31,6 +31,7 @@ import type {
   DriverOfferDetail,
 } from "../../domain/driver/driver-offers.ts";
 import type { Result } from "../../shared/result/index.ts";
+import type { RiderTripDepositOutcome } from "./rider-trip-notice.ts";
 
 /**
  * رفضٌ **مُصنَّفٌ** من القاعدةِ — مجالٌ مغلقٌ يُقابِلُ رموزَ `driver_offer_board`
@@ -102,4 +103,20 @@ export interface DriverOfferStore {
     readonly telegramUserId: string;
     readonly offerId: string;
   }): Promise<Result<DriverOfferClaim, DriverOfferStoreError>>;
+
+  /**
+   * LOAD-01 (الدفعةُ الخامسةَ عشرةَ) — القبولُ **نفسُه** (`driver_accept_offer` بلا تغيير) مع إيداعِ
+   * إشعارِ MATCHED في معاملتِه، في رحلةِ ذهابٍ وإيابٍ واحدة. `matchedNotice` غائبٌ حينَ لا إيداعَ
+   * (رفضٌ، أو حجزٌ بانتظارِ الراكب — `WR-09` يودِعُ إشعارَ المرشَّح بنفسِه). اختياريٌّ: غيابُه =
+   * المسارُ القديمُ (قبولٌ ثمّ إيداعٌ مستقلّ).
+   */
+  acceptWithMatchedNotice?(input: {
+    readonly telegramUserId: string;
+    readonly offerId: string;
+  }): Promise<
+    Result<
+      { readonly claim: DriverOfferClaim; readonly matchedNotice?: RiderTripDepositOutcome },
+      DriverOfferStoreError
+    >
+  >;
 }

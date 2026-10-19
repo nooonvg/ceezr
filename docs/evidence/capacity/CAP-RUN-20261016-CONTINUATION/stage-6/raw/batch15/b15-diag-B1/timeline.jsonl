@@ -1,0 +1,2 @@
+{"t":"2026-10-19T03:58:01+00:00","event":"round.start","round":"b15-diag-B1","profile":[{"name":"wave-500","sec":180,"conc":500}],"drain_sec":180,"code_sha":"6731197b24757e5c3c9025d05303fbb1b3769ef2","code_dirty":0,"docs_dirty":0}
+{"t":"2026-10-19T03:58:01+00:00","event":"gateway.pid","pid":"16769"}

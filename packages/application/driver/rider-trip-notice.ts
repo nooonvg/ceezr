@@ -78,7 +78,30 @@ export interface RiderTripNoticeOutbox {
     orderId: string,
     event: RiderTripEvent,
   ): Promise<{ readonly created: boolean; readonly riderTelegramId?: string | null } | null>;
+  /**
+   * LOAD-01 (الدفعةُ الخامسةَ عشرةَ) — **الإيداعُ تمَّ في عبارةٍ أخرى** (قبولُ العرضِ يودِعُ MATCHED في
+   * معاملتِه: `driver_accept_offer_with_matched_notice`)، فيُنادى هذا بعدَ ثباتِه لآثارِ ما بعدَ الإيداعِ
+   * وحدَها (الإشارةُ اللحظيّةُ · ADR 0287) **بلا إيداعٍ ثانٍ**. غيابُه = لا أثرَ لاحقَ.
+   */
+  deposited?(
+    orderId: string,
+    event: RiderTripEvent,
+    result: { readonly created: boolean; readonly riderTelegramId?: string | null },
+  ): void;
 }
+
+/**
+ * مآلُ إيداعٍ جرى في عبارةِ عملٍ أخرى — مُعلَنٌ لا مُخمَّن: نجاحٌ (مع `created`)، أو طلبٌ مفقودٌ،
+ * أو فشلٌ تراجعَت عنه نقطةُ الحفظِ وحدَه (والانتقالُ قبلَه ثابت · ADR 0265 §2).
+ */
+export type RiderTripDepositOutcome =
+  | {
+      readonly kind: "deposited";
+      readonly created: boolean;
+      readonly riderTelegramId?: string | null;
+    }
+  | { readonly kind: "order_missing" }
+  | { readonly kind: "failed"; readonly error: string };
 
 export interface RiderTripNoticeDeps {
   readonly outbox: RiderTripNoticeOutbox;
@@ -178,5 +201,43 @@ export async function noticeRiderOfTrip(
       order_id: orderId,
       error: thrown instanceof Error ? thrown.name : "unknown",
     });
+  }
+}
+
+/**
+ * سجلُّ إيداعٍ تمَّ في القاعدةِ ضمنَ عبارةِ الانتقالِ نفسِها — **السجلُّ نفسُه** الذي يكتبُه
+ * `noticeRiderOfTrip` (`created` · `deduplicated` · `order_missing` · `enqueue_failed`) والإشارةُ
+ * اللحظيّةُ نفسُها، بلا رحلةٍ ثانيةٍ إلى القاعدة. أفضلُ جهدٍ: لا يُلقي أبداً.
+ */
+export function recordRiderTripDeposit(
+  deps: RiderTripNoticeDeps | undefined,
+  orderId: string,
+  event: RiderTripEvent,
+  outcome: RiderTripDepositOutcome,
+): void {
+  if (deps === undefined) return;
+  try {
+    if (outcome.kind === "order_missing") {
+      deps.log?.("rider_trip_notice.order_missing", { event, order_id: orderId });
+      return;
+    }
+    if (outcome.kind === "failed") {
+      deps.log?.("rider_trip_notice.enqueue_failed", {
+        event,
+        order_id: orderId,
+        error: outcome.error,
+      });
+      return;
+    }
+    if (outcome.created) deps.log?.("rider_trip_notice.created", { event, order_id: orderId });
+    else deps.log?.("rider_trip_notice.deduplicated", { event, order_id: orderId });
+    deps.outbox.deposited?.(orderId, event, {
+      created: outcome.created,
+      ...(outcome.riderTelegramId === undefined
+        ? {}
+        : { riderTelegramId: outcome.riderTelegramId }),
+    });
+  } catch {
+    // أفضلُ جهدٍ كـ`noticeRiderOfTrip`: السجلُّ والإشارةُ لا يمسّانِ الانتقالَ الثابت.
   }
 }
