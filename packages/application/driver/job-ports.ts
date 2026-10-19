@@ -40,6 +40,7 @@ import type {
   DriverJobStart,
 } from "../../domain/driver/driver-job.ts";
 import type { Result } from "../../shared/result/index.ts";
+import type { RiderTripDepositOutcome } from "./rider-trip-notice.ts";
 
 /**
  * رفضٌ **مُصنَّفٌ** من القاعدةِ — مجالٌ مغلقٌ يُقابِلُ رموزَ دوالِّ `F3-03`
@@ -96,4 +97,29 @@ export interface DriverJobStore {
     readonly telegramUserId: string;
     readonly orderId: string;
   }): Promise<Result<DriverJobCompletion, DriverJobStoreError>>;
+
+  /**
+   * LOAD-01 (الدفعةُ 21) — الأطوارُ الثلاثةُ نفسُها **وإيداعُ إشعارِ الراكبِ في العبارةِ نفسِها**
+   * (`driver_*_with_notice`). الطورُ بفحوصِه حرفًا كما في الطرقِ أعلاه؛ و`notice` ردُّ الإيداعِ أو
+   * غيابُه (منفذٌ أقدم ⇒ المستدعي يعودُ إلى المسارِ المستقلّ). اختياريٌّ: المنفذُ الذي لا يملكُه
+   * يبقى صالحًا بنداءَين.
+   */
+  markArrivedWithNotice?(input: {
+    readonly telegramUserId: string;
+    readonly orderId: string;
+  }): Promise<Result<WithRiderNotice<DriverJobArrival>, DriverJobStoreError>>;
+  startRideWithNotice?(input: {
+    readonly telegramUserId: string;
+    readonly orderId: string;
+  }): Promise<Result<WithRiderNotice<DriverJobStart>, DriverJobStoreError>>;
+  completeRideWithNotice?(input: {
+    readonly telegramUserId: string;
+    readonly orderId: string;
+  }): Promise<Result<WithRiderNotice<DriverJobCompletion>, DriverJobStoreError>>;
+}
+
+/** نتيجةُ الطورِ وإيداعُ إشعارِه إن أعادَته العبارة. */
+export interface WithRiderNotice<T> {
+  readonly value: T;
+  readonly notice?: RiderTripDepositOutcome;
 }

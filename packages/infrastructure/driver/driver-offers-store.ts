@@ -653,7 +653,7 @@ function claimFrom(payload: unknown): Result<DriverOfferClaim, DriverOfferStoreE
  * `rider_notice` = ردُّ `enqueue_rider_trip_notice` حرفاً، أو `{ok:false, error:'ENQUEUE_EXCEPTION'}`
  * من نقطةِ الحفظ. غيابُه ⇒ `undefined` (لا إيداعَ)؛ وشكلٌ غيرُ مفهومٍ ⇒ فشلٌ مُعلَنٌ لا نجاحٌ مُفترَض.
  */
-function depositOutcomeFrom(value: unknown): RiderTripDepositOutcome | undefined {
+export function depositOutcomeFrom(value: unknown): RiderTripDepositOutcome | undefined {
   if (value === undefined || value === null) return undefined;
   if (!isRecord(value)) return { kind: "failed", error: "MALFORMED_NOTICE" };
   if (value.ok === true) {

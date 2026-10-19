@@ -36,6 +36,7 @@ import type {
   DriverJobStore,
   DriverJobStoreError,
   DriverJobStoreRejection,
+  WithRiderNotice,
 } from "../../application/driver/job-ports.ts";
 import {
   type DriverActiveJob,
@@ -58,6 +59,7 @@ import {
 import { err, ok, type Result } from "../../shared/result/index.ts";
 import type { Sql } from "../db/client.ts";
 import { readOrderPlaceExtras } from "../transport/order-place-extras.ts";
+import { depositOutcomeFrom } from "./driver-offers-store.ts";
 
 /** مجالُ الرفضِ المغلقُ — يُقابِلُ رموزَ دوالِّ `F3-03` الأربعِ حرفاً. */
 const REJECTIONS: readonly DriverJobStoreRejection[] = [
@@ -260,80 +262,159 @@ export class PostgresDriverJobStore implements DriverJobStore {
     readonly telegramUserId: string;
     readonly orderId: string;
   }): Promise<Result<DriverJobArrival, DriverJobStoreError>> {
-    const telegramId = asTelegramId(input.telegramUserId);
-    if (telegramId === null) return err(failed("MALFORMED_RESULT"));
+    const rows = await this.#call("driver_mark_arrived", input);
+    if (!rows.ok) return rows;
+    return arrivalFrom(rows.value[0]?.result);
+  }
 
-    let rows: ResultRow[];
-    try {
-      rows = await this.#sql<ResultRow[]>`
-        select driver_mark_arrived(${telegramId}::bigint, ${input.orderId}::uuid) as result`;
-    } catch {
-      return err(failed("STORE_ERROR"));
-    }
-
-    const payload = rows[0]?.result;
-    if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
-    if (payload.ok !== true) return err(rejectionFrom(payload));
-
-    const orderId = readText(payload.order_id);
-    // **الختمُ شرطُ الجوابِ**: «وصلتُ» بلا لحظةٍ لا يُعرَضُ ولا يُسجَّلُ، وساعةُ
-    // هذه العمليّةِ ليسَت بديلاً عن ساعةِ القاعدةِ في ختمٍ واحدٍ.
-    const arrivedAt = readInstant(payload.arrived_at);
-    if (orderId === null || arrivedAt === null) return err(failed("MALFORMED_RESULT"));
-    return ok({ orderId, arrivedAt });
+  async markArrivedWithNotice(input: {
+    readonly telegramUserId: string;
+    readonly orderId: string;
+  }): Promise<Result<WithRiderNotice<DriverJobArrival>, DriverJobStoreError>> {
+    const rows = await this.#call("driver_mark_arrived_with_notice", input);
+    if (!rows.ok) return rows;
+    const payload = rows.value[0]?.result;
+    const parsed = arrivalFrom(payload);
+    if (!parsed.ok) return parsed;
+    const notice = isRecord(payload) ? depositOutcomeFrom(payload.rider_notice) : undefined;
+    return ok({ value: parsed.value, ...(notice === undefined ? {} : { notice }) });
   }
 
   async startRide(input: {
     readonly telegramUserId: string;
     readonly orderId: string;
   }): Promise<Result<DriverJobStart, DriverJobStoreError>> {
-    const telegramId = asTelegramId(input.telegramUserId);
-    if (telegramId === null) return err(failed("MALFORMED_RESULT"));
+    const rows = await this.#call("driver_start_ride", input);
+    if (!rows.ok) return rows;
+    return startFrom(rows.value[0]?.result);
+  }
 
-    let rows: ResultRow[];
-    try {
-      rows = await this.#sql<ResultRow[]>`
-        select driver_start_ride(${telegramId}::bigint, ${input.orderId}::uuid) as result`;
-    } catch {
-      return err(failed("STORE_ERROR"));
-    }
-
-    const payload = rows[0]?.result;
-    if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
-    if (payload.ok !== true) return err(rejectionFrom(payload));
-
-    const orderId = readText(payload.order_id);
-    if (orderId === null) return err(failed("MALFORMED_RESULT"));
-    // وغيابُ الختمِ ههنا **يُقالُ عَدَماً** ولا يُستبدَلُ بساعةِ العمليّةِ.
-    return ok({ orderId, startedAt: readInstant(payload.started_at) });
+  async startRideWithNotice(input: {
+    readonly telegramUserId: string;
+    readonly orderId: string;
+  }): Promise<Result<WithRiderNotice<DriverJobStart>, DriverJobStoreError>> {
+    const rows = await this.#call("driver_start_ride_with_notice", input);
+    if (!rows.ok) return rows;
+    const payload = rows.value[0]?.result;
+    const parsed = startFrom(payload);
+    if (!parsed.ok) return parsed;
+    const notice = isRecord(payload) ? depositOutcomeFrom(payload.rider_notice) : undefined;
+    return ok({ value: parsed.value, ...(notice === undefined ? {} : { notice }) });
   }
 
   async completeRide(input: {
     readonly telegramUserId: string;
     readonly orderId: string;
   }): Promise<Result<DriverJobCompletion, DriverJobStoreError>> {
+    const rows = await this.#call("driver_complete_ride", input);
+    if (!rows.ok) return rows;
+    return completionFrom(rows.value[0]?.result);
+  }
+
+  async completeRideWithNotice(input: {
+    readonly telegramUserId: string;
+    readonly orderId: string;
+  }): Promise<Result<WithRiderNotice<DriverJobCompletion>, DriverJobStoreError>> {
+    const rows = await this.#call("driver_complete_ride_with_notice", input);
+    if (!rows.ok) return rows;
+    const payload = rows.value[0]?.result;
+    const parsed = completionFrom(payload);
+    if (!parsed.ok) return parsed;
+    const notice = isRecord(payload) ? depositOutcomeFrom(payload.rider_notice) : undefined;
+    return ok({ value: parsed.value, ...(notice === undefined ? {} : { notice }) });
+  }
+
+  /**
+   * نداءُ دالّةِ طورٍ من قائمةٍ مغلقة — كلُّ نداءٍ قالبٌ حرفيٌّ بوسيطَين مربوطَين، لا اسمَ يُركَّب.
+   * الاستثناءُ = `STORE_ERROR` كما كانَ في كلِّ طريقة.
+   */
+  async #call(
+    fn: PhaseFunction,
+    input: { readonly telegramUserId: string; readonly orderId: string },
+  ): Promise<Result<ResultRow[], DriverJobStoreError>> {
     const telegramId = asTelegramId(input.telegramUserId);
     if (telegramId === null) return err(failed("MALFORMED_RESULT"));
-
-    let rows: ResultRow[];
+    const sql = this.#sql;
+    const id = input.orderId;
     try {
-      rows = await this.#sql<ResultRow[]>`
-        select driver_complete_ride(${telegramId}::bigint, ${input.orderId}::uuid) as result`;
+      switch (fn) {
+        case "driver_mark_arrived":
+          return ok(
+            await sql<ResultRow[]>`
+            select driver_mark_arrived(${telegramId}::bigint, ${id}::uuid) as result`,
+          );
+        case "driver_mark_arrived_with_notice":
+          return ok(
+            await sql<ResultRow[]>`
+            select driver_mark_arrived_with_notice(${telegramId}::bigint, ${id}::uuid) as result`,
+          );
+        case "driver_start_ride":
+          return ok(
+            await sql<ResultRow[]>`
+            select driver_start_ride(${telegramId}::bigint, ${id}::uuid) as result`,
+          );
+        case "driver_start_ride_with_notice":
+          return ok(
+            await sql<ResultRow[]>`
+            select driver_start_ride_with_notice(${telegramId}::bigint, ${id}::uuid) as result`,
+          );
+        case "driver_complete_ride":
+          return ok(
+            await sql<ResultRow[]>`
+            select driver_complete_ride(${telegramId}::bigint, ${id}::uuid) as result`,
+          );
+        case "driver_complete_ride_with_notice":
+          return ok(
+            await sql<ResultRow[]>`
+            select driver_complete_ride_with_notice(${telegramId}::bigint, ${id}::uuid) as result`,
+          );
+      }
     } catch {
       return err(failed("STORE_ERROR"));
     }
-
-    const payload = rows[0]?.result;
-    if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
-    if (payload.ok !== true) return err(rejectionFrom(payload));
-
-    const orderId = readText(payload.order_id);
-    if (orderId === null) return err(failed("MALFORMED_RESULT"));
-    const duration = readNumber(payload.duration_seconds);
-    return ok({
-      orderId,
-      completedAt: readInstant(payload.completed_at),
-      durationSeconds: duration === null || duration < 0 ? null : duration,
-    });
   }
 }
+
+function arrivalFrom(payload: unknown): Result<DriverJobArrival, DriverJobStoreError> {
+  if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
+  if (payload.ok !== true) return err(rejectionFrom(payload));
+
+  const orderId = readText(payload.order_id);
+  // **الختمُ شرطُ الجوابِ**: «وصلتُ» بلا لحظةٍ لا يُعرَضُ ولا يُسجَّلُ، وساعةُ
+  // هذه العمليّةِ ليسَت بديلاً عن ساعةِ القاعدةِ في ختمٍ واحدٍ.
+  const arrivedAt = readInstant(payload.arrived_at);
+  if (orderId === null || arrivedAt === null) return err(failed("MALFORMED_RESULT"));
+  return ok({ orderId, arrivedAt });
+}
+
+function startFrom(payload: unknown): Result<DriverJobStart, DriverJobStoreError> {
+  if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
+  if (payload.ok !== true) return err(rejectionFrom(payload));
+
+  const orderId = readText(payload.order_id);
+  if (orderId === null) return err(failed("MALFORMED_RESULT"));
+  // وغيابُ الختمِ ههنا **يُقالُ عَدَماً** ولا يُستبدَلُ بساعةِ العمليّةِ.
+  return ok({ orderId, startedAt: readInstant(payload.started_at) });
+}
+
+function completionFrom(payload: unknown): Result<DriverJobCompletion, DriverJobStoreError> {
+  if (!isRecord(payload)) return err(failed("MALFORMED_RESULT"));
+  if (payload.ok !== true) return err(rejectionFrom(payload));
+
+  const orderId = readText(payload.order_id);
+  if (orderId === null) return err(failed("MALFORMED_RESULT"));
+  const duration = readNumber(payload.duration_seconds);
+  return ok({
+    orderId,
+    completedAt: readInstant(payload.completed_at),
+    durationSeconds: duration === null || duration < 0 ? null : duration,
+  });
+}
+
+type PhaseFunction =
+  | "driver_mark_arrived"
+  | "driver_mark_arrived_with_notice"
+  | "driver_start_ride"
+  | "driver_start_ride_with_notice"
+  | "driver_complete_ride"
+  | "driver_complete_ride_with_notice";

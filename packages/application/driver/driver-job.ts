@@ -48,8 +48,13 @@ import {
   type DriverJobStore,
   type DriverJobStoreError,
   isDriverJobRejection,
+  type WithRiderNotice,
 } from "./job-ports.ts";
-import { noticeRiderOfTrip, type RiderTripNoticeDeps } from "./rider-trip-notice.ts";
+import {
+  noticeRiderOfTrip,
+  type RiderTripNoticeDeps,
+  recordRiderTripDeposit,
+} from "./rider-trip-notice.ts";
 
 /**
  * رموزُ العطبِ المنشورةُ — **قائمةٌ تُقرأُ في زمنِ التشغيلِ** لا اتّحادٌ وحدَه،
@@ -157,9 +162,15 @@ export async function markDriverArrived(
   const orderId = readOrderId(input.orderId);
   if (orderId === null) return err(rejection("ORDER_ID_INVALID"));
 
-  const stamped = await deps.store.markArrived({ telegramUserId: session.value, orderId });
+  const stamped = await phaseWithNotice(
+    deps,
+    orderId,
+    "ARRIVED",
+    deps.store.markArrivedWithNotice?.bind(deps.store),
+    () => deps.store.markArrived({ telegramUserId: session.value, orderId }),
+    session.value,
+  );
   if (!stamped.ok) return err(publicCodeFrom(stamped.error));
-  await noticeRiderOfTrip(deps.riderNotice, orderId, "ARRIVED");
   return ok(stamped.value);
 }
 
@@ -173,9 +184,15 @@ export async function startDriverRide(
   const orderId = readOrderId(input.orderId);
   if (orderId === null) return err(rejection("ORDER_ID_INVALID"));
 
-  const started = await deps.store.startRide({ telegramUserId: session.value, orderId });
+  const started = await phaseWithNotice(
+    deps,
+    orderId,
+    "STARTED",
+    deps.store.startRideWithNotice?.bind(deps.store),
+    () => deps.store.startRide({ telegramUserId: session.value, orderId }),
+    session.value,
+  );
   if (!started.ok) return err(publicCodeFrom(started.error));
-  await noticeRiderOfTrip(deps.riderNotice, orderId, "STARTED");
   return ok(started.value);
 }
 
@@ -189,8 +206,48 @@ export async function completeDriverRide(
   const orderId = readOrderId(input.orderId);
   if (orderId === null) return err(rejection("ORDER_ID_INVALID"));
 
-  const completed = await deps.store.completeRide({ telegramUserId: session.value, orderId });
+  const completed = await phaseWithNotice(
+    deps,
+    orderId,
+    "COMPLETED",
+    deps.store.completeRideWithNotice?.bind(deps.store),
+    () => deps.store.completeRide({ telegramUserId: session.value, orderId }),
+    session.value,
+  );
   if (!completed.ok) return err(publicCodeFrom(completed.error));
-  await noticeRiderOfTrip(deps.riderNotice, orderId, "COMPLETED");
   return ok(completed.value);
+}
+
+/**
+ * LOAD-01 (الدفعةُ 21) — الطورُ وإيداعُ إشعارِ الراكبِ في عبارةٍ واحدةٍ حينَ يُطلَبُ الإشعارُ
+ * ويدعمُه المخزن (`driver_*_with_notice`)، وإلّا نداءانِ كما كانَ حرفًا. الطورُ نفسُه بفحوصِه
+ * في القاعدةِ بلا تغيير، ورفضُه يعودُ كما هو بلا إيداع. ونجاحٌ بلا حقلِ الإيداع (منفذٌ أقدم)
+ * ⇒ المسارُ المستقلّ، ومفتاحُ منعِ التكرارِ `rider_trip:<order>:<event>` يجعلُ أيَّ تكرارٍ صفًّا واحدًا.
+ */
+async function phaseWithNotice<T>(
+  deps: DriverJobDeps,
+  orderId: string,
+  event: "ARRIVED" | "STARTED" | "COMPLETED",
+  combined:
+    | ((input: {
+        readonly telegramUserId: string;
+        readonly orderId: string;
+      }) => Promise<Result<WithRiderNotice<T>, DriverJobStoreError>>)
+    | undefined,
+  separate: () => Promise<Result<T, DriverJobStoreError>>,
+  telegramUserId: string,
+): Promise<Result<T, DriverJobStoreError>> {
+  if (deps.riderNotice === undefined || combined === undefined) {
+    const done = await separate();
+    if (done.ok) await noticeRiderOfTrip(deps.riderNotice, orderId, event);
+    return done;
+  }
+  const done = await combined({ telegramUserId, orderId });
+  if (!done.ok) return done;
+  if (done.value.notice !== undefined) {
+    recordRiderTripDeposit(deps.riderNotice, orderId, event, done.value.notice);
+  } else {
+    await noticeRiderOfTrip(deps.riderNotice, orderId, event);
+  }
+  return ok(done.value.value);
 }
