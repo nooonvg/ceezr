@@ -132,7 +132,12 @@ async function seedOrderFor(
   return id;
 }
 
-describe("القارئ الموحّد للخدمة والرحلة النشطة — على PostgreSQL حقيقي", () => {
+const describeIf = DATABASE_URL === undefined ? describe.skip : describe;
+if (DATABASE_URL === undefined) {
+  console.warn("⚠️  اختبارات القارئ الموحّد مُتخطّاة: عيّن TEST_DATABASE_URL لقاعدةٍ بها الهجرات مطبّقة.");
+}
+
+describeIf("القارئ الموحّد للخدمة والرحلة النشطة — على PostgreSQL حقيقي", () => {
   beforeAll(() => {
     if (DATABASE_URL === undefined) throw new Error("TEST_DATABASE_URL مطلوب");
     sql = createSql({ connectionString: DATABASE_URL, max: 4, prepare: false });
