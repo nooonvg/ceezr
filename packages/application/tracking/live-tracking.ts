@@ -104,6 +104,24 @@ export interface DriverDutyReader {
   isOnDuty(driverId: string): Promise<boolean>;
 }
 
+/**
+ * قارئ الحالتين معًا في رحلة قاعدةٍ واحدة: «في الخدمة؟» و«أيّ رحلةٍ نشطة؟».
+ *
+ * ## لماذا وُجد هذا القارئ بعد أن وُجد القارئان قبله
+ *
+ * لأنّ مستهلكَه الوحيدَ (`onFix`) يحتاج الإجابتين في اللحظة نفسِها، وكان
+ * يقرؤهما في رحلتين متتاليتين على مجموعة الطلبات المشبعة، فيدفعُ انتظارَ
+ * طابورِها مرتينِ في كل إصلاحة موقع. هذا القارئ يجمعُهما في استعلامٍ واحدٍ
+ * على لقطةٍ واحدة، فلا يُدفع الانتظار إلا مرةً ولا تُقرأ الحقيقة مرتين.
+ * ومن لا يملكه يبقى على القارئين كما كان — لا سلوكَ جديدًا عليه.
+ */
+export interface DriverDutyAndTripReader {
+  dutyAndActiveTrip(driverId: string): Promise<{
+    readonly onDuty: boolean;
+    readonly activeTripId: string | null;
+  }>;
+}
+
 export interface LiveTrackingDeps {
   readonly sessions: TrackingSessionStore;
   readonly publisher: TrackingEventPublisher;
@@ -113,6 +131,12 @@ export interface LiveTrackingDeps {
    * العيب صامتاً في الإنتاج، والاختبارات خضراء. فالمُترجِم هو من يمنع النسيان.
    */
   readonly duty: DriverDutyReader;
+  /**
+   * اختياريّ بقصدٍ لا نسيانًا: مستهلكُه الوحيدُ (`onFix`) يقرأ الحالتين معًا.
+   * من يوفّرُه يقرؤهما في رحلةٍ واحدة، ومن لا يوفّرُه يبقى على القارئين
+   * المنفصلين كما كان — فالسلوكُ القديمُ هو الحالةُ الاسميةُ لا الاستثناء.
+   */
+  readonly dutyAndTrip?: DriverDutyAndTripReader;
   readonly clock: { now(): Date };
   readonly policy?: SessionPolicy;
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
@@ -193,6 +217,24 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
     driverId: string,
     nowMs: number,
     startAtMs: number,
+    /**
+     * رحلةٌ قُرئت في اللقطةِ نفسِها التي قُرئت فيها بوابةُ الخدمة (`onFix`).
+     * `undefined` = لا لقطةَ موحّدةً (القارئان المنفصلان) فتُقرأُ هنا كما كان.
+     *
+     * ## لماذا تُستعملُ اللقطةُ نفسُها ولا تُعادُ قراءتُها
+     *
+     * لأنّ إعادةَ القراءةِ كانت تجري بعدَ طابورِ الانتظارِ نفسِهِ الذي عبرَتهُ
+     * القراءةُ الأولى — فتجمعُ الإصلاحةُ الواحدةُ انتظارَينِ لا واحدٍ، وتقرأُ
+     * الحقيقةَ مرتينِ قد تختلفانِ. واللقطةُ الموحّدةُ تحفظُ الترتيبَ الذي يحميهُ
+     * مسارُ الإرفاقِ أصلًا: إسنادٌ يقعُ بعدَ لقطةِ الإصلاحةِ تراهُ الإصلاحةُ
+     * **التالية** وتُرفِقُهُ — وهذا عينُ ما يفعلهُ الكودُ اليومَ لو وقعَ الإسنادُ
+     * بينَ القراءتينِ القديمتينِ، فالسلوكُ محفوظٌ والنافذةُ أضيقُ لا أوسعُ.
+     *
+     * وفرعُ الخَلَفِ بعدَ الإغلاقِ (`EXPIRED`) يبقى على قراءتِهِ الطازجةِ كما
+     * هو: مسارٌ نادرٌ لا يدخلُ في حسابِ الحمل، وقراءتُهُ تقعُ بعدَ إغلاقٍ
+     * ونشرٍ كاملينِ فبعدُها عن اللقطةِ مقصودٌ لا سهوًا.
+     */
+    preReadTripId: string | null | undefined,
   ): Promise<{ readonly record: TrackingSessionRecord; readonly opened: boolean }> => {
     const existing = await deps.sessions.openSessionOf(driverId);
     if (existing !== null && !acceptsFixes(existing.facts, nowMs, policy)) {
@@ -207,7 +249,8 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
     }
 
     if (existing === null) {
-      const trip = await deps.trips.activeTripOf(driverId);
+      const trip =
+        preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
       return { record: await deps.sessions.open(driverId, trip, startAtMs), opened: true };
     }
 
@@ -216,8 +259,13 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
      * منتصف جلسة تتبّعٍ واحدة (يبدأ يومه متاحاً بلا رحلة، ثم رحلة، ثم أخرى).
      * وربطُها مرّةً واحدة كان سيُبقي الجلسة على رحلةٍ انتهت — فيستمرّ عميلُها
      * في رؤية السائق وهو في رحلة غيره. وهذا تسريبٌ لا تفصيل.
+     *
+     * والمراجعةُ هنا بلقطةِ الإصلاحةِ نفسِها عند توافرِها: فالإسنادُ الذي يقعُ
+     * بعدَها تراهُ الإصلاحةُ التاليةُ — وهو الترتيبُ الذي يضمنُهُ مسارُ الإرفاقِ
+     * أصلًا. ومن لا يوفّرُ اللقطةَ يقرأُ هنا كما كان حرفيًا.
      */
-    const trip = await deps.trips.activeTripOf(driverId);
+    const trip =
+      preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
     if (trip !== existing.facts.tripId) {
       const attached = await deps.sessions.attachTrip(driverId, trip);
       if (attached !== null) return { record: attached, opened: false };
@@ -240,9 +288,24 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
          * والفرق مقصود: من يرسل موقعه ليصير متاحاً (والبوت يطلب منه ذلك صراحةً
          * في `driver.available_needs_location`) يجب أن يُحفظ موقعه ولو لم تُفتح له جلسة.
          */
+        /**
+         * الحالتان تُقرآن في لقطةٍ واحدةٍ عند توافر القارئ الموحّد: بوابة الخدمة
+         * ورحلتُها النشطةُ حقيقةٌ واحدةٌ في لحظةٍ واحدة، وقراءتُهما في رحلتينِ
+         * متتاليتينِ كانت تجمعُ بينهما طابورَ الانتظارِ نفسَهُ مرتينِ على كلِّ
+         * إصلاحة — واللقطةُ الموحّدةُ أبعدُ عن التمزّقِ لا أقربُ: لا تُقرأُ
+         * الحقيقةُ قبلَ الطابورِ وتُعادُ قراءتُهُ بعدَهُ فيختلفَ الحُكمُ بينهما.
+         * ومن لا يوفّرُ القارئَ يبقى على القارئينِ كما كان حرفيًا.
+         */
+        const state =
+          deps.dutyAndTrip !== undefined
+            ? await deps.dutyAndTrip.dutyAndActiveTrip(fix.driverId)
+            : {
+                onDuty: await deps.duty.isOnDuty(fix.driverId),
+                activeTripId: await deps.trips.activeTripOf(fix.driverId),
+              };
         const duty: DriverDutyState = {
-          isOnDuty: await deps.duty.isOnDuty(fix.driverId),
-          hasActiveTrip: (await deps.trips.activeTripOf(fix.driverId)) !== null,
+          isOnDuty: state.onDuty,
+          hasActiveTrip: state.activeTripId !== null,
         };
         if (!sessionShouldRun(duty)) {
           const open = await deps.sessions.openSessionOf(fix.driverId);
@@ -263,7 +326,12 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
          * سيمرّ من كل اختبارٍ بساعةٍ واحدة، ولا يظهر إلا بساعتين مختلفتين.
          */
         const startAtMs = Math.min(nowMs, fix.recordedAtMs);
-        const { record, opened } = await currentSession(fix.driverId, nowMs, startAtMs);
+        const { record, opened } = await currentSession(
+          fix.driverId,
+          nowMs,
+          startAtMs,
+          state.activeTripId,
+        );
         const facts = record.facts;
 
         if (opened) {

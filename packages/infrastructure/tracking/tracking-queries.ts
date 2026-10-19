@@ -22,6 +22,7 @@ import type {
 } from "../../application/tracking/driver-trip-card.ts";
 import type {
   ActiveTripReader,
+  DriverDutyAndTripReader,
   DriverDutyReader,
 } from "../../application/tracking/live-tracking.ts";
 import type { DriverTripStatus } from "../../domain/tracking/driver-trip-view.ts";
@@ -104,6 +105,40 @@ export function createDriverDutyReader(sql: Sql): DriverDutyReader {
                ) as on_duty
       `;
       return rows[0]?.on_duty === true;
+    },
+  };
+}
+
+/**
+ * القارئ الموحّد: بوابةُ الخدمةِ والرحلةُ النشطةُ في استعلامٍ واحدٍ ولقطةٍ واحدة.
+ *
+ * ## لماذا لا يُبنى على القارئينِ السابقينِ ولا يُبنيانِ عليه
+ *
+ * لأنّ أسئلتَهما مختلفةٌ لمن يحتاجُ أحدَها وحده — وهذا يجمعُهما لمن يحتاجهما
+ * معًا في اللحظةِ نفسِها (`onFix`) فيرحلةٍ واحدةٍ على مجموعةِ الطلباتِ بدلَ
+ * رحلتينِ متتاليتينِ تدفعانِ طابورَ الانتظارِ مرتينِ في كلِّ إصلاحةِ موقع.
+ * والفروعُ المُرسَبةُ (`scalar subquery`) تُقرأُ الحقيقةَ نفسَها من الجدولينِ
+ * نفسِهما اللذينِ يقرؤهما القارئانِ — لا مصدرَ ثالثًا ولا مفهومًا جديدًا.
+ */
+export function createDriverDutyAndTripReader(sql: Sql): DriverDutyAndTripReader {
+  return {
+    dutyAndActiveTrip: async (driverId) => {
+      const rows = await sql<{ on_duty: boolean; active_trip_id: string | null }[]>`
+        select coalesce(
+                 (select a.is_available from driver_availability a
+                   where a.driver_id = ${driverId}::uuid),
+                 false
+               ) as on_duty,
+               (select o.id::text from orders o
+                 where o.assigned_driver_id = ${driverId}::uuid
+                   and o.status in ('matched', 'in_progress')
+                 limit 1) as active_trip_id
+      `;
+      const row = rows[0];
+      return {
+        onDuty: row?.on_duty === true,
+        activeTripId: row?.active_trip_id ?? null,
+      };
     },
   };
 }

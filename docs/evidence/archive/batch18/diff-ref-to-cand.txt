@@ -1,0 +1,6 @@
+ apps/gateway/src/container.ts                      |   9 +
+ packages/application/tracking/live-tracking.ts     |  78 +++++-
+ .../infrastructure/tracking/tracking-queries.ts    |  35 +++
+ .../tracking-duty-and-trip-reader.test.ts          | 288 +++++++++++++++++++++
+ tests/unit/live-tracking-unified-read.test.ts      | 231 +++++++++++++++++
+ 5 files changed, 636 insertions(+), 5 deletions(-)
