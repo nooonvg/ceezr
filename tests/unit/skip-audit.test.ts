@@ -983,10 +983,13 @@ describe("السجلُّ الحقيقيُّ — أرقامٌ مقيسةٌ مُث
     // `tracking-duty-and-trip-reader.test.ts` (تكافؤُ القارئِ الموحّدِ للخدمةِ والرحلةِ عبرَ كلِّ الحالاتِ ·
     // عقدُ السباقِ: إسنادٌ بعدَ اللقطةِ تراهُ الإصلاحةُ التاليةُ) — أحكامُ محرّكٍ لا تُقاسُ إلا على
     // PostgreSQL حقيقيٍّ، وتجري في وظيفةِ التكامل.
-    expect(SKIP_REGISTRY).toHaveLength(203);
+    // زيادةٌ (الدفعةُ 20 · LOAD-01): 204 — `telegram-update-batch-claim-lane-order.test.ts` (شرطُ D4 في
+    // الالتقاطِ الدُّفعيِّ على PostgreSQL حقيقيٍّ) في وظيفةِ التكامل.
+    expect(SKIP_REGISTRY).toHaveLength(204);
     // زيادةٌ (الدفعةُ 19 · تدقيقُ PR #595): 1689 — حالةُ سباقِ فتحِ الجلسةِ على PostgreSQL
     // حقيقيٍّ في `tracking-duty-and-trip-reader.test.ts` (تعملُ في وظيفةِ التكاملِ).
-    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1689);
+    // زيادةٌ (الدفعةُ 20): 1692 — حالاتُ الملفِّ الثلاث.
+    expect(SKIP_REGISTRY.reduce((sum, entry) => sum + entry.skipped, 0)).toBe(1692);
   });
 
   it("لا تجاوزَ على مسارٍ حرجٍ بلا مُشغِّلٍ، وما لا مُشغِّلَ له مُعلَنٌ ببيانٍ", () => {

@@ -1467,6 +1467,17 @@ export const ROLLBACK_DECLARATIONS: readonly RollbackDeclaration[] = [
     criticalPath: null,
     documentedIn: null,
   },
+  {
+    migration: "20261020090000_load01_batch_claim_lane_order.sql",
+    change: "revoke_function:claim_telegram_update_jobs_for_bot(4)",
+    why: "الهجرةُ `20261020090000` (`LOAD-01` · الدفعةُ 20) تُعيدُ تعريفَ `claim_telegram_update_jobs_for_bot(integer, integer, text, integer)` **بالتوقيعِ والمردِّ نفسِهما**، وتُضيفُ إلى اختيارِ الدُّفعةِ شرطَ D4 حرفيًّا من الالتقاطِ المفرد (`20261015000200`): لا تُلتقَطُ وظيفةُ مستخدمٍ وأمامَها وظيفةٌ أقدمُ له معلَّقةٌ أو محجوزة. الاسترجاعُ والإماتةُ و`skip locked` والمحاولةُ ومرآةُ الإيصالِ والسقفُ حرفيًّا كما كانت. والسحبُ بعدَ `create or replace` إعادةُ قفلٍ كما كانَ (لـ`service_role` وحدَها). والعودةُ إعادةُ تطبيقِ النصِّ من `20261018140000_load01_telegram_update_batch_claim` — فيعودُ خللُ الترتيبِ بينَ الدُّفعاتِ والنسخ — تراجعٌ سلوكيٌّ بحتٌ لا فقدُ عقد.",
+    breaksPreviousRelease: false,
+    rollbackPath: "code-only",
+    coupledDeploy: false,
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    documentedIn: null,
+  },
 ];
 
 /**
