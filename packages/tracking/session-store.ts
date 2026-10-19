@@ -95,15 +95,6 @@ export interface TrackingSessionStore {
    *
    * **ولا يستهلك رقماً**: لا حدثَ يُنشَر عن الربطِ، ورقمٌ يُستهلَك بلا حدثٍ فجوةٌ
    * مصطنعةٌ تُرسل كلَّ مستهلكٍ إلى لقطةٍ بلا سببٍ (`ADR 0053` §٣-ب).
-   *
-   * **والربطُ برحلةٍ مشروطٌ بنشاطِها وإسنادِها للسائقِ نفسِهِ داخلَ جملةِ
-   * الإرفاقِ الواحدةِ** (عقدُ `activeTripOf` حرفيًا، بلقطةِ الجملةِ): فالفحصُ
-   * والكتابةُ لا ينفصلانِ — وهذا يرفعُ نافذةَ «قراءةٍ ثمّ كتابةٍ» التي كانَ
-   * المسارُ الأصليُّ مكشوفًا لها بينَ قراءتِهِ المتأخرةِ والإرفاقِ. وحدودُ
-   * اللقطةِ معروفةٌ وموثقةٌ (انظر `session-repository.ts`): انتظارُ القفلِ
-   * أثناءَ انتهاءِ الرحلةِ لا تراهُ لقطةُ الجملةِ — قيدٌ مرجعيٌّ في المسارينِ،
-   * وتخفيفُهُ مسارُ الإغلاقِ المستقلُّ والإصلاحةُ التاليةُ. والفصلُ بـ`null`
-   * بلا شرطٍ: فكُّ الربطِ لا يسرّبُ شيئًا.
    */
   attachTrip(driverId: string, tripId: string | null): Promise<TrackingSessionRecord | null>;
 
@@ -148,9 +139,7 @@ export interface TrackingSessionStore {
  * PostgreSQL حقيقيٍّ لهذا السببِ بعينِه. وحضورُه هنا لتبقى اختباراتُ السلوكِ
  * الوحدويّةُ سريعةً بلا قاعدةٍ، لا ليكونَ بديلاً عنها.
  */
-export function createMemoryTrackingSessionStore(
-  tripActivity?: (tripId: string) => boolean,
-): TrackingSessionStore {
+export function createMemoryTrackingSessionStore(): TrackingSessionStore {
   interface Entry {
     readonly sessionId: string;
     readonly facts: TrackingSessionFacts;
@@ -197,12 +186,6 @@ export function createMemoryTrackingSessionStore(
     attachTrip: async (driverId, tripId) => {
       const existing = open.get(driverId);
       if (existing === undefined) return null;
-      // عقدُ النشاطِ الذرّيِّ نفسُه: لا ربطَ برحلةٍ انتهت. والعرّفُ اختياريٌّ —
-      // الافتراضيُّ (بلا عرّفٍ) يعدُّ كلَّ رحلةٍ نشطةً فلا يتغيّرُ سلوكُ من لا
-      // يمرّرُه، والاختبارُ الحتميُّ للسباقِ يقلبُها أثناءَ انتظارِ الجلسةِ.
-      if (tripId !== null && tripActivity !== undefined && !tripActivity(tripId)) {
-        return null;
-      }
       return snapshot(put({ ...existing, facts: { ...existing.facts, tripId } }));
     },
 

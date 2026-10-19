@@ -73,28 +73,23 @@ function buildHarness(
   useUnified: boolean,
   race?: {
     /**
-     * عرّفُ نشاطِ الرحلةِ الذي يشترطُهُ الإرفاقُ الذرّيُّ في المخزنِ — يُقلَبُ
-     * في السباقِ الحتميّ أثناءَ انتظارِ الجلسةِ فلا يُرفَقُ ما انتهى.
-     */
-    tripActivity: (tripId: string) => boolean;
-    /**
      * يُنفَّذُ داخلَ انتظارِ `openSessionOf` — اللحظةُ التي تنتهي فيها الرحلةُ
-     * بينَ اللقطةِ والإرفاقِ، ويُمرّرُ للقارئَينِ معًا فيتصرفانِ بالتسلسلِ نفسِه.
+     * بينَ اللقطةِ والقراءةِ المتأخرةِ، ويُمرّرُ للقارئَينِ معًا فيتصرفانِ
+     * بالتسلسلِ نفسِه.
      */
     onBeforeOpenSessionOf?: () => void;
   },
 ): Harness {
   const counters: Counters = { dutyAndTrip: 0, activeTripOf: 0, isOnDuty: 0 };
   const events: TrackingEvent[] = [];
-  const store = createMemoryTrackingSessionStore(race?.tripActivity);
+  const store = createMemoryTrackingSessionStore();
   const sessions: TrackingSessionStore =
     race?.onBeforeOpenSessionOf === undefined
       ? store
       : {
           ...store,
           openSessionOf: async (driverId) => {
-            // الرحلةُ تنتهي هُنا — بعدَ اللقطةِ وقبلَ قرارِ الإرفاقِ، فيمرُّ
-            // closeByTrip فلا يجدُ جلسةً مرفقةً بها.
+            // الرحلةُ تنتهي هُنا — بعدَ اللقطةِ وقبلَ القراءةِ المتأخرةِ.
             race.onBeforeOpenSessionOf?.();
             return store.openSessionOf(driverId);
           },
@@ -209,19 +204,15 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
         onDuty: true,
         activeTripId: null,
       };
-      const activeTrips = new Set<string>();
       const h = buildHarness(now, state, useUnified, {
-        tripActivity: (tripId) => activeTrips.has(tripId),
         onBeforeOpenSessionOf: () => {
           // الرحلةُ تنتهي هنا — داخلَ انتظارِ الجلسةِ، بعدَ اللقطةِ.
-          activeTrips.delete(TRIP);
           state.activeTripId = null;
         },
       });
 
       // الإصلاحةُ الأولى: جلسةٌ بلا رحلة، ثمّ إسنادٌ.
       await h.live.onFix(fixAt(now.value));
-      activeTrips.add(TRIP);
       state.activeTripId = TRIP;
       now.value += 20_000;
       await h.live.onFix(fixAt(now.value));
@@ -256,26 +247,21 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
         onDuty: true,
         activeTripId: null,
       };
-      const activeTrips = new Set<string>();
       const h = buildHarness(now, state, useUnified, {
-        tripActivity: (tripId) => activeTrips.has(tripId),
         onBeforeOpenSessionOf: () => {
           // الإسنادُ الجديدُ ينتهي هنا — داخلَ نافذةِ الجلسةِ، بعدَ اللقطةِ.
           // (لا يُنفَّذُ إلا في إصلاحةِ الإسنادِ الجديدِ — لا في فتحِ الأولى.)
           if (state.activeTripId !== OTHER_TRIP) return;
-          activeTrips.delete(OTHER_TRIP);
           state.activeTripId = null;
         },
       });
 
       // الإصلاحةُ الأولى: جلسةٌ على الرحلةِ الأولى.
-      activeTrips.add(TRIP);
       state.activeTripId = TRIP;
       await h.live.onFix(fixAt(now.value));
       expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(TRIP);
 
       // إسنادٌ جديدٌ يقعُ، ثمّ إصلاحةٌ تراهُ في لقطتِها — وينتهي في النافذةِ.
-      activeTrips.add(OTHER_TRIP);
       state.activeTripId = OTHER_TRIP;
       now.value += 20_000;
       await h.live.onFix(fixAt(now.value));
@@ -304,22 +290,18 @@ describe("WASLA الدورة ٤ — القارئ الموحّد في onFix", () 
         onDuty: true,
         activeTripId: null,
       };
-      const activeTrips = new Set<string>();
       let sessionOnTrip = false;
       const h = buildHarness(now, state, useUnified, {
-        tripActivity: (tripId) => activeTrips.has(tripId),
         onBeforeOpenSessionOf: () => {
           // الرحلةُ نفسُها تنتهي هنا — واللقطةُ (المأخوذةُ قبلَ النافذةِ) ما
           // تزالُ تحملُها. (لا يُنفَّذُ إلا بعدَ أن تكونَ الجلسةُ على الرحلةِ —
           // فتحُ الأولى لا يدخلِ في السباقِ.)
           if (!sessionOnTrip) return;
-          activeTrips.delete(TRIP);
           state.activeTripId = null;
         },
       });
 
       // الإصلاحةُ الأولى: جلسةٌ على الرحلةِ.
-      activeTrips.add(TRIP);
       state.activeTripId = TRIP;
       await h.live.onFix(fixAt(now.value));
       expect((await h.store.openSessionOf(DRIVER))?.facts.tripId).toBe(TRIP);

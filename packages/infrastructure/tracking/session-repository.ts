@@ -136,32 +136,11 @@ export function createTrackingSessionRepository(sql: Sql): TrackingSessionStore 
     },
 
     attachTrip: async (driverId, tripId) => {
-      /**
-       * الإرفاقُ يجمعُ الفحصَ والكتابةَ في جملةٍ واحدةٍ: لا يقعُ إلا إن كانتِ
-       * الرحلةُ نشطةً ومُسندةً للسائقِ نفسِهِ **بلقطةِ هذه الجملةِ** — العقدُ
-       * نفسُهُ الذي تقرأُهُ `activeTripOf(driverId)` حرفيًا. وهذا يرفعُ ما كانَ
-       * المسارُ الأصليُّ مكشوفًا له بينَ قراءتِهِ المتأخرةِ وجملةِ الإرفاقِ
-       * (نافذةُ فحصٍ وكتابةٍ منفصلتينِ). **وبقيت نافذةٌ معروفةٌ**: إن انتظرتِ
-       * الجملةُ قفلًا على صفِّ الجلسةِ وانتهتِ الرحلةُ أثناءَ الانتظارِ لم ترَها
-       * لقطةُ الجملةِ — وهي نافذةٌ موثقةٌ حتميًّا بالاختبارِ في المسارينِ معًا
-       * (قيدٌ مرجعيٌّ لا ادعاءَ لإغلاقِهِ هنا)؛ وتخفيفُها بمسارِ الإغلاقِ
-       * المستقلِّ (`closeByTrip`) وبفصلِ الإصلاحةِ التاليةِ. والفصلُ بـ`null`
-       * بلا شرطٍ: فكُّ الربطِ لا يسرّبُ شيئًا.
-       */
       const rows = await sql<SessionRow[]>`
         update tracking_sessions
            set trip_id = ${tripId === null ? null : sql`${tripId}::uuid`},
                updated_at = now()
          where driver_id = ${driverId}::uuid and ended_at is null
-           and (
-             ${tripId === null}
-             or exists (
-               select 1 from orders o
-                where o.id = ${tripId === null ? null : sql`${tripId}::uuid`}
-                  and o.assigned_driver_id = ${driverId}::uuid
-                  and o.status in ('matched', 'in_progress')
-             )
-           )
         returning ${sql.unsafe(SELECT_COLUMNS)}
       `;
       const row = rows[0];

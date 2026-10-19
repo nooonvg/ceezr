@@ -1,5 +1,5 @@
 diff --git a/packages/application/tracking/live-tracking.ts b/packages/application/tracking/live-tracking.ts
-index c7dff405..82e536ec 100644
+index c7dff405..5bdd67aa 100644
 --- a/packages/application/tracking/live-tracking.ts
 +++ b/packages/application/tracking/live-tracking.ts
 @@ -249,8 +249,15 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
@@ -20,23 +20,47 @@ index c7dff405..82e536ec 100644
        return { record: await deps.sessions.open(driverId, trip, startAtMs), opened: true };
      }
  
+@@ -260,12 +267,16 @@ export function createLiveTracking(deps: LiveTrackingDeps): LiveTrackingPort {
+      * وربطُها مرّةً واحدة كان سيُبقي الجلسة على رحلةٍ انتهت — فيستمرّ عميلُها
+      * في رؤية السائق وهو في رحلة غيره. وهذا تسريبٌ لا تفصيل.
+      *
+-     * والمراجعةُ هنا بلقطةِ الإصلاحةِ نفسِها عند توافرِها: فالإسنادُ الذي يقعُ
+-     * بعدَها تراهُ الإصلاحةُ التاليةُ — وهو الترتيبُ الذي يضمنُهُ مسارُ الإرفاقِ
+-     * أصلًا. ومن لا يوفّرُ اللقطةَ يقرأُ هنا كما كان حرفيًا.
++     * وحكمُ الإرفاقِ هنا **بالقراءةِ المتأخرةِ كما في المسارِ الأصليِّ حرفيًا**،
++     * لا بلقطةِ الإصلاحةِ: فالرحلةُ قد تنتهي أو يُعادَ إسنادُها في النافذةِ
++     * بينَ اللقطةِ وهذه القراءةِ — وحتى لو تساوتِ اللقطةُ معَ رحلةِ الجلسةِ
++     * (البقاءُ ظاهرُهُ السكونُ) فإنّ انتهاءَها هنا يفصلُ الربطَ فورًا كما في
++     * الأصلِ. فتوحيدُ القراءةِ اقتصرَ على ما لا يمسُّ هذا الحكمَ: قراءةُ
++     * الخدمةِ والرحلةِ في استعلامٍ واحدٍ عندَ البوّابةِ والفتحِ، وبقيتِ
++     * القراءةُ المتأخرةُ للحكمِ على الإرفاقِ — فالمكسبُ المحسومُ هو جولةُ
++     * الخدمةِ، لا السلامةُ.
+      */
+-    const trip =
+-      preReadTripId !== undefined ? preReadTripId : await deps.trips.activeTripOf(driverId);
++    const trip = await deps.trips.activeTripOf(driverId);
+     if (trip !== existing.facts.tripId) {
+       const attached = await deps.sessions.attachTrip(driverId, trip);
+       if (attached !== null) return { record: attached, opened: false };
 diff --git a/packages/infrastructure/tracking/session-repository.ts b/packages/infrastructure/tracking/session-repository.ts
-index a8b49f72..63cf8b6a 100644
+index a8b49f72..5ea90fef 100644
 --- a/packages/infrastructure/tracking/session-repository.ts
 +++ b/packages/infrastructure/tracking/session-repository.ts
-@@ -136,11 +136,30 @@ export function createTrackingSessionRepository(sql: Sql): TrackingSessionStore
+@@ -136,11 +136,32 @@ export function createTrackingSessionRepository(sql: Sql): TrackingSessionStore
      },
  
      attachTrip: async (driverId, tripId) => {
 +      /**
-+       * الإرفاقُ ذرّيٌّ ومتحققٌ من نشاطِ الرحلةِ لحظةَ الكتابةِ نفسِها: الجلسةَ لا
-+       * تُربطُ برحلةٍ انتهت — لا لأنّ القارئَ رأها نشطةً فحسب، بل لأنّ الإرفاقَ
-+       * لا يقعُ أصلًا إلا إن كانتِ الرحلةُ نشطةً ومُسندةً للسائقِ نفسِهِ في الجملةِ
-+       * ذاتِها — العقدُ نفسُهُ الذي تقرأُهُ `activeTripOf(driverId)` حرفيًا. وبهذا
-+       * يُغلقُ سباقُ النافذةِ (لقطةٌ قديمةٌ + رحلةٌ تنتهي أثناءَ انتظارِ الجلسةِ
-+       * فيَمرُّ `closeByTrip` قبلَ الإرفاقِ فلا يجدْها) — وهو سباقٌ كانَ قائمًا
-+       * حتى في المسارِ الأصليِّ بينَ قراءتِهِ المتأخرةِ والإرفاقِ. والفصلُ بـ
-+       * `null` يبقى بلا شرطٍ: فكُّ الربطِ لا يسرّبُ شيئًا.
++       * الإرفاقُ يجمعُ الفحصَ والكتابةَ في جملةٍ واحدةٍ: لا يقعُ إلا إن كانتِ
++       * الرحلةُ نشطةً ومُسندةً للسائقِ نفسِهِ **بلقطةِ هذه الجملةِ** — العقدُ
++       * نفسُهُ الذي تقرأُهُ `activeTripOf(driverId)` حرفيًا. وهذا يرفعُ ما كانَ
++       * المسارُ الأصليُّ مكشوفًا له بينَ قراءتِهِ المتأخرةِ وجملةِ الإرفاقِ
++       * (نافذةُ فحصٍ وكتابةٍ منفصلتينِ). **وبقيت نافذةٌ معروفةٌ**: إن انتظرتِ
++       * الجملةُ قفلًا على صفِّ الجلسةِ وانتهتِ الرحلةُ أثناءَ الانتظارِ لم ترَها
++       * لقطةُ الجملةِ — وهي نافذةٌ موثقةٌ حتميًّا بالاختبارِ في المسارينِ معًا
++       * (قيدٌ مرجعيٌّ لا ادعاءَ لإغلاقِهِ هنا)؛ وتخفيفُها بمسارِ الإغلاقِ
++       * المستقلِّ (`closeByTrip`) وبفصلِ الإصلاحةِ التاليةِ. والفصلُ بـ`null`
++       * بلا شرطٍ: فكُّ الربطِ لا يسرّبُ شيئًا.
 +       */
        const rows = await sql<SessionRow[]>`
          update tracking_sessions
@@ -56,7 +80,7 @@ index a8b49f72..63cf8b6a 100644
        `;
        const row = rows[0];
 diff --git a/packages/tracking/session-store.ts b/packages/tracking/session-store.ts
-index 1990b09c..f9428e12 100644
+index 1990b09c..67d18e47 100644
 --- a/packages/tracking/session-store.ts
 +++ b/packages/tracking/session-store.ts
 @@ -95,6 +95,15 @@ export interface TrackingSessionStore {
@@ -64,14 +88,14 @@ index 1990b09c..f9428e12 100644
     * **ولا يستهلك رقماً**: لا حدثَ يُنشَر عن الربطِ، ورقمٌ يُستهلَك بلا حدثٍ فجوةٌ
     * مصطنعةٌ تُرسل كلَّ مستهلكٍ إلى لقطةٍ بلا سببٍ (`ADR 0053` §٣-ب).
 +   *
-+   * **والربطُ برحلةٍ مشروطٌ بنشاطِها وإسنادِها للسائقِ نفسِهِ لحظةَ الكتابةِ
-+   * ذرّيًّا** (عقدُ `activeTripOf` حرفيًا): الجلسةُ لا
-+   * تُربطُ برحلةٍ انتهت — فالإسنادُ الذي وقعَ بعدَ لقطةِ القارئِ ثمّ انتهتْ
-+   * رحلتُهُ أثناءَ انتظارِ الجلسةِ يمرُّ `closeByTrip` قبلَ الإرفاقِ فلا يجدُ
-+   * جلسةً مرفقةً بها؛ فلو أُرفقتِ الجلسةُ بعدهُ منَ اللقطةِ القديمةِ لبقيتْ على
-+   * رحلةٍ منتهيةٍ — وهو بعينِهِ التسريبُ الذي يمنعُهُ هذا المسارُ. فالربطُ لا
-+   * يقعُ إلا إن كانتِ الرحلةُ نشطةً، والفصلُ بـ`null` بلا شرطٍ (فكُّ الربطِ لا
-+   * يسرّبُ شيئًا).
++   * **والربطُ برحلةٍ مشروطٌ بنشاطِها وإسنادِها للسائقِ نفسِهِ داخلَ جملةِ
++   * الإرفاقِ الواحدةِ** (عقدُ `activeTripOf` حرفيًا، بلقطةِ الجملةِ): فالفحصُ
++   * والكتابةُ لا ينفصلانِ — وهذا يرفعُ نافذةَ «قراءةٍ ثمّ كتابةٍ» التي كانَ
++   * المسارُ الأصليُّ مكشوفًا لها بينَ قراءتِهِ المتأخرةِ والإرفاقِ. وحدودُ
++   * اللقطةِ معروفةٌ وموثقةٌ (انظر `session-repository.ts`): انتظارُ القفلِ
++   * أثناءَ انتهاءِ الرحلةِ لا تراهُ لقطةُ الجملةِ — قيدٌ مرجعيٌّ في المسارينِ،
++   * وتخفيفُهُ مسارُ الإغلاقِ المستقلُّ والإصلاحةُ التاليةُ. والفصلُ بـ`null`
++   * بلا شرطٍ: فكُّ الربطِ لا يسرّبُ شيئًا.
     */
    attachTrip(driverId: string, tripId: string | null): Promise<TrackingSessionRecord | null>;
  

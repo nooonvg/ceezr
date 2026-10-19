@@ -8,8 +8,6 @@
   "implementation": [
     "packages/application/tracking/live-tracking.ts",
     "packages/infrastructure/tracking/tracking-queries.ts",
-    "packages/infrastructure/tracking/session-repository.ts",
-    "packages/tracking/session-store.ts",
     "apps/gateway/src/container.ts",
     "tests/unit/live-tracking-unified-read.test.ts",
     "tests/integration/tracking-duty-and-trip-reader.test.ts",
