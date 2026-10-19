@@ -1,0 +1,24 @@
+bun test v1.4.3 (c6da4a4d3)
+
+tests/integration/tracking-duty-and-trip-reader.test.ts:
+(pass) القارئ الموحّد للخدمة والرحلة النشطة — على PostgreSQL حقيقي > يُطابقُ القارئينِ المنفصلينِ في كلِّ حالةٍ — واستعلامٌ واحدٌ لا اثنانِ [118.57ms]
+(pass) القارئ الموحّد للخدمة والرحلة النشطة — على PostgreSQL حقيقي > عقدُ السباقِ محفوظٌ: إسنادٌ بعدَ لقطةِ الإصلاحةِ تراهُ الإصلاحةُ التاليةُ وتُرفِقُهُ [104.50ms]
+350 |       const rows = await sql<{ trip_id: string | null }[]>`
+351 |         select trip_id from tracking_sessions
+352 |          where driver_id = ${driverId}::uuid and ended_at is null
+353 |       `;
+354 |       expect(rows.length).toBe(1);
+355 |       expect(rows[0]?.trip_id).toBe(orderId);
+                                     ^
+error: expect(received).toBe(expected)
+
+Expected: "a3912317-fa27-4d43-a191-3b65551aa08f"
+Received: null
+
+      at <anonymous> (tests/integration/tracking-duty-and-trip-reader.test.ts:355:32)
+(fail) القارئ الموحّد للخدمة والرحلة النشطة — على PostgreSQL حقيقي > الدفعة 19 — إسنادٌ بعدَ اللقطةِ وأثناءَ انتظارِ openSessionOf: الجلسةُ تُفتحُ على الرحلةِ في المسارينِ (عقدُ main) [84.92ms]
+
+ 2 pass
+ 1 fail
+ 27 expect() calls
+Ran 3 tests across 1 file. [391.00ms]
