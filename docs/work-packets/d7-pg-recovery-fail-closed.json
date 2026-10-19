@@ -1,0 +1,29 @@
+{
+  "id": "d7-pg-recovery-fail-closed",
+  "goal": "D7: أداة تجربة تعافي PG تفشل مغلقة (خلفيات البوابة ceezr:%، قتل صفر = NO_FAULT_INJECTED، سجل غير مقروء = NOT_PROVEN) وإعادة إثبات التعافي على main الحالي.",
+  "canonical_source": ["docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md"],
+  "implementation": [
+    "deploy/capacity-run/gen-r1.sh",
+    "deploy/capacity-run/load/pg-recovery.ts",
+    "tests/unit/pg-recovery-contract.test.ts"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-16-D7-RECOVERY-RECHECK.md",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch16-d7/SHA256SUMS",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch16-d7/run0-old-tool-pg-recovery.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch16-d7/run1-fixed-tool-log-unreadable-pg-recovery.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch16-d7/run2-fault-injection.json",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch16-d7/run2-fixed-tool-pg-recovery.jsonl",
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch16-d7/run2-pools-after-4min.json",
+    "docs/roadmap/capacity/CAP-RUN-20261016-CONTINUATION.md",
+    "docs/roadmap/execution/STATUS.md"
+  ],
+  "decision": "إصلاح أداة اختبار فقط؛ لا تغيير في شيفرة المنتج ولا قرار معماري.",
+  "tests": ["bun test tests/unit/pg-recovery-contract.test.ts"],
+  "evidence": "run0 (أداة قديمة): backendsKilled=0 وحكم نجاح زائف؛ run1: سجل غير مقروء ⇒ NOT_PROVEN؛ run2: RECOVERY_PROVEN على e3e4b39c.",
+  "constraints": ["مقعد معزول netns", "لا نشر", "لا بيانات حقيقية"],
+  "limitations": "تجربة واحدة لكل نوع عطل على مثيل واحد بلا حمل؛ لا تثبت سلوك المنصة الحقيقية.",
+  "status": "open"
+}
