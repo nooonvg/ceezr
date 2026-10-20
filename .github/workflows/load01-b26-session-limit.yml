@@ -1,0 +1,69 @@
+name: LOAD-01 الدفعة 26 — مقعد 4 vCPU (حد الشوط 50 مقابل 100 بعد إزالة اختناق حد الجلسات من المقعد)
+
+# تشخيصٌ معزولٌ على فرعِ التجربةِ وحدَه ولا يُدمَج: R (main 9880f650، حدُّ 50) مقابلَ C (3d4dcbd0، حدُّ 100)
+# بالمقعدِ والمولّدِ نفسَيهما في الدفعة 25، والفرقُ الوحيدُ SESSION_EXCHANGE_PER_MINUTE للمقعدِ وحدَه (24000،
+# محسوبٌ ومثبَّتٌ في PLAN-b26.md قبلَ أوّلِ موجة). حدُّ الإنتاجِ (30) وrun.env (6000) بلا تغيير.
+# لا أسرار: القاعدةُ وRedis والمحاكي داخلَ netns بلا شبكة؛ أسرارُ المقعدِ مولَّدةٌ عشوائيًّا.
+# الأثرُ الخامُّ داخلَ الدليلِ + تدقيقُ الأسرارِ قبلَ أيِّ رفعٍ (فجوةُ ب23 مُغلَقة).
+on:
+  push:
+    branches: [exp/load01-b26-session-limit]
+    paths:
+      - deploy/capacity-run/b24-runner/**
+      - .github/workflows/load01-b26-session-limit.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load01-b26-seat
+  cancel-in-progress: false
+
+jobs:
+  seat:
+    name: مقعد B26 (R=حد 50 مقابل C=حد 100، حد الجلسات للمقعد 24000)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 340
+    env:
+      R_SHA: 9880f65085a3073a59f020d843a2db8a862f70de
+      C_SHA: 3d4dcbd0bbe7ad9a8ab29bb6f9a25661f469ab70
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: تجهيز المقعد (حزم المقعد الأصلي والمستخدم user)
+        run: sudo bash deploy/capacity-run/b24-runner/provision-root.sh
+
+      - name: نسخة المستودع للمستخدم user
+        run: |
+          sudo cp -a "$GITHUB_WORKSPACE" /home/user/workspace/ceezr
+          sudo chown -R user:user /home/user/workspace/ceezr
+          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$R_SHA^{commit}"
+          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$C_SHA^{commit}"
+
+      - name: المقعد والموجات (داخل ceezrseat.slice)
+        run: |
+          MODE=$(cat deploy/capacity-run/b24-runner/MODE)
+          echo "MODE=$MODE"
+          sudo systemd-run --quiet --wait --pipe --collect --slice=ceezrseat.slice \
+            --uid=user --gid=user -p LimitNOFILE=4096 -p WorkingDirectory=/home/user \
+            --setenv=R_SHA="$R_SHA" --setenv=C_SHA="$C_SHA" \
+            bash /home/user/workspace/ceezr/deploy/capacity-run/b24-runner/seat-b26.sh "$MODE"
+
+      - name: رفع الدليل (لا يُرفعُ إلا بنجاحِ تدقيقِ الأسرارِ — الفشلُ يحجرُ الخامَّ في المقعدِ)
+        uses: actions/upload-artifact@v5
+        with:
+          name: b26-seat-evidence
+          path: /home/user/b26-out/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: رفع تقرير الفشل المنقح (تدقيقُ الأسرارِ وحدَه)
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: b26-seat-failure-report
+          path: /home/user/b26-out/secret-audit.txt
+          if-no-files-found: ignore
+          retention-days: 14

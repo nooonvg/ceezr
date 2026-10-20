@@ -1,0 +1,231 @@
+{
+ "inputs": "b25 raw/batch25/gh (PR #606 @ 4e0db400; SHA256SUMS هناك)",
+ "constants_from_code": {
+  "IMMEDIATE_LIMIT": {
+   "R": 50,
+   "C": 100
+  },
+  "IMMEDIATE_DEBOUNCE_S": 2.0,
+  "PERIODIC_LIMIT": 50,
+  "PERIODIC_EVERY_S": 20,
+  "SESSIONS_PER_SCENARIO": 3,
+  "CONC": 750,
+  "PARSER_MAX": 100000
+ },
+ "waves_b25": {
+  "R1": {
+   "scenarios": 4091,
+   "verified": 4061,
+   "session_offered": 12273,
+   "session_rejected_429": 0,
+   "session_accepted": 12273,
+   "calls_per_scenario": 3.0,
+   "first_session_429_s": null,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2253,
+   "max_sliding60_offered_bins": 5471,
+   "max_sliding60_accepted_bins": 5471,
+   "clean_window_s": 180.2,
+   "clean_offered_per_s": 67.6,
+   "clean_max_sliding60_offered": 5471,
+   "clean_completions_per_s": 18.59,
+   "clean_non_verified_outcomes": 14,
+   "steady_session_per_s": 55.9,
+   "steady_completions_per_s": 18.61,
+   "steady_sessions_over_3lambda": 1.001
+  },
+  "C1": {
+   "scenarios": 171531,
+   "verified": 4453,
+   "session_offered": 185065,
+   "session_rejected_429": 167065,
+   "session_accepted": 18000,
+   "calls_per_scenario": 1.079,
+   "first_session_429_s": 41.8,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2504,
+   "max_sliding60_offered_bins": 98395,
+   "max_sliding60_accepted_bins": 6048,
+   "clean_window_s": 40.0,
+   "clean_offered_per_s": 140.4,
+   "clean_max_sliding60_offered": 5618,
+   "clean_completions_per_s": 30.23,
+   "clean_non_verified_outcomes": 0
+  },
+  "C2": {
+   "scenarios": 164423,
+   "verified": 4103,
+   "session_offered": 178315,
+   "session_rejected_429": 160315,
+   "session_accepted": 18000,
+   "calls_per_scenario": 1.084,
+   "first_session_429_s": 55.3,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2300,
+   "max_sliding60_offered_bins": 83193,
+   "max_sliding60_accepted_bins": 6071,
+   "clean_window_s": 55.0,
+   "clean_offered_per_s": 106.2,
+   "clean_max_sliding60_offered": 5841,
+   "clean_completions_per_s": 28.25,
+   "clean_non_verified_outcomes": 0
+  },
+  "R2": {
+   "scenarios": 4100,
+   "verified": 4074,
+   "session_offered": 12300,
+   "session_rejected_429": 0,
+   "session_accepted": 12300,
+   "calls_per_scenario": 3.0,
+   "first_session_429_s": null,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2392,
+   "max_sliding60_offered_bins": 5440,
+   "max_sliding60_accepted_bins": 5440,
+   "clean_window_s": 180.2,
+   "clean_offered_per_s": 67.5,
+   "clean_max_sliding60_offered": 5440,
+   "clean_completions_per_s": 18.64,
+   "clean_non_verified_outcomes": 13,
+   "steady_session_per_s": 56.0,
+   "steady_completions_per_s": 18.76,
+   "steady_sessions_over_3lambda": 0.995
+  },
+  "C3": {
+   "scenarios": 177119,
+   "verified": 4264,
+   "session_offered": 190846,
+   "session_rejected_429": 172846,
+   "session_accepted": 18000,
+   "calls_per_scenario": 1.078,
+   "first_session_429_s": 55.6,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2223,
+   "max_sliding60_offered_bins": 114739,
+   "max_sliding60_accepted_bins": 6032,
+   "clean_window_s": 55.0,
+   "clean_offered_per_s": 106.5,
+   "clean_max_sliding60_offered": 5858,
+   "clean_completions_per_s": 28.45,
+   "clean_non_verified_outcomes": 0
+  },
+  "R3": {
+   "scenarios": 4060,
+   "verified": 4033,
+   "session_offered": 12180,
+   "session_rejected_429": 0,
+   "session_accepted": 12180,
+   "calls_per_scenario": 3.0,
+   "first_session_429_s": null,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2403,
+   "max_sliding60_offered_bins": 5321,
+   "max_sliding60_accepted_bins": 5321,
+   "clean_window_s": 180.2,
+   "clean_offered_per_s": 66.7,
+   "clean_max_sliding60_offered": 5321,
+   "clean_completions_per_s": 18.42,
+   "clean_non_verified_outcomes": 15,
+   "steady_session_per_s": 55.9,
+   "steady_completions_per_s": 18.68,
+   "steady_sessions_over_3lambda": 0.997
+  },
+  "R4": {
+   "scenarios": 4103,
+   "verified": 4071,
+   "session_offered": 12309,
+   "session_rejected_429": 0,
+   "session_accepted": 12309,
+   "calls_per_scenario": 3.0,
+   "first_session_429_s": null,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2401,
+   "max_sliding60_offered_bins": 5400,
+   "max_sliding60_accepted_bins": 5400,
+   "clean_window_s": 180.0,
+   "clean_offered_per_s": 67.5,
+   "clean_max_sliding60_offered": 5400,
+   "clean_completions_per_s": 18.64,
+   "clean_non_verified_outcomes": 12,
+   "steady_session_per_s": 56.3,
+   "steady_completions_per_s": 18.87,
+   "steady_sessions_over_3lambda": 0.994
+  },
+  "C4": {
+   "scenarios": 178994,
+   "verified": 3989,
+   "session_offered": 192992,
+   "session_rejected_429": 174992,
+   "session_accepted": 18000,
+   "calls_per_scenario": 1.078,
+   "first_session_429_s": 43.2,
+   "other_429_outcomes": 0,
+   "startup_10s_offered": 2342,
+   "max_sliding60_offered_bins": 92169,
+   "max_sliding60_accepted_bins": 6035,
+   "clean_window_s": 40.0,
+   "clean_offered_per_s": 137.1,
+   "clean_max_sliding60_offered": 5485,
+   "clean_completions_per_s": 31.5,
+   "clean_non_verified_outcomes": 0
+  }
+ },
+ "summary": {
+  "R_max_sliding60_offered": [
+   5321,
+   5471
+  ],
+  "R_steady_session_per_s": [
+   55.9,
+   56.3
+  ],
+  "R_steady_completions_per_s": [
+   18.61,
+   18.87
+  ],
+  "C_first_429_s": [
+   41.8,
+   55.6
+  ],
+  "C_clean_completions_per_s": [
+   28.25,
+   31.5
+  ],
+  "C_clean_offered_per_s": [
+   106.2,
+   140.4
+  ],
+  "C_clean_max_sliding60_offered": [
+   5485,
+   5858
+  ]
+ },
+ "bound_R": {
+  "first_exec_capacity_per_s": 27.5,
+  "startup_cohort_calls": 2250,
+  "D60_upper_bound": 7200
+ },
+ "bound_C": {
+  "first_exec_capacity_per_s": 52.5,
+  "startup_cohort_calls": 2250,
+  "D60_upper_bound": 11700
+ },
+ "margin": 2.0,
+ "value_raw": 23400.0,
+ "SESSION_EXCHANGE_PER_MINUTE": 24000,
+ "expected_max_utilisation": {
+  "R": 0.3,
+  "C": 0.487
+ },
+ "checks": {
+  "R_has_no_session_429": true,
+  "R_calls_per_scenario_eq_3": true,
+  "R_observed_max60_le_R_bound": true,
+  "R_steady_completions_le_R_capacity": true,
+  "C_clean_completions_le_C_capacity": true,
+  "C_clean_max60_le_C_bound": true,
+  "value_gt_old_6000": true,
+  "value_le_parser_max": true
+ },
+ "ok": true
+}
