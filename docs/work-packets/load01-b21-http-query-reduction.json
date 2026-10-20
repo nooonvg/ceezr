@@ -10,6 +10,7 @@
     "apps/gateway/src/index.ts",
     "packages/application/driver/driver-job.ts",
     "packages/application/driver/job-ports.ts",
+    "packages/infrastructure/db/schema-contract.ts",
     "packages/infrastructure/driver/driver-job-store.ts",
     "packages/infrastructure/driver/driver-offers-store.ts",
     "scripts/lib/skip-registry.ts",
