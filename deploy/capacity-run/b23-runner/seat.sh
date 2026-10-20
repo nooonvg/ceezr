@@ -15,7 +15,11 @@ log() { echo "[$(date -u +%T)] $*"; }
 log "worktrees R=$R_SHA C=$C_SHA"
 git -C "$H" worktree add -f --detach "$W/wt-ref" "$R_SHA" >/dev/null 2>&1
 git -C "$H" worktree add -f --detach "$W/wt-acc" "$C_SHA" >/dev/null 2>&1
-for wt in wt-ref wt-acc; do (cd "$W/$wt" && bun install --frozen-lockfile >"$OUT/bun-install-$wt.log" 2>&1); done
+for wt in wt-ref wt-acc; do
+  (cd "$W/$wt" && bun install --frozen-lockfile >"$OUT/bun-install-$wt.log" 2>&1)
+  # وسيطُ REST خارجَ مساحةِ العمل: له قفلُه ووحداتُه (كما على المقعدِ الأصليّ).
+  (cd "$W/$wt/docker/upstash-rest-shim" && bun install --frozen-lockfile >>"$OUT/bun-install-$wt.log" 2>&1)
+done
 grep -H "^  gatewayRequest: " "$W/wt-ref/packages/shared/config/connection-budget.ts" "$W/wt-acc/packages/shared/config/connection-budget.ts"
 
 log "setup-env (infra|db|migrate) من wt-acc"
@@ -44,7 +48,8 @@ cp "$H"/deploy/capacity-run/b23-runner/seat-bin/* "$B/bin/"; chmod 755 "$B"/bin/
 log "المحاكي والوسيط من wt-acc"
 (cd "$W/wt-acc" && CODE_DIR=$W/wt-acc bash deploy/capacity-run/svc.sh mock && CODE_DIR=$W/wt-acc bash deploy/capacity-run/svc.sh shim)
 sleep 8
-(cd "$W/wt-acc" && bash deploy/capacity-run/svc.sh status) || true
+(cd "$W/wt-acc" && bash deploy/capacity-run/svc.sh status) | tee "$OUT/svc-status.txt" || true
+grep -q "telegram-mock=up" "$OUT/svc-status.txt" && grep -q "shim=up" "$OUT/svc-status.txt" || { echo "SEAT_SERVICES_DOWN"; tail -20 "$B/runs/current/evidence/shim.log" 2>/dev/null; exit 1; }
 
 log "سجلُّ البيئة"
 {
@@ -91,4 +96,7 @@ for r in $RUNS; do
   cp -r "$B/qual/$r" "$D/qual" 2>/dev/null || true
   for g in $B/bin/gates.sh; do $g "$r" > "$D/gates.txt" 2>&1 || true; done
 done
+mkdir -p "$OUT/service-logs"
+for f in shim telegram-mock gateway; do tail -n 400 "$B/runs/current/evidence/$f.log" > "$OUT/service-logs/$f.tail.log" 2>/dev/null || true; done
+cp "$B/runs/current/evidence/gateway-starts.jsonl" "$OUT/service-logs/" 2>/dev/null || true
 log "DONE"

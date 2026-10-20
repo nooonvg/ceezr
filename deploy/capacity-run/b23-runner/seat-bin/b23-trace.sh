@@ -18,5 +18,7 @@ $PSQL -d postgres -Atc "select count(pg_terminate_backend(pid)) from pg_stat_act
 kill $SS 2>/dev/null; wait $SS 2>/dev/null
 E=$B/runs/$R/evidence; cp $B/trace-cur.jsonl.load.jsonl $E/load-trace.jsonl 2>/dev/null; cp $B/conn-cur.txt $E/conn-samples.csv; cp $B/sched-cur.jsonl $E/sched-samples.jsonl
 $PSQL -d ceezr_cap_20261016 -Atc "copy (select bot, update_id, (extract(epoch from created_at)*1000)::bigint, (extract(epoch from completed_at)*1000)::bigint, status, attempts from telegram_update_jobs) to stdout with csv" > $E/update-jobs.csv
-printf '{"tpl_level_ok":"%s","side":"%s","code_ref":"%s","code_acc":"%s","gateway_request_ref":"%s","gateway_request_acc":"%s","nproc":%s}\n' "$lvl" "$SIDE" "$(git -C /home/user/workspace/wt-ref rev-parse HEAD)" "$(git -C /home/user/workspace/wt-acc rev-parse HEAD)" "$(grep -oE '^  gatewayRequest: [0-9]+' /home/user/workspace/wt-ref/packages/shared/config/connection-budget.ts | grep -oE '[0-9]+$')" "$(grep -oE '^  gatewayRequest: [0-9]+' /home/user/workspace/wt-acc/packages/shared/config/connection-budget.ts | grep -oE '[0-9]+$')" "$(nproc)" > $E/b23-env.json
+gw() { grep -m1 -oE '^  gatewayRequest: [0-9]+,' "$1/packages/shared/config/connection-budget.ts" | grep -oE '[0-9]+'; }
+WR=/home/user/workspace/wt-ref; WA=/home/user/workspace/wt-acc
+printf '{"tpl_level_ok":"%s","side":"%s","code_ref":"%s","code_acc":"%s","gateway_request_ref":%s,"gateway_request_acc":%s,"nproc":%s}\n' "$lvl" "$SIDE" "$(git -C $WR rev-parse HEAD)" "$(git -C $WA rev-parse HEAD)" "$(gw $WR)" "$(gw $WA)" "$(nproc)" > $E/b23-env.json
 echo "=== $(date -Is) END rc=$rc"; echo TRACE_DONE
