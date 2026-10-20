@@ -1,0 +1,19 @@
+{
+ "samples": 210,
+ "steal_mean": 0.48,
+ "steal_max_1s": 3.55,
+ "siblings_mean": 0.04,
+ "foreign_mean": 0.42,
+ "iowait_mean": 0.09,
+ "throttled": 0,
+ "foreign_top": [],
+ "steal_10s_rolling_max": 1.16,
+ "post_speed_probe_median_ms": 405.7,
+ "post_pg_probe_median_ms": 353.6,
+ "host_busy_mean_pct": 81.3,
+ "procs_running_mean": 4.85,
+ "validity_version": "B12-V2",
+ "mode": "inflight",
+ "violations": [],
+ "verdict": "VALID"
+}

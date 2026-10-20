@@ -14,7 +14,11 @@
  * - `loop`: كلَّ 5ث تأخُّرُ حلقةِ الأحداثِ (مؤقّتٌ كلَّ 50ms: p50/p95/max للانحراف) وCPU الخيطِ
  *   الرئيسيِّ (`/proc/self/task/<pid>/stat`، لينكس) وCPU العمليّةِ كلِّها (`process.cpuUsage`)،
  *   فيُفصَلُ «الخيطُ مشغول» عن «الخيطُ ينتظرُ دورَه على المعالج».
+ * - `rsig` (الدفعةُ 21): عددُ كلِّ استعلامٍ بتوقيعِه **منسوبًا إلى مسارِ HTTP الذي أطلقَه**
+ *   (`AsyncLocalStorage` حولَ `app.fetch`)، وما لا طلبَ له (الدرينر، العمّال) يُنسَبُ إلى
+ *   `(background)`. يُصبُّ عندَ الإيقاف، فيُحصى «استعلامٌ لكلِّ طلبٍ» لكلِّ مسارٍ من الأثرِ لا تخمينًا.
  */
+import { AsyncLocalStorage } from "node:async_hooks";
 import { readFileSync } from "node:fs";
 import { appendFile } from "node:fs/promises";
 import { observeQueryTimings } from "../../../../packages/infrastructure/db/query-deadline.ts";
@@ -23,6 +27,8 @@ import type { DrainerTiming } from "./telegram-update-drainer.ts";
 export interface LoadTrace {
   readonly drainer: DrainerTiming;
   readonly onHttp: (pathname: string, method: string, ms: number, status: number) => void;
+  /** يُشغِّلُ معالجةَ الطلبِ داخلَ نطاقِ مسارِه فتُنسَبُ إليه استعلاماتُه (`rsig`). */
+  readonly inRoute: <T>(pathname: string, method: string, fn: () => Promise<T>) => Promise<T>;
   readonly stop: () => Promise<void>;
 }
 
@@ -68,6 +74,8 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
   let dbWindow = new Map<string, { wait: number[]; run: number[] }>();
   // عددُ كلِّ استعلامٍ بتوقيعِه وزمنُ احتجازِه المقعدَ — يُصبُّ كاملًا عندَ الإيقاف.
   const sigWindow = new Map<string, { n: number; runMs: number }>();
+  const routeScope = new AsyncLocalStorage<string>();
+  const routeSig = new Map<string, { n: number; runMs: number }>();
   observeQueryTimings((t) => {
     const key = `${t.label}|${t.kind}`;
     let w = dbWindow.get(key);
@@ -83,6 +91,11 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
       c.n += 1;
       c.runMs += t.runMs;
       sigWindow.set(sk, c);
+      const rk = `${routeScope.getStore() ?? "(background)"}|${t.label}|${t.kind}|${t.sig}`;
+      const r = routeSig.get(rk) ?? { n: 0, runMs: 0 };
+      r.n += 1;
+      r.runMs += t.runMs;
+      routeSig.set(rk, r);
     }
   });
   const flush = async (): Promise<void> => {
@@ -189,7 +202,20 @@ export function createLoadTrace(file: string | undefined): LoadTrace | null {
       w.ms.push(ms);
       if (status >= 500) w.errors += 1;
     },
+    inRoute: (pathname, method, fn) => routeScope.run(normaliseRoute(method, pathname), fn),
     stop: async () => {
+      for (const [key, c] of routeSig) {
+        const [route, pool, kind, ...rest] = key.split("|");
+        emit({
+          k: "rsig",
+          route,
+          pool,
+          kind,
+          sig: rest.join("|"),
+          n: c.n,
+          runMs: Math.round(c.runMs),
+        });
+      }
       for (const [key, c] of sigWindow) {
         const [pool, kind, ...rest] = key.split("|");
         emit({ k: "sig", pool, kind, sig: rest.join("|"), n: c.n, runMs: Math.round(c.runMs) });

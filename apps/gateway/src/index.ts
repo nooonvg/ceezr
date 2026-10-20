@@ -2073,7 +2073,9 @@ const httpHandler = createHttpBridge(
       const t0 = performance.now();
       let status = 500;
       try {
-        const response = await app.fetch(request, server);
+        const response = await loadTrace.inRoute(pathname, request.method, async () =>
+          app.fetch(request, server),
+        );
         status = response.status;
         return response;
       } finally {

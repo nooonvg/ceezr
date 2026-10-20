@@ -1,0 +1,23 @@
+{
+ "samples": 151,
+ "steal_mean": 0.48,
+ "steal_max_1s": 5.39,
+ "siblings_mean": 0.06,
+ "foreign_mean": 1.23,
+ "iowait_mean": 0.12,
+ "throttled": 0,
+ "foreign_top": [
+  "/sbin/init",
+  "/usr/lib/systemd/systemd-journald",
+  "/usr/local/bin/spaced-svc"
+ ],
+ "steal_10s_rolling_max": 1.29,
+ "post_speed_probe_median_ms": 406.6,
+ "post_pg_probe_median_ms": 349.0,
+ "host_busy_mean_pct": 79.3,
+ "procs_running_mean": 4.56,
+ "validity_version": "B12-V2",
+ "mode": "inflight",
+ "violations": [],
+ "verdict": "VALID"
+}
