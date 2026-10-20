@@ -1,2 +1,0 @@
-verdict FAIL ['P4'] notverified {'job_arrived:0': 1, 'offer:offer_not_found_in_time': 18}
-G1=99.55% (4158/4177) | G2=0 | G3=0 + 0 | G4=CLEAN | G5=0 | G6=0.00% (0) | G7=0.00% | G8=0 | I1-identities=riders 4177/4177 · drivers 4177/4177 | GW-STABILITY=stable | EGRESS-CLASSIFIED=unknown +0 | CONC-peak=peak 750 / target 750 | P1=171ms | P2=176ms | P3=110ms | P4=42520ms✗ | P5=42852ms | P6a=254ms | P6b=253ms | P6c=222ms | P7=66s | P8=0.00% | P9=0.00%

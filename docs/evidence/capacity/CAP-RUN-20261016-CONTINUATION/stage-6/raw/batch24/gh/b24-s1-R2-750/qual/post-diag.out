@@ -1,5 +1,0 @@
-pkill: killing pid 9530 failed: Operation not permitted
-   124 /srv/ceezr-cap-20261016/runs/b24-s1-R2-750/evidence/pgss-full.csv
-  4185 /srv/ceezr-cap-20261016/runs/b24-s1-R2-750/evidence/telegram-jobs.csv
-  4309 total
-POST_DIAG_DONE
