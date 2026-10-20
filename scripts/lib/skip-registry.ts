@@ -210,6 +210,21 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/redispatch-immediate-limit.test.ts",
+    suites: ["LOAD-01 (ب25) — حدُّ الشوطِ الفوريِّ 100 على PostgreSQL حقيقيّ"],
+    skipped: 3,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "انحدارُ LOAD-01 (الدفعةُ 25): حدُّ الشوطِ الفوريِّ عبرَ الحاويةِ الحقيقيّةِ (فحصُ 100 لا أكثرَ، الأقدمُ أوّلًا، الشوطُ اللاحقُ بعدَ الخفضِ يخدمُ الباقي)، وحارسُ open_offer_round داخلَ شوطٍ من 100 (جولةٌ وإلغاءٌ متزامنانِ منَ اتصالٍ مستقلّ)، وحدودُ الدوراتِ والأهليّةِ — لا تُثبَتُ إلا على PostgreSQL حقيقي بالهجراتِ مطبَّقة.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجراتِ مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً.",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+
+  {
     file: "tests/integration/redispatch-live-round-priority.test.ts",
     suites: ["LOAD-01 P4 — الجولة الحية لا تحجب الطلب الذي لم يُعرَض"],
     skipped: 2,
