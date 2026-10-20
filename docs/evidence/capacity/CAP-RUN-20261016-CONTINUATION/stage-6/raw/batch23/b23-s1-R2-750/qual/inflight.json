@@ -1,0 +1,22 @@
+{
+ "samples": 278,
+ "steal_mean": 0.0,
+ "steal_max_1s": 0.0,
+ "siblings_mean": 1.2,
+ "foreign_mean": 2.35,
+ "iowait_mean": 0.56,
+ "throttled": 0,
+ "foreign_top": [
+  "/home/runner/actions-runner/cached/2.337.0/bin/Runner.Listener run",
+  "/tmp/provjobd4248488775"
+ ],
+ "steal_10s_rolling_max": 0.0,
+ "post_speed_probe_median_ms": 340.2,
+ "post_pg_probe_median_ms": 374.3,
+ "host_busy_mean_pct": 68.4,
+ "procs_running_mean": 6.45,
+ "validity_version": "B23-RUNNER-V1",
+ "mode": "inflight",
+ "violations": [],
+ "verdict": "VALID"
+}

@@ -1,0 +1,72 @@
+name: LOAD-01 الدفعة 23 — مقعد 4 vCPU (تشخيص لا قبول)
+
+# قياسٌ تشخيصيٌّ معزول (تفويضُ الدفعة 23): يعيشُ على فرعِ التجربةِ وحدَه ولا يُدمَج.
+# مشغّلُ GitHub القياسيّ للمستودعاتِ العامّة: 4 vCPU / 16 GB، مجّانيٌّ بلا حدّ — لا موارد مدفوعة.
+# لا أسرار: لا secrets ولا اتصالَ بالإنتاج؛ القاعدةُ وRedis والمحاكي داخلَ netns بلا شبكة.
+on:
+  push:
+    branches: [exp/load01-b23-cpu4]
+    paths:
+      - deploy/capacity-run/b23-runner/**
+      - .github/workflows/load01-b23-cpu4.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load01-b23-seat
+  cancel-in-progress: false
+
+jobs:
+  seat:
+    name: مقعد B23 (R=5 مقابل C=10)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 340
+    env:
+      R_SHA: ac81e0ed838b414189888f9e6a6e1348ea3ba9d0
+      C_SHA: fbdfee7a395cd8d212159cb902ae6000d766ef35
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: تجهيز المقعد (حزم المقعد الأصلي والمستخدم user)
+        run: sudo bash deploy/capacity-run/b23-runner/provision-root.sh
+
+      - name: نسخة المستودع للمستخدم user
+        run: |
+          sudo cp -a "$GITHUB_WORKSPACE" /home/user/workspace/ceezr
+          sudo chown -R user:user /home/user/workspace/ceezr
+          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$R_SHA^{commit}"
+          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$C_SHA^{commit}"
+
+      - name: المقعد والموجات (داخل ceezrseat.slice)
+        run: |
+          MODE=$(cat deploy/capacity-run/b23-runner/MODE)
+          echo "MODE=$MODE"
+          sudo systemd-run --quiet --wait --pipe --collect --slice=ceezrseat.slice \
+            --uid=user --gid=user -p LimitNOFILE=4096 -p WorkingDirectory=/home/user \
+            --setenv=R_SHA="$R_SHA" --setenv=C_SHA="$C_SHA" \
+            bash /home/user/workspace/ceezr/deploy/capacity-run/b23-runner/seat.sh "$MODE"
+
+      - name: فحص الأسرار قبل الرفع
+        if: always()
+        run: |
+          S=/srv/ceezr-cap-20261016/secrets.env; O=/home/user/b23-out
+          [ -f "$S" ] || { echo "no secrets file"; exit 0; }
+          hits=0
+          while IFS='=' read -r k v; do
+            [ -n "$v" ] && [ ${#v} -ge 12 ] || continue
+            f=$(sudo grep -rlF -- "$v" "$O" 2>/dev/null; sudo find "$O" -name '*.gz' -exec sh -c 'zcat "$1" | grep -qF -- "$2" && echo "$1"' _ {} "$v" \; 2>/dev/null)
+            if [ -n "$f" ]; then echo "SECRET_HIT key=$k files: $f"; echo "$f" | xargs -r sudo rm -f; hits=$((hits+1)); fi
+          done < <(sudo cat "$S")
+          echo "secret_scan_hits=$hits"
+          sudo chmod 755 /home/user; sudo chmod -R a+rX "$O"
+
+      - name: رفع الدليل
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: b23-evidence
+          path: /home/user/b23-out
+          retention-days: 30

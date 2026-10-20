@@ -1,0 +1,1330 @@
+diff --git a/.github/workflows/load01-b23-cpu4.yml b/.github/workflows/load01-b23-cpu4.yml
+new file mode 100644
+index 00000000..9ea24401
+--- /dev/null
++++ b/.github/workflows/load01-b23-cpu4.yml
+@@ -0,0 +1,72 @@
++name: LOAD-01 الدفعة 23 — مقعد 4 vCPU (تشخيص لا قبول)
++
++# قياسٌ تشخيصيٌّ معزول (تفويضُ الدفعة 23): يعيشُ على فرعِ التجربةِ وحدَه ولا يُدمَج.
++# مشغّلُ GitHub القياسيّ للمستودعاتِ العامّة: 4 vCPU / 16 GB، مجّانيٌّ بلا حدّ — لا موارد مدفوعة.
++# لا أسرار: لا secrets ولا اتصالَ بالإنتاج؛ القاعدةُ وRedis والمحاكي داخلَ netns بلا شبكة.
++on:
++  push:
++    branches: [exp/load01-b23-cpu4]
++    paths:
++      - deploy/capacity-run/b23-runner/**
++      - .github/workflows/load01-b23-cpu4.yml
++
++permissions:
++  contents: read
++
++concurrency:
++  group: load01-b23-seat
++  cancel-in-progress: false
++
++jobs:
++  seat:
++    name: مقعد B23 (R=5 مقابل C=10)
++    runs-on: ubuntu-26.04
++    timeout-minutes: 340
++    env:
++      R_SHA: ac81e0ed838b414189888f9e6a6e1348ea3ba9d0
++      C_SHA: fbdfee7a395cd8d212159cb902ae6000d766ef35
++    steps:
++      - uses: actions/checkout@v7
++        with:
++          fetch-depth: 0
++
++      - name: تجهيز المقعد (حزم المقعد الأصلي والمستخدم user)
++        run: sudo bash deploy/capacity-run/b23-runner/provision-root.sh
++
++      - name: نسخة المستودع للمستخدم user
++        run: |
++          sudo cp -a "$GITHUB_WORKSPACE" /home/user/workspace/ceezr
++          sudo chown -R user:user /home/user/workspace/ceezr
++          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$R_SHA^{commit}"
++          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$C_SHA^{commit}"
++
++      - name: المقعد والموجات (داخل ceezrseat.slice)
++        run: |
++          MODE=$(cat deploy/capacity-run/b23-runner/MODE)
++          echo "MODE=$MODE"
++          sudo systemd-run --quiet --wait --pipe --collect --slice=ceezrseat.slice \
++            --uid=user --gid=user -p LimitNOFILE=4096 -p WorkingDirectory=/home/user \
++            --setenv=R_SHA="$R_SHA" --setenv=C_SHA="$C_SHA" \
++            bash /home/user/workspace/ceezr/deploy/capacity-run/b23-runner/seat.sh "$MODE"
++
++      - name: فحص الأسرار قبل الرفع
++        if: always()
++        run: |
++          S=/srv/ceezr-cap-20261016/secrets.env; O=/home/user/b23-out
++          [ -f "$S" ] || { echo "no secrets file"; exit 0; }
++          hits=0
++          while IFS='=' read -r k v; do
++            [ -n "$v" ] && [ ${#v} -ge 12 ] || continue
++            f=$(sudo grep -rlF -- "$v" "$O" 2>/dev/null; sudo find "$O" -name '*.gz' -exec sh -c 'zcat "$1" | grep -qF -- "$2" && echo "$1"' _ {} "$v" \; 2>/dev/null)
++            if [ -n "$f" ]; then echo "SECRET_HIT key=$k files: $f"; echo "$f" | xargs -r sudo rm -f; hits=$((hits+1)); fi
++          done < <(sudo cat "$S")
++          echo "secret_scan_hits=$hits"
++          sudo chmod 755 /home/user; sudo chmod -R a+rX "$O"
++
++      - name: رفع الدليل
++        if: always()
++        uses: actions/upload-artifact@v7
++        with:
++          name: b23-evidence
++          path: /home/user/b23-out
++          retention-days: 30
+diff --git a/deploy/capacity-run/b23-runner/MODE b/deploy/capacity-run/b23-runner/MODE
+new file mode 100644
+index 00000000..28771479
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/MODE
+@@ -0,0 +1 @@
++full
+diff --git a/deploy/capacity-run/b23-runner/PLAN.md b/deploy/capacity-run/b23-runner/PLAN.md
+new file mode 100644
+index 00000000..c6bc4ea8
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/PLAN.md
+@@ -0,0 +1,49 @@
++# الدفعة 23 — خطةٌ مسجّلةٌ مسبقاً: فصلُ أثرِ المعالج عن أثرِ ميزانيةِ الاتصالات
++
++> سُجِّلَت قبلَ أوّلِ موجةِ قياسٍ على المقعدِ الجديد (الموجتانِ التجريبيّتانِ smoke عندَ 50 فحصُ تشغيلٍ لا قياس، ولا تدخلانِ أيَّ حكم).
++> تشخيصٌ فقط: لا قبولَ رسميّ، ولا تغييرَ لـ`gatewayRequest: 5` على main، ولا دمجَ لأيِّ تغييرٍ في الميزانية.
++
++## الفرضية
++
++المقعدُ ذو النواتَين هو ما منعَ زيادةَ الاتصالاتِ (5 → 10) من التحوّلِ إلى سعة: في الدفعة 22 زادَ زمنُ تنفيذِ الاستعلامِ 87% والإنتاجيّةُ 10.2% فقط.
++
++## المقعد
++
++- مشغّلُ GitHub القياسيُّ للمستودعِ العامّ `ubuntu-26.04` — مجّانيٌّ بلا حدّ، لا موارد مدفوعة.
++- يُبنى بالمساراتِ نفسِها حرفاً (`/srv/ceezr-cap-20261016`، المستخدم `user`، netns `ceezrsbx2` بلا شبكة) وبإصداراتِ المقعدِ الأصليّ: PostgreSQL 18.6-1.pgdg26.04+2، PostGIS 3.6.4، Redis 8.0.5-1ubuntu0.1، Bun 1.4.3، والإعداداتُ نفسُها (`max_connections=200`، `shared_buffers=512MB`، `pg_stat_statements`).
++- القالبُ: الهجراتُ + `seat-seed.sql`، ويُشترَطُ تطابقُ بصمتِه مع قالبِ المقعدِ الأصليّ (دوالُّ المشروعِ حرفاً + الجداولُ غيرُ الفارغةِ بعددِ صفوفِها).
++- المقعدُ كلُّه داخلَ `ceezrseat.slice` بلا حصّةِ CPU، و`LimitNOFILE=4096` كالأصل.
++
++### فروقٌ لا يمكنُ تجنّبُها (موثّقة)
++
++| البند | المقعدُ الأصليّ | مقعدُ B23 |
++|---|---|---|
++| المعالج | Intel Xeon @ 2.90GHz، 2 vCPU، خيطٌ واحدٌ لكلِّ نواة (KVM) | AMD EPYC 7763، 4 vCPU = نواتانِ × خيطانِ (SMT، Hyper-V) |
++| الذاكرة | 7 GB | 16 GB |
++| النواة | 6.1 | 7.0 (azure) |
++| Python | 3.14.3 | 3.14.4 |
++| خدماتُ المضيف | — | وكلاءُ Azure/GitHub (`walinuxagent`، `hosted-compute-agent`) تبقى وتُقاسُ ضمنَ «الأجنبيّ» و«الأشقّاء»؛ وتُوقَفُ قبلَ مرجعِ الخمولِ خدماتٌ لا وجودَ لها على المقعدِ الأصليّ (docker، php-fpm، packagekit، ModemManager، udisks2، hv-kvp-daemon) |
++
++فـ4 vCPU هنا **ليست ضعفَ النوى الفعليّة**: هي نواتانِ بخيطَين. فالنتيجةُ تقيسُ أثرَ «ضعفِ خيوطِ التنفيذ + نواةٍ أسرع» لا ضعفَ النوى الصافي.
++
++## الصلاحية
++
++`validity.json` = `B23-RUNNER-V1` مشتقٌّ آليّاً من مرجعِ خمولِ هذا المقعدِ قبلَ أوّلِ موجةٍ بقاعدةِ `B12-V2` نفسِها (المسباران ≤ المرجع × 1.10؛ والحدودُ المطلقةُ للسرقةِ والأشقّاءِ والأجنبيِّ وiowait والخنقِ حرفاً). كلُّ موجةٍ غيرِ صالحةٍ تُحفَظُ بسببِها وتُستبعَد.
++
++## التصميم
++
++- R = main `ac81e0ed` (`gatewayRequest: 5`)؛ C = `fbdfee7a` (main + `gatewayRequest: 10` + اختبارُ pg-brownout المصحَّح؛ الاختبارُ لا يمسُّ التشغيل).
++- ثماني موجاتٍ عندَ 750 بالترتيب R-C-C-R ثمّ C-R-R-C في **وظيفةٍ واحدةٍ على آلةٍ واحدة**، قاعدةٌ نظيفةٌ لكلِّ موجة، المولّدُ نفسُه بالفهرسِ 30 كالدفعة 22، مهلةُ إثباتِ الهاتفِ 20s، وحدودُ القبولِ كما هي.
++- لا فحوصَ أنواعٍ ولا بناءَ ولا اختباراتٍ أثناءَ الموجات (الوظيفةُ لا تُشغّلُ غيرَها).
++
++## القياسات
++
++كالدفعة 22 (G1، الدورات، الأسباب، P1–P9، G2–G8، HTTP وTelegram، >20s، انتظارُ الاتصالِ وزمنُ التنفيذِ منفصلَين، الاتصالاتُ المفتوحةُ والنشطة، CPU المضيفِ وPG، أخطاءُ الاتصالِ وRedis، الصلاحيةُ قبلُ وأثناءُ وبعد)، **ويُضاف**: ضغطُ CPU (`/proc/pressure/cpu`) وانتظارُ طابورِ التشغيلِ لكلٍّ من البوّابةِ وPostgreSQL والمولّدِ من `schedstat` كلَّ ثانية.
++
++## قواعدُ التحليلِ (قبلَ رؤيةِ أيِّ رقم)
++
++1. **أثرُ المعالجِ على مكسبِ الاتصالات** يُعَدُّ مدعوماً إن تحقّقَت الثلاثةُ على هذا المقعد: نسبةُ الدوراتِ C/R ≥ 1.20 (ضعفُ مكسبِ الدفعة 22 تقريباً) مع أدنى C > أعلى R؛ وتضخّمُ زمنِ تنفيذِ الاستعلامِ C/R ≤ 1.40 (مقابلَ 1.87)؛ وانتظارُ طابورِ التشغيلِ لـPostgreSQL في C ليسَ أعلى من R بأكثرَ من 50%.
++2. **تحسّنُ G1 «بوضوح»**: متوسّطُ G1 في C أعلى من R بـ5 نقاطٍ مئويّةٍ على الأقلّ مع أدنى C > أعلى R، وP1–P9 وG2–G8 ضمنَ حدودِها في كلِّ موجةٍ صالحة.
++3. أيُّ نتيجةٍ دونَ G1 ≥ 99% ⇒ LOAD-01 = FAIL؛ ويُحدَّدُ الاختناقُ المتبقّي من: انتظارِ المجمّع مقابلَ التنفيذ، وطابورِ التشغيل، وP4 (البثّ)، وP7 (الإشعارات).
++4. المقارنةُ مع الدفعة 22 (المقعدُ الأصليّ) **وصفيّةٌ فقط** لاختلافِ المعالجِ والنواةِ والبنية؛ والحكمُ من مقارنةِ R وC على الآلةِ نفسِها.
++5. لا رفعَ للسقفِ إلى 14، ولا تعميمَ على الإنتاجِ دونَ إثباتِ موارده وطوبولوجياه وسقفِ مزوّدِ قاعدتِه.
+diff --git a/deploy/capacity-run/b23-runner/derive-validity.py b/deploy/capacity-run/b23-runner/derive-validity.py
+new file mode 100755
+index 00000000..cf38b278
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/derive-validity.py
+@@ -0,0 +1,57 @@
++#!/usr/bin/env python3
++"""الدفعة 23 — اشتقاقُ validity.json لمقعدِ GitHub من مرجعِ خمولِه، بقاعدةِ B12-V2 نفسِها حرفاً.
++
++derive-validity.py <idle-dir> <out.json>
++- سرعةُ المسبارَين ≤ round(وسيطُ الخمول × 1.10) (هي القاعدةُ التي أعطت 447/381 على المقعدِ الأصليّ).
++- حدودُ السرقةِ والأشقّاءِ والأجنبيِّ وiowait والكتلِ والخنقِ: قيمُ B12-V2 المطلقةُ نفسُها بلا تغيير.
++- لا حصّةَ CPU على شريحةِ المقعد: cpu.max يجبُ أن يبدأ بـ«max»، وإلا رمزُ خروجٍ 4 (INVALID_ENV للمقعدِ كلِّه).
++يُكتَبُ مرّةً واحدةً قبلَ أوّلِ موجة ولا يُعدَّلُ بعدَها.
++"""
++import json, statistics as st, sys
++
++IDLE, OUT = sys.argv[1], sys.argv[2]
++rows = [json.loads(l) for l in open(f"{IDLE}/host-idle.jsonl")]
++meta = next(r for r in rows if r.get("k") == "meta")
++H = [r for r in rows if r.get("k") == "host"]
++sp = [json.loads(l)["max_wall_ms"] for l in open(f"{IDLE}/speed-probe-idle.jsonl") if l.strip()]
++pg = [json.loads(l)["pg_probe_ms"] for l in open(f"{IDLE}/pg-probe-idle.jsonl") if l.strip()]
++mad = lambda v: round(st.median([abs(x - st.median(v)) for x in v]), 2)
++steal = [r["cpu"]["steal"] for r in H]
++sib = [(r["cg_cpu_pct_of_1core"]["system.slice"] or 0) + (r["cg_cpu_pct_of_1core"]["init.scope"] or 0) for r in H]
++fr = [r["foreign_cpu_pct_of_1core_5s"] for r in H if "foreign_cpu_pct_of_1core_5s" in r]
++cpu_max = meta.get("seat_cpu_max") or ""
++ref = {
++    "source": f"{IDLE} (البوّابةُ مطفأة، PG/Redis/الوسيط/المحاكي قائمةٌ خاملة)",
++    "ncpu": meta.get("ncpu"),
++    "seat_cgroup": meta.get("seat_cgroup"),
++    "speed_probe_median_ms": round(st.median(sp), 2), "speed_probe_mad_ms": mad(sp),
++    "pg_probe_median_ms": round(st.median(pg), 2), "pg_probe_mad_ms": mad(pg),
++    "idle_steal_mean_pct": round(st.mean(steal), 2),
++    "idle_steal_p99_pct": round(sorted(steal)[int(0.99 * (len(steal) - 1))], 2),
++    "idle_system_slice_mean_pct_1core": round(st.mean(sib), 2),
++    "idle_foreign_mean_pct_1core": round(st.mean(fr), 2) if fr else None,
++    "idle_iowait_mean_pct": round(st.mean(r["cpu"]["iowait"] for r in H), 2),
++}
++spd, pgm = round(ref["speed_probe_median_ms"] * 1.10), round(ref["pg_probe_median_ms"] * 1.10)
++V = {
++    "version": "B23-RUNNER-V1",
++    "pinned_before_any_new_wave": True,
++    "reference": ref,
++    "preflight": {"window_s": 60, "speed_probe_median_max_ms": spd, "pg_probe_median_max_ms": pgm,
++                  "steal_mean_max_pct": 1.0, "steal_1s_max_pct": 10.0, "siblings_mean_max_pct_1core": 2.0,
++                  "foreign_mean_max_pct_1core": 3.0, "iowait_mean_max_pct": 1.0, "procs_blocked_max": 1,
++                  "throttled_max": 0, "seat_cpu_max_required": cpu_max,
++                  "no_leftover_processes": ["apps/gateway/src/index.ts", "miniapp-load", "capacity-run/load/"]},
++    "inflight": {"steal_mean_max_pct": 2.0, "steal_10s_rolling_max_pct": 10.0, "siblings_mean_max_pct_1core": 5.0,
++                 "foreign_mean_max_pct_1core": 5.0, "iowait_mean_max_pct": 2.0, "throttled_max": 0,
++                 "post_speed_probe_median_max_ms": spd, "post_pg_probe_median_max_ms": pgm},
++    "rules": [
++        "مشتقٌّ آليّاً بقاعدةِ B12-V2 (المرجع × 1.10 للمسبارَين، والحدودُ المطلقةُ الأخرى حرفاً) من مرجعِ خمولِ هذا المقعدِ قبلَ أوّلِ موجة.",
++        "إخفاقُ الفحصِ المسبقِ ⇒ لا حقن؛ وإخفاقُ شرطٍ أثناءَ الموجةِ أو بعدَها ⇒ INVALID_ENV تُحفَظُ وتُستبعَدُ من المتوسّطاتِ والاستنتاجات.",
++        "حدودُ القبولِ الوظيفيّةُ والأدائيّةُ (ACCEPTANCE-PROTOCOL.md) لا تتغيّر.",
++    ],
++    "derived_from": "B12-V2 (/srv/ceezr-cap-20261016/bin/validity.json على المقعدِ ذي النواتَين)",
++}
++json.dump(V, open(OUT, "w"), ensure_ascii=False, indent=1)
++print(json.dumps({"speed_max": spd, "pg_max": pgm, "cpu_max": cpu_max, "ncpu": ref["ncpu"]}))
++sys.exit(0 if cpu_max.startswith("max") else 4)
+diff --git a/deploy/capacity-run/b23-runner/expected-fingerprint.txt b/deploy/capacity-run/b23-runner/expected-fingerprint.txt
+new file mode 100644
+index 00000000..bf46a5cf
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/expected-fingerprint.txt
+@@ -0,0 +1,5 @@
++# بصمةُ ceezr_cap_tpl على المقعدِ ذي النواتَين (2026-10-20، main ac81e0ed، هجراتٌ حتى 20261020120000):
++fn_md5=ba159019383b0ff487b9b53cebc214dc fn_count=313
++col_md5=37f5a1fc2fd7acc58eb6ecb3d4683078
++idx_md5=327449e4917bc645263d7d4209587a14
++rows_md5=4a3cf73f49f167571182ed44c2775250 nonempty=cities=5 city_service_areas=5 destination_landmarks=3632 identity_hash_pepper=1 notification_kind_policy=95 platform_settings=500
+diff --git a/deploy/capacity-run/b23-runner/fingerprint.sql b/deploy/capacity-run/b23-runner/fingerprint.sql
+new file mode 100644
+index 00000000..e2fd3bd9
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/fingerprint.sql
+@@ -0,0 +1,8 @@
++\pset format unaligned
++\pset tuples_only on
++select 'fn_md5='||md5(string_agg(p.proname||'('||pg_get_function_identity_arguments(p.oid)||')='||md5(pg_get_functiondef(p.oid)), ',' order by p.proname, pg_get_function_identity_arguments(p.oid))) ||' fn_count='||count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prokind in ('f','p') and not exists (select 1 from pg_depend d where d.objid=p.oid and d.deptype='e');
++select 'col_md5='||md5(string_agg(c.table_name||'.'||c.column_name||':'||c.data_type||':'||coalesce(c.column_default,''), ',' order by c.table_name, c.ordinal_position)) from information_schema.columns c join pg_class k on k.relname=c.table_name join pg_namespace n on n.oid=k.relnamespace and n.nspname='public' where c.table_schema='public' and not exists (select 1 from pg_depend d where d.objid=k.oid and d.deptype='e');
++select 'idx_md5='||md5(string_agg(indexdef, ',' order by indexname)) from pg_indexes i where schemaname='public' and tablename not in ('spatial_ref_sys');
++create temp table _rc(t text, n bigint);
++do $$ declare r record; c bigint; begin for r in select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and not exists (select 1 from pg_depend d where d.objid=c.oid and d.deptype='e') loop execute format('select count(*) from public.%I', r.relname) into c; insert into _rc values (r.relname, c); end loop; end $$;
++select 'rows_md5='||md5(string_agg(t||'='||n, ',' order by t))||' nonempty='||string_agg(case when n>0 then t||'='||n end, ' ' order by t) from _rc;
+diff --git a/deploy/capacity-run/b23-runner/provision-root.sh b/deploy/capacity-run/b23-runner/provision-root.sh
+new file mode 100755
+index 00000000..0424359c
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/provision-root.sh
+@@ -0,0 +1,31 @@
++#!/usr/bin/env bash
++# الدفعة 23 — تجهيزُ مقعدِ GitHub بالجذر: حزمُ المقعدِ الأصليِّ بإصداراتِها حيثُ أمكن، والمستخدم «user»،
++# وإيقافُ خدماتِ المشغّلِ التي لا وجودَ لها على المقعدِ الأصليّ (تُسجَّلُ قبلُ وبعد).
++set -euo pipefail
++OUT=/home/user/b23-out
++. /etc/os-release
++echo "os=$PRETTY_NAME codename=$VERSION_CODENAME kernel=$(uname -r) nproc=$(nproc)"
++systemctl list-units --type=service --state=running --no-legend | awk '{print $1}' > /tmp/services-before.txt
++for s in docker.service docker.socket containerd.service podman.service mysql.service php8.3-fpm.service mono-xsp4.service php8.5-fpm.service packagekit.service ModemManager.service udisks2.service hv-kvp-daemon.service; do
++  systemctl disable --now "$s" >/dev/null 2>&1 || true
++done
++install -d /usr/share/postgresql-common/pgdg
++curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
++echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main" > /etc/apt/sources.list.d/pgdg.list
++apt-get update -qq
++# الإصداراتُ المطابقةُ للمقعدِ الأصليِّ أوّلاً؛ وإلا الأحدثُ مع تسجيلِ الفرق.
++PKGS_PIN="postgresql-18=18.6-1.pgdg26.04+2 postgresql-client-18=18.6-1.pgdg26.04+2 postgresql-18-postgis-3=3.6.4+dfsg-2.pgdg26.04+1 postgresql-18-postgis-3-scripts=3.6.4+dfsg-2.pgdg26.04+1 redis-server=5:8.0.5-1ubuntu0.1 redis-tools=5:8.0.5-1ubuntu0.1"
++if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --allow-downgrades $PKGS_PIN ripgrep >/dev/null 2>&1; then echo "PKGS=pinned"; else
++  echo "PKGS=latest (الإصداراتُ المثبَّتةُ غيرُ متاحة)"
++  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql-18 postgresql-client-18 postgresql-18-postgis-3 postgresql-18-postgis-3-scripts redis-server redis-tools ripgrep >/dev/null
++fi
++dpkg -l | grep -E "postgresql-18|postgis|redis" | awk '{print $2"="$3}'
++# المقعدُ الأصليُّ بلا عنقودٍ افتراضيٍّ قائمٍ ولا redis على 6379.
++pg_ctlcluster 18 main stop >/dev/null 2>&1 || true; systemctl disable --now postgresql redis-server >/dev/null 2>&1 || true
++id user >/dev/null 2>&1 || useradd -m -s /bin/bash user
++echo 'user ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/90-ceezr-user; chmod 440 /etc/sudoers.d/90-ceezr-user
++install -d -o user -g user /home/user/workspace /home/user/.local/bin "$OUT"
++sudo -u user -H bash -c 'curl -fsSL https://bun.sh/install | BUN_INSTALL=/home/user/.bun bash -s "bun-v1.4.3" >/dev/null 2>&1; ln -sf /home/user/.bun/bin/bun /home/user/.local/bin/bun; /home/user/.bun/bin/bun --version'
++systemctl list-units --type=service --state=running --no-legend | awk '{print $1}' > /tmp/services-after.txt
++{ echo "== before"; cat /tmp/services-before.txt; echo "== after"; cat /tmp/services-after.txt; } > "$OUT/runner-services.txt"; chown user:user "$OUT/runner-services.txt"
++echo PROVISION_OK
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/b21-compare.py b/deploy/capacity-run/b23-runner/seat-bin/b21-compare.py
+new file mode 100755
+index 00000000..9050c0e9
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/b21-compare.py
+@@ -0,0 +1,44 @@
++import json,sys,os,collections,csv
++B='/srv/ceezr-cap-20261016'
++def load(r):
++    E=f'{B}/runs/{r}/evidence'; Q=f'{B}/qual/{r}'
++    out={'round':r}
++    for ph in ('preflight','inflight'):
++        p=f'{Q}/{ph}.json'
++        out[ph]=json.load(open(p)).get('verdict') if os.path.exists(p) else 'MISSING'
++        if os.path.exists(p) and out[ph]!='VALID': out[ph+'_why']=json.load(open(p)).get('violations')
++    hp=f'{Q}/wave-host.jsonl'
++    if os.path.exists(hp):
++        ts=[json.loads(l)['t'] for l in open(hp) if '"k": "host"' in l]
++        out['host_gap_max_s']=round(max([(b-a)/1000 for a,b in zip(ts,ts[1:])] or [0]),1)
++        if out['host_gap_max_s']>5: out['host_gap_verdict']='INVALID_ENV'
++    p=f'{E}/wave-report.json'
++    if not os.path.exists(p): return out
++    w=json.load(open(p))
++    out['failed']=w['failedGates']
++    g={x['id']:x.get('value') for x in w['gates']}; pf={x['id']:x['value'] for x in w['perf']}
++    out['G1']=g.get('G1'); out['G4']=g.get('G4'); out['G5']=g.get('G5')
++    for k in ('P1','P2','P3','P4','P5','P7'): out[k]=pf.get(k)
++    done=int(g['G1'].split('(')[1].split('/')[0]); tot=int(g['G1'].split('/')[1].rstrip(')'))
++    out['completed']=done; out['scenarios']=tot
++    T=f'{E}/load-trace.jsonl'
++    if os.path.exists(T):
++        q=0;hold=0;wait=0;n=0;rq=collections.Counter()
++        for l in open(T):
++            d=json.loads(l)
++            if d['k']=='db' and d['pool'].endswith('Request') and d['kind']=='query':
++                n+=d['n']; hold+=d['runSumMs']; wait+=d['waitSumMs']
++            if d['k']=='rsig' and d['pool'].endswith('Request') and d['kind']!='txQuery': rq[d['route']]+=d['n']
++        out['req_queries']=n; out['req_q_per_completed']=round(n/max(done,1),1); out['req_q_per_scenario']=round(n/tot,1)
++        out['req_hold_s']=round(hold/1000,1); out['req_wait_mean_ms']=round(wait/max(n,1),1)
++        out['phase_routes_q']={k:v for k,v in rq.items() if '/v1/driver/job/' in k}
++    U=f'{E}/update-jobs.csv'
++    if os.path.exists(U):
++        rows=[r for r in csv.reader(open(U))]
++        out['tg_over20']=sum(1 for r in rows if r[3] and int(r[3])-int(r[2])>20000)
++    p=f'{E}/pgss-full.csv'
++    if os.path.exists(p):
++        rows=list(csv.DictReader(open(p))); out['pg_exec_s']=round(sum(float(x['total_ms']) for x in rows)/1000,1); out['pg_calls']=sum(int(x['calls']) for x in rows)
++    return out
++for r in sys.argv[1:]:
++    print(json.dumps(load(r),ensure_ascii=False))
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/b23-compare.py b/deploy/capacity-run/b23-runner/seat-bin/b23-compare.py
+new file mode 100755
+index 00000000..309fcf65
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/b23-compare.py
+@@ -0,0 +1,64 @@
++import json,sys,os,collections,csv,re,statistics as st
++sys.path.insert(0,'/srv/ceezr-cap-20261016/bin')
++import importlib.util
++spec=importlib.util.spec_from_file_location('b21','/srv/ceezr-cap-20261016/bin/b21-compare.py')
++B='/srv/ceezr-cap-20261016'
++def pct(xs,p):
++    xs=sorted(xs); return xs[min(len(xs)-1,int(p*len(xs)))] if xs else None
++def load(r):
++    src=open(B+'/bin/b21-compare.py').read().split('for r in sys.argv')[0]
++    ns={}; exec(src,ns); out=ns['load'](r)
++    E=f'{B}/runs/{r}/evidence'; Q=f'{B}/qual/{r}'
++    out['env']=json.load(open(f'{E}/b23-env.json')) if os.path.exists(f'{E}/b23-env.json') else None
++    tl=[json.loads(l) for l in open(f'{E}/timeline.jsonl')] if os.path.exists(f'{E}/timeline.jsonl') else []
++    out['code_sha']=next((d.get('code_sha') for d in tl if d.get('code_sha')),None)
++    # trace: wait vs run per query, loop lag, cpu
++    T=f'{E}/load-trace.jsonl'; lag=[];cpu=[]; n=w=rn=0
++    for l in open(T):
++        d=json.loads(l)
++        if d['k']=='loop' and d['processCpuPct']>20: lag.append(d['lagP95Ms']); cpu.append(d['processCpuPct'])
++        if d['k']=='db' and d['pool'].endswith('Request') and d['kind']=='query': n+=d['n']; w+=d['waitSumMs']; rn+=d['runSumMs']
++    out['q_wait_ms']=round(w/max(n,1),1); out['q_run_ms']=round(rn/max(n,1),2)
++    out['loop_lag_p95_median_ms']=round(st.median(lag),1) if lag else None; out['loop_lag_p95_max_ms']=round(max(lag),1) if lag else None
++    out['gw_proc_cpu_median']=st.median(cpu) if cpu else None
++    # conn samples
++    C=f'{E}/conn-samples.csv'; byt=collections.defaultdict(lambda:collections.Counter())
++    if os.path.exists(C):
++        for row in csv.reader(open(C)):
++            if len(row)!=4 or not row[0].isdigit(): continue
++            if row[1]=='ceezr:gatewayRequest': byt[int(row[0])][row[2]]+=int(row[3])
++        tot=[sum(c.values()) for c in byt.values()]; act=[c['active'] for c in byt.values()]
++        out['gwreq_conn_max']=max(tot) if tot else None; out['gwreq_active_p50']=pct(act,.5); out['gwreq_active_p95']=pct(act,.95); out['gwreq_active_max']=max(act) if act else None
++    # host
++    hs=[json.loads(l) for l in open(f'{Q}/wave-host.jsonl') if '"k": "host"' in l]
++    idle=[h['cpu']['idle'] for h in hs]; out['host_idle_median']=st.median(idle) if idle else None
++    # resources: pg/gateway cpu
++    R=f'{E}/resources.jsonl'
++    if os.path.exists(R):
++        rs=[json.loads(l) for l in open(R)]
++        act=[x for x in rs if x['gateway']['cpu_pct']>20]
++        out['pg_cpu_median']=st.median(x['postgres']['cpu_pct'] for x in act) if act else None
++        out['gw_cpu_median']=st.median(x['gateway']['cpu_pct'] for x in act) if act else None
++    # telegram throughput & oldest pending
++    U=f'{E}/update-jobs.csv'; rows=[r_ for r_ in csv.reader(open(U))]
++    done=[int(x[3]) for x in rows if x[3]]
++    if done:
++        t0=min(int(x[2]) for x in rows); span=(max(done)-t0)/1000
++        out['tg_jobs']=len(rows); out['tg_done']=len(done); out['tg_per_s']=round(len(done)/span,1)
++        lat=[(int(x[3])-int(x[2]))/1000 for x in rows if x[3]]; out['tg_lat_p50_s']=round(pct(lat,.5),2); out['tg_lat_p95_s']=round(pct(lat,.95),2)
++        out['tg_not_done']=sum(1 for x in rows if not x[3])
++    a=json.load(open(f'{E}/db-audit-post.json')) if os.path.exists(f'{E}/db-audit-post.json') else {}
++    out['audit_post']={k:v for k,v in a.items() if any(s in k for s in ('pending','oldest','stale','leftover','violation'))} if isinstance(a,dict) else None
++    # gateway log errors
++    G=f'{E}/gateway.wave.log'; ev=collections.Counter()
++    if os.path.exists(G):
++        for l in open(G,errors='ignore'):
++            if re.search(r'redis|ECONN|connection|pool|deadline|CONNECT_TIMEOUT|too many', l, re.I) and re.search(r'error|fail|timeout|exceed|reject',l,re.I):
++                m=re.search(r'"event":"([^"]+)"',l); ev[m.group(1) if m else l[:60]]+=1
++    out['conn_redis_errors']=dict(ev.most_common(8))
++    p=f'{E}/wave-report.json'
++    if os.path.exists(p):
++        w_=json.load(open(p)); out['gates_all']={g['id']:g.get('value') for g in w_['gates']}; out['perf_all']={x['id']:x['value'] for x in w_['perf']}
++    return out
++rows=[load(r) for r in sys.argv[1:]]
++print(json.dumps(rows,ensure_ascii=False,indent=1))
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/b23-seq.sh b/deploy/capacity-run/b23-runner/seat-bin/b23-seq.sh
+new file mode 100755
+index 00000000..5d63271a
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/b23-seq.sh
+@@ -0,0 +1,12 @@
++#!/usr/bin/env bash
++# تسلسلٌ بأثر: TAG CONC IDX0 ثمّ أزواجُ NAME:SIDE:SHA (SIDE=ref|cand؛ cand يُبدِّلُ wt-acc إلى SHA قبلَ الموجة)
++set -u
++B=/srv/ceezr-cap-20261016; TAG=$1; CONC=$2; I=$3; shift 3
++for item in "$@"; do
++  IFS=: read -r NAME SIDE SHA <<< "$item"
++  if [ "$SIDE" = cand ]; then git -C /home/user/workspace/wt-acc checkout -q "$SHA"; fi
++  echo "SEQ $NAME side=$SIDE sha=$SHA acc=$(git -C /home/user/workspace/wt-acc rev-parse --short HEAD) ref=$(git -C /home/user/workspace/wt-ref rev-parse --short HEAD)"
++  $B/bin/b23-trace.sh b23-$TAG-$NAME-$CONC $CONC $I $SIDE
++  I=$((I+1))
++done
++echo SEQ_DONE
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/b23-trace.sh b/deploy/capacity-run/b23-runner/seat-bin/b23-trace.sh
+new file mode 100755
+index 00000000..4a395b40
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/b23-trace.sh
+@@ -0,0 +1,24 @@
++#!/usr/bin/env bash
++# الدفعة 23 (منقولٌ من b22-trace حرفاً + JSON للبيئة + عيّناتُ الجدولة): b21-trace + حارسُ مستوى القالب + عيّناتُ اتصالاتٍ كلَّ 2s (جلسةٌ واحدةٌ بـ\watch)
++set -u
++B=/srv/ceezr-cap-20261016; export PATH=/home/user/.bun/bin:/home/user/.local/bin:$PATH
++unset REPO DIAG_POOL DIAG_EXTRA
++R=$1; CONC=$2; IDX=$3; SIDE=${4:-cand}; export TRACE_FILE=$B/trace-cur.jsonl
++rm -f $B/trace-cur.jsonl* $B/conn-cur.txt $B/sched-cur.jsonl
++PSQL="sudo ip netns exec ceezrsbx2 psql -h 127.0.0.1 -p 55432 -U postgres"
++lvl=$($PSQL -d ceezr_cap_tpl -Atc "select (select count(*) from pg_proc where proname like 'driver_%_with_notice')=3 and position('e.lane_key = j.lane_key' in pg_get_functiondef('claim_telegram_update_jobs_for_bot(integer,integer,text,integer)'::regprocedure))>0")
++if [ "$lvl" != t ]; then echo "TEMPLATE_LEVEL_MISMATCH $R"; exit 9; fi
++echo "=== $(date -Is) START $R conc=$CONC side=$SIDE (diag+trace+conn)"
++( printf "%s\n" "set application_name='b23-conn-sampler';" "select (extract(epoch from clock_timestamp())*1000)::bigint as t, coalesce(application_name,''), coalesce(state,''), count(*) from pg_stat_activity where datname='ceezr_cap_20261016' and backend_type='client backend' group by 2,3 \\watch 2" | $PSQL -d postgres -At -F, > $B/conn-cur.txt 2>/dev/null ) &
++SP=$!
++python3 $B/bin/sched-sampler.py $B/sched-cur.jsonl 1500 & SS=$!
++if [ "$SIDE" = ref ]; then $B/bin/qual-wave-ref.sh $R $CONC $IDX diag; else $B/bin/qual-wave.sh $R $CONC $IDX diag; fi
++rc=$?
++$PSQL -d postgres -Atc "select count(pg_terminate_backend(pid)) from pg_stat_activity where application_name='b23-conn-sampler'" >/dev/null; wait $SP 2>/dev/null
++kill $SS 2>/dev/null; wait $SS 2>/dev/null
++E=$B/runs/$R/evidence; cp $B/trace-cur.jsonl.load.jsonl $E/load-trace.jsonl 2>/dev/null; cp $B/conn-cur.txt $E/conn-samples.csv; cp $B/sched-cur.jsonl $E/sched-samples.jsonl
++$PSQL -d ceezr_cap_20261016 -Atc "copy (select bot, update_id, (extract(epoch from created_at)*1000)::bigint, (extract(epoch from completed_at)*1000)::bigint, status, attempts from telegram_update_jobs) to stdout with csv" > $E/update-jobs.csv
++gw() { grep -m1 -oE '^  gatewayRequest: [0-9]+,' "$1/packages/shared/config/connection-budget.ts" | grep -oE '[0-9]+'; }
++WR=/home/user/workspace/wt-ref; WA=/home/user/workspace/wt-acc
++printf '{"tpl_level_ok":"%s","side":"%s","code_ref":"%s","code_acc":"%s","gateway_request_ref":%s,"gateway_request_acc":%s,"nproc":%s}\n' "$lvl" "$SIDE" "$(git -C $WR rev-parse HEAD)" "$(git -C $WA rev-parse HEAD)" "$(gw $WR)" "$(gw $WA)" "$(nproc)" > $E/b23-env.json
++echo "=== $(date -Is) END rc=$rc"; echo TRACE_DONE
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/db-export.sh b/deploy/capacity-run/b23-runner/seat-bin/db-export.sh
+new file mode 100755
+index 00000000..da0592f9
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/db-export.sh
+@@ -0,0 +1,8 @@
++#!/usr/bin/env bash
++# تصديرُ عروضِ الموجةِ وطلباتِها من القاعدةِ (قبلَ أيِّ fresh-db لاحقٍ) — مدخلُ p4-decompose.py
++set -euo pipefail
++B=/srv/ceezr-cap-20261016; OUT=$1
++P="psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -q"
++$B/bin/nsx bash -c "$P -c \"\\copy (select o.id, round(extract(epoch from o.created_at)*1000) as created_ms, o.broadcast_round, o.status from orders o) to stdout with csv header\"" > $OUT/orders.csv
++$B/bin/nsx bash -c "$P -c \"\\copy (select f.order_id, f.round, round(extract(epoch from f.created_at)*1000) as created_ms, u.telegram_id, f.status from order_offers f join drivers d on d.id=f.driver_id join users u on u.id=d.user_id) to stdout with csv header\"" > $OUT/offers.csv
++wc -l $OUT/orders.csv $OUT/offers.csv | tail -1
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/fresh-db.sh b/deploy/capacity-run/b23-runner/seat-bin/fresh-db.sh
+new file mode 100755
+index 00000000..16aaefc1
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/fresh-db.sh
+@@ -0,0 +1,25 @@
++#!/usr/bin/env bash
++# قاعدةٌ نظيفةٌ قبلَ كلِّ موجةٍ: نسخٌ من القالبِ المُهاجَرِ + تفريغُ Redis + إعادةُ تشغيلِ البوابةِ (بلا مشرفٍ: svc.sh مباشرةً).
++set -euo pipefail
++B=/srv/ceezr-cap-20261016; REPO=${REPO:-/home/user/workspace/wt-acc}
++sudo -n ip netns exec ceezrsbx2 pkill -TERM -f '[a]pps/gateway/src/index.ts' || true
++# أثرُ التشخيصِ اختياريٌّ: يُكتَبُ في ملفِّ أسرارِ المقعدِ عندَ TRACE_FILE ويُزالُ بغيابِه
++sed -i '/^DISPATCH_TRACE_FILE=/d' $B/secrets.env
++if [ -n "${TRACE_FILE:-}" ]; then rm -f "$TRACE_FILE"; echo "DISPATCH_TRACE_FILE=$TRACE_FILE" >> $B/secrets.env; fi
++sed -i '/^DISPATCH_DIAG_/d;/^NOTIFICATION_DRAIN_LANES=/d;/^DIAG_LOCAL_/d' $B/secrets.env
++# DIAG_EXTRA="K=V K=V": متغيّراتُ تجربةِ عزلٍ صريحةٌ تُسجَّلُ في الأثرِ (لا تُستعمَلُ في القبول)
++for kv in ${DIAG_EXTRA:-}; do echo "$kv" >> $B/secrets.env; done
++[ -n "${DIAG_POOL:-}" ] && echo "DISPATCH_DIAG_DEDICATED_POOL=$DIAG_POOL" >> $B/secrets.env
++[ -n "${DIAG_REQ:-}" ] && echo "DISPATCH_DIAG_REQUEST_POOL=$DIAG_REQ" >> $B/secrets.env
++[ -n "${DIAG_DRAINER_BG:-}" ] && echo "DISPATCH_DIAG_DRAINER_BG=$DIAG_DRAINER_BG" >> $B/secrets.env
++true
++for i in $(seq 1 30); do $B/bin/nsx bash -c "pgrep -f '[a]pps/gateway/src/index.ts'" >/dev/null || break; sleep 1; done
++$B/bin/nsx bash -c "psql -h 127.0.0.1 -p 55432 -U postgres -q -c 'drop database if exists ceezr_cap_20261016 with (force)' -c 'create database ceezr_cap_20261016 template ceezr_cap_tpl' && psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -q -c 'create extension if not exists pg_stat_statements' -c 'select pg_stat_statements_reset()' >/dev/null && redis-cli -p 56379 flushall >/dev/null"
++cd $REPO && RUN_BASE=$B RUN_DIR=$B/runs/current ${GW_ENV:-} bash deploy/capacity-run/svc.sh gateway
++for i in $(seq 1 60); do
++  sleep 2
++  if $B/bin/nsx bash -c "curl -s -m 2 http://127.0.0.1:54300/ready" 2>/dev/null | grep -q '"ready"'; then
++    echo "FRESH_DB_OK sha=$(git -C $REPO rev-parse --short HEAD) gateway_pid=$($B/bin/nsx bash -c "pgrep -f '[a]pps/gateway/src/index.ts' | tail -1")"; exit 0
++  fi
++done
++echo "FRESH_DB_GATEWAY_NOT_READY" >&2; exit 1
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/gates.sh b/deploy/capacity-run/b23-runner/seat-bin/gates.sh
+new file mode 100755
+index 00000000..0ebc30ba
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/gates.sh
+@@ -0,0 +1,12 @@
++#!/usr/bin/env bash
++E=/srv/ceezr-cap-20261016/runs/$1/evidence; python3 - $E <<'PY'
++import json,sys,collections
++c=collections.Counter()
++for l in open(sys.argv[1]+'/miniapp-load-events.jsonl'):
++  try:e=json.loads(l)
++  except: continue
++  if e.get('event')=='scenario.outcome' and e.get('kind')!='verified': c[e.get('reason')]+=1
++w=json.load(open(sys.argv[1]+'/wave-report.json'))
++print('verdict',w['verdict'],w['failedGates'],'notverified',dict(c))
++print(' | '.join(f"{g['id']}={g['value']}{'' if g['pass'] else '✗'}" for g in w['gates']+w['perf']))
++PY
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/host-sampler.py b/deploy/capacity-run/b23-runner/seat-bin/host-sampler.py
+new file mode 100755
+index 00000000..7e93f24d
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/host-sampler.py
+@@ -0,0 +1,131 @@
++#!/usr/bin/env python3
++"""عيّناتُ المضيفِ كلَّ ثانية (الدفعةُ الثانيةَ عشرة — تأهيلُ المقعد).
++
++لكلِّ سطر: round، t (ثواني يونكس بالمللي)، ومن /proc/stat فروقُ كلِّ نواةٍ وكلِّ المعالجِ بالنسبة:
++user/nice/system/idle/iowait/irq/softirq/steal، و procs_running/procs_blocked، و/proc/loadavg؛
++ومن cgroup v2: فرقُ usage_usec لـ system.slice و space.slice و init.scope و code-mode، و
++nr_throttled/throttled_usec لمسارِ عمليّاتِ المقعد، و cpu.max؛ و/proc/pressure/cpu إن وُجد (وإلّا null
++صراحةً)؛ والقرصُ من /proc/diskstats (قطاعاتُ القراءةِ والكتابة و io_ticks)، والشبكةُ من /proc/net/dev
++(بايتاتُ lo وغيرِها)؛ وكلَّ 5ث CPU العمليّاتِ «الأجنبيّة» (ليست من المقعد) بأعلاها.
++"""
++import json, os, sys, time
++
++out = sys.argv[1]
++dur = float(sys.argv[2]) if len(sys.argv) > 2 else 600
++rnd = sys.argv[3] if len(sys.argv) > 3 else os.environ.get("ROUND", "?")
++HZ = os.sysconf("SC_CLK_TCK")
++CG = "/sys/fs/cgroup"
++# B23: مقعدُ GitHub يضعُ المقعدَ في شريحةٍ مستقلّةٍ (ceezrseat.slice)؛ الافتراضيُّ هو المقعدُ الأصليُّ حرفاً.
++SIBS = os.environ.get("CAP_SIBS", "system.slice space.slice init.scope code-mode").split()
++SEAT_CG = os.environ.get("CAP_SEAT_CG", "space.slice/space-workloads.service/workloads")
++FIELDS = ["user", "nice", "system", "idle", "iowait", "irq", "softirq", "steal"]
++SEAT_PAT = ("postgres", "redis-server", "shim.ts", "apps/gateway", "apps/workers", "telegram-mock",
++            "miniapp-load", "capacity-run/load", "res-sampler", "host-sampler", "pg-activity", "psql",
++            "wave-full", "run-wave", "fresh-db", "/nsx", "speed-probe")
++
++
++def rd(p):
++    try:
++        with open(p) as f:
++            return f.read()
++    except OSError:
++        return None
++
++
++def stat():
++    cpus, extra = {}, {}
++    for line in rd("/proc/stat").splitlines():
++        p = line.split()
++        if p[0].startswith("cpu"):
++            cpus[p[0]] = [int(x) for x in p[1:9]]
++        elif p[0] in ("procs_running", "procs_blocked", "ctxt"):
++            extra[p[0]] = int(p[1])
++    return cpus, extra
++
++
++def cg_usage():
++    r = {}
++    for s in SIBS:
++        t = rd(f"{CG}/{s}/cpu.stat")
++        r[s] = int(t.split("usage_usec ")[1].split()[0]) if t else None
++    t = rd(f"{CG}/{SEAT_CG}/cpu.stat") or ""
++    kv = dict(l.split() for l in t.splitlines() if len(l.split()) == 2)
++    r["seat_nr_throttled"] = int(kv.get("nr_throttled", 0))
++    r["seat_throttled_usec"] = int(kv.get("throttled_usec", 0))
++    return r
++
++
++def disk():
++    rs = ws = io = 0
++    for line in (rd("/proc/diskstats") or "").splitlines():
++        p = line.split()
++        if len(p) > 13 and not p[2].startswith(("loop", "ram")) and not p[2][-1].isdigit():
++            rs += int(p[5]); ws += int(p[9]); io += int(p[12])
++    return rs, ws, io
++
++
++def net():
++    lo = other = 0
++    for line in (rd("/proc/net/dev") or "").splitlines()[2:]:
++        name, rest = line.split(":", 1)
++        v = rest.split(); b = int(v[0]) + int(v[8])
++        if name.strip() == "lo": lo += b
++        else: other += b
++    return lo, other
++
++
++def procs():
++    m = {}
++    for pid in os.listdir("/proc"):
++        if not pid.isdigit(): continue
++        s = rd(f"/proc/{pid}/stat")
++        c = rd(f"/proc/{pid}/cmdline")
++        if not s or c is None: continue
++        f = s[s.rfind(")") + 2:].split()
++        cmd = c.replace("\0", " ").strip() or s[s.find("(") + 1:s.rfind(")")]
++        m[pid] = (int(f[11]) + int(f[12]), cmd)
++    return m
++
++
++def seat(cmd):
++    return any(p in cmd for p in SEAT_PAT)
++
++
++cpu_max = (rd(f"{CG}/{SEAT_CG}/cpu.max") or "").strip()
++t0 = time.time(); c0, e0 = stat(); g0 = cg_usage(); d0 = disk(); n0 = net(); p0 = procs(); pt = t0
++with open(out, "a") as fo:
++    fo.write(json.dumps({"k": "meta", "round": rnd, "t": round(t0 * 1000), "hz": HZ, "ncpu": os.cpu_count(),
++                         "seat_cgroup": SEAT_CG, "seat_cpu_max": cpu_max,
++                         "psi_cpu_available": rd("/proc/pressure/cpu") is not None}) + "\n")
++    i = 0
++    while time.time() - t0 < dur:
++        time.sleep(1.0); i += 1
++        now = time.time(); c1, e1 = stat(); g1 = cg_usage(); d1 = disk(); n1 = net()
++        row = {"k": "host", "round": rnd, "t": round(now * 1000)}
++        for cpu, v in c1.items():
++            dv = [b - a for a, b in zip(c0[cpu], v)]; tot = sum(dv) or 1
++            row[cpu] = {k: round(100 * x / tot, 2) for k, x in zip(FIELDS, dv)}
++        row["procs_running"] = e1["procs_running"]; row["procs_blocked"] = e1["procs_blocked"]
++        row["ctxt_per_s"] = e1["ctxt"] - e0["ctxt"]
++        row["loadavg"] = (rd("/proc/loadavg") or "").split()[:3]
++        wall_us = (now - pt) * 1e6
++        row["cg_cpu_pct_of_1core"] = {s: (None if g1[s] is None else round(100 * (g1[s] - g0[s]) / wall_us, 1)) for s in SIBS}
++        row["seat_throttled_delta"] = g1["seat_nr_throttled"] - g0["seat_nr_throttled"]
++        row["seat_throttled_usec_delta"] = g1["seat_throttled_usec"] - g0["seat_throttled_usec"]
++        psi = rd("/proc/pressure/cpu"); row["psi_cpu"] = psi.strip() if psi else None
++        row["disk"] = {"read_kb_s": (d1[0] - d0[0]) // 2, "write_kb_s": (d1[1] - d0[1]) // 2, "io_ms": d1[2] - d0[2]}
++        row["net_bytes_s"] = {"lo": n1[0] - n0[0], "other": n1[1] - n0[1]}
++        if i % 5 == 0:
++            p1 = procs(); w = now - (row.get("_pt") or (now - 5))
++            fr = []
++            for pid, (ticks, cmd) in p1.items():
++                if seat(cmd): continue
++                d = ticks - p0.get(pid, (ticks, ""))[0] if pid in p0 else ticks
++                if d > 0: fr.append((d, cmd[:80]))
++            fr.sort(reverse=True)
++            tot = sum(d for d, _ in fr)
++            row["foreign_cpu_pct_of_1core_5s"] = round(100 * tot / HZ / 5, 2)
++            row["foreign_top"] = [[round(100 * d / HZ / 5, 2), c] for d, c in fr[:5]]
++            p0 = p1
++        fo.write(json.dumps(row) + "\n"); fo.flush()
++        c0, e0, g0, d0, n0, pt = c1, e1, g1, d1, n1, now
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/idle-baseline.sh b/deploy/capacity-run/b23-runner/seat-bin/idle-baseline.sh
+new file mode 100755
+index 00000000..81e5d647
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/idle-baseline.sh
+@@ -0,0 +1,8 @@
++#!/usr/bin/env bash
++# مرجعُ الخمول: 180ث عيّناتُ مضيف (البوّابةُ مطفأة، الخدماتُ الثابتةُ قائمة)، ثمّ 30 مِسبارَ CPU و10 مِسبارَ PG.
++B=/srv/ceezr-cap-20261016; OUT=$1; mkdir -p $OUT
++pgrep -f '[a]pps/gateway/src/index.ts' >/dev/null && { echo "GATEWAY_UP — المرجعُ يُشترَطُ فيه إطفاؤها"; exit 1; }
++python3 $B/bin/host-sampler.py $OUT/host-idle.jsonl 180 idle-baseline
++for i in $(seq 1 30); do python3 $B/bin/speed-probe.py >> $OUT/speed-probe-idle.jsonl; sleep 3; done
++for i in $(seq 1 10); do echo "{\"t\":$(python3 -c "import time;print(round(time.time()*1000))"),\"pg_probe_ms\":$($B/bin/pg-probe.sh)}" >> $OUT/pg-probe-idle.jsonl; sleep 2; done
++echo IDLE_DONE
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/pg-probe.sh b/deploy/capacity-run/b23-runner/seat-bin/pg-probe.sh
+new file mode 100755
+index 00000000..002b7ebf
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/pg-probe.sh
+@@ -0,0 +1,3 @@
++#!/usr/bin/env bash
++# مِسبارُ PostgreSQL ثابتُ العمل: زمنُ استعلامِ CPU واحدٍ (3 ملايين صفّ) بالمللي، من \timing.
++/srv/ceezr-cap-20261016/bin/nsx bash -c "printf '\\\\timing on\nselect sum(i) from generate_series(1,3000000) i;\n' | psql -h 127.0.0.1 -p 55432 -U postgres -d postgres -At" | grep -o 'Time: [0-9.]*' | awk '{print $2}'
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/pgss-dump.sh b/deploy/capacity-run/b23-runner/seat-bin/pgss-dump.sh
+new file mode 100755
+index 00000000..d9fa1ce5
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/pgss-dump.sh
+@@ -0,0 +1,4 @@
++#!/usr/bin/env bash
++# أعلى الاستعلامات زمنًا كليًا (تشخيصٌ فقط؛ لا يدخلُ البوابات)
++B=/srv/ceezr-cap-20261016
++$B/bin/nsx bash -c "psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -F '|' -Atc \"select round(total_exec_time)::bigint as total_ms, calls, round(mean_exec_time::numeric,2) as mean_ms, left(regexp_replace(query,'\\s+',' ','g'),160) from pg_stat_statements order by total_exec_time desc limit ${2:-30}\"" > "$1"
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/post-diag.sh b/deploy/capacity-run/b23-runner/seat-bin/post-diag.sh
+new file mode 100755
+index 00000000..16f70015
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/post-diag.sh
+@@ -0,0 +1,13 @@
++#!/usr/bin/env bash
++# بعدَ موجةٍ تشخيصيّة: إيقافُ البوّابةِ (يُكتَبُ ملفُّ تعريفِ CPU)، وتصديرُ pg_stat_statements كاملاً وتوقيتاتِ وظائفِ تيليجرام.
++set -u
++B=/srv/ceezr-cap-20261016; ROUND=$1; E=$B/runs/$ROUND/evidence
++$B/bin/nsx bash -c "pkill -TERM -f '[a]pps/gateway/src/index.ts'" || true
++for i in $(seq 1 60); do $B/bin/nsx bash -c "pgrep -f '[a]pps/gateway/src/index.ts'" >/dev/null || break; sleep 1; done
++sleep 1
++cp $B/prof/*.cpuprofile $E/ 2>/dev/null || true
++[ -f "$B/trace-cur.jsonl.load.jsonl" ] && cp $B/trace-cur.jsonl.load.jsonl $E/dispatch-trace.jsonl.load.jsonl
++$B/bin/nsx bash -c "psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -c \"copy (select calls, round(total_exec_time::numeric,3) total_ms, round(mean_exec_time::numeric,4) mean_ms, round(stddev_exec_time::numeric,4) stddev_ms, round(max_exec_time::numeric,3) max_ms, rows, regexp_replace(query, '\\s+', ' ', 'g') query from pg_stat_statements s join pg_database d on d.oid=s.dbid where d.datname='ceezr_cap_20261016' order by total_exec_time desc) to stdout with csv header\"" > $E/pgss-full.csv
++$B/bin/nsx bash -c "psql -h 127.0.0.1 -p 55432 -U postgres -d ceezr_cap_20261016 -c \"copy (select bot, update_id, (extract(epoch from created_at)*1000)::bigint created_ms, (extract(epoch from effect_recorded_at)*1000)::bigint effect_ms from telegram_update_jobs order by created_at) to stdout with csv header\"" > $E/telegram-jobs.csv
++wc -l $E/pgss-full.csv $E/telegram-jobs.csv; ls $E/*.cpuprofile 2>/dev/null
++echo POST_DIAG_DONE
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/qual-check.py b/deploy/capacity-run/b23-runner/seat-bin/qual-check.py
+new file mode 100755
+index 00000000..2c7c482c
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/qual-check.py
+@@ -0,0 +1,77 @@
++#!/usr/bin/env python3
++"""يحكمُ بصلاحيةِ البيئةِ وفقَ validity.json (B12-V1).
++
++qual-check.py preflight <host.jsonl> <speed.jsonl> <pg.jsonl>
++qual-check.py inflight  <host.jsonl> <from_ms> <to_ms> <post-speed.jsonl> <post-pg.jsonl>
++يطبعُ JSON فيه verdict = VALID | INVALID وقائمةَ الخروقات؛ ورمزُ الخروجِ 0 أو 3.
++"""
++import json, statistics as st, subprocess, sys
++
++V = json.load(open("/srv/ceezr-cap-20261016/bin/validity.json"))
++mode = sys.argv[1]
++
++
++def host(path, lo=None, hi=None):
++    rows = [json.loads(l) for l in open(path)]
++    meta = next(r for r in rows if r.get("k") == "meta")
++    H = [r for r in rows if r.get("k") == "host" and (lo is None or lo <= r["t"] <= hi)]
++    return meta, H
++
++
++def med(path, key):
++    v = [json.loads(l)[key] for l in open(path) if l.strip()]
++    return round(st.median(v), 1) if v else None
++
++
++def common(H, lim):
++    out, bad = {}, []
++    steal = [r["cpu"]["steal"] for r in H]
++    sib = [(r["cg_cpu_pct_of_1core"]["system.slice"] or 0) + (r["cg_cpu_pct_of_1core"]["init.scope"] or 0) for r in H]
++    fr = [r["foreign_cpu_pct_of_1core_5s"] for r in H if "foreign_cpu_pct_of_1core_5s" in r]
++    io = [r["cpu"]["iowait"] for r in H]
++    thr = sum(r["seat_throttled_delta"] for r in H)
++    out.update(samples=len(H), steal_mean=round(st.mean(steal), 2), steal_max_1s=max(steal),
++               siblings_mean=round(st.mean(sib), 2), foreign_mean=round(st.mean(fr), 2) if fr else None,
++               iowait_mean=round(st.mean(io), 2), throttled=thr,
++               foreign_top=sorted({c for r in H for p, c in r.get("foreign_top", []) if p >= 2.0}))
++    if out["steal_mean"] > lim["steal_mean_max_pct"]: bad.append(f"steal_mean {out['steal_mean']} > {lim['steal_mean_max_pct']}")
++    if out["siblings_mean"] > lim["siblings_mean_max_pct_1core"]: bad.append(f"siblings_mean {out['siblings_mean']} > {lim['siblings_mean_max_pct_1core']}")
++    if fr and out["foreign_mean"] > lim["foreign_mean_max_pct_1core"]: bad.append(f"foreign_mean {out['foreign_mean']} > {lim['foreign_mean_max_pct_1core']}")
++    if not fr: bad.append("foreign: لا عيّنات")
++    if out["iowait_mean"] > lim["iowait_mean_max_pct"]: bad.append(f"iowait_mean {out['iowait_mean']} > {lim['iowait_mean_max_pct']}")
++    if thr > lim["throttled_max"]: bad.append(f"throttled {thr}")
++    return out, bad, steal
++
++
++if mode == "preflight":
++    lim = V["preflight"]; meta, H = host(sys.argv[2])
++    out, bad, steal = common(H, lim)
++    if out["steal_max_1s"] > lim["steal_1s_max_pct"]: bad.append(f"steal_1s {out['steal_max_1s']} > {lim['steal_1s_max_pct']}")
++    out["procs_blocked_max"] = max(r["procs_blocked"] for r in H)
++    if out["procs_blocked_max"] > lim["procs_blocked_max"]: bad.append(f"procs_blocked {out['procs_blocked_max']}")
++    if meta.get("seat_cpu_max") != lim["seat_cpu_max_required"]: bad.append(f"cpu.max {meta.get('seat_cpu_max')}")
++    out["speed_probe_median_ms"] = med(sys.argv[3], "max_wall_ms"); out["pg_probe_median_ms"] = med(sys.argv[4], "pg_probe_ms")
++    if out["speed_probe_median_ms"] is None or out["speed_probe_median_ms"] > lim["speed_probe_median_max_ms"]: bad.append(f"speed_probe {out['speed_probe_median_ms']} > {lim['speed_probe_median_max_ms']}")
++    if out["pg_probe_median_ms"] is None or out["pg_probe_median_ms"] > lim["pg_probe_median_max_ms"]: bad.append(f"pg_probe {out['pg_probe_median_ms']} > {lim['pg_probe_median_max_ms']}")
++    left = []
++    for pat in lim["no_leftover_processes"]:
++        r = subprocess.run(["pgrep", "-f", "[" + pat[0] + "]" + pat[1:]], capture_output=True, text=True)
++        if r.stdout.strip(): left.append(pat)
++    out["leftover"] = left
++    if left: bad.append(f"leftover {left}")
++else:
++    lim = V["inflight"]; meta, H = host(sys.argv[2], int(sys.argv[3]), int(sys.argv[4]))
++    out, bad, steal = common(H, lim)
++    roll = max((st.mean(steal[i:i + 10]) for i in range(max(1, len(steal) - 9))), default=0)
++    out["steal_10s_rolling_max"] = round(roll, 2)
++    if roll > lim["steal_10s_rolling_max_pct"]: bad.append(f"steal_10s {roll:.2f} > {lim['steal_10s_rolling_max_pct']}")
++    out["post_speed_probe_median_ms"] = med(sys.argv[5], "max_wall_ms"); out["post_pg_probe_median_ms"] = med(sys.argv[6], "pg_probe_ms")
++    if out["post_speed_probe_median_ms"] is None or out["post_speed_probe_median_ms"] > lim["post_speed_probe_median_max_ms"]: bad.append(f"post_speed_probe {out['post_speed_probe_median_ms']}")
++    if out["post_pg_probe_median_ms"] is None or out["post_pg_probe_median_ms"] > lim["post_pg_probe_median_max_ms"]: bad.append(f"post_pg_probe {out['post_pg_probe_median_ms']}")
++    busy = [100 - r["cpu"]["idle"] - r["cpu"]["steal"] - r["cpu"]["iowait"] for r in H]
++    out["host_busy_mean_pct"] = round(st.mean(busy), 1)
++    out["procs_running_mean"] = round(st.mean(r["procs_running"] for r in H), 2)
++out["validity_version"] = V["version"]; out["mode"] = mode
++out["violations"] = bad; out["verdict"] = "VALID" if not bad else "INVALID"
++print(json.dumps(out, ensure_ascii=False, indent=1))
++sys.exit(0 if not bad else 3)
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/qual-summary.py b/deploy/capacity-run/b23-runner/seat-bin/qual-summary.py
+new file mode 100755
+index 00000000..0fd09e57
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/qual-summary.py
+@@ -0,0 +1,61 @@
++#!/usr/bin/env python3
++"""مُلخِّصُ تأهيلِ المقعد: يقرأُ host-*.jsonl ومِسباراتِ السرعةِ ويُخرجُ JSON بالإحصاءات.
++
++الاستعمال: qual-summary.py <host.jsonl> [speed-probe.jsonl] [pg-probe.jsonl] [--from MS --to MS]
++"""
++import json, statistics as st, sys
++
++
++def pct(v, q):
++    v = sorted(v)
++    return None if not v else v[min(len(v) - 1, int(q * (len(v) - 1) + 0.5))]
++
++
++def desc(v):
++    v = [x for x in v if x is not None]
++    if not v: return None
++    med = st.median(v)
++    return {"n": len(v), "mean": round(st.mean(v), 2), "median": round(med, 2), "p90": round(pct(v, .9), 2),
++            "p99": round(pct(v, .99), 2), "max": round(max(v), 2), "min": round(min(v), 2),
++            "mad": round(st.median([abs(x - med) for x in v]), 2)}
++
++
++args = [a for a in sys.argv[1:]]
++lo = hi = None
++if "--from" in args:
++    i = args.index("--from"); lo = int(args[i + 1]); del args[i:i + 2]
++if "--to" in args:
++    i = args.index("--to"); hi = int(args[i + 1]); del args[i:i + 2]
++rows = [json.loads(l) for l in open(args[0])]
++meta = next((r for r in rows if r.get("k") == "meta"), {})
++H = [r for r in rows if r.get("k") == "host" and (lo is None or r["t"] >= lo) and (hi is None or r["t"] <= hi)]
++F = [r for r in H if "foreign_cpu_pct_of_1core_5s" in r]
++out = {"meta": meta, "samples": len(H),
++       "steal_pct": desc([r["cpu"]["steal"] for r in H]),
++       "steal_pct_per_core_max": max((max(r[c]["steal"] for c in r if c.startswith("cpu") and c != "cpu") for r in H), default=None),
++       "iowait_pct": desc([r["cpu"]["iowait"] for r in H]),
++       "busy_pct": desc([100 - r["cpu"]["idle"] - r["cpu"]["iowait"] - r["cpu"]["steal"] for r in H]),
++       "procs_running": desc([r["procs_running"] for r in H]),
++       "procs_blocked": desc([r["procs_blocked"] for r in H]),
++       "system_slice_pct_1core": desc([r["cg_cpu_pct_of_1core"]["system.slice"] for r in H]),
++       "space_slice_pct_1core": desc([r["cg_cpu_pct_of_1core"]["space.slice"] for r in H]),
++       "init_scope_pct_1core": desc([r["cg_cpu_pct_of_1core"]["init.scope"] for r in H]),
++       "seat_throttled_total": sum(r["seat_throttled_delta"] for r in H),
++       "seat_throttled_usec_total": sum(r["seat_throttled_usec_delta"] for r in H),
++       "psi_cpu_available": any(r["psi_cpu"] for r in H),
++       "foreign_pct_1core": desc([r["foreign_cpu_pct_of_1core_5s"] for r in F]),
++       "foreign_top_seen": sorted({c for r in F for p, c in r["foreign_top"] if p >= 1.0}),
++       "disk_write_kb_s": desc([r["disk"]["write_kb_s"] for r in H]),
++       "disk_read_kb_s": desc([r["disk"]["read_kb_s"] for r in H]),
++       "disk_io_ms_per_s": desc([r["disk"]["io_ms"] for r in H]),
++       "net_lo_bytes_s": desc([r["net_bytes_s"]["lo"] for r in H]),
++       "net_other_bytes_s": desc([r["net_bytes_s"]["other"] for r in H]),
++       "ctxt_per_s": desc([r["ctxt_per_s"] for r in H])}
++if len(args) > 1:
++    P = [json.loads(l) for l in open(args[1]) if l.strip()]
++    out["speed_probe_max_wall_ms"] = desc([p["max_wall_ms"] for p in P])
++    out["speed_probe_cpu_over_wall"] = desc([round(sum(w["cpu_ms"] for w in p["workers"]) / sum(w["wall_ms"] for w in p["workers"]), 3) for p in P])
++if len(args) > 2:
++    Q = [json.loads(l) for l in open(args[2]) if l.strip()]
++    out["pg_probe_ms"] = desc([q["pg_probe_ms"] for q in Q])
++print(json.dumps(out, ensure_ascii=False, indent=1))
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/qual-wave-ref.sh b/deploy/capacity-run/b23-runner/seat-bin/qual-wave-ref.sh
+new file mode 100755
+index 00000000..af88f1f3
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/qual-wave-ref.sh
+@@ -0,0 +1,38 @@
++#!/usr/bin/env bash
++# موجةٌ مؤهَّلة (الدفعةُ الثانيةَ عشرة): فحصٌ مسبقٌ ← (لا حقنَ إن فشل) ← عيّناتُ مضيفٍ كلَّ ثانية طوالَ
++# الموجة ← wave-full ← إيقافُ البوّابةِ وتصديرُ PG ← مِسباراتٌ لاحقة ← حكمُ الصلاحيةِ أثناءَ الموجة.
++# الاستعمال: qual-wave.sh ROUND CONC IDX MODE   (MODE = acc | diag)
++set -u
++B=/srv/ceezr-cap-20261016; ROUND=$1; CONC=$2; IDX=$3; MODE=$4
++Q=$B/qual/$ROUND; rm -rf $Q; mkdir -p $Q
++ms() { python3 -c 'import time;print(round(time.time()*1000))'; }
++probes() { # $1 = بادئة
++  for i in 1 2 3 4 5; do python3 $B/bin/speed-probe.py >> $Q/$1-speed.jsonl; sleep 2; done
++  for i in 1 2 3; do echo "{\"t\":$(ms),\"pg_probe_ms\":$($B/bin/pg-probe.sh)}" >> $Q/$1-pg.jsonl; sleep 2; done
++}
++if [ "$MODE" = acc ]; then rm -f $B/trace-cur.jsonl*; unset TRACE_FILE DIAG_POOL DIAG_EXTRA GATEWAY_BUN_FLAGS; fi
++# البوّابةُ المتبقيّةُ من موجةٍ سابقةٍ تُطفأُ قبلَ الفحص (المرجعُ قيسَ وهي مطفأة).
++$B/bin/nsx bash -c "pkill -TERM -f '[a]pps/gateway/src/index.ts'" 2>/dev/null || true
++for i in $(seq 1 60); do pgrep -f '[a]pps/gateway/src/index.ts' >/dev/null || break; sleep 1; done
++echo "PREFLIGHT_START $(ms)"
++python3 $B/bin/host-sampler.py $Q/pre-host.jsonl 60 "$ROUND:preflight"
++probes pre
++python3 $B/bin/qual-check.py preflight $Q/pre-host.jsonl $Q/pre-speed.jsonl $Q/pre-pg.jsonl > $Q/preflight.json
++PRC=$?
++cat $Q/preflight.json | python3 -c 'import json,sys;d=json.load(sys.stdin);print("PREFLIGHT",d["verdict"],d["violations"])'
++if [ $PRC -ne 0 ]; then echo "PREFLIGHT_INVALID $ROUND — لا حقن"; echo "QUAL_DONE $ROUND rc=3"; exit 3; fi
++python3 $B/bin/host-sampler.py $Q/wave-host.jsonl 1200 "$ROUND" &
++HS=$!
++T0=$(ms)
++ROUND_ID=$ROUND $B/bin/wave-full-ref.sh $ROUND $CONC $IDX
++WRC=$?
++T1=$(ms)
++kill $HS 2>/dev/null; wait $HS 2>/dev/null
++$B/bin/post-diag.sh $ROUND > $Q/post-diag.out 2>&1
++probes post
++python3 $B/bin/qual-check.py inflight $Q/wave-host.jsonl $T0 $T1 $Q/post-speed.jsonl $Q/post-pg.jsonl > $Q/inflight.json
++IRC=$?
++python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print("INFLIGHT",d["verdict"],d["violations"])' $Q/inflight.json
++echo "{\"round\":\"$ROUND\",\"mode\":\"$MODE\",\"wave_from_ms\":$T0,\"wave_to_ms\":$T1,\"wave_rc\":$WRC,\"inflight_rc\":$IRC}" > $Q/window.json
++mkdir -p $B/runs/$ROUND/evidence/qual && cp $Q/* $B/runs/$ROUND/evidence/qual/
++echo "QUAL_DONE $ROUND wave_rc=$WRC inflight_rc=$IRC"
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/qual-wave.sh b/deploy/capacity-run/b23-runner/seat-bin/qual-wave.sh
+new file mode 100755
+index 00000000..0a9b1df8
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/qual-wave.sh
+@@ -0,0 +1,38 @@
++#!/usr/bin/env bash
++# موجةٌ مؤهَّلة (الدفعةُ الثانيةَ عشرة): فحصٌ مسبقٌ ← (لا حقنَ إن فشل) ← عيّناتُ مضيفٍ كلَّ ثانية طوالَ
++# الموجة ← wave-full ← إيقافُ البوّابةِ وتصديرُ PG ← مِسباراتٌ لاحقة ← حكمُ الصلاحيةِ أثناءَ الموجة.
++# الاستعمال: qual-wave.sh ROUND CONC IDX MODE   (MODE = acc | diag)
++set -u
++B=/srv/ceezr-cap-20261016; ROUND=$1; CONC=$2; IDX=$3; MODE=$4
++Q=$B/qual/$ROUND; rm -rf $Q; mkdir -p $Q
++ms() { python3 -c 'import time;print(round(time.time()*1000))'; }
++probes() { # $1 = بادئة
++  for i in 1 2 3 4 5; do python3 $B/bin/speed-probe.py >> $Q/$1-speed.jsonl; sleep 2; done
++  for i in 1 2 3; do echo "{\"t\":$(ms),\"pg_probe_ms\":$($B/bin/pg-probe.sh)}" >> $Q/$1-pg.jsonl; sleep 2; done
++}
++if [ "$MODE" = acc ]; then rm -f $B/trace-cur.jsonl*; unset TRACE_FILE DIAG_POOL DIAG_EXTRA GATEWAY_BUN_FLAGS; fi
++# البوّابةُ المتبقيّةُ من موجةٍ سابقةٍ تُطفأُ قبلَ الفحص (المرجعُ قيسَ وهي مطفأة).
++$B/bin/nsx bash -c "pkill -TERM -f '[a]pps/gateway/src/index.ts'" 2>/dev/null || true
++for i in $(seq 1 60); do pgrep -f '[a]pps/gateway/src/index.ts' >/dev/null || break; sleep 1; done
++echo "PREFLIGHT_START $(ms)"
++python3 $B/bin/host-sampler.py $Q/pre-host.jsonl 60 "$ROUND:preflight"
++probes pre
++python3 $B/bin/qual-check.py preflight $Q/pre-host.jsonl $Q/pre-speed.jsonl $Q/pre-pg.jsonl > $Q/preflight.json
++PRC=$?
++cat $Q/preflight.json | python3 -c 'import json,sys;d=json.load(sys.stdin);print("PREFLIGHT",d["verdict"],d["violations"])'
++if [ $PRC -ne 0 ]; then echo "PREFLIGHT_INVALID $ROUND — لا حقن"; echo "QUAL_DONE $ROUND rc=3"; exit 3; fi
++python3 $B/bin/host-sampler.py $Q/wave-host.jsonl 1200 "$ROUND" &
++HS=$!
++T0=$(ms)
++ROUND_ID=$ROUND $B/bin/wave-full.sh $ROUND $CONC $IDX
++WRC=$?
++T1=$(ms)
++kill $HS 2>/dev/null; wait $HS 2>/dev/null
++$B/bin/post-diag.sh $ROUND > $Q/post-diag.out 2>&1
++probes post
++python3 $B/bin/qual-check.py inflight $Q/wave-host.jsonl $T0 $T1 $Q/post-speed.jsonl $Q/post-pg.jsonl > $Q/inflight.json
++IRC=$?
++python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));print("INFLIGHT",d["verdict"],d["violations"])' $Q/inflight.json
++echo "{\"round\":\"$ROUND\",\"mode\":\"$MODE\",\"wave_from_ms\":$T0,\"wave_to_ms\":$T1,\"wave_rc\":$WRC,\"inflight_rc\":$IRC}" > $Q/window.json
++mkdir -p $B/runs/$ROUND/evidence/qual && cp $Q/* $B/runs/$ROUND/evidence/qual/
++echo "QUAL_DONE $ROUND wave_rc=$WRC inflight_rc=$IRC"
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/res-sampler.py b/deploy/capacity-run/b23-runner/seat-bin/res-sampler.py
+new file mode 100755
+index 00000000..799708b3
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/res-sampler.py
+@@ -0,0 +1,88 @@
++#!/usr/bin/env python3
++"""عيّناتُ موارد كل 5ث (الإصدار 2 — الدفعة 11).
++
++- نسبةُ المعالج لكلِّ صنفِ عمليةٍ من فرقِ /proc (utime+stime)، والحِملُ والذاكرة.
++- أصنافٌ: postgres، redis، redis_shim (وسيطُ REST المحلّي)، gateway، workers، mock، generator.
++- PostgreSQL مفصّلٌ حسبَ application_name للخادمِ الخلفيّ (من pg_stat_activity عبرَ psql داخلَ netns):
++  pg_by_app = {"ceezr:gatewayRequest": cpu_pct, ...}؛ وما لا اسمَ له "other"، والعمليّاتُ المساعدةُ "pg_aux".
++- كلُّ سطرٍ يحملُ cum_cpu_s: ثواني CPU التراكميّة لكلِّ صنفٍ منذُ بدءِ العيّنات (لقسمتها على السيناريوهات).
++"""
++import json, os, subprocess, sys, time
++
++out = sys.argv[1]
++dur = int(sys.argv[2]) if len(sys.argv) > 2 else 900
++HZ = os.sysconf("SC_CLK_TCK")
++NSX = "/srv/ceezr-cap-20261016/bin/nsx"
++
++
++def classify(cmd):
++    if cmd.startswith("postgres") or "/postgres " in cmd or "bin/postgres" in cmd: return "postgres"
++    if "redis-server" in cmd: return "redis"
++    if "shim.ts" in cmd: return "redis_shim"
++    if "apps/gateway" in cmd: return "gateway"
++    if "apps/workers" in cmd: return "workers"
++    if "telegram-mock" in cmd: return "mock"
++    if "miniapp-load" in cmd or "load/" in cmd: return "generator"
++    return None
++
++
++def app_names():
++    try:
++        r = subprocess.run([NSX, "bash", "-c", "psql -h 127.0.0.1 -p 55432 -U postgres -d postgres -Atc \"select pid||'|'||coalesce(nullif(application_name,''),'other') from pg_stat_activity where backend_type='client backend'\""],
++                           capture_output=True, text=True, timeout=4)
++        m = {}
++        for line in r.stdout.splitlines():
++            if "|" in line:
++                p, a = line.split("|", 1); m[p] = a
++        return m
++    except Exception:
++        return {}
++
++
++def snap(apps):
++    res, pg = {}, {}
++    for pid in os.listdir("/proc"):
++        if not pid.isdigit(): continue
++        try:
++            cmd = open(f"/proc/{pid}/cmdline", "rb").read().replace(b"\0", b" ").decode(errors="ignore")
++            c = classify(cmd)
++            if c is None: continue
++            st = open(f"/proc/{pid}/stat").read().rsplit(")", 1)[1].split()
++            ticks = int(st[11]) + int(st[12])
++            rss = int(st[21]) * 4096
++            a = res.setdefault(c, [0, 0]); a[0] += ticks; a[1] += rss
++            if c == "postgres":
++                key = apps.get(pid) or ("other_client" if "127.0.0.1(" in cmd else "pg_aux")
++                pg[(pid, key)] = ticks
++        except Exception:
++            continue
++    return res, pg
++
++
++apps = app_names()
++prev, pgprev = snap(apps); pt = time.time(); end = pt + dur
++base = {k: v[0] for k, v in prev.items()}
++cum = {}
++with open(out, "a") as f:
++    while time.time() < end:
++        time.sleep(5)
++        apps = app_names()
++        cur, pgcur = snap(apps); now = time.time(); dt = now - pt
++        row = {"t": round(now, 1), "load1": os.getloadavg()[0]}
++        for k, (ticks, rss) in cur.items():
++            pticks = prev.get(k, [ticks, 0])[0]
++            d = max(0, ticks - pticks)
++            cum[k] = cum.get(k, 0) + d
++            row[k] = {"cpu_pct": round(100 * d / HZ / dt, 1), "rss_mb": rss // 1048576}
++        by_app = {}
++        prevticks = {pp: v for (pp, _), v in pgprev.items()}
++        for (pid, key), ticks in pgcur.items():
++            # الخادمُ الجديدُ في هذه النافذةِ يُحسَبُ كلُّ ما استهلكه منذُ ولادته داخلَها تقريبًا
++            p = prevticks.get(pid, 0)
++            by_app[key] = by_app.get(key, 0) + max(0, ticks - p)
++        row["pg_by_app"] = {k: round(100 * v / HZ / dt, 1) for k, v in by_app.items()}
++        for k, v in by_app.items():
++            cum["pg:" + k] = cum.get("pg:" + k, 0) + v
++        row["cum_cpu_s"] = {k: round(v / HZ, 2) for k, v in cum.items()}
++        f.write(json.dumps(row) + "\n"); f.flush()
++        prev, pgprev, pt = cur, pgcur, now
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/run-wave-ref.sh b/deploy/capacity-run/b23-runner/seat-bin/run-wave-ref.sh
+new file mode 100755
+index 00000000..acca7d39
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/run-wave-ref.sh
+@@ -0,0 +1,7 @@
++#!/usr/bin/env bash
++# مشغّل موجة كاملة داخل netns: wave.sh ثم finish-wave.sh
++# الاستخدام: run-wave.sh ROUND PROFILE_JSON DRAIN_SEC WAVE_IDX
++set -u
++B=/srv/ceezr-cap-20261016; REPO=/home/user/workspace/wt-ref
++ROUND=${1:?ROUND}; PROFILE=${2:?PROFILE}; DRAIN=${3:?DRAIN}; IDX=${4:-0}
++exec $B/bin/nsx bash -c "cd $REPO && export ${RIDER_SOCKET_MIX:+RIDER_SOCKET_MIX=$RIDER_SOCKET_MIX} SEAT=$B RUN_BASE=$B PATH=/home/user/.local/bin:\$PATH && bash deploy/capacity-run/wave.sh '$ROUND' '$PROFILE' '$DRAIN' '$IDX' && bash deploy/capacity-run/finish-wave.sh '$ROUND'"
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/run-wave.sh b/deploy/capacity-run/b23-runner/seat-bin/run-wave.sh
+new file mode 100755
+index 00000000..b58cc3f1
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/run-wave.sh
+@@ -0,0 +1,7 @@
++#!/usr/bin/env bash
++# مشغّل موجة كاملة داخل netns: wave.sh ثم finish-wave.sh
++# الاستخدام: run-wave.sh ROUND PROFILE_JSON DRAIN_SEC WAVE_IDX
++set -u
++B=/srv/ceezr-cap-20261016; REPO=/home/user/workspace/wt-acc
++ROUND=${1:?ROUND}; PROFILE=${2:?PROFILE}; DRAIN=${3:?DRAIN}; IDX=${4:-0}
++exec $B/bin/nsx bash -c "cd $REPO && export ${RIDER_SOCKET_MIX:+RIDER_SOCKET_MIX=$RIDER_SOCKET_MIX} SEAT=$B RUN_BASE=$B PATH=/home/user/.local/bin:\$PATH && bash deploy/capacity-run/wave.sh '$ROUND' '$PROFILE' '$DRAIN' '$IDX' && bash deploy/capacity-run/finish-wave.sh '$ROUND'"
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/sched-sampler.py b/deploy/capacity-run/b23-runner/seat-bin/sched-sampler.py
+new file mode 100755
+index 00000000..87be86d6
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/sched-sampler.py
+@@ -0,0 +1,85 @@
++#!/usr/bin/env python3
++"""الدفعة 23 — عيّناتُ جدولةِ المعالج كلَّ ثانية (تشخيصٌ فقط؛ لا يدخلُ الصلاحيةَ ولا البوابات).
++
++sched-sampler.py <out.jsonl> <seconds>
++لكلِّ ثانية: ضغطُ CPU من /proc/pressure/cpu (some: نسبةُ الزمنِ الذي انتظرَت فيه مهمّةٌ واحدةٌ على الأقلّ
++المعالجَ)، وprocs_running، ولكلِّ صنفٍ (gateway · postgres · generator · other_seat) فرقُ زمنِ التشغيلِ
++وفرقُ زمنِ الانتظارِ في طابورِ التشغيل من /proc/<pid>/task/*/schedstat (الحقلانِ 1 و2 بالنانوثانية).
++"""
++import json, os, sys, time
++
++OUT, SECS = sys.argv[1], int(sys.argv[2])
++
++
++def rd(p):
++    try:
++        with open(p) as f:
++            return f.read()
++    except OSError:
++        return None
++
++
++def classify(cmd):
++    if cmd.startswith("postgres") or "bin/postgres" in cmd: return "postgres"
++    if "apps/gateway" in cmd: return "gateway"
++    if "miniapp-load" in cmd or "capacity-run/load" in cmd: return "generator"
++    if any(p in cmd for p in ("redis-server", "shim.ts", "telegram-mock")): return "other_seat"
++    return None
++
++
++def psi():
++    t = rd("/proc/pressure/cpu") or ""
++    for line in t.splitlines():
++        if line.startswith("some"):
++            return int(line.split("total=")[1])
++    return None
++
++
++def snap():
++    acc = {}
++    for pid in os.listdir("/proc"):
++        if not pid.isdigit(): continue
++        c = rd(f"/proc/{pid}/cmdline")
++        if not c: continue
++        k = classify(c.replace("\0", " ").strip())
++        if k is None: continue
++        try:
++            tids = os.listdir(f"/proc/{pid}/task")
++        except OSError:
++            continue
++        for tid in tids:
++            s = rd(f"/proc/{pid}/task/{tid}/schedstat")
++            if not s: continue
++            run, wait = (int(x) for x in s.split()[:2])
++            a = acc.setdefault(k, {})
++            a[f"{pid}/{tid}"] = (run, wait)
++    return acc
++
++
++def running():
++    for line in (rd("/proc/stat") or "").splitlines():
++        if line.startswith("procs_running"):
++            return int(line.split()[1])
++    return None
++
++
++with open(OUT, "a") as fo:
++    fo.write(json.dumps({"k": "meta", "t": round(time.time() * 1000), "ncpu": os.cpu_count()}) + "\n")
++    prev, prev_psi, prev_t = snap(), psi(), time.time()
++    end = prev_t + SECS
++    while time.time() < end:
++        time.sleep(1)
++        cur, cur_psi, t = snap(), psi(), time.time()
++        dt = t - prev_t
++        row = {"k": "sched", "t": round(t * 1000), "procs_running": running(),
++               "psi_some_pct": round((cur_psi - prev_psi) / (dt * 1e4), 2) if cur_psi is not None and prev_psi is not None else None}
++        for k, threads in cur.items():
++            dr = dw = 0
++            for key, (r, w) in threads.items():
++                pr, pw = prev.get(k, {}).get(key, (0, 0))
++                dr += max(0, r - pr); dw += max(0, w - pw)
++            # بوحدةِ «نواةٍ واحدة %»: 100 = نواةٌ كاملةٌ طوالَ الثانية.
++            row[k] = {"run_pct_1core": round(dr / (dt * 1e7), 1), "runq_wait_pct_1core": round(dw / (dt * 1e7), 1),
++                      "threads": len(threads)}
++        fo.write(json.dumps(row) + "\n"); fo.flush()
++        prev, prev_psi, prev_t = cur, cur_psi, t
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/speed-probe.py b/deploy/capacity-run/b23-runner/seat-bin/speed-probe.py
+new file mode 100755
+index 00000000..f59d2be7
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/speed-probe.py
+@@ -0,0 +1,24 @@
++#!/usr/bin/env python3
++"""مِسبارُ سرعةٍ ثابتُ العمل (الدفعةُ الثانيةَ عشرة): sha256 لـ 512MiB على كلِّ نواةٍ بالتوازي (عمليّتان).
++
++يطبعُ JSON: زمنُ الجدارِ وزمنُ CPU لكلِّ عامل. العملُ ثابتٌ حرفيًّا، فاختلافُ الزمنِ اختلافُ المضيف
++(سرعةُ النواة، السرقة، التنافس) لا الشيفرة. يُستعملُ للمرجعِ في الخمولِ وللفحصِ المسبقِ قبلَ كلِّ موجة.
++"""
++import hashlib, json, multiprocessing as mp, os, sys, time
++
++BUF = b"\x5a" * (1 << 20)
++
++
++def work(_):
++    c0 = time.process_time(); t0 = time.perf_counter(); h = hashlib.sha256()
++    for _ in range(512):
++        h.update(BUF)
++    return {"wall_ms": round((time.perf_counter() - t0) * 1000, 1), "cpu_ms": round((time.process_time() - c0) * 1000, 1)}
++
++
++if __name__ == "__main__":
++    n = int(sys.argv[1]) if len(sys.argv) > 1 else 2
++    with mp.Pool(n) as p:
++        work(0)
++        t0 = time.perf_counter(); r = p.map(work, range(n)); t = (time.perf_counter() - t0) * 1000
++    print(json.dumps({"t": round(time.time() * 1000), "workers": r, "max_wall_ms": max(x["wall_ms"] for x in r), "total_ms": round(t, 1)}))
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/wave-full-ref.sh b/deploy/capacity-run/b23-runner/seat-bin/wave-full-ref.sh
+new file mode 100755
+index 00000000..55845fed
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/wave-full-ref.sh
+@@ -0,0 +1,22 @@
++#!/usr/bin/env bash
++# موجةٌ كاملةٌ: قاعدةٌ نظيفةٌ ← عيّناتُ موارد ← wave+finish ← pgss + سجلُّ البوابةِ المقصوص
++set -u
++B=/srv/ceezr-cap-20261016; ROUND=$1; CONC=$2; IDX=$3
++export REPO=/home/user/workspace/wt-ref
++/srv/ceezr-cap-20261016/bin/fresh-db.sh || exit 1
++sleep 5
++mkdir -p $B/runs/$ROUND.side
++grep -E '^(DISPATCH_|NOTIFICATION_|DIAG_LOCAL_)' $B/secrets.env > $B/runs/$ROUND.side/diag-env.txt || true
++GWLOG=$B/runs/current/evidence/gateway.log; START_LINE=$(wc -l < $GWLOG)
++python3 $B/bin/res-sampler.py $B/runs/$ROUND.side/resources.jsonl 420 &
++SP=$!
++$B/bin/run-wave-ref.sh "$ROUND" "[{\"name\":\"wave-$CONC\",\"sec\":180,\"conc\":$CONC}]" 180 "$IDX"
++RC=$?
++kill $SP 2>/dev/null
++$B/bin/pgss-dump.sh $B/runs/$ROUND/evidence/pgss-top.txt 30
++tail -n +$((START_LINE+1)) $GWLOG > $B/runs/$ROUND/evidence/gateway.wave.log
++$B/bin/db-export.sh $B/runs/$ROUND/evidence || true
++[ -n "${TRACE_FILE:-}" ] && cp "$TRACE_FILE" $B/runs/$ROUND/evidence/dispatch-trace.jsonl
++mv $B/runs/$ROUND.side/diag-env.txt $B/runs/$ROUND/evidence/ 2>/dev/null
++mv $B/runs/$ROUND.side/resources.jsonl $B/runs/$ROUND/evidence/ 2>/dev/null; rmdir $B/runs/$ROUND.side
++echo "WAVE_DONE $ROUND rc=$RC"
+diff --git a/deploy/capacity-run/b23-runner/seat-bin/wave-full.sh b/deploy/capacity-run/b23-runner/seat-bin/wave-full.sh
+new file mode 100755
+index 00000000..cfbb8985
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat-bin/wave-full.sh
+@@ -0,0 +1,21 @@
++#!/usr/bin/env bash
++# موجةٌ كاملةٌ: قاعدةٌ نظيفةٌ ← عيّناتُ موارد ← wave+finish ← pgss + سجلُّ البوابةِ المقصوص
++set -u
++B=/srv/ceezr-cap-20261016; ROUND=$1; CONC=$2; IDX=$3
++/srv/ceezr-cap-20261016/bin/fresh-db.sh || exit 1
++sleep 5
++mkdir -p $B/runs/$ROUND.side
++grep -E '^(DISPATCH_|NOTIFICATION_|DIAG_LOCAL_)' $B/secrets.env > $B/runs/$ROUND.side/diag-env.txt || true
++GWLOG=$B/runs/current/evidence/gateway.log; START_LINE=$(wc -l < $GWLOG)
++python3 $B/bin/res-sampler.py $B/runs/$ROUND.side/resources.jsonl 420 &
++SP=$!
++$B/bin/run-wave.sh "$ROUND" "[{\"name\":\"wave-$CONC\",\"sec\":180,\"conc\":$CONC}]" 180 "$IDX"
++RC=$?
++kill $SP 2>/dev/null
++$B/bin/pgss-dump.sh $B/runs/$ROUND/evidence/pgss-top.txt 30
++tail -n +$((START_LINE+1)) $GWLOG > $B/runs/$ROUND/evidence/gateway.wave.log
++$B/bin/db-export.sh $B/runs/$ROUND/evidence || true
++[ -n "${TRACE_FILE:-}" ] && cp "$TRACE_FILE" $B/runs/$ROUND/evidence/dispatch-trace.jsonl
++mv $B/runs/$ROUND.side/diag-env.txt $B/runs/$ROUND/evidence/ 2>/dev/null
++mv $B/runs/$ROUND.side/resources.jsonl $B/runs/$ROUND/evidence/ 2>/dev/null; rmdir $B/runs/$ROUND.side
++echo "WAVE_DONE $ROUND rc=$RC"
+diff --git a/deploy/capacity-run/b23-runner/seat.sh b/deploy/capacity-run/b23-runner/seat.sh
+new file mode 100755
+index 00000000..9a26b842
+--- /dev/null
++++ b/deploy/capacity-run/b23-runner/seat.sh
+@@ -0,0 +1,105 @@
++#!/usr/bin/env bash
++# الدفعة 23 — مقعدُ GitHub (4 vCPU): يبني نسخةً من مقعدِ CAP-RUN-20261016 بالمساراتِ نفسِها حرفاً،
++# ثمّ مرجعَ خمولٍ ← validity مشتقّة ← الموجات. يعملُ بالمستخدم «user» داخلَ ceezrseat.slice.
++#   seat.sh smoke|full
++# لا أسرارَ حقيقيّة: setup-env يولّدُ أسرارَ المقعدِ المحلّيّةَ عشوائيّاً (600) ولا تُطبَع.
++set -euo pipefail
++MODE=${1:?smoke|full}
++export HOME=/home/user PATH=/home/user/.bun/bin:/home/user/.local/bin:/usr/lib/postgresql/18/bin:/usr/sbin:/usr/bin:/sbin:/bin
++export CAP_SEAT_CG=ceezrseat.slice CAP_SIBS="system.slice init.scope user.slice"
++B=/srv/ceezr-cap-20261016; W=/home/user/workspace; H=$W/ceezr; OUT=/home/user/b23-out
++R_SHA=${R_SHA:?}; C_SHA=${C_SHA:?}
++mkdir -p "$OUT"
++log() { echo "[$(date -u +%T)] $*"; }
++
++log "worktrees R=$R_SHA C=$C_SHA"
++git -C "$H" worktree add -f --detach "$W/wt-ref" "$R_SHA" >/dev/null 2>&1
++git -C "$H" worktree add -f --detach "$W/wt-acc" "$C_SHA" >/dev/null 2>&1
++for wt in wt-ref wt-acc; do
++  (cd "$W/$wt" && bun install --frozen-lockfile >"$OUT/bun-install-$wt.log" 2>&1)
++  # وسيطُ REST خارجَ مساحةِ العمل: له قفلُه ووحداتُه (كما على المقعدِ الأصليّ).
++  (cd "$W/$wt/docker/upstash-rest-shim" && bun install --frozen-lockfile >>"$OUT/bun-install-$wt.log" 2>&1)
++done
++grep -H "^  gatewayRequest: " "$W/wt-ref/packages/shared/config/connection-budget.ts" "$W/wt-acc/packages/shared/config/connection-budget.ts"
++
++log "setup-env (infra|db|migrate) من wt-acc"
++(cd "$W/wt-acc" && bash deploy/capacity-run/setup-env-20261016.sh all) >"$OUT/setup-env.log" 2>&1 || { tail -20 "$OUT/setup-env.log"; exit 1; }
++tail -3 "$OUT/setup-env.log"
++# المقعدُ الأصليُّ أُضيفَ إليه INTERNAL_SIGNAL_SECRET يدويّاً (64 hex) بعدَ setup-env؛ بلاه تعيدُ إشارةُ العروضِ 503.
++grep -q '^INTERNAL_SIGNAL_SECRET=' "$B/secrets.env" || ( umask 177; echo "INTERNAL_SIGNAL_SECRET=$(head -c32 /dev/urandom | od -An -tx1 | tr -d ' \n')" >> "$B/secrets.env" )
++echo "secrets_keys=$(cut -d= -f1 "$B/secrets.env" | tr '\n' ' ')"
++NSX=$B/bin/nsx; PSQL="$NSX psql -h 127.0.0.1 -p 55432 -U postgres"
++# المقعدُ الأصليّ: pg_stat_statements مُحمَّلٌ مسبقاً (postgresql.auto.conf).
++$PSQL -d postgres -qc "alter system set shared_preload_libraries = 'pg_stat_statements'"
++$NSX bash -c "/usr/lib/postgresql/18/bin/pg_ctl -D $B/pg -l $B/pg.log -w restart" >/dev/null
++$PSQL -d postgres -Atc "show shared_preload_libraries"
++
++log "قالبُ المقعد: هجراتٌ + seat-seed.sql ثمّ ceezr_cap_tpl"
++$PSQL -d ceezr_cap_20261016 -v ON_ERROR_STOP=1 -q -f "$W/wt-acc/deploy/capacity-run/config/seat-seed.sql"
++$PSQL -d postgres -qc "create database ceezr_cap_tpl template ceezr_cap_20261016"
++$PSQL -d ceezr_cap_tpl -q -f "$H/deploy/capacity-run/b23-runner/fingerprint.sql" 2>&1 | grep -v '^$' > "$OUT/tpl-fingerprint.txt"
++# المقارنة: دوالُّ المشروعِ حرفاً والجداولُ غيرُ الفارغةِ بعددِ صفوفِها (أقسامُ السجلِّ المؤرَّخةُ تتبعُ التاريخ).
++exp_fn=$(grep -o 'fn_md5=[^ ]* fn_count=[0-9]*' "$H/deploy/capacity-run/b23-runner/expected-fingerprint.txt")
++exp_ne=$(grep -o 'nonempty=.*' "$H/deploy/capacity-run/b23-runner/expected-fingerprint.txt")
++got_fn=$(grep -o 'fn_md5=[^ ]* fn_count=[0-9]*' "$OUT/tpl-fingerprint.txt"); got_ne=$(grep -o 'nonempty=.*' "$OUT/tpl-fingerprint.txt")
++if [ "$exp_fn" = "$got_fn" ] && [ "$exp_ne" = "$got_ne" ]; then echo "TPL_FINGERPRINT_MATCH $got_fn"; else
++  echo "TPL_FINGERPRINT_MISMATCH exp[$exp_fn | $exp_ne] got[$got_fn | $got_ne]"; exit 1; fi
++
++log "أدواتُ المقعد"
++cp "$H"/deploy/capacity-run/b23-runner/seat-bin/* "$B/bin/"; chmod 755 "$B"/bin/*
++
++log "المحاكي والوسيط من wt-acc"
++(cd "$W/wt-acc" && CODE_DIR=$W/wt-acc bash deploy/capacity-run/svc.sh mock && CODE_DIR=$W/wt-acc bash deploy/capacity-run/svc.sh shim)
++sleep 8
++(cd "$W/wt-acc" && bash deploy/capacity-run/svc.sh status) | tee "$OUT/svc-status.txt" || true
++grep -q "telegram-mock=up" "$OUT/svc-status.txt" && grep -q "shim=up" "$OUT/svc-status.txt" || { echo "SEAT_SERVICES_DOWN"; tail -20 "$B/runs/current/evidence/shim.log" 2>/dev/null; exit 1; }
++
++log "سجلُّ البيئة"
++{
++  echo "date_utc=$(date -Is)"; echo "nproc=$(nproc)"; lscpu | grep -E "Model name|^CPU\(s\)|Thread|Core|Socket|Hypervisor|MHz" | tr -s ' '
++  free -m | head -2; uname -r; . /etc/os-release; echo "os=$PRETTY_NAME"
++  postgres --version; $PSQL -d ceezr_cap_tpl -Atc "select extname||' '||extversion from pg_extension order by 1" | tr '\n' ' '; echo
++  redis-server --version; echo "bun=$(bun --version)"; python3 --version; echo "node=$(node --version 2>/dev/null || echo absent)"
++  $PSQL -d postgres -Atc "select name||'='||setting||coalesce(unit,'') from pg_settings where source not in ('default','override','client','session') order by 1"
++  echo "pg_cgroup=$(cat /proc/$(pgrep -f 'postgres -D' | head -1)/cgroup)"; echo "self_cgroup=$(cat /proc/self/cgroup)"
++  echo "seat_cpu_max=$(cat /sys/fs/cgroup/$CAP_SEAT_CG/cpu.max 2>/dev/null)"
++  grep -E "open files|processes" /proc/$(pgrep -f 'postgres -D' | head -1)/limits | tr -s ' '
++  sudo -n ip netns exec ceezrsbx2 sysctl net.core.somaxconn net.ipv4.ip_local_port_range 2>/dev/null
++  cat /sys/kernel/mm/transparent_hugepage/enabled; echo "psi=$(head -1 /proc/pressure/cpu 2>/dev/null)"
++  echo "running_services:"; systemctl list-units --type=service --state=running --no-legend 2>/dev/null | awk '{print "  "$1}'
++} > "$OUT/seat-env.txt" 2>&1
++cat "$OUT/seat-env.txt" | head -30
++(cd "$W/wt-acc" && bash deploy/capacity-run/svc.sh assert)
++
++log "مرجعُ الخمول (البوّابةُ مطفأة) ← validity B23-RUNNER-V1"
++"$B/bin/idle-baseline.sh" "$B/qual/idle-b23" >"$OUT/idle.log" 2>&1
++python3 "$H/deploy/capacity-run/b23-runner/derive-validity.py" "$B/qual/idle-b23" "$B/bin/validity.json"
++cp "$B/bin/validity.json" "$OUT/validity.json"; cp -r "$B/qual/idle-b23" "$OUT/idle-b23"
++echo "VALIDITY_PINNED $(date -Is) sha256=$(sha256sum $B/bin/validity.json | cut -c1-16)"
++
++if [ "$MODE" = smoke ]; then
++  log "SMOKE (ليست موجةَ قياس): R عند 50"
++  "$B/bin/b23-seq.sh" smoke 50 29 "S1:ref:$R_SHA" > "$OUT/seq.log" 2>&1 || true
++  RUNS="b23-smoke-S1-50"
++else
++  log "القياس: R-C-C-R ثمّ C-R-R-C عند 750"
++  "$B/bin/b23-seq.sh" s1 750 30 "R1:ref:$R_SHA" "C1:cand:$C_SHA" "C2:cand:$C_SHA" "R2:ref:$R_SHA" \
++    "C3:cand:$C_SHA" "R3:ref:$R_SHA" "R4:ref:$R_SHA" "C4:cand:$C_SHA" > "$OUT/seq.log" 2>&1 || true
++  RUNS=$(for n in R1 C1 C2 R2 C3 R3 R4 C4; do printf "b23-s1-%s-750 " $n; done)
++fi
++grep -E "^SEQ|PREFLIGHT |INFLIGHT |QUAL_DONE|WAVE_DONE|END rc|INVALID|MISMATCH" "$OUT/seq.log" || true
++
++log "تجميعُ الدليل"
++# shellcheck disable=SC2086
++python3 "$B/bin/b23-compare.py" $RUNS > "$OUT/b23-summary.json" 2>"$OUT/b23-compare.err" || tail -5 "$OUT/b23-compare.err"
++for r in $RUNS; do
++  E=$B/runs/$r/evidence; D=$OUT/raw/$r; mkdir -p "$D"; [ -d "$E" ] || { echo "MISSING $r"; continue; }
++  for f in b23-env.json db-audit-post.json db-audit-pre.json resources.jsonl timeline.jsonl wave-report.json; do cp "$E/$f" "$D/" 2>/dev/null || true; done
++  for f in conn-samples.csv load-trace.jsonl miniapp-load-events.jsonl pgss-full.csv update-jobs.csv sched-samples.jsonl; do [ -f "$E/$f" ] && gzip -9c "$E/$f" > "$D/$f.gz"; done
++  cp -r "$B/qual/$r" "$D/qual" 2>/dev/null || true
++  for g in $B/bin/gates.sh; do $g "$r" > "$D/gates.txt" 2>&1 || true; done
++done
++mkdir -p "$OUT/service-logs"
++for f in shim telegram-mock gateway; do tail -n 400 "$B/runs/current/evidence/$f.log" > "$OUT/service-logs/$f.tail.log" 2>/dev/null || true; done
++cp "$B/runs/current/evidence/gateway-starts.jsonl" "$OUT/service-logs/" 2>/dev/null || true
++log "DONE"

@@ -1,0 +1,15 @@
+{
+ "expected_from": "قالب المقعد الأصلي",
+ "lines": [
+  "fn_md5=ba159019383b0ff487b9b53cebc214dc fn_count=313",
+  "col_md5=7a3ad51aeccf025fbae04e20a1899f24",
+  "idx_md5=58da7a51f946a04fc6ac73e87218ad5b",
+  "rows_md5=8f8dc9e20ba62dea1549e41d74cc5c59 nonempty=cities=5 city_service_areas=5 destination_landmarks=3632 identity_hash_pepper=1 notification_kind_policy=95 platform_settings=500"
+ ],
+ "svc_status": [
+  "telegram-mock=up",
+  "shim=up",
+  "gateway=down",
+  "ready=000"
+ ]
+}

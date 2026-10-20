@@ -1,0 +1,206 @@
+diff --git a/packages/shared/config/connection-budget.ts b/packages/shared/config/connection-budget.ts
+index 5a9f1c52..da354239 100644
+--- a/packages/shared/config/connection-budget.ts
++++ b/packages/shared/config/connection-budget.ts
+@@ -80,8 +80,11 @@ export const DB_POOL_MAX: Readonly<Record<DbPoolRole, number>> = Object.freeze({
+    * **5 مقيسٌ لا مُفترَض** (`LOAD-01` · الدفعةُ العاشرةُ): جُرِّبَ 6 مرشّحًا ملتزَمًا (`d3c4b90d`) فاجتازَ
+    * 250 وفشلَ قبولُ 500 على G1 (96.81%)، ولم ترتفعِ الإنتاجيّةُ (~21 سيناريو/ث في الحالتين) بل انتقلَ
+    * الطابورُ من HTTP إلى مستنزِفِ تيليجرام — فلم يُعتمَد (`BATCH-10-LOAD01-ACCEPT500.md`).
++   *
++   * **10 مرشّحُ قياسٍ معزولٍ لا قيمةٌ معتمدة** (`LOAD-01` · الدفعةُ 22 · ADR 0291 الخيارُ أ): فرعٌ
++   * تجريبيٌّ لا يُدمَج؛ المعتمدُ على `main` يبقى 5.
+    */
+-  gatewayRequest: 5,
++  gatewayRequest: 10,
+   /**
+    * `LOAD-01 · P4` · `ADR 0289` — اتّصالُ شوطِ البثِّ الفوريِّ (المُرسِلُ لكلِّ مدينةٍ). الشوطُ
+    * تسلسليٌّ لا يحملُ أكثرَ من استعلامٍ في آنٍ، فاتّصالٌ واحدٌ يسعُه كاملاً؛ وعلى تجمُّعِ الطلبِ
+diff --git a/tests/integration/pg-brownout.test.ts b/tests/integration/pg-brownout.test.ts
+index fd0f90ae..3c600845 100644
+--- a/tests/integration/pg-brownout.test.ts
++++ b/tests/integration/pg-brownout.test.ts
+@@ -1,6 +1,7 @@
+ /**
+  * `F11-04` (الشقُّ المملوكُ للمستودَعِ) — بطءُ PostgreSQL: قفلٌ حصريٌّ على `orders` يُحبَسُ
+- * أربعَ ثوانٍ، وعشرةُ استعلاماتٍ عليه من تجمُّعٍ بسقفِ البوّابةِ (5) — أكثرُ من السقفِ عمداً —
++ * أربعَ ثوانٍ، و`سقفُ البوّابةِ + OVERFLOW` استعلاماً عليه — أكثرُ من السقفِ أيّاً كانت قيمتُه، فيُثبَتُ
++ * بالقياسِ أنَّ السقفَ كلَّه مشغولٌ على الخادمِ وأنَّ الفائضَ ينتظرُ اتّصالاً على العميل —
+  * ثمَّ مسارٌ لا يمسُّ الجدولَ (`cities`). يُحاكَمُ بـ`judgeBrownout` (`ADR 0197`).
+  *
+  * طورانِ على `createSql` الحقيقيِّ: **بلا مهلةٍ** (الحالُ قبلَ `F11-04`) ويُنتظَرُ أن يُدينَه الحَكَمُ
+@@ -18,14 +19,33 @@ const describeIf = DATABASE_URL === undefined ? describe.skip : describe;
+ const BROWNOUT_MS = 4_000;
+ const TEST_DEADLINE_MS = 1_000;
+ const POOL_APP = "f11-04-pool";
++/** فائضٌ فوقَ السقفِ: العددُ العالقُ مشتقٌّ من السقفِ فلا يساويه أبداً (كان ثابتاً 10 فساوى سقفَ 10). */
++const POOL_CAP = DB_POOL_MAX.gatewayRequest;
++const OVERFLOW = 5;
++const BLOCKED_TOTAL = POOL_CAP + OVERFLOW;
++const SATURATION_PROBE_MS = 600;
++
++interface Saturation {
++  /** اتّصالاتُ التجمُّعِ على الخادمِ في ذروةِ البطء. */
++  poolBackends: number;
++  /** منها ما ينتظرُ القفلَ على الخادم. */
++  serverLockWaiters: number;
++  /** اتّصالاتُ التجمُّعِ بعدَ إغلاقِه. */
++  backendsAfterEnd: number;
++  /** دفعةٌ بحجمِ العالقِ كلِّه بعدَ البطء: كلُّها خُدِمَت؟ وأطولُها؟ وأقصى اتّصالاتٍ رُصِدَت. */
++  burstOk: number;
++  burstMaxMs: number;
++}
+ 
+ let observer: postgres.Sql;
+ 
+-async function runBrownout(deadlineMs: number | null): Promise<BrownoutSnapshot> {
++async function runBrownout(
++  deadlineMs: number | null,
++): Promise<BrownoutSnapshot & { saturation: Saturation }> {
+   let hookCalls = 0;
+   const pool: Sql = createSql({
+     connectionString: DATABASE_URL ?? "",
+-    max: DB_POOL_MAX.gatewayRequest,
++    max: POOL_CAP,
+     applicationName: POOL_APP,
+     ...(deadlineMs === null
+       ? {}
+@@ -67,16 +87,33 @@ async function runBrownout(deadlineMs: number | null): Promise<BrownoutSnapshot>
+     }
+   };
+   const blockedRuns: Promise<Outcome>[] = [];
+-  for (let i = 0; i < 6; i += 1) blockedRuns.push(settle(() => pool`select count(*) from orders`));
++  for (let i = 0; i < BLOCKED_TOTAL - 4; i += 1)
++    blockedRuns.push(settle(() => pool`select count(*) from orders`));
+   for (let i = 0; i < 2; i += 1)
+     blockedRuns.push(settle(() => pool.unsafe("select count(*) from orders")));
+   for (let i = 0; i < 2; i += 1) {
+     blockedRuns.push(settle(() => pool.begin(async (tx) => tx`select count(*) from orders`)));
+   }
+ 
++  const poolStat = async (): Promise<{ backends: number; lockWaiters: number }> => {
++    const [row = { backends: 0, lockWaiters: 0 }] = await observer<
++      { backends: number; lockWaiters: number }[]
++    >`
++      select count(*)::int as backends,
++             (count(*) filter (where wait_event_type = 'Lock'))::int as "lockWaiters"
++        from pg_stat_activity
++       where datname = current_database() and application_name = ${POOL_APP}
++         and pid <> ${lockerPid}
++    `;
++    return row;
++  };
+   await Bun.sleep(200);
+   const unrelatedRun = settle(() => pool`select count(*)::int as n from cities`);
+ 
++  // ذروةُ البطءِ وقبلَ المهلة: السقفُ كلُّه عالقٌ على الخادمِ، والفائضُ ينتظرُ اتّصالاً على العميل.
++  await Bun.sleep(Math.max(0, SATURATION_PROBE_MS - (performance.now() - t0)));
++  const peak = await poolStat();
++
+   const probeAt = deadlineMs === null ? 2_000 : deadlineMs + 500;
+   await Bun.sleep(Math.max(0, probeAt - (performance.now() - t0)));
+   const [{ n: waiters } = { n: 0 }] = await observer<{ n: number }[]>`
+@@ -95,7 +132,13 @@ async function runBrownout(deadlineMs: number | null): Promise<BrownoutSnapshot>
+      where datname = current_database() and application_name = ${POOL_APP}
+        and state like 'idle in transaction%'
+   `;
++  // تعافي السعةِ كلِّها لا اتّصالٍ واحد: دفعةٌ بحجمِ العالقِ تُخدَمُ كلُّها بلا قفل.
++  const burst = await Promise.all(
++    Array.from({ length: BLOCKED_TOTAL }, () => settle(() => pool`select count(*) from orders`)),
++  );
+   await pool.end({ timeout: 5 });
++  await Bun.sleep(100);
++  const afterEnd = await poolStat();
+ 
+   const others = outcomes.filter((o) => o.kind === "other");
+   if (others.length > 0)
+@@ -118,13 +161,34 @@ async function runBrownout(deadlineMs: number | null): Promise<BrownoutSnapshot>
+     deadlineHookCalls: hookCalls,
+     recovery: { ok: recovery.kind === "ok", latencyMs: Math.round(recovery.ms) },
+     idleInTransaction: idleInTx,
++    saturation: {
++      poolBackends: peak.backends,
++      serverLockWaiters: peak.lockWaiters,
++      backendsAfterEnd: afterEnd.backends,
++      burstOk: burst.filter((o) => o.kind === "ok").length,
++      burstMaxMs: Math.round(Math.max(...burst.map((o) => o.ms))),
++    },
+   };
+ }
+ 
+-function report(label: string, s: BrownoutSnapshot): void {
++/** شرطُ التجاوزِ الفعليّ: يُفشِلُ الاختبارَ إن ساوى العالقُ السقفَ أو لم يُشغَلِ السقفُ كلُّه. */
++function expectSaturatedAndRecovered(s: BrownoutSnapshot & { saturation: Saturation }): void {
++  expect(s.blocked.total).toBe(BLOCKED_TOTAL);
++  expect(s.blocked.total).toBeGreaterThan(POOL_CAP);
++  // التجمُّعُ لا يفتحُ أكثرَ من سقفِه، والسقفُ كلُّه ينتظرُ القفلَ على الخادم…
++  expect(s.saturation.poolBackends).toBe(POOL_CAP);
++  expect(s.saturation.serverLockWaiters).toBe(POOL_CAP);
++  // …فالفائضُ (OVERFLOW) ينتظرُ اتّصالاً على العميلِ لا على الخادم.
++  expect(s.blocked.total - s.saturation.serverLockWaiters).toBe(OVERFLOW);
++  // التنظيفُ والاستعادة: دفعةٌ بحجمِ العالقِ تُخدَمُ كلُّها، ولا اتّصالَ يبقى بعدَ الإغلاق.
++  expect(s.saturation.burstOk).toBe(BLOCKED_TOTAL);
++  expect(s.saturation.backendsAfterEnd).toBe(0);
++}
++
++function report(label: string, s: BrownoutSnapshot & { saturation: Saturation }): void {
+   const verdict = judgeBrownout(s);
+   console.log(
+-    `── F11-04 · ${label}: مسارُ cities ${s.unrelated.latencyMs}ms (${s.unrelated.ok ? "خُدِمَ" : "لم يُخدَم"}) · العالقُ ${s.blocked.total}: مُلغىً ${s.blocked.cancelled} · نجحَ ${s.blocked.succeeded} · آخرُ ${s.blocked.otherErrors} · أطولُه ${s.blocked.maxSettleMs}ms · منتظِرو الخادمِ بعدَ المهلةِ ${s.serverWaitersAfterDeadline} · الخطّافُ ${s.deadlineHookCalls} · التعافي ${s.recovery.latencyMs}ms · معاملاتٌ مفتوحةٌ ${s.idleInTransaction} · الحكمُ ${JSON.stringify(verdict)}`,
++    `── F11-04 · ${label}: مسارُ cities ${s.unrelated.latencyMs}ms (${s.unrelated.ok ? "خُدِمَ" : "لم يُخدَم"}) · العالقُ ${s.blocked.total}: مُلغىً ${s.blocked.cancelled} · نجحَ ${s.blocked.succeeded} · آخرُ ${s.blocked.otherErrors} · أطولُه ${s.blocked.maxSettleMs}ms · منتظِرو الخادمِ بعدَ المهلةِ ${s.serverWaitersAfterDeadline} · الخطّافُ ${s.deadlineHookCalls} · التعافي ${s.recovery.latencyMs}ms · معاملاتٌ مفتوحةٌ ${s.idleInTransaction} · السقفُ ${POOL_CAP}: اتّصالاتٌ ${s.saturation.poolBackends} · على القفلِ ${s.saturation.serverLockWaiters} · دفعةُ التعافي ${s.saturation.burstOk}/${BLOCKED_TOTAL} في ${s.saturation.burstMaxMs}ms · بعدَ الإغلاقِ ${s.saturation.backendsAfterEnd} · الحكمُ ${JSON.stringify(verdict)}`,
+   );
+ }
+ 
+@@ -146,11 +210,18 @@ describeIf("بطءُ PostgreSQL على تجمُّعِ مسارِ الطلبِ 
+     expect(verdict.ok).toBe(false);
+     expect(verdict.violations).toContain("unrelated.cascaded");
+     expect(verdict.violations).toContain("server.still_waiting");
++    expectSaturatedAndRecovered(s);
++    // بلا مهلةٍ ينتظرُ كلُّ عالقٍ البطءَ كلَّه — ومنه الفائضُ الذي لم يبلغِ الخادمَ بعد.
++    expect(s.blocked.succeeded).toBe(BLOCKED_TOTAL);
+   }, 20_000);
+ 
+   it("بمهلةِ 1000ms: المسارُ غيرُ المعنيِّ يُخدَمُ ضمنَ المهلةِ، والعالقُ يُلغى على الخادمِ مرصوداً، والتجمُّعُ يتعافى", async () => {
+     const s = await runBrownout(TEST_DEADLINE_MS);
+     report(`بمهلةِ ${TEST_DEADLINE_MS}ms`, s);
+     expect(judgeBrownout(s)).toEqual({ ok: true, violations: [] });
++    expectSaturatedAndRecovered(s);
++    // انقضاءُ الانتظار: كلُّ عالقٍ — المُرسَلُ إلى الخادمِ والمنتظِرُ اتّصالاً — يُلغى بالمهلة.
++    expect(s.blocked.cancelled).toBe(BLOCKED_TOTAL);
++    expect(s.deadlineHookCalls).toBe(BLOCKED_TOTAL);
+   }, 20_000);
+ });
+diff --git a/tests/unit/connection-budget.test.ts b/tests/unit/connection-budget.test.ts
+index e4e73160..0413d19d 100644
+--- a/tests/unit/connection-budget.test.ts
++++ b/tests/unit/connection-budget.test.ts
+@@ -176,8 +176,9 @@ describe("الميزانيّةُ المحسوبةُ المُثبَّتةُ (LOAD
+   // (22) قيسَ ولم يُعتمَد — `BATCH-10-LOAD01-ACCEPT500.md`.
+   const budget = computeConnectionBudget(DECLARED_TOPOLOGY);
+ 
+-  it("السقوفُ المعتمدةُ: الطلبُ 5 والشوطُ 1 والمهامُّ 5 والأقفالُ JOB_CONCURRENCY+1 واللوحةُ 5", () => {
+-    expect(DB_POOL_MAX.gatewayRequest).toBe(5);
++  // الدفعةُ 22 (ADR 0291، الخيارُ أ): مرشّحُ قياسٍ — الطلبُ 10 وحدَه، وبقيّةُ السقوفِ كما هي حرفًا.
++  it("سقوفُ المرشّح: الطلبُ 10 والشوطُ 1 والمهامُّ 5 والأقفالُ JOB_CONCURRENCY+1 واللوحةُ 5", () => {
++    expect(DB_POOL_MAX.gatewayRequest).toBe(10);
+     expect(DB_POOL_MAX.gatewayDispatch).toBe(1);
+     expect(DB_POOL_MAX.workerJobs).toBe(5);
+     expect(DB_POOL_MAX.workerLocks).toBe(JOB_CONCURRENCY + 1);
+@@ -186,14 +187,15 @@ describe("الميزانيّةُ المحسوبةُ المُثبَّتةُ (LOAD
+     expect(DB_POOL_MAX.restoreVerifier).toBe(1);
+   });
+ 
+-  it("الحالةُ المستقرّةُ على طوبولوجيا render.yaml = 21: بوّابةٌ واحدةٌ تحملُ (5+1) + (5+5) + 5", () => {
++  it("الحالةُ المستقرّةُ على طوبولوجيا render.yaml = 26: بوّابةٌ واحدةٌ تحملُ (10+1) + (5+5) + 5", () => {
+     const manifest = readFileSync(join(import.meta.dir, "..", "..", MANIFEST_NAME), "utf8");
+     expect(analyseManifest(manifest)).toEqual([]);
+     expect(budget.rows).toHaveLength(3);
+     const gateway = budget.rows.find((row) => row.process === "gateway");
+     expect(gateway?.instances).toBe(1);
+-    expect(gateway?.perInstance).toBe(21);
+-    expect(budget.steadyStateTotal).toBe(21);
++    expect(gateway?.perInstance).toBe(26);
++    expect(budget.steadyStateTotal).toBe(26);
++    expect(DECLARED_TOPOLOGY.gatewayInstances).toBe(1);
+   });
+ 
+   it("restoreVerifier عابرٌ: يُعلَنُ في الذروةِ العابرةِ (1) ولا يدخلُ مجموعَ الحالةِ المستقرّة", () => {
