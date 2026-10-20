@@ -21,13 +21,8 @@
     "deploy/capacity-run/seat-b24.sh",
     "deploy/capacity-run/tests/b24-nearby-timing.ts"
   ],
-  "state": [
-    "docs/SYSTEM_STATE.md",
-    "docs/roadmap/execution/STATUS.md"
-  ],
-  "roadmap": [
-    "ROADMAP.md"
-  ],
+  "state": ["docs/SYSTEM_STATE.md", "docs/roadmap/execution/STATUS.md"],
+  "roadmap": ["ROADMAP.md"],
   "affected_docs": [
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-24-LOAD01-ORDER-SNAPSHOT.md",
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch24/SHA256SUMS.gh",
