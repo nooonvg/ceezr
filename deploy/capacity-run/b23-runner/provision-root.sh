@@ -6,7 +6,7 @@ OUT=/home/user/b23-out
 . /etc/os-release
 echo "os=$PRETTY_NAME codename=$VERSION_CODENAME kernel=$(uname -r) nproc=$(nproc)"
 systemctl list-units --type=service --state=running --no-legend | awk '{print $1}' > /tmp/services-before.txt
-for s in docker.service docker.socket containerd.service podman.service mysql.service php8.3-fpm.service mono-xsp4.service; do
+for s in docker.service docker.socket containerd.service podman.service mysql.service php8.3-fpm.service mono-xsp4.service php8.5-fpm.service packagekit.service ModemManager.service udisks2.service; do
   systemctl disable --now "$s" >/dev/null 2>&1 || true
 done
 install -d /usr/share/postgresql-common/pgdg

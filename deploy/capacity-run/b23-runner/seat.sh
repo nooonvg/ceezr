@@ -16,7 +16,7 @@ log "worktrees R=$R_SHA C=$C_SHA"
 git -C "$H" worktree add -f --detach "$W/wt-ref" "$R_SHA" >/dev/null 2>&1
 git -C "$H" worktree add -f --detach "$W/wt-acc" "$C_SHA" >/dev/null 2>&1
 for wt in wt-ref wt-acc; do (cd "$W/$wt" && bun install --frozen-lockfile >"$OUT/bun-install-$wt.log" 2>&1); done
-grep -n "gatewayRequest: " "$W/wt-ref/packages/shared/config/connection-budget.ts" "$W/wt-acc/packages/shared/config/connection-budget.ts" | head -2
+grep -H "^  gatewayRequest: " "$W/wt-ref/packages/shared/config/connection-budget.ts" "$W/wt-acc/packages/shared/config/connection-budget.ts"
 
 log "setup-env (infra|db|migrate) من wt-acc"
 (cd "$W/wt-acc" && bash deploy/capacity-run/setup-env-20261016.sh all) >"$OUT/setup-env.log" 2>&1 || { tail -20 "$OUT/setup-env.log"; exit 1; }
@@ -24,7 +24,7 @@ tail -3 "$OUT/setup-env.log"
 NSX=$B/bin/nsx; PSQL="$NSX psql -h 127.0.0.1 -p 55432 -U postgres"
 # المقعدُ الأصليّ: pg_stat_statements مُحمَّلٌ مسبقاً (postgresql.auto.conf).
 $PSQL -d postgres -qc "alter system set shared_preload_libraries = 'pg_stat_statements'"
-$NSX bash -c "pg_ctl -D $B/pg -l $B/pg.log -w restart" >/dev/null
+$NSX bash -c "/usr/lib/postgresql/18/bin/pg_ctl -D $B/pg -l $B/pg.log -w restart" >/dev/null
 $PSQL -d postgres -Atc "show shared_preload_libraries"
 
 log "قالبُ المقعد: هجراتٌ + seat-seed.sql ثمّ ceezr_cap_tpl"
