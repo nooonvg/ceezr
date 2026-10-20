@@ -63,4 +63,4 @@ G2–G8 وP1–P9 ضمنَ حدودِها الأصليّةِ في الموجات
 
 ## 5. الملفّات
 
-`raw/batch22/` (128 ملفًّا، `SHA256SUMS`): لكلِّ موجةٍ `wave-report.json`، `qual/` (preflight/inflight/window/wave-host)، `load-trace.jsonl.gz`، `conn-samples.csv.gz`، `update-jobs.csv.gz`، `pgss-full.csv.gz`، `miniapp-load-events.jsonl.gz`، `resources.jsonl`، تدقيقُ القاعدةِ قبلُ وبعد، `b22-env.txt`؛ و`PLAN.md`، و`b22-summary.json`، و`b22-failure-reasons.json`، و`candidate-59c8f3a7.diff`، و`tools/`.
+`raw/batch22/` (128 ملفًّا، `SHA256SUMS`): لكلِّ موجةٍ `wave-report.json`، `qual/` (preflight/inflight/window/wave-host)، `load-trace.jsonl.gz`، `conn-samples.csv.gz`، `update-jobs.csv.gz`، `pgss-full.csv.gz`، `miniapp-load-events.jsonl.gz`، `resources.jsonl`، تدقيقُ القاعدةِ قبلُ وبعد، `b22-env.json`؛ و`PLAN.md`، و`b22-summary.json`، و`b22-failure-reasons.json`، و`candidate-59c8f3a7.diff`، و`tools/`.
