@@ -17,7 +17,11 @@ import type { Order, OrderStatus } from "../../domain/transport/entity.ts";
 import type { CityId, DriverId, OrderId, RiderId, ServiceType } from "../../shared/kernel/index.ts";
 import { guard, type Sql } from "../db/client.ts";
 
-interface OrderRow {
+/**
+ * `LOAD-01 · P4` (ب24) — يُصدَّرُ ليُعيدَ قارئُ الطلباتِ الباحثةِ استخدامَهُ لا نسخةً
+ * ثانيةً من منطقِ التحويلِ: مصدرٌ واحدٌ لمعنىِ صفِّ الطلبِ.
+ */
+export interface OrderRow {
   readonly id: string;
   readonly city_id: string;
   readonly service: string;
@@ -30,7 +34,7 @@ interface OrderRow {
   readonly broadcast_round: number;
 }
 
-function toOrder(row: OrderRow): Order {
+export function toOrder(row: OrderRow): Order {
   return {
     id: row.id as OrderId,
     cityId: row.city_id as CityId,
