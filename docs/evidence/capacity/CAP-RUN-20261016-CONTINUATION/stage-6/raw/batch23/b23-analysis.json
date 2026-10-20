@@ -1,0 +1,872 @@
+{
+ "waves": [
+  {
+   "round": "b23-s1-R1-750",
+   "side": "R",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4144,
+   "scenarios": 4161,
+   "G1_pct": 99.59,
+   "P": {
+    "P1": 235.0,
+    "P2": 227.0,
+    "P3": 212.0,
+    "P4": 41377.0,
+    "P5": 41888.0,
+    "P6a": 308.0,
+    "P6b": 287.0,
+    "P6c": 278.0,
+    "P7": 70.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.59% (4144/4161)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4161/4161 · drivers 4161/4161",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 66.0,
+   "q_run_ms": 3.15,
+   "req_q_per_completed": 63.0,
+   "pg_exec_s": 390.6,
+   "req_hold_s": 822.3,
+   "gwreq_conn_max": 5,
+   "gwreq_active_p95": 4,
+   "pg_cpu_median": 172.1,
+   "gw_cpu_median": 81.9,
+   "host_idle_median": 19.145000000000003,
+   "loop_lag_p95_median_ms": 2.7,
+   "tg_per_s": 23.2,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 9.07,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.0,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "ref",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 212,
+    "postgres_run_pct_1core": 176.6,
+    "postgres_runq_wait_pct_1core": 147.9,
+    "postgres_wait_per_run": 0.837,
+    "gateway_run_pct_1core": 82.0,
+    "gateway_runq_wait_pct_1core": 55.7,
+    "gateway_wait_per_run": 0.68,
+    "generator_run_pct_1core": 20.1,
+    "generator_runq_wait_pct_1core": 41.7,
+    "generator_wait_per_run": 2.069,
+    "psi_some_mean_pct": 40.9,
+    "procs_running_mean": 6.82
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P4"
+    ],
+    "gates_fail": [
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 17
+   }
+  },
+  {
+   "round": "b23-s1-C1-750",
+   "side": "C",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4021,
+   "scenarios": 4044,
+   "G1_pct": 99.43,
+   "P": {
+    "P1": 679.0,
+    "P2": 160.0,
+    "P3": 137.0,
+    "P4": 42484.0,
+    "P5": 42688.0,
+    "P6a": 768.0,
+    "P6b": 274.0,
+    "P6c": 264.0,
+    "P7": 81.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.43% (4021/4044)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4044/4044 · drivers 4044/4044",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 30.7,
+   "q_run_ms": 4.75,
+   "req_q_per_completed": 65.3,
+   "pg_exec_s": 390.7,
+   "req_hold_s": 1247.3,
+   "gwreq_conn_max": 10,
+   "gwreq_active_p95": 6,
+   "pg_cpu_median": 172.0,
+   "gw_cpu_median": 79.2,
+   "host_idle_median": 21.78,
+   "loop_lag_p95_median_ms": 3.7,
+   "tg_per_s": 22.6,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 5.3,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.0,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "cand",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 209,
+    "postgres_run_pct_1core": 177.1,
+    "postgres_runq_wait_pct_1core": 199.0,
+    "postgres_wait_per_run": 1.124,
+    "gateway_run_pct_1core": 80.8,
+    "gateway_runq_wait_pct_1core": 56.0,
+    "gateway_wait_per_run": 0.693,
+    "generator_run_pct_1core": 19.2,
+    "generator_runq_wait_pct_1core": 43.3,
+    "generator_wait_per_run": 2.252,
+    "psi_some_mean_pct": 41.6,
+    "procs_running_mean": 7.61
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P4"
+    ],
+    "gates_fail": [
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 23
+   }
+  },
+  {
+   "round": "b23-s1-C2-750",
+   "side": "C",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4018,
+   "scenarios": 4036,
+   "G1_pct": 99.55,
+   "P": {
+    "P1": 678.0,
+    "P2": 146.0,
+    "P3": 140.0,
+    "P4": 42789.0,
+    "P5": 43198.0,
+    "P6a": 751.0,
+    "P6b": 299.0,
+    "P6c": 264.0,
+    "P7": 99.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.55% (4018/4036)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4036/4036 · drivers 4036/4036",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 32.3,
+   "q_run_ms": 5.12,
+   "req_q_per_completed": 65.0,
+   "pg_exec_s": 399.3,
+   "req_hold_s": 1335.6,
+   "gwreq_conn_max": 10,
+   "gwreq_active_p95": 7,
+   "pg_cpu_median": 173.7,
+   "gw_cpu_median": 79.3,
+   "host_idle_median": 19.54,
+   "loop_lag_p95_median_ms": 4.1,
+   "tg_per_s": 22.6,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 5.74,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.1,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "cand",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 210,
+    "postgres_run_pct_1core": 181.1,
+    "postgres_runq_wait_pct_1core": 210.0,
+    "postgres_wait_per_run": 1.16,
+    "gateway_run_pct_1core": 82.0,
+    "gateway_runq_wait_pct_1core": 57.2,
+    "gateway_wait_per_run": 0.697,
+    "generator_run_pct_1core": 19.3,
+    "generator_runq_wait_pct_1core": 45.6,
+    "generator_wait_per_run": 2.363,
+    "psi_some_mean_pct": 42.8,
+    "procs_running_mean": 7.25
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P4"
+    ],
+    "gates_fail": [
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 18
+   }
+  },
+  {
+   "round": "b23-s1-R2-750",
+   "side": "R",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4232,
+   "scenarios": 4250,
+   "G1_pct": 99.58,
+   "P": {
+    "P1": 352.0,
+    "P2": 350.0,
+    "P3": 321.0,
+    "P4": 41370.0,
+    "P5": 42490.0,
+    "P6a": 474.0,
+    "P6b": 441.0,
+    "P6c": 423.0,
+    "P7": 64.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.58% (4232/4250)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4250/4250 · drivers 4250/4250",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 114.8,
+   "q_run_ms": 3.45,
+   "req_q_per_completed": 60.3,
+   "pg_exec_s": 394.7,
+   "req_hold_s": 880.4,
+   "gwreq_conn_max": 5,
+   "gwreq_active_p95": 4,
+   "pg_cpu_median": 180.7,
+   "gw_cpu_median": 84.5,
+   "host_idle_median": 17.15,
+   "loop_lag_p95_median_ms": 2.9,
+   "tg_per_s": 23.6,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 11.62,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.0,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "ref",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 209,
+    "postgres_run_pct_1core": 183.4,
+    "postgres_runq_wait_pct_1core": 168.3,
+    "postgres_wait_per_run": 0.917,
+    "gateway_run_pct_1core": 85.0,
+    "gateway_runq_wait_pct_1core": 60.7,
+    "gateway_wait_per_run": 0.714,
+    "generator_run_pct_1core": 21.4,
+    "generator_runq_wait_pct_1core": 48.1,
+    "generator_wait_per_run": 2.248,
+    "psi_some_mean_pct": 44.1,
+    "procs_running_mean": 7.88
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P4"
+    ],
+    "gates_fail": [
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 18
+   }
+  },
+  {
+   "round": "b23-s1-C3-750",
+   "side": "C",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4304,
+   "scenarios": 4311,
+   "G1_pct": 99.84,
+   "P": {
+    "P1": 1168.0,
+    "P2": 1159.0,
+    "P3": 641.0,
+    "P4": 40680.0,
+    "P5": 40974.0,
+    "P6a": 1703.0,
+    "P6b": 1620.0,
+    "P6c": 1195.0,
+    "P7": 97.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.84% (4304/4311)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4311/4311 · drivers 4311/4311",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 115.1,
+   "q_run_ms": 6.35,
+   "req_q_per_completed": 57.8,
+   "pg_exec_s": 553.2,
+   "req_hold_s": 1581.4,
+   "gwreq_conn_max": 10,
+   "gwreq_active_p95": 8,
+   "pg_cpu_median": 177.8,
+   "gw_cpu_median": 80.0,
+   "host_idle_median": 16.22,
+   "loop_lag_p95_median_ms": 4.9,
+   "tg_per_s": 24.1,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 11.22,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.1,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "cand",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 209,
+    "postgres_run_pct_1core": 194.7,
+    "postgres_runq_wait_pct_1core": 277.7,
+    "postgres_wait_per_run": 1.426,
+    "gateway_run_pct_1core": 80.2,
+    "gateway_runq_wait_pct_1core": 65.0,
+    "gateway_wait_per_run": 0.81,
+    "generator_run_pct_1core": 20.7,
+    "generator_runq_wait_pct_1core": 49.8,
+    "generator_wait_per_run": 2.404,
+    "psi_some_mean_pct": 49.9,
+    "procs_running_mean": 8.27
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P1",
+     "P2",
+     "P4"
+    ],
+    "gates_fail": [
+     "P1",
+     "P2",
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 7
+   }
+  },
+  {
+   "round": "b23-s1-R3-750",
+   "side": "R",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4072,
+   "scenarios": 4083,
+   "G1_pct": 99.73,
+   "P": {
+    "P1": 1275.0,
+    "P2": 1489.0,
+    "P3": 861.0,
+    "P4": 40487.0,
+    "P5": 41066.0,
+    "P6a": 1691.0,
+    "P6b": 1940.0,
+    "P6c": 1414.0,
+    "P7": 68.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.73% (4072/4083)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4083/4083 · drivers 4083/4083",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 114.0,
+   "q_run_ms": 3.33,
+   "req_q_per_completed": 59.9,
+   "pg_exec_s": 440.9,
+   "req_hold_s": 813.7,
+   "gwreq_conn_max": 5,
+   "gwreq_active_p95": 4,
+   "pg_cpu_median": 175.35000000000002,
+   "gw_cpu_median": 77.44999999999999,
+   "host_idle_median": 18.11,
+   "loop_lag_p95_median_ms": 2.7,
+   "tg_per_s": 22.8,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 7.17,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.0,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "ref",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 209,
+    "postgres_run_pct_1core": 191.7,
+    "postgres_runq_wait_pct_1core": 155.0,
+    "postgres_wait_per_run": 0.808,
+    "gateway_run_pct_1core": 77.1,
+    "gateway_runq_wait_pct_1core": 56.1,
+    "gateway_wait_per_run": 0.728,
+    "generator_run_pct_1core": 18.8,
+    "generator_runq_wait_pct_1core": 40.2,
+    "generator_wait_per_run": 2.134,
+    "psi_some_mean_pct": 42.6,
+    "procs_running_mean": 7.62
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P1",
+     "P2",
+     "P4"
+    ],
+    "gates_fail": [
+     "P1",
+     "P2",
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 11
+   }
+  },
+  {
+   "round": "b23-s1-R4-750",
+   "side": "R",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4085,
+   "scenarios": 4106,
+   "G1_pct": 99.49,
+   "P": {
+    "P1": 631.0,
+    "P2": 293.0,
+    "P3": 226.0,
+    "P4": 41262.0,
+    "P5": 42116.0,
+    "P6a": 798.0,
+    "P6b": 436.0,
+    "P6c": 358.0,
+    "P7": 80.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.49% (4085/4106)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4106/4106 · drivers 4106/4106",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 68.2,
+   "q_run_ms": 3.21,
+   "req_q_per_completed": 63.6,
+   "pg_exec_s": 382.7,
+   "req_hold_s": 833.1,
+   "gwreq_conn_max": 5,
+   "gwreq_active_p95": 4,
+   "pg_cpu_median": 173.1,
+   "gw_cpu_median": 82.0,
+   "host_idle_median": 18.785,
+   "loop_lag_p95_median_ms": 2.8,
+   "tg_per_s": 22.9,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 5.91,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.0,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "ref",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 210,
+    "postgres_run_pct_1core": 179.6,
+    "postgres_runq_wait_pct_1core": 150.0,
+    "postgres_wait_per_run": 0.835,
+    "gateway_run_pct_1core": 83.7,
+    "gateway_runq_wait_pct_1core": 56.0,
+    "gateway_wait_per_run": 0.669,
+    "generator_run_pct_1core": 20.3,
+    "generator_runq_wait_pct_1core": 42.4,
+    "generator_wait_per_run": 2.086,
+    "psi_some_mean_pct": 41.3,
+    "procs_running_mean": 7.44
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P4"
+    ],
+    "gates_fail": [
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 21
+   }
+  },
+  {
+   "round": "b23-s1-C4-750",
+   "side": "C",
+   "valid": true,
+   "why_invalid": null,
+   "completed": 4010,
+   "scenarios": 4026,
+   "G1_pct": 99.6,
+   "P": {
+    "P1": 646.0,
+    "P2": 168.0,
+    "P3": 126.0,
+    "P4": 42588.0,
+    "P5": 42795.0,
+    "P6a": 729.0,
+    "P6b": 271.0,
+    "P6c": 258.0,
+    "P7": 69.0,
+    "P8": 0.0,
+    "P9": 0.0
+   },
+   "gates": {
+    "G1": "99.60% (4010/4026)",
+    "G2": "0",
+    "G3": "0 + 0",
+    "G4": "CLEAN",
+    "G5": "0",
+    "G6": "0.00% (0)",
+    "G7": "0.00%",
+    "G8": "0",
+    "I1-identities": "riders 4026/4026 · drivers 4026/4026",
+    "GW-STABILITY": "stable",
+    "EGRESS-CLASSIFIED": "unknown +0",
+    "CONC-peak": "peak 750 / target 750"
+   },
+   "q_wait_ms": 30.1,
+   "q_run_ms": 4.83,
+   "req_q_per_completed": 65.3,
+   "pg_exec_s": 398.2,
+   "req_hold_s": 1265.9,
+   "gwreq_conn_max": 10,
+   "gwreq_active_p95": 6,
+   "pg_cpu_median": 175.2,
+   "gw_cpu_median": 81.5,
+   "host_idle_median": 22.37,
+   "loop_lag_p95_median_ms": 3.7,
+   "tg_per_s": 22.5,
+   "tg_over20": 0,
+   "tg_lat_p95_s": 5.47,
+   "tg_not_done": 0,
+   "host_gap_max_s": 1.0,
+   "conn_redis_errors": {
+    "job.ran": 65
+   },
+   "audit_violations": [],
+   "env": {
+    "tpl_level_ok": "t",
+    "side": "cand",
+    "code_ref": "ac81e0ed838b414189888f9e6a6e1348ea3ba9d0",
+    "code_acc": "fbdfee7a395cd8d212159cb902ae6000d766ef35",
+    "gateway_request_ref": 5,
+    "gateway_request_acc": 10,
+    "nproc": 4
+   },
+   "sched": {
+    "samples_load": 210,
+    "postgres_run_pct_1core": 177.4,
+    "postgres_runq_wait_pct_1core": 198.3,
+    "postgres_wait_per_run": 1.118,
+    "gateway_run_pct_1core": 81.0,
+    "gateway_runq_wait_pct_1core": 55.1,
+    "gateway_wait_per_run": 0.681,
+    "generator_run_pct_1core": 19.3,
+    "generator_runq_wait_pct_1core": 42.5,
+    "generator_wait_per_run": 2.206,
+    "psi_some_mean_pct": 41.4,
+    "procs_running_mean": 7.19
+   },
+   "report": {
+    "verdict": "FAIL",
+    "failedGates": [
+     "P4"
+    ],
+    "gates_fail": [
+     "P4"
+    ]
+   },
+   "fail_reasons": {
+    "offer:offer_not_found_in_time|None": 16
+   }
+  }
+ ],
+ "R": {
+  "n": 4,
+  "completed_mean": 4133.25,
+  "completed_min": 4072,
+  "completed_max": 4232,
+  "G1_mean": 99.597,
+  "G1_min": 99.49,
+  "G1_max": 99.73,
+  "q_wait_ms": 90.75,
+  "q_run_ms": 3.285,
+  "pg_exec_s": 402.225,
+  "req_hold_s": 837.375,
+  "req_q_per_completed": 61.7,
+  "pg_cpu_median": 175.312,
+  "gw_cpu_median": 81.463,
+  "host_idle_median": 18.297,
+  "loop_lag_p95_ms": 2.775,
+  "tg_per_s": 23.125,
+  "tg_over20": 0,
+  "tg_lat_p95_s": 8.442,
+  "gwreq_conn_max": 5,
+  "gwreq_active_p95": 4,
+  "P1": 623.25,
+  "P2": 589.75,
+  "P3": 405.0,
+  "P4": 41124.0,
+  "P5": 41890.0,
+  "P6a": 817.75,
+  "P7": 70.5,
+  "sched_postgres_run_pct_1core": 182.825,
+  "sched_postgres_runq_wait_pct_1core": 155.3,
+  "sched_postgres_wait_per_run": 0.849,
+  "sched_gateway_run_pct_1core": 81.95,
+  "sched_gateway_runq_wait_pct_1core": 57.125,
+  "sched_gateway_wait_per_run": 0.698,
+  "sched_generator_run_pct_1core": 20.15,
+  "sched_generator_runq_wait_pct_1core": 43.1,
+  "sched_generator_wait_per_run": 2.134,
+  "sched_psi_some_mean_pct": 42.225,
+  "sched_procs_running_mean": 7.44
+ },
+ "C": {
+  "n": 4,
+  "completed_mean": 4088.25,
+  "completed_min": 4010,
+  "completed_max": 4304,
+  "G1_mean": 99.605,
+  "G1_min": 99.43,
+  "G1_max": 99.84,
+  "q_wait_ms": 52.05,
+  "q_run_ms": 5.263,
+  "pg_exec_s": 435.35,
+  "req_hold_s": 1357.55,
+  "req_q_per_completed": 63.35,
+  "pg_cpu_median": 174.675,
+  "gw_cpu_median": 80.0,
+  "host_idle_median": 19.977,
+  "loop_lag_p95_ms": 4.1,
+  "tg_per_s": 22.95,
+  "tg_over20": 0,
+  "tg_lat_p95_s": 6.933,
+  "gwreq_conn_max": 10,
+  "gwreq_active_p95": 6.75,
+  "P1": 792.75,
+  "P2": 408.25,
+  "P3": 261.0,
+  "P4": 42135.25,
+  "P5": 42413.75,
+  "P6a": 987.75,
+  "P7": 86.5,
+  "sched_postgres_run_pct_1core": 182.575,
+  "sched_postgres_runq_wait_pct_1core": 221.25,
+  "sched_postgres_wait_per_run": 1.207,
+  "sched_gateway_run_pct_1core": 81.0,
+  "sched_gateway_runq_wait_pct_1core": 58.325,
+  "sched_gateway_wait_per_run": 0.72,
+  "sched_generator_run_pct_1core": 19.625,
+  "sched_generator_runq_wait_pct_1core": 45.3,
+  "sched_generator_wait_per_run": 2.306,
+  "sched_psi_some_mean_pct": 43.925,
+  "sched_procs_running_mean": 7.58
+ },
+ "C_over_R": {
+  "n": 1.0,
+  "completed_mean": 0.989,
+  "completed_min": 0.985,
+  "completed_max": 1.017,
+  "G1_mean": 1.0,
+  "G1_min": 0.999,
+  "G1_max": 1.001,
+  "q_wait_ms": 0.574,
+  "q_run_ms": 1.602,
+  "pg_exec_s": 1.082,
+  "req_hold_s": 1.621,
+  "req_q_per_completed": 1.027,
+  "pg_cpu_median": 0.996,
+  "gw_cpu_median": 0.982,
+  "host_idle_median": 1.092,
+  "loop_lag_p95_ms": 1.477,
+  "tg_per_s": 0.992,
+  "tg_lat_p95_s": 0.821,
+  "gwreq_conn_max": 2.0,
+  "gwreq_active_p95": 1.688,
+  "P1": 1.272,
+  "P2": 0.692,
+  "P3": 0.644,
+  "P4": 1.025,
+  "P5": 1.013,
+  "P6a": 1.208,
+  "P7": 1.227,
+  "sched_postgres_run_pct_1core": 0.999,
+  "sched_postgres_runq_wait_pct_1core": 1.425,
+  "sched_postgres_wait_per_run": 1.422,
+  "sched_gateway_run_pct_1core": 0.988,
+  "sched_gateway_runq_wait_pct_1core": 1.021,
+  "sched_gateway_wait_per_run": 1.032,
+  "sched_generator_run_pct_1core": 0.974,
+  "sched_generator_runq_wait_pct_1core": 1.051,
+  "sched_generator_wait_per_run": 1.081,
+  "sched_psi_some_mean_pct": 1.04,
+  "sched_procs_running_mean": 1.019
+ },
+ "invalid": [],
+ "rules": {
+  "cpu_rule_throughput_ratio_ge_1_20": false,
+  "cpu_rule_minC_gt_maxR": false,
+  "cpu_rule_q_run_inflation_le_1_40": false,
+  "cpu_rule_pg_runq_wait_le_1_50": true,
+  "g1_rule_plus5pp": false,
+  "g1_rule_minC_gt_maxR": false,
+  "g1_acceptance_99": true
+ }
+}

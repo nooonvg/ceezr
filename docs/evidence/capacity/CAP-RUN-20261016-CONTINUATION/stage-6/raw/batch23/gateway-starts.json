@@ -1,0 +1,20 @@
+{
+ "lines": [
+  "{\"t\":\"2026-10-20T04:40:46+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-ref\",\"sha\":\"ac81e0ed838b414189888f9e6a6e1348ea3ba9d0\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T04:40:46+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}",
+  "{\"t\":\"2026-10-20T04:47:12+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-acc\",\"sha\":\"fbdfee7a395cd8d212159cb902ae6000d766ef35\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T04:47:12+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}",
+  "{\"t\":\"2026-10-20T04:53:29+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-acc\",\"sha\":\"fbdfee7a395cd8d212159cb902ae6000d766ef35\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T04:53:29+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}",
+  "{\"t\":\"2026-10-20T04:59:45+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-ref\",\"sha\":\"ac81e0ed838b414189888f9e6a6e1348ea3ba9d0\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T04:59:45+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}",
+  "{\"t\":\"2026-10-20T05:06:11+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-acc\",\"sha\":\"fbdfee7a395cd8d212159cb902ae6000d766ef35\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T05:06:11+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}",
+  "{\"t\":\"2026-10-20T05:12:33+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-ref\",\"sha\":\"ac81e0ed838b414189888f9e6a6e1348ea3ba9d0\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T05:12:33+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}",
+  "{\"t\":\"2026-10-20T05:18:49+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-ref\",\"sha\":\"ac81e0ed838b414189888f9e6a6e1348ea3ba9d0\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T05:18:49+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}",
+  "{\"t\":\"2026-10-20T05:25:05+00:00\",\"event\":\"gateway.start\",\"code_dir\":\"/home/user/workspace/wt-acc\",\"sha\":\"fbdfee7a395cd8d212159cb902ae6000d766ef35\",\"dirty\":0}",
+  "{\"t\":\"2026-10-20T05:25:05+00:00\",\"event\":\"gateway.flags\",\"flags\":\"\"}"
+ ]
+}

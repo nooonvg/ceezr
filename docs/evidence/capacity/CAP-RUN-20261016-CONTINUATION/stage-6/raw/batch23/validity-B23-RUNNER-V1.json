@@ -1,0 +1,52 @@
+{
+ "version": "B23-RUNNER-V1",
+ "pinned_before_any_new_wave": true,
+ "reference": {
+  "source": "/srv/ceezr-cap-20261016/qual/idle-b23 (البوّابةُ مطفأة، PG/Redis/الوسيط/المحاكي قائمةٌ خاملة)",
+  "ncpu": 4,
+  "seat_cgroup": "ceezrseat.slice",
+  "speed_probe_median_ms": 340.1,
+  "speed_probe_mad_ms": 0.3,
+  "pg_probe_median_ms": 373.2,
+  "pg_probe_mad_ms": 0.62,
+  "idle_steal_mean_pct": 0.0,
+  "idle_steal_p99_pct": 0.0,
+  "idle_system_slice_mean_pct_1core": 0.78,
+  "idle_foreign_mean_pct_1core": 1.22,
+  "idle_iowait_mean_pct": 0.01
+ },
+ "preflight": {
+  "window_s": 60,
+  "speed_probe_median_max_ms": 374,
+  "pg_probe_median_max_ms": 411,
+  "steal_mean_max_pct": 1.0,
+  "steal_1s_max_pct": 10.0,
+  "siblings_mean_max_pct_1core": 2.0,
+  "foreign_mean_max_pct_1core": 3.0,
+  "iowait_mean_max_pct": 1.0,
+  "procs_blocked_max": 1,
+  "throttled_max": 0,
+  "seat_cpu_max_required": "max 100000",
+  "no_leftover_processes": [
+   "apps/gateway/src/index.ts",
+   "miniapp-load",
+   "capacity-run/load/"
+  ]
+ },
+ "inflight": {
+  "steal_mean_max_pct": 2.0,
+  "steal_10s_rolling_max_pct": 10.0,
+  "siblings_mean_max_pct_1core": 5.0,
+  "foreign_mean_max_pct_1core": 5.0,
+  "iowait_mean_max_pct": 2.0,
+  "throttled_max": 0,
+  "post_speed_probe_median_max_ms": 374,
+  "post_pg_probe_median_max_ms": 411
+ },
+ "rules": [
+  "مشتقٌّ آليّاً بقاعدةِ B12-V2 (المرجع × 1.10 للمسبارَين، والحدودُ المطلقةُ الأخرى حرفاً) من مرجعِ خمولِ هذا المقعدِ قبلَ أوّلِ موجة.",
+  "إخفاقُ الفحصِ المسبقِ ⇒ لا حقن؛ وإخفاقُ شرطٍ أثناءَ الموجةِ أو بعدَها ⇒ INVALID_ENV تُحفَظُ وتُستبعَدُ من المتوسّطاتِ والاستنتاجات.",
+  "حدودُ القبولِ الوظيفيّةُ والأدائيّةُ (ACCEPTANCE-PROTOCOL.md) لا تتغيّر."
+ ],
+ "derived_from": "B12-V2 (/srv/ceezr-cap-20261016/bin/validity.json على المقعدِ ذي النواتَين)"
+}
