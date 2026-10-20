@@ -196,6 +196,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/redispatch-order-snapshot.test.ts",
+    suites: ["LOAD-01 P4 (ب24) — لقطةُ الطلبِ من القارئ"],
+    skipped: 5,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "انحدارُ LOAD-01 P4 (الدفعةُ 24): تكافؤُ لقطةِ القارئِ معَ findById، وحاجزُ الجولةِ المتقادمةِ (رفضٌ ذرّيٌّ CAS وتصنيفُ سباقٍ منَ اتصالٍ مستقلّ)، وحاجزُ الإلغاءِ، وعدمُ نداءِ findById في الشوطِ معَ اللقطةِ — سلامةُ محرّكِ البثّ لا تُثبَتُ إلا على PostgreSQL حقيقي بالهجراتِ مطبَّقة.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بالهجراتِ مطبَّقة. يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي»، ويفعله المطوّرُ محلّياً.",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/redispatch-live-round-priority.test.ts",
     suites: ["LOAD-01 P4 — الجولة الحية لا تحجب الطلب الذي لم يُعرَض"],
     skipped: 2,

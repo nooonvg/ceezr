@@ -160,7 +160,7 @@ function logIneligibility(
 }
 
 export async function broadcastOffers(
-  input: { readonly orderId: OrderId },
+  input: { readonly orderId: OrderId; readonly order?: Order },
   deps: BroadcastDependencies,
 ): Promise<Result<BroadcastResult, MatchOrderError>> {
   const matched = await matchOrder(input, deps);

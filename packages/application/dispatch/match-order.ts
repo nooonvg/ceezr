@@ -108,10 +108,22 @@ export interface MatchOrderResult {
  * لا تكتب في القاعدة ولا ترسل رسالة — القرار فقط، ليبقى قابلاً للاختبار بلا أي مفتاح.
  */
 export async function matchOrder(
-  input: { readonly orderId: OrderId },
+  input: { readonly orderId: OrderId; readonly order?: Order },
   deps: MatchOrderDependencies,
 ): Promise<Result<MatchOrderResult, MatchOrderError>> {
-  const orderResult = await deps.orders.findById(input.orderId);
+  /**
+   * `LOAD-01 · P4` (ب24) — لقطةٌ اختياريّةٌ من المستدعي (شوطُ إعادةِ البثّ يقرأُ
+   * الطلباتِ في رأسِهِ أصلًا). غيابُها = القراءةُ الفرديةُ كما كانت حرفيًا، فلا يتغيّرُ
+   * مسارُ الإنشاءِ ولا البوتاتِ ولا العاملُ الدوريّ.
+   *
+   * سلامةُ اللقطةِ: كلُّ قرارِ كتابةٍ يمرُّ عبرَ `open_offer_round` وهو مقارنةٌ-وتبديلٌ
+   * ذرّيّةٌ على `status = 'searching'` و`broadcast_round = N-1` — فاللقطةُ المتقادمةُ
+   * تُرفضُ هناك (وتُصنّفُ سباقًا) ولا تفتحُ دورةً غيرَ جائزةٍ؛ والاستنفادُ كذلك: رقمُ
+   * الجولةِ في اللقطةِ إن كانَ أقدمَ من الواقعِ فالحراسةُ تُسقطُ الكتابةَ. وأهليةُ
+   * السائقِ النهائيّةُ تُفحصُ في `claim_ride` لحظةَ القبولِ لا هنا.
+   */
+  const orderResult =
+    input.order !== undefined ? ok(input.order) : await deps.orders.findById(input.orderId);
   if (!orderResult.ok) return orderResult;
   const order = orderResult.value;
   if (order === null) return err(new OrderNotFoundError(input.orderId));

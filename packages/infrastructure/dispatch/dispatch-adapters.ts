@@ -39,6 +39,7 @@ import type {
 import type { Order } from "../../domain/transport/entity.ts";
 import type { CityId, DriverId, OfferId, OrderId, ServiceType } from "../../shared/kernel/index.ts";
 import { guard, readEnvelope, type Sql, withRequestContext } from "../db/client.ts";
+import { toOrder } from "../transport/order-adapters.ts";
 
 interface CandidateRow {
   readonly driver_id: string;
@@ -571,9 +572,32 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
           opts.maxBroadcastRounds >= 1;
         const maxRounds = opts?.maxBroadcastRounds ?? 0;
         const graceSec = Math.max(0, opts?.liveRoundGraceSeconds ?? 0);
-        const rows = await sql<{ id: string; city_id: string; waiting_seconds: string | number }[]>`
+        const rows = await sql<
+          {
+            id: string;
+            city_id: string;
+            service: string;
+            status: string;
+            pickup_lat: number;
+            pickup_lng: number;
+            dropoff_lat: number | null;
+            dropoff_lng: number | null;
+            assigned_driver_id: string | null;
+            broadcast_round: number;
+            waiting_seconds: string | number;
+          }[]
+        >`
           select o.id      as id,
                  o.city_id as city_id,
+                 o.service as service,
+                 o.status  as status,
+                 -- LOAD-01 · P4 (ب24): أعمدةُ اللقطةِ من ORDER_SELECT نفسِها — يُعيدُ
+                 -- الشوطُ استخدامَ قراءةِ القارئِ بدلَ رحلةٍ فرديةٍ لكلِّ طلبٍ على الاتصالِ
+                 -- التسلسليّ. التحويلُ بدالّةِ toOrder نفسِها فلا معنى ثانٍ لصفِّ الطلبِ.
+                 st_y(o.pickup::geometry) as pickup_lat, st_x(o.pickup::geometry) as pickup_lng,
+                 st_y(o.dropoff::geometry) as dropoff_lat, st_x(o.dropoff::geometry) as dropoff_lng,
+                 o.assigned_driver_id as assigned_driver_id,
+                 o.broadcast_round as broadcast_round,
                  extract(epoch from (now() - coalesce(o.searching_since, o.created_at)))::bigint as waiting_seconds
             from orders o
            where o.city_id = ${cityId}::uuid
@@ -626,6 +650,18 @@ export function createSearchingOrderFinder(sql: Sql): SearchingOrderFinder {
           orderId: row.id as OrderId,
           cityId: row.city_id as CityId,
           waitingSeconds: Number(row.waiting_seconds),
+          order: toOrder({
+            id: row.id,
+            city_id: row.city_id,
+            service: row.service,
+            status: row.status,
+            pickup_lat: row.pickup_lat,
+            pickup_lng: row.pickup_lng,
+            dropoff_lat: row.dropoff_lat,
+            dropoff_lng: row.dropoff_lng,
+            assigned_driver_id: row.assigned_driver_id,
+            broadcast_round: row.broadcast_round,
+          }),
         }));
       }),
   };

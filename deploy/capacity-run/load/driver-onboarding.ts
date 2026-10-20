@@ -232,7 +232,11 @@ export async function onboardDriverViaApp(
     contactUpdateId = contact.updateId;
     record.steps.phoneProofWebhook = contact.status;
     if (contact.status === 200) {
-      record.steps.phoneProofJob = await waitForSpecificJob(contact.updateId, 20_000);
+      // تشخيصُ فقط (ب24): مهلةُ انتظارِ معالجةِ مهمّةِ إثباتِ الهاتفِ قابلةٌ للضبطِ
+      // لإعادةِ إنتاجِ نظامِ «طابورِ البثّ» على مقعدٍ محدودِ المعالجِ؛ الافتراضيُّ 20s
+      // كما في كلِّ الجولاتِ السابقةِ، ولا يغيّرُ هذا سلوكَ القبولِ الرسميّ.
+      const phoneProofWaitMs = Number(process.env.PHONE_PROOF_WAIT_MS ?? 20_000);
+      record.steps.phoneProofJob = await waitForSpecificJob(contact.updateId, phoneProofWaitMs);
     }
   }
   record.contactUpdateId = contactUpdateId;

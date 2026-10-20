@@ -28,6 +28,7 @@
  */
 
 import { parseCitySettings } from "../../domain/policy/entity.ts";
+import type { Order } from "../../domain/transport/entity.ts";
 import type { CityId, OrderId } from "../../shared/kernel/index.ts";
 import { ok, type Result } from "../../shared/result/index.ts";
 import type { PortFailureError } from "../ports/index.ts";
@@ -56,6 +57,18 @@ export interface SearchingOrderRef {
   readonly cityId: CityId;
   /** لأجل السجلّ لا لأجل القرار: يُقرأ في التقرير ولا يُبنى عليه حكم. */
   readonly waitingSeconds: number;
+  /**
+   * `LOAD-01 · P4` (ب24) — لقطةُ الطلبِ كما قرأها القارئُ في رأسِ الشوطِ. الشوطُ كانَ
+   * يعيدُ قراءةَ كلِّ طلبٍ فرديّاً (رحلةٌ لكلِّ طلبٍ على الاتصالِ المخصّصِ التسلسليّ)،
+   * والقارئُ يقرأُ الجدولَ نفسَهُ أصلًا — فاللقطةُ مُتاحةٌ بلا كلفةٍ إضافيةٍ.
+   * اختياريّةٌ: مسارُ إطلاقِ المجدولةِ يمرّرُ المعرّفاتِ وحدها فيعودُ `matchOrder`
+   * إلى القراءةِ الفرديةِ كما كانَ (دفعةٌ صغيرةٌ نادرة).
+   * **سلامةُ التقادم:** الكتابةَ يحرسُها `open_offer_round` ذرّيّاً: مقارنةٌ-وتبديلٌ على
+   * `status = 'searching'` و`broadcast_round = N-1`، فاللقطةُ القديمةُ تُرفضُ (سباقٌ
+   * يُصنّفُ `raced`) ولا تفتحُ دورةً غيرَ جائزةٍ أبدًا؛ وفحصُ الاستنفادِ بنفسِ المنطقِ.
+   * وفحصُ الأهليةِ النهائيُّ للسائقِ يقعُ في `claim_ride` لحظةَ القبولِ لا هنا.
+   */
+  readonly order?: Order;
 }
 
 export interface SearchingOrderFinder {
@@ -180,7 +193,11 @@ export async function redispatchSearchingOrders(
    * القطر، والوزنان، وحجمُ الدفعة، وحدُّ الدورات، واستبعادُ من له عرضٌ حيّ.
    */
   for (const order of found.value) {
-    const work = () => broadcastOffers({ orderId: order.orderId }, broadcast);
+    const work = () =>
+      broadcastOffers(
+        { orderId: order.orderId, ...(order.order !== undefined ? { order: order.order } : {}) },
+        broadcast,
+      );
     const result = await (deps.aroundOrder ? deps.aroundOrder(order.orderId, work) : work());
 
     if (result.ok) {
