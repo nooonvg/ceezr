@@ -155,7 +155,9 @@ export function createDispatchTrace(options: {
           startAt: ctx.startAt,
           totalMs: total,
           ioMs: io,
-          cpuMs: Math.max(0, total - io),
+          // ليس زمنَ معالجٍ: ما تبقّى من زمنِ الطلبِ بعدَ أطوارِ الإدخال/الإخراجِ المسجّلةِ
+          // (انتظارُ جدولةٍ وحسابٌ في الذاكرةِ وفراغاتٌ بينَ الأطوارِ) — لا يُنسبُ لهُ حكمُ CPU.
+          residualMs: Math.max(0, total - io),
           calls: ctx.calls,
           phases: ctx.phases,
         });

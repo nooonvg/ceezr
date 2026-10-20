@@ -101,7 +101,7 @@ def main(ev_dir: str) -> None:
     for o in orders:
         for k, v in o["phases"].items():
             phase_vals[k].append(v)
-        phase_vals["cpu(in-memory)"].append(o["cpuMs"])
+        phase_vals["residual(non-io)"].append(o["residualMs"])
         phase_vals["total"].append(o["totalMs"])
 
     # معدّلاتُ الوصولِ والخدمةِ داخلَ نافذةِ الحِملِ

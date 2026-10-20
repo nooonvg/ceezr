@@ -58,6 +58,12 @@ export interface ImmediateRedispatchSchedulerDeps {
   readonly now: () => number;
   /** جدولةٌ قابلةٌ للحقنِ (`setTimeout(fn, 0)` في الإنتاجِ) — تُخرجُ الشوطَ عن دورِ الطلبِ. */
   readonly schedule: (fn: () => void) => void;
+  /**
+   * `LOAD-01 · P4` — خطّافُ تشخيصٍ اختياريّ (أثرُ الشوطِ): يسجّلُ قرارَ الجدولةِ
+   * (قُبِلَ أو دُمِجَ) لحظةَ حدوثِه فيربطُ لحظةَ قبولِ المحفّزِ ببدءِ الشوطِ الذي
+   * غذّاه. غيابُه = لا أثرٍ ولا كلفة. لا يُستعملُ للقرارِ — الجدولةُ نفسُها لا تقرأُه.
+   */
+  readonly onTrigger?: (cityId: CityId, outcome: "accepted" | "coalesced") => void;
   /** تسجيلٌ — الخفضُ والتخطّي يُعلنانِ لا يُخفيانِ. */
   readonly log?: (message: string, meta: Record<string, unknown>) => void;
   /** مؤقّتُ الشوطِ اللاحقِ (`setTimeout` غيرُ ممسِكٍ للعمليةِ افتراضيًّا) — قابلٌ للحقنِ. */
@@ -114,6 +120,7 @@ export function createImmediateRedispatchScheduler(
     const last = lastAcceptedAtMs.get(cityId);
     if (last !== undefined && now - last < deps.debounceMs) {
       // تخطّي الخفضِ يُعلَنُ، ويُسلِّحُ شوطًا لاحقًا واحدًا عندَ انقضاءِ النافذةِ.
+      deps.onTrigger?.(cityId, "coalesced");
       deps.log?.("redispatch.immediate_debounced", { cityId });
       pending.add(cityId);
       if (!running.has(cityId)) armTrailing(cityId, deps.debounceMs - (now - last));
@@ -121,10 +128,12 @@ export function createImmediateRedispatchScheduler(
     }
     if (running.has(cityId)) {
       // شوطٌ جارٍ: لا شوطًا فوقَهُ — ويُطلَبُ لاحقٌ واحدٌ بعدَ اكتمالِه.
+      deps.onTrigger?.(cityId, "coalesced");
       deps.log?.("redispatch.immediate_in_flight", { cityId });
       pending.add(cityId);
       return;
     }
+    deps.onTrigger?.(cityId, "accepted");
     lastAcceptedAtMs.set(cityId, now);
     deps.schedule(() => {
       running.add(cityId);

@@ -1002,6 +1002,8 @@ export function buildContainer(config: AppConfig, overrides: ContainerOverrides 
     debounceMs: IMMEDIATE_REDISPATCH_DEBOUNCE_MS,
     now: () => Date.now(),
     schedule: (fn) => setTimeout(fn, 0),
+    // ربطُ قرارِ الجدولةِ بأثرِ التشخيصِ: لحظةُ قبولِ المحفّزِ تُسجّلُ فتُربطُ ببدءِ الشوطِ.
+    ...(dispatchTrace ? { onTrigger: dispatchTrace.onTrigger } : {}),
     log,
   });
 
