@@ -1,0 +1,5198 @@
+{
+ "waves": {
+  "b25-s1-R1-750": {
+   "wave": "b25-s1-R1-750",
+   "limit": 50,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 106,
+    "trace_orders": 5281
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "P4"
+    ],
+    "summary_line": {
+     "G1": "99.27% (4061/4091)",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "CLEAN",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "505ms",
+     "P2": "214ms",
+     "P3": "280ms",
+     "P4": "42260ms✗",
+     "P5": "43108ms",
+     "P6a": "1018ms",
+     "P6b": "448ms",
+     "P6c": "692ms",
+     "P7": "96s",
+     "P8": "0.00%",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "99.27% (4061/4091)",
+      "pass": true
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "CLEAN",
+      "pass": true
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 4091/4091 · drivers 4091/4091",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 4061,
+    "p50": 36152,
+    "p95": 42260,
+    "p99": 45539,
+    "max": 48222,
+    "mean": 33860.0
+   },
+   "queue_before_first_exec_ms": {
+    "n": 3809,
+    "p50": 34427.0,
+    "p95": 39084.0,
+    "p99": 39908.0,
+    "max": 42130.0,
+    "mean": 31609.4
+   },
+   "first_exec_ms": {
+    "n": 3809,
+    "p50": 5,
+    "p95": 11,
+    "p99": 16,
+    "max": 112,
+    "mean": 5.6
+   },
+   "target_in_round1_share": 0.7003,
+   "window": {
+    "inject_sec": 178.5,
+    "orders": 4091,
+    "never_reached_pass": 252
+   },
+   "passes": {
+    "in_window": 90,
+    "in_drain": 16,
+    "per_s": 0.504,
+    "saturated_share": 1.0,
+    "passMs": {
+     "n": 90,
+     "p50": 294.0,
+     "p95": 479.4,
+     "p99": 495.3,
+     "max": 514,
+     "mean": 290.3
+    },
+    "cycle_ms": {
+     "n": 89,
+     "p50": 2000.0,
+     "p95": 2001.0,
+     "p99": 2002.1,
+     "max": 2003,
+     "mean": 2000.2
+    },
+    "gap_ms": {
+     "n": 89,
+     "p50": 1706.0,
+     "p95": 1863.2,
+     "p99": 1889.5,
+     "max": 1893,
+     "mean": 1709.5
+    },
+    "followup_delay_ms": {
+     "n": 90,
+     "p50": 1880.0,
+     "p95": 1998.5,
+     "p99": 1999.2,
+     "max": 2001,
+     "mean": 1791.3
+    },
+    "finderMs": {
+     "n": 90,
+     "p50": 2.7,
+     "p95": 8.8,
+     "p99": 20.6,
+     "max": 22.8,
+     "mean": 3.6
+    },
+    "picked": {
+     "n": 90,
+     "p50": 50.0,
+     "p95": 50.0,
+     "p99": 50.0,
+     "max": 50,
+     "mean": 50.0
+    },
+    "longer_than_2s": 0,
+    "counts_window": {
+     "picked": 4500,
+     "rebroadcast": 4437,
+     "stillNoDriver": 50,
+     "exhausted": 0,
+     "raced": 13,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 781,
+     "rebroadcast": 733,
+     "stillNoDriver": 0,
+     "exhausted": 48,
+     "raced": 0,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 22.92,
+    "first_exec_per_s": 17.91,
+    "exec_per_s": 25.06,
+    "repeat_share": 0.285,
+    "per_order_exec_ms": {
+     "n": 4472,
+     "p50": 5.0,
+     "p95": 11.0,
+     "p99": 15.0,
+     "max": 89,
+     "mean": 5.7
+    }
+   },
+   "queue": {
+    "max": 679,
+    "at_inject_end": 620,
+    "slope_second_half_per_s": -0.457,
+    "drain_to_zero_s": 31.5,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 1
+     },
+     {
+      "t": 5,
+      "queue": 499
+     },
+     {
+      "t": 10,
+      "queue": 657
+     },
+     {
+      "t": 15,
+      "queue": 657
+     },
+     {
+      "t": 20,
+      "queue": 635
+     },
+     {
+      "t": 25,
+      "queue": 597
+     },
+     {
+      "t": 30,
+      "queue": 630
+     },
+     {
+      "t": 35,
+      "queue": 591
+     },
+     {
+      "t": 40,
+      "queue": 607
+     },
+     {
+      "t": 45,
+      "queue": 607
+     },
+     {
+      "t": 50,
+      "queue": 605
+     },
+     {
+      "t": 55,
+      "queue": 637
+     },
+     {
+      "t": 60,
+      "queue": 678
+     },
+     {
+      "t": 65,
+      "queue": 665
+     },
+     {
+      "t": 70,
+      "queue": 679
+     },
+     {
+      "t": 75,
+      "queue": 650
+     },
+     {
+      "t": 80,
+      "queue": 659
+     },
+     {
+      "t": 85,
+      "queue": 652
+     },
+     {
+      "t": 90,
+      "queue": 677
+     },
+     {
+      "t": 95,
+      "queue": 652
+     },
+     {
+      "t": 100,
+      "queue": 648
+     },
+     {
+      "t": 105,
+      "queue": 621
+     },
+     {
+      "t": 110,
+      "queue": 649
+     },
+     {
+      "t": 115,
+      "queue": 634
+     },
+     {
+      "t": 120,
+      "queue": 633
+     },
+     {
+      "t": 125,
+      "queue": 603
+     },
+     {
+      "t": 130,
+      "queue": 622
+     },
+     {
+      "t": 135,
+      "queue": 644
+     },
+     {
+      "t": 140,
+      "queue": 616
+     },
+     {
+      "t": 145,
+      "queue": 614
+     },
+     {
+      "t": 150,
+      "queue": 626
+     },
+     {
+      "t": 155,
+      "queue": 637
+     },
+     {
+      "t": 160,
+      "queue": 616
+     },
+     {
+      "t": 165,
+      "queue": 596
+     },
+     {
+      "t": 170,
+      "queue": 631
+     },
+     {
+      "t": 175,
+      "queue": 620
+     },
+     {
+      "t": 180,
+      "queue": 615
+     },
+     {
+      "t": 185,
+      "queue": 513
+     },
+     {
+      "t": 190,
+      "queue": 434
+     },
+     {
+      "t": 195,
+      "queue": 313
+     },
+     {
+      "t": 200,
+      "queue": 224
+     },
+     {
+      "t": 205,
+      "queue": 80
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     },
+     {
+      "t": 340,
+      "queue": 0
+     },
+     {
+      "t": 345,
+      "queue": 0
+     },
+     {
+      "t": 350,
+      "queue": 0
+     },
+     {
+      "t": 355,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 35,
+     "p50": 56.8,
+     "p95": 73.4,
+     "p99": 97.3,
+     "max": 105.1,
+     "mean": 58.0
+    },
+    "postgres": {
+     "n": 35,
+     "p50": 137.8,
+     "p95": 263.6,
+     "p99": 295.6,
+     "max": 302.0,
+     "mean": 158.3
+    },
+    "generator": {
+     "n": 35,
+     "p50": 12.5,
+     "p95": 15.4,
+     "p99": 18.6,
+     "max": 20.2,
+     "mean": 12.5
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 178,
+    "p50": 25.9,
+    "p95": 53.6,
+    "p99": 58.6,
+    "max": 61.7,
+    "mean": 27.6
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 178,
+    "p50": 85.8,
+    "p95": 205.6,
+    "p99": 232.6,
+    "max": 278.0,
+    "mean": 93.6
+   },
+   "pool_acquire_select1_ms": {
+    "n": 178,
+    "p50": 0.3,
+    "p95": 239.6,
+    "p99": 507.3,
+    "max": 1245.8,
+    "mean": 42.3
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|idle": 89,
+    "ceezr:gatewayRequest|active": 114,
+    "ceezr:gatewayRequest|idle": 328,
+    "ceezr:gatewayRequest|idle in transaction": 3,
+    "ceezr:workerJobs|active": 67,
+    "ceezr:workerJobs|idle": 378,
+    "ceezr:workerLocks|idle": 356,
+    "driver-onboarding|active": 6,
+    "driver-onboarding|idle": 350,
+    "genA|active": 4,
+    "genA|idle": 708
+   },
+   "pg_exec": {
+    "total_exec_ms": 319558.2,
+    "top": [
+     {
+      "calls": 4091,
+      "total_ms": 95273.5,
+      "mean_ms": 23.288,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 44694,
+      "total_ms": 69956.0,
+      "mean_ms": 1.565,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 72127,
+      "total_ms": 42337.1,
+      "mean_ms": 0.587,
+      "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.ver"
+     },
+     {
+      "calls": 5733,
+      "total_ms": 28154.2,
+      "mean_ms": 4.911,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 11567,
+      "total_ms": 14023.2,
+      "mean_ms": 1.212,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 4091,
+      "total_ms": 9953.4,
+      "mean_ms": 2.433,
+      "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id "
+     },
+     {
+      "calls": 40803,
+      "total_ms": 9809.7,
+      "mean_ms": 0.24,
+      "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+     },
+     {
+      "calls": 5683,
+      "total_ms": 8923.4,
+      "mean_ms": 1.57,
+      "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+     }
+    ]
+   },
+   "side": "R",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  },
+  "b25-s1-C1-750": {
+   "wave": "b25-s1-C1-750",
+   "limit": 100,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 65,
+    "trace_orders": 5686
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "G1",
+     "P8"
+    ],
+    "summary_line": {
+     "G1": "2.60% (4453/171531)✗",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "CLEAN",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "337ms",
+     "P2": "195ms",
+     "P3": "182ms",
+     "P4": "25397ms",
+     "P5": "23948ms",
+     "P6a": "384ms",
+     "P6b": "268ms",
+     "P6c": "260ms",
+     "P7": "116s",
+     "P8": "3.15%✗",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "2.60% (4453/171531)",
+      "pass": false
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "CLEAN",
+      "pass": true
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 171531/171531 · drivers 171531/171531",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 4453,
+    "p50": 9744,
+    "p95": 25397,
+    "p99": 27307,
+    "max": 31540,
+    "mean": 11274.6
+   },
+   "queue_before_first_exec_ms": {
+    "n": 4418,
+    "p50": 7727.5,
+    "p95": 23616.0,
+    "p99": 25748.0,
+    "max": 26187.0,
+    "mean": 9499.5
+   },
+   "first_exec_ms": {
+    "n": 4418,
+    "p50": 14.0,
+    "p95": 46,
+    "p99": 86,
+    "max": 158,
+    "mean": 17.8
+   },
+   "target_in_round1_share": 0.8477,
+   "window": {
+    "inject_sec": 159.3,
+    "orders": 4466,
+    "never_reached_pass": 35
+   },
+   "passes": {
+    "in_window": 64,
+    "in_drain": 1,
+    "per_s": 0.402,
+    "saturated_share": 0.734,
+    "passMs": {
+     "n": 64,
+     "p50": 1407.5,
+     "p95": 3357.3,
+     "p99": 4581.6,
+     "max": 5565,
+     "mean": 1550.6
+    },
+    "cycle_ms": {
+     "n": 63,
+     "p50": 2001.0,
+     "p95": 3718.3,
+     "p99": 11100.6,
+     "max": 20129,
+     "mean": 2512.0
+    },
+    "gap_ms": {
+     "n": 63,
+     "p50": 601.0,
+     "p95": 1662.8,
+     "p99": 9386.5,
+     "max": 19534,
+     "mean": 983.5
+    },
+    "followup_delay_ms": {
+     "n": 64,
+     "p50": 1957.0,
+     "p95": 2264.2,
+     "p99": 2491.3,
+     "max": 2497,
+     "mean": 1653.2
+    },
+    "finderMs": {
+     "n": 64,
+     "p50": 2.4,
+     "p95": 7.4,
+     "p99": 16.5,
+     "max": 20.9,
+     "mean": 3.2
+    },
+    "picked": {
+     "n": 64,
+     "p50": 100.0,
+     "p95": 100.0,
+     "p99": 100.0,
+     "max": 100,
+     "mean": 88.5
+    },
+    "longer_than_2s": 18,
+    "counts_window": {
+     "picked": 5663,
+     "rebroadcast": 5068,
+     "stillNoDriver": 49,
+     "exhausted": 215,
+     "raced": 331,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 23,
+     "rebroadcast": 10,
+     "stillNoDriver": 0,
+     "exhausted": 13,
+     "raced": 0,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 28.03,
+    "first_exec_per_s": 27.68,
+    "exec_per_s": 35.14,
+    "repeat_share": 0.212,
+    "per_order_exec_ms": {
+     "n": 5599,
+     "p50": 14.0,
+     "p95": 44.0,
+     "p99": 80.0,
+     "max": 158,
+     "mean": 17.3
+    }
+   },
+   "queue": {
+    "max": 603,
+    "at_inject_end": 121,
+    "slope_second_half_per_s": -2.979,
+    "drain_to_zero_s": 5.7,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 2
+     },
+     {
+      "t": 5,
+      "queue": 520
+     },
+     {
+      "t": 10,
+      "queue": 583
+     },
+     {
+      "t": 15,
+      "queue": 601
+     },
+     {
+      "t": 20,
+      "queue": 601
+     },
+     {
+      "t": 25,
+      "queue": 603
+     },
+     {
+      "t": 30,
+      "queue": 526
+     },
+     {
+      "t": 35,
+      "queue": 582
+     },
+     {
+      "t": 40,
+      "queue": 578
+     },
+     {
+      "t": 45,
+      "queue": 444
+     },
+     {
+      "t": 50,
+      "queue": 350
+     },
+     {
+      "t": 55,
+      "queue": 254
+     },
+     {
+      "t": 60,
+      "queue": 207
+     },
+     {
+      "t": 65,
+      "queue": 225
+     },
+     {
+      "t": 70,
+      "queue": 258
+     },
+     {
+      "t": 75,
+      "queue": 421
+     },
+     {
+      "t": 80,
+      "queue": 434
+     },
+     {
+      "t": 85,
+      "queue": 404
+     },
+     {
+      "t": 90,
+      "queue": 229
+     },
+     {
+      "t": 95,
+      "queue": 28
+     },
+     {
+      "t": 100,
+      "queue": 7
+     },
+     {
+      "t": 105,
+      "queue": 0
+     },
+     {
+      "t": 110,
+      "queue": 0
+     },
+     {
+      "t": 115,
+      "queue": 0
+     },
+     {
+      "t": 120,
+      "queue": 6
+     },
+     {
+      "t": 125,
+      "queue": 11
+     },
+     {
+      "t": 130,
+      "queue": 49
+     },
+     {
+      "t": 135,
+      "queue": 52
+     },
+     {
+      "t": 140,
+      "queue": 45
+     },
+     {
+      "t": 145,
+      "queue": 0
+     },
+     {
+      "t": 150,
+      "queue": 122
+     },
+     {
+      "t": 155,
+      "queue": 121
+     },
+     {
+      "t": 160,
+      "queue": 10
+     },
+     {
+      "t": 165,
+      "queue": 0
+     },
+     {
+      "t": 170,
+      "queue": 0
+     },
+     {
+      "t": 175,
+      "queue": 0
+     },
+     {
+      "t": 180,
+      "queue": 0
+     },
+     {
+      "t": 185,
+      "queue": 0
+     },
+     {
+      "t": 190,
+      "queue": 0
+     },
+     {
+      "t": 195,
+      "queue": 0
+     },
+     {
+      "t": 200,
+      "queue": 0
+     },
+     {
+      "t": 205,
+      "queue": 0
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 31,
+     "p50": 77.9,
+     "p95": 95.4,
+     "p99": 112.3,
+     "max": 119.0,
+     "mean": 75.9
+    },
+    "postgres": {
+     "n": 31,
+     "p50": 177.4,
+     "p95": 245.6,
+     "p99": 255.7,
+     "max": 259.8,
+     "mean": 175.7
+    },
+    "generator": {
+     "n": 31,
+     "p50": 25.5,
+     "p95": 48.1,
+     "p99": 49.9,
+     "max": 50.5,
+     "mean": 29.0
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 158,
+    "p50": 47.1,
+    "p95": 57.4,
+    "p99": 61.3,
+    "max": 67.6,
+    "mean": 43.6
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 158,
+    "p50": 199.3,
+    "p95": 334.3,
+    "p99": 392.3,
+    "max": 463.3,
+    "mean": 203.6
+   },
+   "pool_acquire_select1_ms": {
+    "n": 160,
+    "p50": 45.9,
+    "p95": 154.1,
+    "p99": 196.9,
+    "max": 268.0,
+    "mean": 59.0
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|active": 35,
+    "ceezr:gatewayDispatch|idle": 45,
+    "ceezr:gatewayRequest|active": 136,
+    "ceezr:gatewayRequest|idle": 234,
+    "ceezr:gatewayRequest|idle in transaction": 30,
+    "ceezr:workerJobs|active": 68,
+    "ceezr:workerJobs|idle": 326,
+    "ceezr:workerJobs|idle in transaction": 6,
+    "ceezr:workerLocks|idle": 320,
+    "driver-onboarding|active": 6,
+    "driver-onboarding|idle": 314,
+    "genA|active": 121,
+    "genA|idle": 519
+   },
+   "pg_exec": {
+    "total_exec_ms": 302447.0,
+    "top": [
+     {
+      "calls": 5808,
+      "total_ms": 58165.8,
+      "mean_ms": 10.015,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 22608,
+      "total_ms": 45218.1,
+      "mean_ms": 2.0,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 12696,
+      "total_ms": 39852.9,
+      "mean_ms": 3.139,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 171531,
+      "total_ms": 23915.9,
+      "mean_ms": 0.139,
+      "query": "insert into users (city_id, telegram_id, full_name, phone, role, language_code) values ((s"
+     },
+     {
+      "calls": 171531,
+      "total_ms": 16280.9,
+      "mean_ms": 0.095,
+      "query": "insert into riders (city_id, user_id) values ((select id from cities where code = $1), $2:"
+     },
+     {
+      "calls": 27783,
+      "total_ms": 16271.0,
+      "mean_ms": 0.586,
+      "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.ver"
+     },
+     {
+      "calls": 4466,
+      "total_ms": 15458.1,
+      "mean_ms": 3.461,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 4466,
+      "total_ms": 12303.5,
+      "mean_ms": 2.755,
+      "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id "
+     }
+    ]
+   },
+   "side": "C",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  },
+  "b25-s1-C2-750": {
+   "wave": "b25-s1-C2-750",
+   "limit": 100,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 79,
+    "trace_orders": 5516
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "G1",
+     "G4",
+     "P1",
+     "P2",
+     "P7",
+     "P8"
+    ],
+    "summary_line": {
+     "G1": "2.50% (4103/164423)✗",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "VIOLATIONS✗",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "1303ms✗",
+     "P2": "1382ms✗",
+     "P3": "824ms",
+     "P4": "14843ms",
+     "P5": "18558ms",
+     "P6a": "1696ms",
+     "P6b": "1634ms",
+     "P6c": "1437ms",
+     "P7": "136s✗",
+     "P8": "5.04%✗",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "2.50% (4103/164423)",
+      "pass": false
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "VIOLATIONS",
+      "pass": false
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 164423/164423 · drivers 164423/164423",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 4103,
+    "p50": 6421,
+    "p95": 14843,
+    "p99": 17766,
+    "max": 23199,
+    "mean": 7418.2
+   },
+   "queue_before_first_exec_ms": {
+    "n": 4048,
+    "p50": 4205.5,
+    "p95": 12776.0,
+    "p99": 13673.0,
+    "max": 14006.0,
+    "mean": 5555.0
+   },
+   "first_exec_ms": {
+    "n": 4048,
+    "p50": 9.0,
+    "p95": 29,
+    "p99": 73,
+    "max": 131,
+    "mean": 12.3
+   },
+   "target_in_round1_share": 0.8138,
+   "window": {
+    "inject_sec": 171.7,
+    "orders": 4108,
+    "never_reached_pass": 55
+   },
+   "passes": {
+    "in_window": 78,
+    "in_drain": 1,
+    "per_s": 0.454,
+    "saturated_share": 0.603,
+    "passMs": {
+     "n": 78,
+     "p50": 836.5,
+     "p95": 1799.5,
+     "p99": 2490.7,
+     "max": 2975,
+     "mean": 866.7
+    },
+    "cycle_ms": {
+     "n": 77,
+     "p50": 2001.0,
+     "p95": 3213.8,
+     "p99": 5620.4,
+     "max": 7848,
+     "mean": 2209.4
+    },
+    "gap_ms": {
+     "n": 77,
+     "p50": 1159.0,
+     "p95": 2487.6,
+     "p99": 5483.8,
+     "max": 7472,
+     "mean": 1332.7
+    },
+    "followup_delay_ms": {
+     "n": 78,
+     "p50": 1758.0,
+     "p95": 1999.0,
+     "p99": 2074.4,
+     "max": 2327,
+     "mean": 1459.2
+    },
+    "finderMs": {
+     "n": 78,
+     "p50": 2.6,
+     "p95": 7.6,
+     "p99": 18.9,
+     "max": 26.2,
+     "mean": 3.6
+    },
+    "picked": {
+     "n": 78,
+     "p50": 100.0,
+     "p95": 100.0,
+     "p99": 100.0,
+     "max": 100,
+     "mean": 70.6
+    },
+    "longer_than_2s": 4,
+    "counts_window": {
+     "picked": 5506,
+     "rebroadcast": 5027,
+     "stillNoDriver": 80,
+     "exhausted": 110,
+     "raced": 289,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 10,
+     "rebroadcast": 5,
+     "stillNoDriver": 0,
+     "exhausted": 5,
+     "raced": 0,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 23.92,
+    "first_exec_per_s": 23.57,
+    "exec_per_s": 32.06,
+    "repeat_share": 0.265,
+    "per_order_exec_ms": {
+     "n": 5506,
+     "p50": 9.0,
+     "p95": 28.0,
+     "p99": 70.9,
+     "max": 131,
+     "mean": 12.1
+    }
+   },
+   "queue": {
+    "max": 513,
+    "at_inject_end": 5,
+    "slope_second_half_per_s": 0.834,
+    "drain_to_zero_s": 3.3,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 2
+     },
+     {
+      "t": 5,
+      "queue": 397
+     },
+     {
+      "t": 10,
+      "queue": 513
+     },
+     {
+      "t": 15,
+      "queue": 452
+     },
+     {
+      "t": 20,
+      "queue": 410
+     },
+     {
+      "t": 25,
+      "queue": 308
+     },
+     {
+      "t": 30,
+      "queue": 215
+     },
+     {
+      "t": 35,
+      "queue": 76
+     },
+     {
+      "t": 40,
+      "queue": 32
+     },
+     {
+      "t": 45,
+      "queue": 9
+     },
+     {
+      "t": 50,
+      "queue": 34
+     },
+     {
+      "t": 55,
+      "queue": 10
+     },
+     {
+      "t": 60,
+      "queue": 59
+     },
+     {
+      "t": 65,
+      "queue": 152
+     },
+     {
+      "t": 70,
+      "queue": 53
+     },
+     {
+      "t": 75,
+      "queue": 0
+     },
+     {
+      "t": 80,
+      "queue": 0
+     },
+     {
+      "t": 85,
+      "queue": 70
+     },
+     {
+      "t": 90,
+      "queue": 0
+     },
+     {
+      "t": 95,
+      "queue": 145
+     },
+     {
+      "t": 100,
+      "queue": 4
+     },
+     {
+      "t": 105,
+      "queue": 3
+     },
+     {
+      "t": 110,
+      "queue": 2
+     },
+     {
+      "t": 115,
+      "queue": 1
+     },
+     {
+      "t": 120,
+      "queue": 26
+     },
+     {
+      "t": 125,
+      "queue": 65
+     },
+     {
+      "t": 130,
+      "queue": 0
+     },
+     {
+      "t": 135,
+      "queue": 340
+     },
+     {
+      "t": 140,
+      "queue": 331
+     },
+     {
+      "t": 145,
+      "queue": 346
+     },
+     {
+      "t": 150,
+      "queue": 136
+     },
+     {
+      "t": 155,
+      "queue": 18
+     },
+     {
+      "t": 160,
+      "queue": 13
+     },
+     {
+      "t": 165,
+      "queue": 13
+     },
+     {
+      "t": 170,
+      "queue": 5
+     },
+     {
+      "t": 175,
+      "queue": 0
+     },
+     {
+      "t": 180,
+      "queue": 0
+     },
+     {
+      "t": 185,
+      "queue": 0
+     },
+     {
+      "t": 190,
+      "queue": 0
+     },
+     {
+      "t": 195,
+      "queue": 0
+     },
+     {
+      "t": 200,
+      "queue": 0
+     },
+     {
+      "t": 205,
+      "queue": 0
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     },
+     {
+      "t": 340,
+      "queue": 0
+     },
+     {
+      "t": 345,
+      "queue": 0
+     },
+     {
+      "t": 350,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 34,
+     "p50": 69.2,
+     "p95": 91.7,
+     "p99": 99.7,
+     "max": 102.5,
+     "mean": 66.5
+    },
+    "postgres": {
+     "n": 34,
+     "p50": 183.0,
+     "p95": 305.0,
+     "p99": 327.4,
+     "max": 335.0,
+     "mean": 191.2
+    },
+    "generator": {
+     "n": 34,
+     "p50": 19.4,
+     "p95": 51.6,
+     "p99": 53.4,
+     "max": 54.0,
+     "mean": 27.2
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 170,
+    "p50": 48.7,
+    "p95": 61.6,
+    "p99": 67.2,
+    "max": 71.4,
+    "mean": 44.0
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 170,
+    "p50": 209.7,
+    "p95": 344.9,
+    "p99": 382.9,
+    "max": 400.9,
+    "mean": 201.1
+   },
+   "pool_acquire_select1_ms": {
+    "n": 172,
+    "p50": 85.5,
+    "p95": 525.2,
+    "p99": 801.7,
+    "max": 836.8,
+    "mean": 139.8
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|active": 32,
+    "ceezr:gatewayDispatch|idle": 54,
+    "ceezr:gatewayRequest|active": 172,
+    "ceezr:gatewayRequest|idle": 228,
+    "ceezr:gatewayRequest|idle in transaction": 30,
+    "ceezr:workerJobs|active": 65,
+    "ceezr:workerJobs|idle": 361,
+    "ceezr:workerJobs|idle in transaction": 4,
+    "ceezr:workerLocks|idle": 344,
+    "driver-onboarding|active": 7,
+    "driver-onboarding|idle": 337,
+    "genA|active": 129,
+    "genA|idle": 559
+   },
+   "pg_exec": {
+    "total_exec_ms": 432492.0,
+    "top": [
+     {
+      "calls": 4108,
+      "total_ms": 125959.3,
+      "mean_ms": 30.662,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 27791,
+      "total_ms": 88880.3,
+      "mean_ms": 3.198,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 51,
+      "total_ms": 47267.8,
+      "mean_ms": 926.82,
+      "query": "select claim_telegram_update_replies($1::integer, $2::integer) as result"
+     },
+     {
+      "calls": 5663,
+      "total_ms": 26952.6,
+      "mean_ms": 4.759,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 164423,
+      "total_ms": 21924.0,
+      "mean_ms": 0.133,
+      "query": "insert into users (city_id, telegram_id, full_name, phone, role, language_code) values ((s"
+     },
+     {
+      "calls": 11408,
+      "total_ms": 18810.3,
+      "mean_ms": 1.649,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 164423,
+      "total_ms": 15037.6,
+      "mean_ms": 0.091,
+      "query": "insert into riders (city_id, user_id) values ((select id from cities where code = $1), $2:"
+     },
+     {
+      "calls": 5578,
+      "total_ms": 10406.8,
+      "mean_ms": 1.866,
+      "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+     }
+    ]
+   },
+   "side": "C",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  },
+  "b25-s1-R2-750": {
+   "wave": "b25-s1-R2-750",
+   "limit": 50,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 105,
+    "trace_orders": 5231
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "G4",
+     "P4",
+     "P7"
+    ],
+    "summary_line": {
+     "G1": "99.37% (4074/4100)",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "VIOLATIONS✗",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "334ms",
+     "P2": "33ms",
+     "P3": "31ms",
+     "P4": "42215ms✗",
+     "P5": "42342ms",
+     "P6a": "366ms",
+     "P6b": "83ms",
+     "P6c": "77ms",
+     "P7": "121s✗",
+     "P8": "0.00%",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "99.37% (4074/4100)",
+      "pass": true
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "VIOLATIONS",
+      "pass": false
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 4100/4100 · drivers 4100/4100",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 4074,
+    "p50": 36191.0,
+    "p95": 42215,
+    "p99": 46110,
+    "max": 48172,
+    "mean": 34133.4
+   },
+   "queue_before_first_exec_ms": {
+    "n": 3816,
+    "p50": 35125.0,
+    "p95": 37850.0,
+    "p99": 38876.0,
+    "max": 42260.0,
+    "mean": 31971.0
+   },
+   "first_exec_ms": {
+    "n": 3816,
+    "p50": 4.0,
+    "p95": 10,
+    "p99": 14,
+    "max": 44,
+    "mean": 4.8
+   },
+   "target_in_round1_share": 0.7059,
+   "window": {
+    "inject_sec": 178.2,
+    "orders": 4100,
+    "never_reached_pass": 258
+   },
+   "passes": {
+    "in_window": 90,
+    "in_drain": 15,
+    "per_s": 0.505,
+    "saturated_share": 1.0,
+    "passMs": {
+     "n": 90,
+     "p50": 220.5,
+     "p95": 400.9,
+     "p99": 453.1,
+     "max": 470,
+     "mean": 234.2
+    },
+    "cycle_ms": {
+     "n": 89,
+     "p50": 2000.0,
+     "p95": 2002.0,
+     "p99": 2003.0,
+     "max": 2003,
+     "mean": 2000.2
+    },
+    "gap_ms": {
+     "n": 89,
+     "p50": 1779.0,
+     "p95": 1882.0,
+     "p99": 1888.1,
+     "max": 1896,
+     "mean": 1765.8
+    },
+    "followup_delay_ms": {
+     "n": 90,
+     "p50": 1798.0,
+     "p95": 1998.5,
+     "p99": 2000.0,
+     "max": 2000,
+     "mean": 1704.2
+    },
+    "finderMs": {
+     "n": 90,
+     "p50": 2.5,
+     "p95": 6.0,
+     "p99": 11.9,
+     "max": 12.5,
+     "mean": 3.0
+    },
+    "picked": {
+     "n": 90,
+     "p50": 50.0,
+     "p95": 50.0,
+     "p99": 50.0,
+     "max": 50,
+     "mean": 50.0
+    },
+    "longer_than_2s": 0,
+    "counts_window": {
+     "picked": 4500,
+     "rebroadcast": 4449,
+     "stillNoDriver": 50,
+     "exhausted": 0,
+     "raced": 1,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 731,
+     "rebroadcast": 705,
+     "stillNoDriver": 0,
+     "exhausted": 26,
+     "raced": 0,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 23.01,
+    "first_exec_per_s": 17.92,
+    "exec_per_s": 24.98,
+    "repeat_share": 0.283,
+    "per_order_exec_ms": {
+     "n": 4451,
+     "p50": 4.0,
+     "p95": 10.0,
+     "p99": 13.0,
+     "max": 44,
+     "mean": 4.6
+    }
+   },
+   "queue": {
+    "max": 696,
+    "at_inject_end": 631,
+    "slope_second_half_per_s": -0.414,
+    "drain_to_zero_s": 31.8,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 1
+     },
+     {
+      "t": 5,
+      "queue": 623
+     },
+     {
+      "t": 10,
+      "queue": 622
+     },
+     {
+      "t": 15,
+      "queue": 657
+     },
+     {
+      "t": 20,
+      "queue": 618
+     },
+     {
+      "t": 25,
+      "queue": 614
+     },
+     {
+      "t": 30,
+      "queue": 652
+     },
+     {
+      "t": 35,
+      "queue": 639
+     },
+     {
+      "t": 40,
+      "queue": 656
+     },
+     {
+      "t": 45,
+      "queue": 638
+     },
+     {
+      "t": 50,
+      "queue": 649
+     },
+     {
+      "t": 55,
+      "queue": 658
+     },
+     {
+      "t": 60,
+      "queue": 675
+     },
+     {
+      "t": 65,
+      "queue": 666
+     },
+     {
+      "t": 70,
+      "queue": 696
+     },
+     {
+      "t": 75,
+      "queue": 664
+     },
+     {
+      "t": 80,
+      "queue": 674
+     },
+     {
+      "t": 85,
+      "queue": 666
+     },
+     {
+      "t": 90,
+      "queue": 666
+     },
+     {
+      "t": 95,
+      "queue": 652
+     },
+     {
+      "t": 100,
+      "queue": 655
+     },
+     {
+      "t": 105,
+      "queue": 640
+     },
+     {
+      "t": 110,
+      "queue": 650
+     },
+     {
+      "t": 115,
+      "queue": 633
+     },
+     {
+      "t": 120,
+      "queue": 628
+     },
+     {
+      "t": 125,
+      "queue": 617
+     },
+     {
+      "t": 130,
+      "queue": 636
+     },
+     {
+      "t": 135,
+      "queue": 640
+     },
+     {
+      "t": 140,
+      "queue": 649
+     },
+     {
+      "t": 145,
+      "queue": 611
+     },
+     {
+      "t": 150,
+      "queue": 624
+     },
+     {
+      "t": 155,
+      "queue": 650
+     },
+     {
+      "t": 160,
+      "queue": 629
+     },
+     {
+      "t": 165,
+      "queue": 609
+     },
+     {
+      "t": 170,
+      "queue": 609
+     },
+     {
+      "t": 175,
+      "queue": 631
+     },
+     {
+      "t": 180,
+      "queue": 610
+     },
+     {
+      "t": 185,
+      "queue": 499
+     },
+     {
+      "t": 190,
+      "queue": 415
+     },
+     {
+      "t": 195,
+      "queue": 293
+     },
+     {
+      "t": 200,
+      "queue": 199
+     },
+     {
+      "t": 205,
+      "queue": 53
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     },
+     {
+      "t": 340,
+      "queue": 0
+     },
+     {
+      "t": 345,
+      "queue": 0
+     },
+     {
+      "t": 350,
+      "queue": 0
+     },
+     {
+      "t": 355,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 35,
+     "p50": 54.5,
+     "p95": 66.9,
+     "p99": 101.4,
+     "max": 118.7,
+     "mean": 56.2
+    },
+    "postgres": {
+     "n": 35,
+     "p50": 128.9,
+     "p95": 195.2,
+     "p99": 198.7,
+     "max": 198.7,
+     "mean": 125.4
+    },
+    "generator": {
+     "n": 35,
+     "p50": 12.2,
+     "p95": 14.4,
+     "p99": 15.7,
+     "max": 16.3,
+     "mean": 12.1
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 178,
+    "p50": 19.6,
+    "p95": 35.6,
+    "p99": 41.4,
+    "max": 43.1,
+    "mean": 20.2
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 178,
+    "p50": 61.3,
+    "p95": 136.0,
+    "p99": 155.6,
+    "max": 192.1,
+    "mean": 65.6
+   },
+   "pool_acquire_select1_ms": {
+    "n": 178,
+    "p50": 0.1,
+    "p95": 20.9,
+    "p99": 62.5,
+    "max": 92.5,
+    "mean": 3.7
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|idle": 89,
+    "ceezr:gatewayRequest|active": 78,
+    "ceezr:gatewayRequest|idle": 369,
+    "ceezr:gatewayRequest|idle in transaction": 3,
+    "ceezr:workerJobs|active": 75,
+    "ceezr:workerJobs|idle": 374,
+    "ceezr:workerJobs|idle in transaction": 1,
+    "ceezr:workerLocks|idle": 360,
+    "driver-onboarding|idle": 360,
+    "genA|active": 4,
+    "genA|idle": 716
+   },
+   "pg_exec": {
+    "total_exec_ms": 224392.9,
+    "top": [
+     {
+      "calls": 40546,
+      "total_ms": 62072.7,
+      "mean_ms": 1.531,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 74551,
+      "total_ms": 37775.3,
+      "mean_ms": 0.507,
+      "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.ver"
+     },
+     {
+      "calls": 5705,
+      "total_ms": 35192.2,
+      "mean_ms": 6.169,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 11352,
+      "total_ms": 13514.5,
+      "mean_ms": 1.19,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 4100,
+      "total_ms": 10343.5,
+      "mean_ms": 2.523,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 4100,
+      "total_ms": 9396.9,
+      "mean_ms": 2.292,
+      "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id "
+     },
+     {
+      "calls": 36916,
+      "total_ms": 8630.9,
+      "mean_ms": 0.234,
+      "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+     },
+     {
+      "calls": 5655,
+      "total_ms": 7892.9,
+      "mean_ms": 1.396,
+      "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+     }
+    ]
+   },
+   "side": "R",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  },
+  "b25-s1-C3-750": {
+   "wave": "b25-s1-C3-750",
+   "limit": 100,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 77,
+    "trace_orders": 5800
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "G1",
+     "G4",
+     "P1",
+     "P2",
+     "P7",
+     "P8"
+    ],
+    "summary_line": {
+     "G1": "2.41% (4264/177119)✗",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "VIOLATIONS✗",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "1176ms✗",
+     "P2": "1250ms✗",
+     "P3": "855ms",
+     "P4": "15362ms",
+     "P5": "18930ms",
+     "P6a": "1576ms",
+     "P6b": "1546ms",
+     "P6c": "1200ms",
+     "P7": "174s✗",
+     "P8": "4.36%✗",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "2.41% (4264/177119)",
+      "pass": false
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "VIOLATIONS",
+      "pass": false
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 177119/177119 · drivers 177119/177119",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 4264,
+    "p50": 8682.5,
+    "p95": 15362,
+    "p99": 18203,
+    "max": 21782,
+    "mean": 8964.3
+   },
+   "queue_before_first_exec_ms": {
+    "n": 4162,
+    "p50": 6675.0,
+    "p95": 12718.0,
+    "p99": 13554.0,
+    "max": 16030.0,
+    "mean": 6895.7
+   },
+   "first_exec_ms": {
+    "n": 4162,
+    "p50": 9.0,
+    "p95": 28,
+    "p99": 62,
+    "max": 126,
+    "mean": 12.2
+   },
+   "target_in_round1_share": 0.7549,
+   "window": {
+    "inject_sec": 172.7,
+    "orders": 4273,
+    "never_reached_pass": 102
+   },
+   "passes": {
+    "in_window": 76,
+    "in_drain": 1,
+    "per_s": 0.44,
+    "saturated_share": 0.697,
+    "passMs": {
+     "n": 76,
+     "p50": 901.0,
+     "p95": 2021.8,
+     "p99": 2616.0,
+     "max": 3519,
+     "mean": 946.6
+    },
+    "cycle_ms": {
+     "n": 75,
+     "p50": 2001.0,
+     "p95": 3904.2,
+     "p99": 7436.8,
+     "max": 8532,
+     "mean": 2291.0
+    },
+    "gap_ms": {
+     "n": 75,
+     "p50": 1104.0,
+     "p95": 3236.0,
+     "p99": 6712.0,
+     "max": 7711,
+     "mean": 1332.1
+    },
+    "followup_delay_ms": {
+     "n": 76,
+     "p50": 1923.0,
+     "p95": 2000.0,
+     "p99": 2406.2,
+     "max": 3325,
+     "mean": 1720.3
+    },
+    "finderMs": {
+     "n": 76,
+     "p50": 2.8,
+     "p95": 9.2,
+     "p99": 20.1,
+     "max": 35.1,
+     "mean": 3.8
+    },
+    "picked": {
+     "n": 76,
+     "p50": 100.0,
+     "p95": 100.0,
+     "p99": 100.0,
+     "max": 100,
+     "mean": 76.1
+    },
+    "longer_than_2s": 5,
+    "counts_window": {
+     "picked": 5783,
+     "rebroadcast": 5419,
+     "stillNoDriver": 67,
+     "exhausted": 49,
+     "raced": 248,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 17,
+     "rebroadcast": 8,
+     "stillNoDriver": 0,
+     "exhausted": 9,
+     "raced": 0,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 24.74,
+    "first_exec_per_s": 24.11,
+    "exec_per_s": 33.48,
+    "repeat_share": 0.28,
+    "per_order_exec_ms": {
+     "n": 5783,
+     "p50": 10.0,
+     "p95": 28.0,
+     "p99": 65.0,
+     "max": 126,
+     "mean": 12.3
+    }
+   },
+   "queue": {
+    "max": 493,
+    "at_inject_end": 0,
+    "slope_second_half_per_s": 2.779,
+    "drain_to_zero_s": 2.3,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 1
+     },
+     {
+      "t": 5,
+      "queue": 445
+     },
+     {
+      "t": 10,
+      "queue": 493
+     },
+     {
+      "t": 15,
+      "queue": 462
+     },
+     {
+      "t": 20,
+      "queue": 412
+     },
+     {
+      "t": 25,
+      "queue": 295
+     },
+     {
+      "t": 30,
+      "queue": 202
+     },
+     {
+      "t": 35,
+      "queue": 67
+     },
+     {
+      "t": 40,
+      "queue": 32
+     },
+     {
+      "t": 45,
+      "queue": 23
+     },
+     {
+      "t": 50,
+      "queue": 33
+     },
+     {
+      "t": 55,
+      "queue": 13
+     },
+     {
+      "t": 60,
+      "queue": 132
+     },
+     {
+      "t": 65,
+      "queue": 269
+     },
+     {
+      "t": 70,
+      "queue": 379
+     },
+     {
+      "t": 75,
+      "queue": 232
+     },
+     {
+      "t": 80,
+      "queue": 50
+     },
+     {
+      "t": 85,
+      "queue": 0
+     },
+     {
+      "t": 90,
+      "queue": 0
+     },
+     {
+      "t": 95,
+      "queue": 5
+     },
+     {
+      "t": 100,
+      "queue": 12
+     },
+     {
+      "t": 105,
+      "queue": 15
+     },
+     {
+      "t": 110,
+      "queue": 0
+     },
+     {
+      "t": 115,
+      "queue": 0
+     },
+     {
+      "t": 120,
+      "queue": 15
+     },
+     {
+      "t": 125,
+      "queue": 0
+     },
+     {
+      "t": 130,
+      "queue": 0
+     },
+     {
+      "t": 135,
+      "queue": 320
+     },
+     {
+      "t": 140,
+      "queue": 460
+     },
+     {
+      "t": 145,
+      "queue": 448
+     },
+     {
+      "t": 150,
+      "queue": 428
+     },
+     {
+      "t": 155,
+      "queue": 237
+     },
+     {
+      "t": 160,
+      "queue": 41
+     },
+     {
+      "t": 165,
+      "queue": 22
+     },
+     {
+      "t": 170,
+      "queue": 0
+     },
+     {
+      "t": 175,
+      "queue": 0
+     },
+     {
+      "t": 180,
+      "queue": 0
+     },
+     {
+      "t": 185,
+      "queue": 0
+     },
+     {
+      "t": 190,
+      "queue": 0
+     },
+     {
+      "t": 195,
+      "queue": 0
+     },
+     {
+      "t": 200,
+      "queue": 0
+     },
+     {
+      "t": 205,
+      "queue": 0
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     },
+     {
+      "t": 340,
+      "queue": 0
+     },
+     {
+      "t": 345,
+      "queue": 0
+     },
+     {
+      "t": 350,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 34,
+     "p50": 75.3,
+     "p95": 93.2,
+     "p99": 100.1,
+     "max": 103.2,
+     "mean": 71.0
+    },
+    "postgres": {
+     "n": 34,
+     "p50": 187.8,
+     "p95": 316.4,
+     "p99": 327.3,
+     "max": 329.5,
+     "mean": 194.4
+    },
+    "generator": {
+     "n": 34,
+     "p50": 23.4,
+     "p95": 52.5,
+     "p99": 54.6,
+     "max": 55.6,
+     "mean": 29.1
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 171,
+    "p50": 49.9,
+    "p95": 60.5,
+    "p99": 66.7,
+    "max": 77.4,
+    "mean": 46.9
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 171,
+    "p50": 214.2,
+    "p95": 346.5,
+    "p99": 386.9,
+    "max": 411.9,
+    "mean": 214.0
+   },
+   "pool_acquire_select1_ms": {
+    "n": 173,
+    "p50": 85.9,
+    "p95": 460.3,
+    "p99": 654.9,
+    "max": 788.1,
+    "mean": 125.9
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|active": 14,
+    "ceezr:gatewayDispatch|idle": 72,
+    "ceezr:gatewayRequest|active": 172,
+    "ceezr:gatewayRequest|idle": 245,
+    "ceezr:gatewayRequest|idle in transaction": 18,
+    "ceezr:workerJobs|active": 62,
+    "ceezr:workerJobs|idle": 368,
+    "ceezr:workerJobs|idle in transaction": 5,
+    "ceezr:workerLocks|idle": 348,
+    "driver-onboarding|active": 12,
+    "driver-onboarding|idle": 336,
+    "genA|active": 134,
+    "genA|idle": 562
+   },
+   "pg_exec": {
+    "total_exec_ms": 440151.6,
+    "top": [
+     {
+      "calls": 4273,
+      "total_ms": 132342.7,
+      "mean_ms": 30.972,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 31259,
+      "total_ms": 69542.8,
+      "mean_ms": 2.225,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 54,
+      "total_ms": 51906.6,
+      "mean_ms": 961.233,
+      "query": "select claim_telegram_update_replies($1::integer, $2::integer) as result"
+     },
+     {
+      "calls": 6045,
+      "total_ms": 27124.0,
+      "mean_ms": 4.487,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 177119,
+      "total_ms": 24477.2,
+      "mean_ms": 0.138,
+      "query": "insert into users (city_id, telegram_id, full_name, phone, role, language_code) values ((s"
+     },
+     {
+      "calls": 11919,
+      "total_ms": 18877.7,
+      "mean_ms": 1.584,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 177119,
+      "total_ms": 16609.4,
+      "mean_ms": 0.094,
+      "query": "insert into riders (city_id, user_id) values ((select id from cities where code = $1), $2:"
+     },
+     {
+      "calls": 18267,
+      "total_ms": 15520.8,
+      "mean_ms": 0.85,
+      "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.ver"
+     }
+    ]
+   },
+   "side": "C",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  },
+  "b25-s1-R3-750": {
+   "wave": "b25-s1-R3-750",
+   "limit": 50,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 106,
+    "trace_orders": 5258
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "P4"
+    ],
+    "summary_line": {
+     "G1": "99.33% (4033/4060)",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "CLEAN",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "249ms",
+     "P2": "42ms",
+     "P3": "43ms",
+     "P4": "42558ms✗",
+     "P5": "42793ms",
+     "P6a": "290ms",
+     "P6b": "196ms",
+     "P6c": "124ms",
+     "P7": "75s",
+     "P8": "0.00%",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "99.33% (4033/4060)",
+      "pass": true
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "CLEAN",
+      "pass": true
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 4060/4060 · drivers 4060/4060",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 4033,
+    "p50": 36321,
+    "p95": 42558,
+    "p99": 46274,
+    "max": 48435,
+    "mean": 34600.0
+   },
+   "queue_before_first_exec_ms": {
+    "n": 3777,
+    "p50": 35122.0,
+    "p95": 38217.0,
+    "p99": 40005.0,
+    "max": 41632.0,
+    "mean": 32324.8
+   },
+   "first_exec_ms": {
+    "n": 3777,
+    "p50": 4,
+    "p95": 12,
+    "p99": 16,
+    "max": 109,
+    "mean": 5.5
+   },
+   "target_in_round1_share": 0.6933,
+   "window": {
+    "inject_sec": 178.7,
+    "orders": 4060,
+    "never_reached_pass": 256
+   },
+   "passes": {
+    "in_window": 90,
+    "in_drain": 16,
+    "per_s": 0.504,
+    "saturated_share": 0.989,
+    "passMs": {
+     "n": 90,
+     "p50": 232.5,
+     "p95": 448.6,
+     "p99": 513.3,
+     "max": 653,
+     "mean": 263.3
+    },
+    "cycle_ms": {
+     "n": 89,
+     "p50": 2000.0,
+     "p95": 2002.0,
+     "p99": 2002.2,
+     "max": 2004,
+     "mean": 2000.2
+    },
+    "gap_ms": {
+     "n": 89,
+     "p50": 1766.0,
+     "p95": 1869.2,
+     "p99": 1879.6,
+     "max": 1884,
+     "mean": 1736.0
+    },
+    "followup_delay_ms": {
+     "n": 90,
+     "p50": 1821.0,
+     "p95": 1998.0,
+     "p99": 2000.0,
+     "max": 2000,
+     "mean": 1709.6
+    },
+    "finderMs": {
+     "n": 90,
+     "p50": 2.1,
+     "p95": 5.2,
+     "p99": 10.0,
+     "max": 12.6,
+     "mean": 2.6
+    },
+    "picked": {
+     "n": 90,
+     "p50": 50.0,
+     "p95": 50.0,
+     "p99": 50.0,
+     "max": 50,
+     "mean": 49.7
+    },
+    "longer_than_2s": 0,
+    "counts_window": {
+     "picked": 4477,
+     "rebroadcast": 4449,
+     "stillNoDriver": 27,
+     "exhausted": 0,
+     "raced": 1,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 781,
+     "rebroadcast": 752,
+     "stillNoDriver": 0,
+     "exhausted": 29,
+     "raced": 0,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 22.72,
+    "first_exec_per_s": 17.78,
+    "exec_per_s": 25.05,
+    "repeat_share": 0.29,
+    "per_order_exec_ms": {
+     "n": 4477,
+     "p50": 4.0,
+     "p95": 11.0,
+     "p99": 17.0,
+     "max": 50,
+     "mean": 5.2
+    }
+   },
+   "queue": {
+    "max": 694,
+    "at_inject_end": 633,
+    "slope_second_half_per_s": -0.47,
+    "drain_to_zero_s": 31.3,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 4
+     },
+     {
+      "t": 5,
+      "queue": 577
+     },
+     {
+      "t": 10,
+      "queue": 610
+     },
+     {
+      "t": 15,
+      "queue": 640
+     },
+     {
+      "t": 20,
+      "queue": 633
+     },
+     {
+      "t": 25,
+      "queue": 615
+     },
+     {
+      "t": 30,
+      "queue": 635
+     },
+     {
+      "t": 35,
+      "queue": 652
+     },
+     {
+      "t": 40,
+      "queue": 675
+     },
+     {
+      "t": 45,
+      "queue": 646
+     },
+     {
+      "t": 50,
+      "queue": 658
+     },
+     {
+      "t": 55,
+      "queue": 669
+     },
+     {
+      "t": 60,
+      "queue": 676
+     },
+     {
+      "t": 65,
+      "queue": 665
+     },
+     {
+      "t": 70,
+      "queue": 694
+     },
+     {
+      "t": 75,
+      "queue": 646
+     },
+     {
+      "t": 80,
+      "queue": 670
+     },
+     {
+      "t": 85,
+      "queue": 660
+     },
+     {
+      "t": 90,
+      "queue": 672
+     },
+     {
+      "t": 95,
+      "queue": 650
+     },
+     {
+      "t": 100,
+      "queue": 661
+     },
+     {
+      "t": 105,
+      "queue": 632
+     },
+     {
+      "t": 110,
+      "queue": 642
+     },
+     {
+      "t": 115,
+      "queue": 634
+     },
+     {
+      "t": 120,
+      "queue": 620
+     },
+     {
+      "t": 125,
+      "queue": 613
+     },
+     {
+      "t": 130,
+      "queue": 646
+     },
+     {
+      "t": 135,
+      "queue": 637
+     },
+     {
+      "t": 140,
+      "queue": 619
+     },
+     {
+      "t": 145,
+      "queue": 616
+     },
+     {
+      "t": 150,
+      "queue": 634
+     },
+     {
+      "t": 155,
+      "queue": 638
+     },
+     {
+      "t": 160,
+      "queue": 614
+     },
+     {
+      "t": 165,
+      "queue": 595
+     },
+     {
+      "t": 170,
+      "queue": 616
+     },
+     {
+      "t": 175,
+      "queue": 633
+     },
+     {
+      "t": 180,
+      "queue": 627
+     },
+     {
+      "t": 185,
+      "queue": 527
+     },
+     {
+      "t": 190,
+      "queue": 448
+     },
+     {
+      "t": 195,
+      "queue": 329
+     },
+     {
+      "t": 200,
+      "queue": 240
+     },
+     {
+      "t": 205,
+      "queue": 97
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     },
+     {
+      "t": 340,
+      "queue": 0
+     },
+     {
+      "t": 345,
+      "queue": 0
+     },
+     {
+      "t": 350,
+      "queue": 0
+     },
+     {
+      "t": 355,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 35,
+     "p50": 58.1,
+     "p95": 66.6,
+     "p99": 98.7,
+     "max": 114.9,
+     "mean": 59.5
+    },
+    "postgres": {
+     "n": 35,
+     "p50": 135.8,
+     "p95": 187.9,
+     "p99": 211.8,
+     "max": 215.1,
+     "mean": 137.4
+    },
+    "generator": {
+     "n": 35,
+     "p50": 13.4,
+     "p95": 14.9,
+     "p99": 16.2,
+     "max": 16.8,
+     "mean": 12.9
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 177,
+    "p50": 23.1,
+    "p95": 41.6,
+    "p99": 45.3,
+    "max": 48.5,
+    "mean": 22.9
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 177,
+    "p50": 72.1,
+    "p95": 162.7,
+    "p99": 199.4,
+    "max": 282.2,
+    "mean": 76.4
+   },
+   "pool_acquire_select1_ms": {
+    "n": 179,
+    "p50": 0.3,
+    "p95": 37.9,
+    "p99": 146.8,
+    "max": 303.0,
+    "mean": 9.2
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|active": 13,
+    "ceezr:gatewayDispatch|idle": 77,
+    "ceezr:gatewayRequest|active": 94,
+    "ceezr:gatewayRequest|idle": 347,
+    "ceezr:gatewayRequest|idle in transaction": 9,
+    "ceezr:workerJobs|active": 91,
+    "ceezr:workerJobs|idle": 356,
+    "ceezr:workerJobs|idle in transaction": 3,
+    "ceezr:workerLocks|idle": 360,
+    "driver-onboarding|active": 1,
+    "driver-onboarding|idle": 359,
+    "genA|active": 5,
+    "genA|idle": 715
+   },
+   "pg_exec": {
+    "total_exec_ms": 244966.3,
+    "top": [
+     {
+      "calls": 37492,
+      "total_ms": 70107.3,
+      "mean_ms": 1.87,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 74655,
+      "total_ms": 45340.7,
+      "mean_ms": 0.607,
+      "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.ver"
+     },
+     {
+      "calls": 5729,
+      "total_ms": 32332.1,
+      "mean_ms": 5.644,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 4060,
+      "total_ms": 14174.0,
+      "mean_ms": 3.491,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 11228,
+      "total_ms": 14025.4,
+      "mean_ms": 1.249,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 4060,
+      "total_ms": 10313.7,
+      "mean_ms": 2.54,
+      "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id "
+     },
+     {
+      "calls": 5702,
+      "total_ms": 8667.8,
+      "mean_ms": 1.52,
+      "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+     },
+     {
+      "calls": 33638,
+      "total_ms": 8613.7,
+      "mean_ms": 0.256,
+      "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+     }
+    ]
+   },
+   "side": "R",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  },
+  "b25-s1-R4-750": {
+   "wave": "b25-s1-R4-750",
+   "limit": 50,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 106,
+    "trace_orders": 5288
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "P4"
+    ],
+    "summary_line": {
+     "G1": "99.22% (4071/4103)",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "CLEAN",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "313ms",
+     "P2": "54ms",
+     "P3": "59ms",
+     "P4": "42404ms✗",
+     "P5": "42605ms",
+     "P6a": "352ms",
+     "P6b": "91ms",
+     "P6c": "114ms",
+     "P7": "90s",
+     "P8": "0.00%",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "99.22% (4071/4103)",
+      "pass": true
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "CLEAN",
+      "pass": true
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 4103/4103 · drivers 4103/4103",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 4071,
+    "p50": 36325,
+    "p95": 42404,
+    "p99": 44601,
+    "max": 48323,
+    "mean": 34083.2
+   },
+   "queue_before_first_exec_ms": {
+    "n": 3822,
+    "p50": 34678.0,
+    "p95": 38423.0,
+    "p99": 39344.0,
+    "max": 43004.0,
+    "mean": 31927.4
+   },
+   "first_exec_ms": {
+    "n": 3822,
+    "p50": 6.0,
+    "p95": 14,
+    "p99": 20,
+    "max": 64,
+    "mean": 7.0
+   },
+   "target_in_round1_share": 0.7092,
+   "window": {
+    "inject_sec": 178.3,
+    "orders": 4103,
+    "never_reached_pass": 249
+   },
+   "passes": {
+    "in_window": 89,
+    "in_drain": 17,
+    "per_s": 0.499,
+    "saturated_share": 1.0,
+    "passMs": {
+     "n": 89,
+     "p50": 355.0,
+     "p95": 561.8,
+     "p99": 613.1,
+     "max": 614,
+     "mean": 345.2
+    },
+    "cycle_ms": {
+     "n": 88,
+     "p50": 2000.0,
+     "p95": 2001.7,
+     "p99": 2004.0,
+     "max": 2004,
+     "mean": 2000.3
+    },
+    "gap_ms": {
+     "n": 88,
+     "p50": 1646.5,
+     "p95": 1839.3,
+     "p99": 1861.8,
+     "max": 1867,
+     "mean": 1655.3
+    },
+    "followup_delay_ms": {
+     "n": 89,
+     "p50": 1885.0,
+     "p95": 1999.0,
+     "p99": 2000.5,
+     "max": 2004,
+     "mean": 1789.4
+    },
+    "finderMs": {
+     "n": 89,
+     "p50": 3.1,
+     "p95": 7.0,
+     "p99": 15.6,
+     "max": 20.5,
+     "mean": 3.8
+    },
+    "picked": {
+     "n": 89,
+     "p50": 50.0,
+     "p95": 50.0,
+     "p99": 50.0,
+     "max": 50,
+     "mean": 50.0
+    },
+    "longer_than_2s": 0,
+    "counts_window": {
+     "picked": 4450,
+     "rebroadcast": 4397,
+     "stillNoDriver": 50,
+     "exhausted": 0,
+     "raced": 3,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 838,
+     "rebroadcast": 774,
+     "stillNoDriver": 0,
+     "exhausted": 41,
+     "raced": 23,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 23.01,
+    "first_exec_per_s": 17.97,
+    "exec_per_s": 24.96,
+    "repeat_share": 0.28,
+    "per_order_exec_ms": {
+     "n": 4450,
+     "p50": 6.0,
+     "p95": 14.0,
+     "p99": 18.0,
+     "max": 64,
+     "mean": 6.8
+    }
+   },
+   "queue": {
+    "max": 702,
+    "at_inject_end": 618,
+    "slope_second_half_per_s": -0.849,
+    "drain_to_zero_s": 31.7,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 1
+     },
+     {
+      "t": 5,
+      "queue": 595
+     },
+     {
+      "t": 10,
+      "queue": 612
+     },
+     {
+      "t": 15,
+      "queue": 646
+     },
+     {
+      "t": 20,
+      "queue": 635
+     },
+     {
+      "t": 25,
+      "queue": 623
+     },
+     {
+      "t": 30,
+      "queue": 638
+     },
+     {
+      "t": 35,
+      "queue": 645
+     },
+     {
+      "t": 40,
+      "queue": 669
+     },
+     {
+      "t": 45,
+      "queue": 655
+     },
+     {
+      "t": 50,
+      "queue": 661
+     },
+     {
+      "t": 55,
+      "queue": 677
+     },
+     {
+      "t": 60,
+      "queue": 680
+     },
+     {
+      "t": 65,
+      "queue": 660
+     },
+     {
+      "t": 70,
+      "queue": 702
+     },
+     {
+      "t": 75,
+      "queue": 656
+     },
+     {
+      "t": 80,
+      "queue": 682
+     },
+     {
+      "t": 85,
+      "queue": 659
+     },
+     {
+      "t": 90,
+      "queue": 701
+     },
+     {
+      "t": 95,
+      "queue": 662
+     },
+     {
+      "t": 100,
+      "queue": 678
+     },
+     {
+      "t": 105,
+      "queue": 647
+     },
+     {
+      "t": 110,
+      "queue": 652
+     },
+     {
+      "t": 115,
+      "queue": 646
+     },
+     {
+      "t": 120,
+      "queue": 612
+     },
+     {
+      "t": 125,
+      "queue": 608
+     },
+     {
+      "t": 130,
+      "queue": 623
+     },
+     {
+      "t": 135,
+      "queue": 613
+     },
+     {
+      "t": 140,
+      "queue": 610
+     },
+     {
+      "t": 145,
+      "queue": 597
+     },
+     {
+      "t": 150,
+      "queue": 621
+     },
+     {
+      "t": 155,
+      "queue": 627
+     },
+     {
+      "t": 160,
+      "queue": 619
+     },
+     {
+      "t": 165,
+      "queue": 593
+     },
+     {
+      "t": 170,
+      "queue": 608
+     },
+     {
+      "t": 175,
+      "queue": 618
+     },
+     {
+      "t": 180,
+      "queue": 619
+     },
+     {
+      "t": 185,
+      "queue": 496
+     },
+     {
+      "t": 190,
+      "queue": 425
+     },
+     {
+      "t": 195,
+      "queue": 303
+     },
+     {
+      "t": 200,
+      "queue": 214
+     },
+     {
+      "t": 205,
+      "queue": 68
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     },
+     {
+      "t": 340,
+      "queue": 0
+     },
+     {
+      "t": 345,
+      "queue": 0
+     },
+     {
+      "t": 350,
+      "queue": 0
+     },
+     {
+      "t": 355,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 35,
+     "p50": 63.1,
+     "p95": 70.9,
+     "p99": 103.7,
+     "max": 118.2,
+     "mean": 64.1
+    },
+    "postgres": {
+     "n": 35,
+     "p50": 144.1,
+     "p95": 196.9,
+     "p99": 218.3,
+     "max": 221.4,
+     "mean": 147.4
+    },
+    "generator": {
+     "n": 35,
+     "p50": 14.2,
+     "p95": 17.7,
+     "p99": 18.6,
+     "max": 18.8,
+     "mean": 14.2
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 177,
+    "p50": 26.2,
+    "p95": 43.8,
+    "p99": 48.5,
+    "max": 51.7,
+    "mean": 26.6
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 177,
+    "p50": 87.7,
+    "p95": 177.9,
+    "p99": 188.8,
+    "max": 194.8,
+    "mean": 91.3
+   },
+   "pool_acquire_select1_ms": {
+    "n": 179,
+    "p50": 0.4,
+    "p95": 47.4,
+    "p99": 84.3,
+    "max": 204.9,
+    "mean": 7.9
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|idle": 89,
+    "ceezr:gatewayRequest|active": 95,
+    "ceezr:gatewayRequest|idle": 347,
+    "ceezr:gatewayRequest|idle in transaction": 8,
+    "ceezr:workerJobs|active": 74,
+    "ceezr:workerJobs|idle": 371,
+    "ceezr:workerJobs|idle in transaction": 5,
+    "ceezr:workerLocks|idle": 360,
+    "driver-onboarding|active": 2,
+    "driver-onboarding|idle": 358,
+    "genA|active": 5,
+    "genA|idle": 715
+   },
+   "pg_exec": {
+    "total_exec_ms": 274534.6,
+    "top": [
+     {
+      "calls": 40954,
+      "total_ms": 70262.9,
+      "mean_ms": 1.716,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 74453,
+      "total_ms": 53537.1,
+      "mean_ms": 0.719,
+      "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.ver"
+     },
+     {
+      "calls": 5747,
+      "total_ms": 37589.3,
+      "mean_ms": 6.541,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 4103,
+      "total_ms": 16425.8,
+      "mean_ms": 4.003,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 11384,
+      "total_ms": 16159.7,
+      "mean_ms": 1.419,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 4103,
+      "total_ms": 11864.9,
+      "mean_ms": 2.892,
+      "query": "select status::text, attempts, delivered_at::text from notification_outbox where order_id "
+     },
+     {
+      "calls": 5697,
+      "total_ms": 10499.0,
+      "mean_ms": 1.843,
+      "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+     },
+     {
+      "calls": 36672,
+      "total_ms": 10405.1,
+      "mean_ms": 0.284,
+      "query": "select requeue_notification_delivery($1::uuid, $2::uuid, $3::integer) result"
+     }
+    ]
+   },
+   "side": "R",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  },
+  "b25-s1-C4-750": {
+   "wave": "b25-s1-C4-750",
+   "limit": 100,
+   "inputs": {
+    "orders_csv": true,
+    "trace_passes": 65,
+    "trace_orders": 5271
+   },
+   "gates": {
+    "verdict": "FAIL",
+    "failed": [
+     "G1",
+     "P8"
+    ],
+    "summary_line": {
+     "G1": "2.23% (3989/178994)✗",
+     "G2": "0",
+     "G3": "0 + 0",
+     "G4": "CLEAN",
+     "G5": "0",
+     "G6": "0.00% (0)",
+     "G7": "0.00%",
+     "G8": "0",
+     "P1": "377ms",
+     "P2": "528ms",
+     "P3": "498ms",
+     "P4": "18951ms",
+     "P5": "19146ms",
+     "P6a": "560ms",
+     "P6b": "647ms",
+     "P6c": "611ms",
+     "P7": "117s",
+     "P8": "4.58%✗",
+     "P9": "0.00%"
+    },
+    "gates": {
+     "G1": {
+      "value": "2.23% (3989/178994)",
+      "pass": false
+     },
+     "G2": {
+      "value": "0",
+      "pass": true
+     },
+     "G3": {
+      "value": "0 + 0",
+      "pass": true
+     },
+     "G4": {
+      "value": "CLEAN",
+      "pass": true
+     },
+     "G5": {
+      "value": "0",
+      "pass": true
+     },
+     "G6": {
+      "value": "0.00% (0)",
+      "pass": true
+     },
+     "G7": {
+      "value": "0.00%",
+      "pass": true
+     },
+     "G8": {
+      "value": "0",
+      "pass": true
+     },
+     "I1-identities": {
+      "value": "riders 178994/178994 · drivers 178994/178994",
+      "pass": true
+     },
+     "GW-STABILITY": {
+      "value": "stable",
+      "pass": true
+     },
+     "EGRESS-CLASSIFIED": {
+      "value": "unknown +0",
+      "pass": true
+     },
+     "CONC-peak": {
+      "value": "peak 750 / target 750",
+      "pass": true
+     }
+    }
+   },
+   "P4": {
+    "n": 3989,
+    "p50": 7665,
+    "p95": 18951,
+    "p99": 21440,
+    "max": 25660,
+    "mean": 8953.8
+   },
+   "queue_before_first_exec_ms": {
+    "n": 3886,
+    "p50": 6022.5,
+    "p95": 15856.0,
+    "p99": 16691.0,
+    "max": 19203.0,
+    "mean": 7334.2
+   },
+   "first_exec_ms": {
+    "n": 3886,
+    "p50": 12.0,
+    "p95": 39,
+    "p99": 77,
+    "max": 174,
+    "mean": 15.6
+   },
+   "target_in_round1_share": 0.8676,
+   "window": {
+    "inject_sec": 161.3,
+    "orders": 4002,
+    "never_reached_pass": 103
+   },
+   "passes": {
+    "in_window": 64,
+    "in_drain": 1,
+    "per_s": 0.397,
+    "saturated_share": 0.625,
+    "passMs": {
+     "n": 64,
+     "p50": 1126.0,
+     "p95": 2472.5,
+     "p99": 3106.7,
+     "max": 3343,
+     "mean": 1245.8
+    },
+    "cycle_ms": {
+     "n": 63,
+     "p50": 2001.0,
+     "p95": 6424.8,
+     "p99": 10614.9,
+     "max": 12938,
+     "mean": 2541.1
+    },
+    "gap_ms": {
+     "n": 63,
+     "p50": 870.0,
+     "p95": 4443.2,
+     "p99": 10483.9,
+     "max": 12936,
+     "mean": 1290.6
+    },
+    "followup_delay_ms": {
+     "n": 64,
+     "p50": 1880.5,
+     "p95": 2033.3,
+     "p99": 2603.8,
+     "max": 2835,
+     "mean": 1596.1
+    },
+    "finderMs": {
+     "n": 64,
+     "p50": 3.5,
+     "p95": 12.2,
+     "p99": 32.6,
+     "max": 34.9,
+     "mean": 4.9
+    },
+    "picked": {
+     "n": 64,
+     "p50": 100.0,
+     "p95": 100.0,
+     "p99": 100.0,
+     "max": 100,
+     "mean": 81.9
+    },
+    "longer_than_2s": 8,
+    "counts_window": {
+     "picked": 5243,
+     "rebroadcast": 4477,
+     "stillNoDriver": 52,
+     "exhausted": 299,
+     "raced": 415,
+     "failed": 0
+    },
+    "counts_drain": {
+     "picked": 28,
+     "rebroadcast": 15,
+     "stillNoDriver": 0,
+     "exhausted": 13,
+     "raced": 0,
+     "failed": 0
+    }
+   },
+   "rates": {
+    "arrival_per_s": 24.8,
+    "first_exec_per_s": 24.07,
+    "exec_per_s": 32.49,
+    "repeat_share": 0.259,
+    "per_order_exec_ms": {
+     "n": 5243,
+     "p50": 11.0,
+     "p95": 39.0,
+     "p99": 74.0,
+     "max": 148,
+     "mean": 15.1
+    }
+   },
+   "queue": {
+    "max": 597,
+    "at_inject_end": 19,
+    "slope_second_half_per_s": 0.278,
+    "drain_to_zero_s": 3.7,
+    "every_5s": [
+     {
+      "t": 0,
+      "queue": 1
+     },
+     {
+      "t": 5,
+      "queue": 466
+     },
+     {
+      "t": 10,
+      "queue": 597
+     },
+     {
+      "t": 15,
+      "queue": 541
+     },
+     {
+      "t": 20,
+      "queue": 546
+     },
+     {
+      "t": 25,
+      "queue": 559
+     },
+     {
+      "t": 30,
+      "queue": 493
+     },
+     {
+      "t": 35,
+      "queue": 393
+     },
+     {
+      "t": 40,
+      "queue": 324
+     },
+     {
+      "t": 45,
+      "queue": 177
+     },
+     {
+      "t": 50,
+      "queue": 0
+     },
+     {
+      "t": 55,
+      "queue": 0
+     },
+     {
+      "t": 60,
+      "queue": 82
+     },
+     {
+      "t": 65,
+      "queue": 298
+     },
+     {
+      "t": 70,
+      "queue": 247
+     },
+     {
+      "t": 75,
+      "queue": 304
+     },
+     {
+      "t": 80,
+      "queue": 132
+     },
+     {
+      "t": 85,
+      "queue": 14
+     },
+     {
+      "t": 90,
+      "queue": 0
+     },
+     {
+      "t": 95,
+      "queue": 0
+     },
+     {
+      "t": 100,
+      "queue": 100
+     },
+     {
+      "t": 105,
+      "queue": 0
+     },
+     {
+      "t": 110,
+      "queue": 0
+     },
+     {
+      "t": 115,
+      "queue": 0
+     },
+     {
+      "t": 120,
+      "queue": 42
+     },
+     {
+      "t": 125,
+      "queue": 10
+     },
+     {
+      "t": 130,
+      "queue": 46
+     },
+     {
+      "t": 135,
+      "queue": 12
+     },
+     {
+      "t": 140,
+      "queue": 35
+     },
+     {
+      "t": 145,
+      "queue": 0
+     },
+     {
+      "t": 150,
+      "queue": 49
+     },
+     {
+      "t": 155,
+      "queue": 63
+     },
+     {
+      "t": 160,
+      "queue": 19
+     },
+     {
+      "t": 165,
+      "queue": 0
+     },
+     {
+      "t": 170,
+      "queue": 0
+     },
+     {
+      "t": 175,
+      "queue": 0
+     },
+     {
+      "t": 180,
+      "queue": 0
+     },
+     {
+      "t": 185,
+      "queue": 0
+     },
+     {
+      "t": 190,
+      "queue": 0
+     },
+     {
+      "t": 195,
+      "queue": 0
+     },
+     {
+      "t": 200,
+      "queue": 0
+     },
+     {
+      "t": 205,
+      "queue": 0
+     },
+     {
+      "t": 210,
+      "queue": 0
+     },
+     {
+      "t": 215,
+      "queue": 0
+     },
+     {
+      "t": 220,
+      "queue": 0
+     },
+     {
+      "t": 225,
+      "queue": 0
+     },
+     {
+      "t": 230,
+      "queue": 0
+     },
+     {
+      "t": 235,
+      "queue": 0
+     },
+     {
+      "t": 240,
+      "queue": 0
+     },
+     {
+      "t": 245,
+      "queue": 0
+     },
+     {
+      "t": 250,
+      "queue": 0
+     },
+     {
+      "t": 255,
+      "queue": 0
+     },
+     {
+      "t": 260,
+      "queue": 0
+     },
+     {
+      "t": 265,
+      "queue": 0
+     },
+     {
+      "t": 270,
+      "queue": 0
+     },
+     {
+      "t": 275,
+      "queue": 0
+     },
+     {
+      "t": 280,
+      "queue": 0
+     },
+     {
+      "t": 285,
+      "queue": 0
+     },
+     {
+      "t": 290,
+      "queue": 0
+     },
+     {
+      "t": 295,
+      "queue": 0
+     },
+     {
+      "t": 300,
+      "queue": 0
+     },
+     {
+      "t": 305,
+      "queue": 0
+     },
+     {
+      "t": 310,
+      "queue": 0
+     },
+     {
+      "t": 315,
+      "queue": 0
+     },
+     {
+      "t": 320,
+      "queue": 0
+     },
+     {
+      "t": 325,
+      "queue": 0
+     },
+     {
+      "t": 330,
+      "queue": 0
+     },
+     {
+      "t": 335,
+      "queue": 0
+     },
+     {
+      "t": 340,
+      "queue": 0
+     }
+    ]
+   },
+   "cpu_pct_window": {
+    "gateway": {
+     "n": 32,
+     "p50": 76.5,
+     "p95": 99.3,
+     "p99": 115.1,
+     "max": 119.1,
+     "mean": 76.7
+    },
+    "postgres": {
+     "n": 32,
+     "p50": 183.4,
+     "p95": 254.1,
+     "p99": 266.8,
+     "max": 272.4,
+     "mean": 180.8
+    },
+    "generator": {
+     "n": 32,
+     "p50": 27.5,
+     "p95": 51.8,
+     "p99": 54.6,
+     "max": 55.0,
+     "mean": 30.3
+    }
+   },
+   "psi_some_pct_window": {
+    "n": 160,
+    "p50": 48.8,
+    "p95": 61.8,
+    "p99": 66.6,
+    "max": 71.1,
+    "mean": 45.1
+   },
+   "pg_runq_wait_pct_window": {
+    "n": 160,
+    "p50": 203.1,
+    "p95": 361.9,
+    "p99": 455.0,
+    "max": 526.8,
+    "mean": 211.9
+   },
+   "pool_acquire_select1_ms": {
+    "n": 161,
+    "p50": 65.0,
+    "p95": 293.8,
+    "p99": 402.6,
+    "max": 496.5,
+    "mean": 90.9
+   },
+   "conn_states_window": {
+    "ceezr:gatewayDispatch|active": 19,
+    "ceezr:gatewayDispatch|idle": 61,
+    "ceezr:gatewayRequest|active": 145,
+    "ceezr:gatewayRequest|idle": 250,
+    "ceezr:gatewayRequest|idle in transaction": 10,
+    "ceezr:workerJobs|active": 69,
+    "ceezr:workerJobs|idle": 328,
+    "ceezr:workerJobs|idle in transaction": 8,
+    "ceezr:workerLocks|idle": 324,
+    "driver-onboarding|active": 3,
+    "driver-onboarding|idle": 321,
+    "genA|active": 132,
+    "genA|idle": 516
+   },
+   "pg_exec": {
+    "total_exec_ms": 321738.2,
+    "top": [
+     {
+      "calls": 15573,
+      "total_ms": 74034.2,
+      "mean_ms": 4.754,
+      "query": "select claim_notification_delivery() result"
+     },
+     {
+      "calls": 11183,
+      "total_ms": 49413.1,
+      "mean_ms": 4.419,
+      "query": "select ack_rider_trip_events( $1::bigint, $2::uuid, $3::uuid[] ) as result"
+     },
+     {
+      "calls": 5214,
+      "total_ms": 35543.9,
+      "mean_ms": 6.817,
+      "query": "select d.id as driver_id, d.city_id, st_y(d.last_location::geometry) as lat, st_x(d.last_l"
+     },
+     {
+      "calls": 178994,
+      "total_ms": 26745.0,
+      "mean_ms": 0.149,
+      "query": "insert into users (city_id, telegram_id, full_name, phone, role, language_code) values ((s"
+     },
+     {
+      "calls": 4002,
+      "total_ms": 20352.9,
+      "mean_ms": 5.086,
+      "query": "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::tex"
+     },
+     {
+      "calls": 178994,
+      "total_ms": 17492.7,
+      "mean_ms": 0.098,
+      "query": "insert into riders (city_id, user_id) values ((select id from cities where code = $1), $2:"
+     },
+     {
+      "calls": 19444,
+      "total_ms": 14275.9,
+      "mean_ms": 0.734,
+      "query": "with board as ( select driver_offer_board($1::bigint) as payload ), elig as ( select d.ver"
+     },
+     {
+      "calls": 5162,
+      "total_ms": 11467.4,
+      "mean_ms": 2.221,
+      "query": "select open_offer_round( $1::uuid, $2::integer, $3::timestamptz, $4::jsonb ) as result"
+     }
+    ]
+   },
+   "side": "C",
+   "validity": {
+    "preflight": "VALID",
+    "inflight": "VALID"
+   }
+  }
+ },
+ "result": {
+  "valid": {
+   "R": [
+    "b25-s1-R1-750",
+    "b25-s1-R2-750",
+    "b25-s1-R3-750",
+    "b25-s1-R4-750"
+   ],
+   "C": [
+    "b25-s1-C1-750",
+    "b25-s1-C2-750",
+    "b25-s1-C3-750",
+    "b25-s1-C4-750"
+   ]
+  },
+  "excluded": {},
+  "aggregate": {
+   "first_exec_per_s": {
+    "R": {
+     "median": 17.915,
+     "min": 17.78,
+     "max": 17.97,
+     "values": [
+      17.91,
+      17.92,
+      17.78,
+      17.97
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 24.09,
+     "min": 23.57,
+     "max": 27.68,
+     "values": [
+      27.68,
+      23.57,
+      24.11,
+      24.07
+     ],
+     "missing": 0
+    }
+   },
+   "exec_per_s": {
+    "R": {
+     "median": 25.015,
+     "min": 24.96,
+     "max": 25.06,
+     "values": [
+      25.06,
+      24.98,
+      25.05,
+      24.96
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 32.985,
+     "min": 32.06,
+     "max": 35.14,
+     "values": [
+      35.14,
+      32.06,
+      33.48,
+      32.49
+     ],
+     "missing": 0
+    }
+   },
+   "arrival_per_s": {
+    "R": {
+     "median": 22.965000000000003,
+     "min": 22.72,
+     "max": 23.01,
+     "values": [
+      22.92,
+      23.01,
+      22.72,
+      23.01
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 24.77,
+     "min": 23.92,
+     "max": 28.03,
+     "values": [
+      28.03,
+      23.92,
+      24.74,
+      24.8
+     ],
+     "missing": 0
+    }
+   },
+   "P4_p95_ms": {
+    "R": {
+     "median": 42332.0,
+     "min": 42215,
+     "max": 42558,
+     "values": [
+      42260,
+      42215,
+      42558,
+      42404
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 17156.5,
+     "min": 14843,
+     "max": 25397,
+     "values": [
+      25397,
+      14843,
+      15362,
+      18951
+     ],
+     "missing": 0
+    }
+   },
+   "queue_at_inject_end": {
+    "R": {
+     "median": 625.5,
+     "min": 618,
+     "max": 633,
+     "values": [
+      620,
+      631,
+      633,
+      618
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 12.0,
+     "min": 0,
+     "max": 121,
+     "values": [
+      121,
+      5,
+      0,
+      19
+     ],
+     "missing": 0
+    }
+   },
+   "passMs_p50": {
+    "R": {
+     "median": 263.25,
+     "min": 220.5,
+     "max": 355.0,
+     "values": [
+      294.0,
+      220.5,
+      232.5,
+      355.0
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 1013.5,
+     "min": 836.5,
+     "max": 1407.5,
+     "values": [
+      1407.5,
+      836.5,
+      901.0,
+      1126.0
+     ],
+     "missing": 0
+    }
+   },
+   "passMs_p95": {
+    "R": {
+     "median": 464.0,
+     "min": 400.9,
+     "max": 561.8,
+     "values": [
+      479.4,
+      400.9,
+      448.6,
+      561.8
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 2247.15,
+     "min": 1799.5,
+     "max": 3357.3,
+     "values": [
+      3357.3,
+      1799.5,
+      2021.8,
+      2472.5
+     ],
+     "missing": 0
+    }
+   },
+   "cycle_ms_p50": {
+    "R": {
+     "median": 2000.0,
+     "min": 2000.0,
+     "max": 2000.0,
+     "values": [
+      2000.0,
+      2000.0,
+      2000.0,
+      2000.0
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 2001.0,
+     "min": 2001.0,
+     "max": 2001.0,
+     "values": [
+      2001.0,
+      2001.0,
+      2001.0,
+      2001.0
+     ],
+     "missing": 0
+    }
+   },
+   "qbfe_p95_ms": {
+    "R": {
+     "median": 38320.0,
+     "min": 37850.0,
+     "max": 39084.0,
+     "values": [
+      39084.0,
+      37850.0,
+      38217.0,
+      38423.0
+     ],
+     "missing": 0
+    },
+    "C": {
+     "median": 14316.0,
+     "min": 12718.0,
+     "max": 23616.0,
+     "values": [
+      23616.0,
+      12776.0,
+      12718.0,
+      15856.0
+     ],
+     "missing": 0
+    }
+   }
+  },
+  "criteria": {
+   "a_all_C_gates_pass": false,
+   "b_P4_each_C_le_30s": true,
+   "b2_P4_gain_beyond_R_jitter": true,
+   "c_service_separated": true,
+   "d_queue_recedes": false
+  },
+  "decision": "FAIL"
+ }
+}

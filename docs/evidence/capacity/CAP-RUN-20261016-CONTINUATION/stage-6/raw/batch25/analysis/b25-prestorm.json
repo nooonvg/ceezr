@@ -1,0 +1,178 @@
+{
+ "window_from_inject_start_s": [
+  0,
+  40
+ ],
+ "first_429_s_per_wave": {
+  "b25-s1-C1-750": 41.8,
+  "b25-s1-C2-750": 55.3,
+  "b25-s1-C3-750": 55.6,
+  "b25-s1-C4-750": 43.2,
+  "b25-s1-R1-750": null,
+  "b25-s1-R2-750": null,
+  "b25-s1-R3-750": null,
+  "b25-s1-R4-750": null
+ },
+ "waves": {
+  "b25-s1-C1-750": {
+   "completed_per_s": 30.23,
+   "orders_created_per_s": 48.62,
+   "first_exec_per_s": 32.55,
+   "queue_at_window_end": 609,
+   "qbfe_ms_p50_p95": [
+    16146,
+    24569
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    17939,
+    25899
+   ],
+   "passMs_p50_p95": [
+    1417,
+    2544
+   ],
+   "passes": 19,
+   "picked_mean": 97.3
+  },
+  "b25-s1-C2-750": {
+   "completed_per_s": 29.4,
+   "orders_created_per_s": 38.67,
+   "first_exec_per_s": 36.6,
+   "queue_at_window_end": 28,
+   "qbfe_ms_p50_p95": [
+    9480,
+    13256
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    11220,
+    16919
+   ],
+   "passMs_p50_p95": [
+    822,
+    1050
+   ],
+   "passes": 19,
+   "picked_mean": 98.7
+  },
+  "b25-s1-C3-750": {
+   "completed_per_s": 28.77,
+   "orders_created_per_s": 38.55,
+   "first_exec_per_s": 36.52,
+   "queue_at_window_end": 33,
+   "qbfe_ms_p50_p95": [
+    9496,
+    13150
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    11378,
+    17002
+   ],
+   "passMs_p50_p95": [
+    837,
+    929
+   ],
+   "passes": 19,
+   "picked_mean": 98.2
+  },
+  "b25-s1-C4-750": {
+   "completed_per_s": 31.5,
+   "orders_created_per_s": 45.9,
+   "first_exec_per_s": 35.42,
+   "queue_at_window_end": 369,
+   "qbfe_ms_p50_p95": [
+    12413,
+    16375
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    14290,
+    19774
+   ],
+   "passMs_p50_p95": [
+    998,
+    1224
+   ],
+   "passes": 19,
+   "picked_mean": 97.5
+  },
+  "b25-s1-R1-750": {
+   "completed_per_s": 17.52,
+   "orders_created_per_s": 35.58,
+   "first_exec_per_s": 17.6,
+   "queue_at_window_end": 620,
+   "qbfe_ms_p50_p95": [
+    28608,
+    35152
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    31878,
+    40133
+   ],
+   "passMs_p50_p95": [
+    309,
+    466
+   ],
+   "passes": 19,
+   "picked_mean": 50.0
+  },
+  "b25-s1-R2-750": {
+   "completed_per_s": 17.45,
+   "orders_created_per_s": 36.2,
+   "first_exec_per_s": 17.32,
+   "queue_at_window_end": 646,
+   "qbfe_ms_p50_p95": [
+    32071,
+    36479
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    34211,
+    40328
+   ],
+   "passMs_p50_p95": [
+    232,
+    393
+   ],
+   "passes": 19,
+   "picked_mean": 50.0
+  },
+  "b25-s1-R3-750": {
+   "completed_per_s": 17.1,
+   "orders_created_per_s": 35.85,
+   "first_exec_per_s": 16.52,
+   "queue_at_window_end": 671,
+   "qbfe_ms_p50_p95": [
+    33364,
+    36557
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    34296,
+    40509
+   ],
+   "passMs_p50_p95": [
+    188,
+    424
+   ],
+   "passes": 20,
+   "picked_mean": 48.9
+  },
+  "b25-s1-R4-750": {
+   "completed_per_s": 17.93,
+   "orders_created_per_s": 36.23,
+   "first_exec_per_s": 17.02,
+   "queue_at_window_end": 668,
+   "qbfe_ms_p50_p95": [
+    31905,
+    36346
+   ],
+   "P4_ms_p50_p95_created_in_window": [
+    33746,
+    40535
+   ],
+   "passMs_p50_p95": [
+    287,
+    572
+   ],
+   "passes": 19,
+   "picked_mean": 50.0
+  }
+ }
+}
