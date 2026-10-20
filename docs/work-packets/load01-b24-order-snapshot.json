@@ -273,6 +273,7 @@
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch24/local/b24-d1b/p4-decompose.json",
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch24/local/b24-d1b/resources.jsonl.gz",
     "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch24/local/b24-d1b/timeline.jsonl.gz",
-    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch24/local/b24-d1b/wave-report.json"
+    "docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/raw/batch24/local/b24-d1b/wave-report.json",
+    "docs/roadmap/execution/STATUS.md"
   ]
 }
