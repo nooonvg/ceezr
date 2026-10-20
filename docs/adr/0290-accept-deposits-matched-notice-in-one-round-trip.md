@@ -1,5 +1,7 @@
 # ADR 0290: قبول العرض يودِع إشعار MATCHED في عبارته — رحلة ذهاب وإياب واحدة
 
+> **ملحق (2026-10-20، الدفعةُ 21):** النمطُ نفسُه طُبِّقَ على أطوارِ `arrived/start/complete` (`driver_*_with_notice`، الهجرة `20261020120000`) مع بقاءِ تحقّقِ الجلسةِ القابلةِ للإبطالِ قبلَ المخزن؛ انظر [`BATCH-21-LOAD01-HTTP-QUERY-REDUCTION.md`](../evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-21-LOAD01-HTTP-QUERY-REDUCTION.md).
+
 **الحالة:** مقبول
 **التاريخ:** 2026-10-19
 **المرجع:** [ADR 0117](0117-a-countdown-is-a-server-fact-and-an-acceptance-has-one-writer.md) · [ADR 0265](0265-rider-trip-notice-outbox.md) · [ADR 0287](0287-rider-trip-events-miniapp-first.md) · `docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-15-LOAD01-P2-ACCEPT-ROUNDTRIP.md`

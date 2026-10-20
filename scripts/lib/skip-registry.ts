@@ -210,6 +210,20 @@ export const SKIP_REGISTRY: readonly SkipEntry[] = [
     whyNotRun: null,
   },
   {
+    file: "tests/integration/trip-phase-with-notice.test.ts",
+    suites: ["أطوارُ الرحلةِ مع إيداعِ الإشعارِ في رحلةٍ واحدة (الدفعة 21)"],
+    skipped: 8,
+    gate: "TEST_DATABASE_URL",
+    reason:
+      "المُدَّعى في LOAD-01 (الدفعةُ 21) أنَّ `driver_mark_arrived_with_notice` و`driver_start_ride_with_notice` و`driver_complete_ride_with_notice` تُعيدُ ردَّ الطورِ حرفاً كالدالّةِ المنفردة (ومنه رفضُ تغيّرِ الملكيّةِ بينَ طلبَين) وتودِعُ إشعارَ الراكبِ في المعاملةِ نفسِها، وأنَّ فشلَ الإيداعِ تعزلُه نقطةُ الحفظِ والطورُ يُثبَّت — سلوكُ محرّكٍ لا يُقاسُ إلّا على PostgreSQL حقيقيّ.",
+    activation:
+      "تُضبَط TEST_DATABASE_URL على قاعدةٍ حقيقيّةٍ بها postgis والهجرات مطبَّقة (ومنها 20261020120000). يفعله CI في الوظيفة «تكامل على PostgreSQL حقيقي».",
+    owner: "منفّذ المستودع",
+    criticalPath: null,
+    runsIn: "اختبارات التكامل على قاعدة حقيقية",
+    whyNotRun: null,
+  },
+  {
     file: "tests/integration/telegram-update-batch-claim-lane-order.test.ts",
     suites: ["ترتيبُ المستخدمِ (D4) في الالتقاطِ الدُّفعيّ — قاعدةٌ حقيقيّة"],
     skipped: 3,

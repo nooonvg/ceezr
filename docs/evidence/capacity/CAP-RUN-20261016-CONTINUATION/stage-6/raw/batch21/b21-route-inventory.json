@@ -1,0 +1,868 @@
+{
+ "b21-s3-A3-750": {
+  "(background)": {
+   "requests": 0,
+   "queries": 369,
+   "q_per_req": 369.0,
+   "hold_s": 5.0,
+   "top": [
+    [
+     "select 1",
+     237
+    ],
+    [
+     "select claim_telegram_update_replies(",
+     64
+    ],
+    [
+     "select finish_telegram_update_replies(",
+     60
+    ],
+    [
+     "select claim_telegram_update_jobs_for_bot(",
+     2
+    ],
+    [
+     "select 1 from cities limit 1",
+     1
+    ],
+    [
+     "select 1 as ok",
+     1
+    ]
+   ]
+  },
+  "POST /v1/session/telegram": {
+   "requests": 12837,
+   "queries": 25674,
+   "q_per_req": 2.0,
+   "hold_s": 130.2,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     12837
+    ],
+    [
+     "select kind, version, accepted_at from list_user_consents($1)",
+     12837
+    ]
+   ]
+  },
+  "POST /webhook/telegram/driver": {
+   "requests": 6065,
+   "queries": 35233,
+   "q_per_req": 5.81,
+   "hold_s": 131.0,
+   "top": [
+    [
+     "select claim_and_enqueue_telegram_update(",
+     6065
+    ],
+    [
+     "select telegram_update_effect_recorded(",
+     6065
+    ],
+    [
+     "select get_user_language(",
+     6065
+    ],
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     6065
+    ],
+    [
+     "select record_telegram_update_effect(",
+     6065
+    ],
+    [
+     "select finish_telegram_update_replies(",
+     3900
+    ]
+   ]
+  },
+  "GET /v1/onboarding": {
+   "requests": 6065,
+   "queries": 12130,
+   "q_per_req": 2.0,
+   "hold_s": 49.9,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     6065
+    ],
+    [
+     "select id, code, name_ar, name_en from cities where is_active = true o",
+     6065
+    ]
+   ]
+  },
+  "POST /v1/onboarding/driver": {
+   "requests": 6065,
+   "queries": 12130,
+   "q_per_req": 2.0,
+   "hold_s": 51.0,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     6065
+    ],
+    [
+     "select id, code, name_ar, name_en from cities where is_active = true o",
+     6065
+    ]
+   ]
+  },
+  "POST /v1/rides": {
+   "requests": 3386,
+   "queries": 6772,
+   "q_per_req": 2.0,
+   "hold_s": 53.9,
+   "top": [
+    [
+     "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10",
+     3386
+    ],
+    [
+     "select city_id::text as city_id from orders where id =",
+     3386
+    ]
+   ]
+  },
+  "POST /v1/driver/availability": {
+   "requests": 6772,
+   "queries": 13544,
+   "q_per_req": 2.0,
+   "hold_s": 76.7,
+   "top": [
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     6772
+    ],
+    [
+     "select (record_attendance(",
+     6772
+    ]
+   ]
+  },
+  "POST /v1/driver/location": {
+   "requests": 3386,
+   "queries": 27122,
+   "q_per_req": 8.01,
+   "hold_s": 118.9,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     3386
+    ],
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     3386
+    ],
+    [
+     "with current as ( select id from drivers where id =",
+     3386
+    ],
+    [
+     "select coalesce( (select a.is_available from driver_availability a whe",
+     3386
+    ],
+    [
+     "select",
+     3386
+    ],
+    [
+     "select id from orders where assigned_driver_id =",
+     3386
+    ]
+   ]
+  },
+  "GET /v1/driver/offers": {
+   "requests": 5742,
+   "queries": 5742,
+   "q_per_req": 1.0,
+   "hold_s": 28.0,
+   "top": [
+    [
+     "with board as ( select driver_offer_board(",
+     5742
+    ]
+   ]
+  },
+  "POST /v1/driver/offers/receipts": {
+   "requests": 4755,
+   "queries": 4755,
+   "q_per_req": 1.0,
+   "hold_s": 24.4,
+   "top": [
+    [
+     "with ins as ( insert into driver_offers_board_receipts (driver_id, off",
+     4755
+    ]
+   ]
+  },
+  "POST /v1/driver/offers/:id/accept": {
+   "requests": 3387,
+   "queries": 3387,
+   "q_per_req": 1.0,
+   "hold_s": 22.7,
+   "top": [
+    [
+     "select driver_accept_offer_with_matched_notice(",
+     3387
+    ]
+   ]
+  },
+  "GET /v1/rides/:id/trip-events": {
+   "requests": 9468,
+   "queries": 9468,
+   "q_per_req": 1.0,
+   "hold_s": 37.5,
+   "top": [
+    [
+     "select list_rider_trip_events(",
+     9468
+    ]
+   ]
+  },
+  "GET /v1/rides/:id/candidate": {
+   "requests": 3386,
+   "queries": 3386,
+   "q_per_req": 1.0,
+   "hold_s": 13.0,
+   "top": [
+    [
+     "select rider_order_candidate(",
+     3386
+    ]
+   ]
+  },
+  "POST /v1/rides/:id/trip-events/ack": {
+   "requests": 9468,
+   "queries": 9468,
+   "q_per_req": 1.0,
+   "hold_s": 64.1,
+   "top": [
+    [
+     "select ack_rider_trip_events(",
+     9468
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/arrived": {
+   "requests": 3386,
+   "queries": 6772,
+   "q_per_req": 2.0,
+   "hold_s": 35.0,
+   "top": [
+    [
+     "select driver_mark_arrived(",
+     3386
+    ],
+    [
+     "select enqueue_rider_trip_notice(",
+     3386
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/start": {
+   "requests": 3386,
+   "queries": 6772,
+   "q_per_req": 2.0,
+   "hold_s": 35.6,
+   "top": [
+    [
+     "select driver_start_ride(",
+     3386
+    ],
+    [
+     "select enqueue_rider_trip_notice(",
+     3386
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/complete": {
+   "requests": 3386,
+   "queries": 6772,
+   "q_per_req": 2.0,
+   "hold_s": 37.1,
+   "top": [
+    [
+     "select driver_complete_ride(",
+     3386
+    ],
+    [
+     "select enqueue_rider_trip_notice(",
+     3386
+    ]
+   ]
+  }
+ },
+ "b21-s3-B3-750": {
+  "(background)": {
+   "requests": 0,
+   "queries": 367,
+   "q_per_req": 367.0,
+   "hold_s": 5.5,
+   "top": [
+    [
+     "select 1",
+     236
+    ],
+    [
+     "select claim_telegram_update_replies(",
+     63
+    ],
+    [
+     "select finish_telegram_update_replies(",
+     60
+    ],
+    [
+     "select claim_telegram_update_jobs_for_bot(",
+     2
+    ],
+    [
+     "select 1 from cities limit 1",
+     1
+    ],
+    [
+     "select 1 as ok",
+     1
+    ]
+   ]
+  },
+  "POST /v1/session/telegram": {
+   "requests": 13104,
+   "queries": 26208,
+   "q_per_req": 2.0,
+   "hold_s": 131.8,
+   "top": [
+    [
+     "select kind, version, accepted_at from list_user_consents($1)",
+     13104
+    ],
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     13104
+    ]
+   ]
+  },
+  "POST /webhook/telegram/driver": {
+   "requests": 6068,
+   "queries": 35219,
+   "q_per_req": 5.8,
+   "hold_s": 128.6,
+   "top": [
+    [
+     "select claim_and_enqueue_telegram_update(",
+     6068
+    ],
+    [
+     "select telegram_update_effect_recorded(",
+     6068
+    ],
+    [
+     "select get_user_language(",
+     6068
+    ],
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     6068
+    ],
+    [
+     "select record_telegram_update_effect(",
+     6068
+    ],
+    [
+     "select finish_telegram_update_replies(",
+     3866
+    ]
+   ]
+  },
+  "GET /v1/onboarding": {
+   "requests": 6068,
+   "queries": 12136,
+   "q_per_req": 2.0,
+   "hold_s": 51.3,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     6068
+    ],
+    [
+     "select id, code, name_ar, name_en from cities where is_active = true o",
+     6068
+    ]
+   ]
+  },
+  "POST /v1/onboarding/driver": {
+   "requests": 6068,
+   "queries": 12136,
+   "q_per_req": 2.0,
+   "hold_s": 52.2,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     6068
+    ],
+    [
+     "select id, code, name_ar, name_en from cities where is_active = true o",
+     6068
+    ]
+   ]
+  },
+  "POST /v1/rides": {
+   "requests": 3518,
+   "queries": 7036,
+   "q_per_req": 2.0,
+   "hold_s": 54.3,
+   "top": [
+    [
+     "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10",
+     3518
+    ],
+    [
+     "select city_id::text as city_id from orders where id =",
+     3518
+    ]
+   ]
+  },
+  "POST /v1/driver/availability": {
+   "requests": 7036,
+   "queries": 14072,
+   "q_per_req": 2.0,
+   "hold_s": 81.7,
+   "top": [
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     7036
+    ],
+    [
+     "select (record_attendance(",
+     7036
+    ]
+   ]
+  },
+  "POST /v1/driver/location": {
+   "requests": 3518,
+   "queries": 28153,
+   "q_per_req": 8.0,
+   "hold_s": 122.6,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     3518
+    ],
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     3518
+    ],
+    [
+     "with current as ( select id from drivers where id =",
+     3518
+    ],
+    [
+     "select coalesce( (select a.is_available from driver_availability a whe",
+     3518
+    ],
+    [
+     "select",
+     3518
+    ],
+    [
+     "select id from orders where assigned_driver_id =",
+     3518
+    ]
+   ]
+  },
+  "GET /v1/driver/offers": {
+   "requests": 5828,
+   "queries": 5828,
+   "q_per_req": 1.0,
+   "hold_s": 30.0,
+   "top": [
+    [
+     "with board as ( select driver_offer_board(",
+     5828
+    ]
+   ]
+  },
+  "POST /v1/driver/offers/receipts": {
+   "requests": 4812,
+   "queries": 4812,
+   "q_per_req": 1.0,
+   "hold_s": 25.1,
+   "top": [
+    [
+     "with ins as ( insert into driver_offers_board_receipts (driver_id, off",
+     4812
+    ]
+   ]
+  },
+  "POST /v1/driver/offers/:id/accept": {
+   "requests": 3521,
+   "queries": 3521,
+   "q_per_req": 1.0,
+   "hold_s": 23.2,
+   "top": [
+    [
+     "select driver_accept_offer_with_matched_notice(",
+     3521
+    ]
+   ]
+  },
+  "GET /v1/rides/:id/trip-events": {
+   "requests": 9720,
+   "queries": 9720,
+   "q_per_req": 1.0,
+   "hold_s": 43.2,
+   "top": [
+    [
+     "select list_rider_trip_events(",
+     9720
+    ]
+   ]
+  },
+  "GET /v1/rides/:id/candidate": {
+   "requests": 3518,
+   "queries": 3518,
+   "q_per_req": 1.0,
+   "hold_s": 13.9,
+   "top": [
+    [
+     "select rider_order_candidate(",
+     3518
+    ]
+   ]
+  },
+  "POST /v1/rides/:id/trip-events/ack": {
+   "requests": 9715,
+   "queries": 9715,
+   "q_per_req": 1.0,
+   "hold_s": 69.7,
+   "top": [
+    [
+     "select ack_rider_trip_events(",
+     9715
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/arrived": {
+   "requests": 3518,
+   "queries": 3518,
+   "q_per_req": 1.0,
+   "hold_s": 22.3,
+   "top": [
+    [
+     "select driver_mark_arrived_with_notice(",
+     3518
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/start": {
+   "requests": 3518,
+   "queries": 3518,
+   "q_per_req": 1.0,
+   "hold_s": 22.7,
+   "top": [
+    [
+     "select driver_start_ride_with_notice(",
+     3518
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/complete": {
+   "requests": 3518,
+   "queries": 3518,
+   "q_per_req": 1.0,
+   "hold_s": 25.4,
+   "top": [
+    [
+     "select driver_complete_ride_with_notice(",
+     3518
+    ]
+   ]
+  }
+ },
+ "b21-s3-C1-750": {
+  "(background)": {
+   "requests": 0,
+   "queries": 368,
+   "q_per_req": 368.0,
+   "hold_s": 5.9,
+   "top": [
+    [
+     "select 1",
+     235
+    ],
+    [
+     "select claim_telegram_update_replies(",
+     63
+    ],
+    [
+     "select finish_telegram_update_replies(",
+     60
+    ],
+    [
+     "select claim_telegram_update_jobs_for_bot(",
+     4
+    ],
+    [
+     "select 1 from cities limit 1",
+     1
+    ],
+    [
+     "select 1 as ok",
+     1
+    ]
+   ]
+  },
+  "POST /v1/session/telegram": {
+   "requests": 12929,
+   "queries": 12929,
+   "q_per_req": 1.0,
+   "hold_s": 91.1,
+   "top": [
+    [
+     "select u.role::text as role, u.is_blocked, u.language_code, c.consents",
+     12929
+    ]
+   ]
+  },
+  "POST /webhook/telegram/driver": {
+   "requests": 6047,
+   "queries": 35120,
+   "q_per_req": 5.81,
+   "hold_s": 137.8,
+   "top": [
+    [
+     "select claim_and_enqueue_telegram_update(",
+     6047
+    ],
+    [
+     "select telegram_update_effect_recorded(",
+     6047
+    ],
+    [
+     "select get_user_language(",
+     6047
+    ],
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     6047
+    ],
+    [
+     "select record_telegram_update_effect(",
+     6047
+    ],
+    [
+     "select finish_telegram_update_replies(",
+     3866
+    ]
+   ]
+  },
+  "GET /v1/onboarding": {
+   "requests": 6047,
+   "queries": 12094,
+   "q_per_req": 2.0,
+   "hold_s": 53.0,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     6047
+    ],
+    [
+     "select id, code, name_ar, name_en from cities where is_active = true o",
+     6047
+    ]
+   ]
+  },
+  "POST /v1/onboarding/driver": {
+   "requests": 6047,
+   "queries": 12094,
+   "q_per_req": 2.0,
+   "hold_s": 53.2,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     6047
+    ],
+    [
+     "select id, code, name_ar, name_en from cities where is_active = true o",
+     6047
+    ]
+   ]
+  },
+  "POST /v1/rides": {
+   "requests": 3441,
+   "queries": 6882,
+   "q_per_req": 2.0,
+   "hold_s": 55.1,
+   "top": [
+    [
+     "select request_ride_with_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10",
+     3441
+    ],
+    [
+     "select city_id::text as city_id from orders where id =",
+     3441
+    ]
+   ]
+  },
+  "POST /v1/driver/availability": {
+   "requests": 6882,
+   "queries": 13764,
+   "q_per_req": 2.0,
+   "hold_s": 83.3,
+   "top": [
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     6882
+    ],
+    [
+     "select (record_attendance(",
+     6882
+    ]
+   ]
+  },
+  "POST /v1/driver/location": {
+   "requests": 3441,
+   "queries": 27593,
+   "q_per_req": 8.02,
+   "hold_s": 129.2,
+   "top": [
+    [
+     "select role::text as role, is_blocked, language_code from users where ",
+     3441
+    ],
+    [
+     "select d.id as driver_id, d.city_id, u.telegram_id, u.full_name, u.pho",
+     3441
+    ],
+    [
+     "with current as ( select id from drivers where id =",
+     3441
+    ],
+    [
+     "select coalesce( (select a.is_available from driver_availability a whe",
+     3441
+    ],
+    [
+     "select",
+     3441
+    ],
+    [
+     "select id from orders where assigned_driver_id =",
+     3441
+    ]
+   ]
+  },
+  "GET /v1/driver/offers": {
+   "requests": 6041,
+   "queries": 6041,
+   "q_per_req": 1.0,
+   "hold_s": 31.5,
+   "top": [
+    [
+     "with board as ( select driver_offer_board(",
+     6041
+    ]
+   ]
+  },
+  "POST /v1/driver/offers/receipts": {
+   "requests": 4899,
+   "queries": 4899,
+   "q_per_req": 1.0,
+   "hold_s": 27.6,
+   "top": [
+    [
+     "with ins as ( insert into driver_offers_board_receipts (driver_id, off",
+     4899
+    ]
+   ]
+  },
+  "POST /v1/driver/offers/:id/accept": {
+   "requests": 3441,
+   "queries": 3441,
+   "q_per_req": 1.0,
+   "hold_s": 25.1,
+   "top": [
+    [
+     "select driver_accept_offer_with_matched_notice(",
+     3441
+    ]
+   ]
+  },
+  "GET /v1/rides/:id/candidate": {
+   "requests": 3441,
+   "queries": 3441,
+   "q_per_req": 1.0,
+   "hold_s": 14.7,
+   "top": [
+    [
+     "select rider_order_candidate(",
+     3441
+    ]
+   ]
+  },
+  "GET /v1/rides/:id/trip-events": {
+   "requests": 9656,
+   "queries": 9656,
+   "q_per_req": 1.0,
+   "hold_s": 45.5,
+   "top": [
+    [
+     "select list_rider_trip_events(",
+     9656
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/arrived": {
+   "requests": 3441,
+   "queries": 3441,
+   "q_per_req": 1.0,
+   "hold_s": 23.1,
+   "top": [
+    [
+     "select driver_mark_arrived_with_notice(",
+     3441
+    ]
+   ]
+  },
+  "POST /v1/rides/:id/trip-events/ack": {
+   "requests": 9649,
+   "queries": 9649,
+   "q_per_req": 1.0,
+   "hold_s": 71.7,
+   "top": [
+    [
+     "select ack_rider_trip_events(",
+     9649
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/start": {
+   "requests": 3441,
+   "queries": 3441,
+   "q_per_req": 1.0,
+   "hold_s": 22.7,
+   "top": [
+    [
+     "select driver_start_ride_with_notice(",
+     3441
+    ]
+   ]
+  },
+  "POST /v1/driver/job/:id/complete": {
+   "requests": 3441,
+   "queries": 3441,
+   "q_per_req": 1.0,
+   "hold_s": 25.3,
+   "top": [
+    [
+     "select driver_complete_ride_with_notice(",
+     3441
+    ]
+   ]
+  }
+ }
+}
