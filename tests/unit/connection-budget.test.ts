@@ -176,8 +176,9 @@ describe("الميزانيّةُ المحسوبةُ المُثبَّتةُ (LOAD
   // (22) قيسَ ولم يُعتمَد — `BATCH-10-LOAD01-ACCEPT500.md`.
   const budget = computeConnectionBudget(DECLARED_TOPOLOGY);
 
-  it("السقوفُ المعتمدةُ: الطلبُ 5 والشوطُ 1 والمهامُّ 5 والأقفالُ JOB_CONCURRENCY+1 واللوحةُ 5", () => {
-    expect(DB_POOL_MAX.gatewayRequest).toBe(5);
+  // الدفعةُ 22 (ADR 0291، الخيارُ أ): مرشّحُ قياسٍ — الطلبُ 10 وحدَه، وبقيّةُ السقوفِ كما هي حرفًا.
+  it("سقوفُ المرشّح: الطلبُ 10 والشوطُ 1 والمهامُّ 5 والأقفالُ JOB_CONCURRENCY+1 واللوحةُ 5", () => {
+    expect(DB_POOL_MAX.gatewayRequest).toBe(10);
     expect(DB_POOL_MAX.gatewayDispatch).toBe(1);
     expect(DB_POOL_MAX.workerJobs).toBe(5);
     expect(DB_POOL_MAX.workerLocks).toBe(JOB_CONCURRENCY + 1);
@@ -186,14 +187,15 @@ describe("الميزانيّةُ المحسوبةُ المُثبَّتةُ (LOAD
     expect(DB_POOL_MAX.restoreVerifier).toBe(1);
   });
 
-  it("الحالةُ المستقرّةُ على طوبولوجيا render.yaml = 21: بوّابةٌ واحدةٌ تحملُ (5+1) + (5+5) + 5", () => {
+  it("الحالةُ المستقرّةُ على طوبولوجيا render.yaml = 26: بوّابةٌ واحدةٌ تحملُ (10+1) + (5+5) + 5", () => {
     const manifest = readFileSync(join(import.meta.dir, "..", "..", MANIFEST_NAME), "utf8");
     expect(analyseManifest(manifest)).toEqual([]);
     expect(budget.rows).toHaveLength(3);
     const gateway = budget.rows.find((row) => row.process === "gateway");
     expect(gateway?.instances).toBe(1);
-    expect(gateway?.perInstance).toBe(21);
-    expect(budget.steadyStateTotal).toBe(21);
+    expect(gateway?.perInstance).toBe(26);
+    expect(budget.steadyStateTotal).toBe(26);
+    expect(DECLARED_TOPOLOGY.gatewayInstances).toBe(1);
   });
 
   it("restoreVerifier عابرٌ: يُعلَنُ في الذروةِ العابرةِ (1) ولا يدخلُ مجموعَ الحالةِ المستقرّة", () => {
