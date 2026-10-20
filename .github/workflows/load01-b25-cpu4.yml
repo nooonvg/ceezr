@@ -1,31 +1,31 @@
-name: LOAD-01 الدفعة 24 — مقعد 4 vCPU (لقطة الطلب من القارئ)
+name: LOAD-01 الدفعة 25 — مقعد 4 vCPU (حد الشوط الفوري 50 مقابل 100)
 
 # تشخيصٌ معزولٌ على فرعِ التجربةِ وحدَه ولا يُدمَج: مقارنةُ R (أدواتُ القياسِ فوقَ main)
-# مقابلَ C (اللقطةُ) على مشغّلِ GitHub القياسيّ 4 vCPU حيثُ الموزّعُ هو عنقُ الزجاجةِ.
+# مقابلَ C (حدُّ الشوطِ الفوريِّ 100 — الدفعةُ 25) على مشغّلِ GitHub القياسيّ 4 vCPU حيثُ الموزّعُ هو عنقُ الزجاجةِ.
 # لا أسرار: القاعدةُ وRedis والمحاكي داخلَ netns بلا شبكة؛ أسرارُ المقعدِ مولَّدةٌ عشوائيًّا.
 # الأثرُ الخامُّ داخلَ الدليلِ + تدقيقُ الأسرارِ قبلَ أيِّ رفعٍ (فجوةُ ب23 مُغلَقة).
 on:
   push:
-    branches: [exp/load01-b24-cpu4]
+    branches: [exp/load01-b25-cpu4]
     paths:
       - deploy/capacity-run/b24-runner/**
-      - .github/workflows/load01-b24-cpu4.yml
+      - .github/workflows/load01-b25-cpu4.yml
 
 permissions:
   contents: read
 
 concurrency:
-  group: load01-b24-seat
+  group: load01-b25-seat
   cancel-in-progress: false
 
 jobs:
   seat:
-    name: مقعد B24 (R=قياس مقابل C=لقطة الطلب)
+    name: مقعد B25 (R=حد 50 مقابل C=حد 100)
     runs-on: ubuntu-26.04
     timeout-minutes: 340
     env:
-      R_SHA: 98ac336554e80eca058dcbf6fbc6ad7199e723ec
-      C_SHA: 65ee82eccbf689e70578c3b0fe183541a632678e
+      R_SHA: 9880f65085a3073a59f020d843a2db8a862f70de
+      C_SHA: 3d4dcbd0bbe7ad9a8ab29bb6f9a25661f469ab70
     steps:
       - uses: actions/checkout@v7
         with:
@@ -53,8 +53,8 @@ jobs:
       - name: رفع الدليل (لا يُرفعُ إلا بنجاحِ تدقيقِ الأسرارِ — الفشلُ يحجرُ الخامَّ في المقعدِ)
         uses: actions/upload-artifact@v5
         with:
-          name: b24-seat-evidence
-          path: /home/user/b24-out/
+          name: b25-seat-evidence
+          path: /home/user/b25-out/
           if-no-files-found: warn
           retention-days: 14
 
@@ -62,7 +62,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v5
         with:
-          name: b24-seat-failure-report
-          path: /home/user/b24-out/secret-audit.txt
+          name: b25-seat-failure-report
+          path: /home/user/b25-out/secret-audit.txt
           if-no-files-found: ignore
           retention-days: 14

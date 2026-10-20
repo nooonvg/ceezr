@@ -2,7 +2,7 @@
 # الدفعة 23 — تجهيزُ مقعدِ GitHub بالجذر: حزمُ المقعدِ الأصليِّ بإصداراتِها حيثُ أمكن، والمستخدم «user»،
 # وإيقافُ خدماتِ المشغّلِ التي لا وجودَ لها على المقعدِ الأصليّ (تُسجَّلُ قبلُ وبعد).
 set -euo pipefail
-OUT=/home/user/b24-out
+OUT=/home/user/b25-out
 . /etc/os-release
 echo "os=$PRETTY_NAME codename=$VERSION_CODENAME kernel=$(uname -r) nproc=$(nproc)"
 systemctl list-units --type=service --state=running --no-legend | awk '{print $1}' > /tmp/services-before.txt

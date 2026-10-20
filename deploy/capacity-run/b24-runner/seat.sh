@@ -7,7 +7,7 @@ set -euo pipefail
 MODE=${1:?smoke|full}
 export HOME=/home/user PATH=/home/user/.bun/bin:/home/user/.local/bin:/usr/lib/postgresql/18/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export CAP_SEAT_CG=ceezrseat.slice CAP_SIBS="system.slice init.scope user.slice"
-B=/srv/ceezr-cap-20261016; W=/home/user/workspace; H=$W/ceezr; OUT=/home/user/b24-out
+B=/srv/ceezr-cap-20261016; W=/home/user/workspace; H=$W/ceezr; OUT=/home/user/b25-out
 R_SHA=${R_SHA:?}; C_SHA=${C_SHA:?}
 mkdir -p "$OUT"
 log() { echo "[$(date -u +%T)] $*"; }
@@ -83,9 +83,10 @@ if [ "$MODE" = smoke ]; then
   RUNS="b24-smoke-S1-50"
 else
   log "القياس: R-C-C-R ثمّ C-R-R-C عند 750"
+  export SEQ_PREFIX=b25
   "$B/bin/b24-seq.sh" s1 750 30 "R1:ref:$R_SHA" "C1:cand:$C_SHA" "C2:cand:$C_SHA" "R2:ref:$R_SHA" \
     "C3:cand:$C_SHA" "R3:ref:$R_SHA" "R4:ref:$R_SHA" "C4:cand:$C_SHA" > "$OUT/seq.log" 2>&1 || true
-  RUNS=$(for n in R1 C1 C2 R2 C3 R3 R4 C4; do printf "b24-s1-%s-750 " $n; done)
+  RUNS=$(for n in R1 C1 C2 R2 C3 R3 R4 C4; do printf "b25-s1-%s-750 " $n; done)
 fi
 grep -E "^SEQ|PREFLIGHT |INFLIGHT |QUAL_DONE|WAVE_DONE|END rc|INVALID|MISMATCH" "$OUT/seq.log" || true
 
@@ -105,6 +106,10 @@ for r in $RUNS; do
   for f in orders.csv offers.csv; do [ -f "$E/$f" ] && gzip -9c "$E/$f" > "$D/$f.gz" || true; done
   for g in $B/bin/gates.sh; do $g "$r" > "$D/gates.txt" 2>&1 || true; done
 done
+# حكمُ القاعدةِ المسجَّلةِ مسبقًا (b25-analyze.py مثبَّتٌ قبلَ أوّلِ موجةٍ معَ PLAN.md)
+# shellcheck disable=SC2086
+python3 "$H/deploy/capacity-run/b24-runner/b25-analyze.py" decide "$OUT" $RUNS > "$OUT/b25-decision.json" 2>"$OUT/b25-decision.err" || tail -5 "$OUT/b25-decision.err"
+python3 -c "import json;r=json.load(open('$OUT/b25-decision.json'))['result'];print('B25_DECISION',r.get('decision'),json.dumps(r.get('criteria'),ensure_ascii=False))" || true
 log "تدقيقُ الأسرارِ على الدليلِ قبلَ أيِّ رفعٍ"
 python3 "$H/deploy/capacity-run/b24-runner/seat-bin/b24-secret-audit.py" "$B/secrets.env" "$OUT" > "$OUT/secret-audit.txt" 2>&1
 SA_RC=$?; cat "$OUT/secret-audit.txt"

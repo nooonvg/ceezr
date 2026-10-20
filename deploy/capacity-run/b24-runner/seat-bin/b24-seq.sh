@@ -6,7 +6,7 @@ for item in "$@"; do
   IFS=: read -r NAME SIDE SHA <<< "$item"
   if [ "$SIDE" = cand ]; then git -C /home/user/workspace/wt-acc checkout -q "$SHA"; fi
   echo "SEQ $NAME side=$SIDE sha=$SHA acc=$(git -C /home/user/workspace/wt-acc rev-parse --short HEAD) ref=$(git -C /home/user/workspace/wt-ref rev-parse --short HEAD)"
-  $B/bin/b24-trace.sh b24-$TAG-$NAME-$CONC $CONC $I $SIDE
+  $B/bin/b24-trace.sh ${SEQ_PREFIX:-b24}-$TAG-$NAME-$CONC $CONC $I $SIDE
   I=$((I+1))
 done
 echo SEQ_DONE
