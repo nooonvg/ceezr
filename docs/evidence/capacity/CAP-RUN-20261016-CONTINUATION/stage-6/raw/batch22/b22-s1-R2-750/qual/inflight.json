@@ -1,0 +1,23 @@
+{
+ "samples": 223,
+ "steal_mean": 0.52,
+ "steal_max_1s": 4.02,
+ "siblings_mean": 0.04,
+ "foreign_mean": 1.93,
+ "iowait_mean": 0.11,
+ "throttled": 0,
+ "foreign_top": [
+  "/usr/local/bin/python3 /usr/local/bin/asi-cli-telemetry flush",
+  "tail -n +3005369 /srv/ceezr-cap-20261016/runs/current/evidence/gateway.log",
+  "wc -l"
+ ],
+ "steal_10s_rolling_max": 1.16,
+ "post_speed_probe_median_ms": 403.8,
+ "post_pg_probe_median_ms": 349.0,
+ "host_busy_mean_pct": 79.1,
+ "procs_running_mean": 4.65,
+ "validity_version": "B12-V2",
+ "mode": "inflight",
+ "violations": [],
+ "verdict": "VALID"
+}

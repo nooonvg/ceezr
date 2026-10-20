@@ -1,5 +1,7 @@
 # ADR 0291: ميزانيةُ مجمّعِ `gatewayRequest` لمستوى 750 — مقترح
 
+> **ملحق (2026-10-20، الدفعةُ 22):** الخيارُ أ (10) قيسَ معزولًا بثماني موجاتٍ صالحةٍ عندَ 750: الدوراتُ المكتملة +10.2% وP1–P3 أدنى، لكنّ زمنَ تنفيذِ الاستعلامِ +87% (تنافسُ المعالج على 2 vCPU) وP4 +42% وP7 +88%، وG1 = 64.25% دونَ الحدّ. **لم يُعتمَد ولم يُدمَج**، والحالةُ تبقى «مقترح»، والخيارُ ب ينتظرُ تفويضًا مستقلًّا. انظر [`BATCH-22-LOAD01-OPTION-A-POOL-10.md`](../evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-22-LOAD01-OPTION-A-POOL-10.md).
+
 **الحالة:** مقترحٌ — **غيرُ معتمَدٍ وغيرُ منفَّذ**. لا يتغيّرُ أيُّ رقمٍ في `packages/shared/config/connection-budget.ts` قبلَ موافقةٍ مستقلّةٍ من المالك.
 **التاريخ:** 2026-10-20
 **المرجع:** [ADR 0073](0073-connection-budget-is-computed-not-narrated.md) · [ADR 0289](0289-immediate-dispatch-dedicated-connection.md) · [ADR 0290](0290-accept-deposits-matched-notice-in-one-round-trip.md) · `docs/evidence/capacity/CAP-RUN-20261016-CONTINUATION/stage-6/BATCH-21-LOAD01-HTTP-QUERY-REDUCTION.md`

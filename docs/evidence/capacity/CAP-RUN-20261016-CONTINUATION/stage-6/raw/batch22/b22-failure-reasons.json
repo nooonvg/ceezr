@@ -1,0 +1,34 @@
+{
+ "R1": {
+  "session=ok proofJob=timeout post=409": 2162,
+  "session=ok proofJob=timeout post=201": 389
+ },
+ "C1": {
+  "session=ok proofJob=timeout post=409": 1684,
+  "session=ok proofJob=timeout post=201": 490
+ },
+ "C2": {
+  "session=ok proofJob=timeout post=409": 1752,
+  "session=ok proofJob=timeout post=201": 443
+ },
+ "R2": {
+  "session=ok proofJob=timeout post=409": 2205,
+  "session=ok proofJob=timeout post=201": 366
+ },
+ "C3": {
+  "session=ok proofJob=timeout post=409": 1616,
+  "session=ok proofJob=timeout post=201": 465
+ },
+ "R3": {
+  "session=ok proofJob=timeout post=409": 2277,
+  "session=ok proofJob=timeout post=201": 373
+ },
+ "R4": {
+  "session=ok proofJob=timeout post=409": 2159,
+  "session=ok proofJob=timeout post=201": 374
+ },
+ "C4": {
+  "session=ok proofJob=timeout post=409": 1481,
+  "session=ok proofJob=timeout post=201": 550
+ }
+}
