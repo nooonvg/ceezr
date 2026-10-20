@@ -1,0 +1,3664 @@
+{
+  "gen": "genA",
+  "phase": "post",
+  "sinceT0Sec": 0,
+  "snapshot": {
+    "at": "2026-10-20T07:24:39.239Z",
+    "ordersByStatus": {
+      "searching": 24,
+      "completed": 4095
+    },
+    "telegramUpdates": {
+      "jobs": 4119,
+      "jobsByStatus": {
+        "done": 4119
+      },
+      "repliesByStatus": {
+        "done": 4119
+      },
+      "jobDoneLatencySec": {
+        "p50": 0,
+        "p95": 7.5,
+        "max": 10.7
+      }
+    },
+    "offersByStatus": {
+      "cancelled": 22821,
+      "accepted": 4095,
+      "expired": 360
+    },
+    "availability": {
+      "available": 0,
+      "total": 4119
+    },
+    "outbox": {
+      "byStatus": {
+        "pending": 27,
+        "dead": 27264,
+        "delivered": 16380
+      },
+      "byKind": {
+        "offer": {
+          "total": 27276,
+          "delivered": 12,
+          "pending": 0,
+          "dead": 27264
+        },
+        "wider_circle_opened": {
+          "total": 15,
+          "delivered": 0,
+          "pending": 15,
+          "dead": 0
+        },
+        "rider_trip_notice": {
+          "total": 16380,
+          "delivered": 16368,
+          "pending": 12,
+          "dead": 0
+        }
+      },
+      "byKindAllTime": {
+        "offer": {
+          "total": 27276,
+          "delivered": 12,
+          "pending": 0,
+          "dead": 27264
+        },
+        "wider_circle_opened": {
+          "total": 15,
+          "delivered": 0,
+          "pending": 15,
+          "dead": 0
+        },
+        "rider_trip_notice": {
+          "total": 16380,
+          "delivered": 16368,
+          "pending": 12,
+          "dead": 0
+        }
+      },
+      "oldestPendingSec": 50
+    },
+    "egress": {
+      "byBot": {
+        "driver": {
+          "accepted": 4136,
+          "rejected": 0
+        },
+        "rider": {
+          "accepted": 4820,
+          "rejected": 0
+        }
+      }
+    },
+    "engagedDuplicates": 0,
+    "activeRides": 24,
+    "riderTripChannel": {
+      "phaseRows": 16380,
+      "miniappAck": 11528,
+      "telegram": 4840,
+      "pending": 12,
+      "other": 0,
+      "receipts": 11528,
+      "lateReceiptsAfterTelegram": 0,
+      "duplicateReceipts": 0,
+      "ackLatencySec": {
+        "p50": 0,
+        "p95": 0.3,
+        "p99": 0.4
+      },
+      "telegramLatencySec": {
+        "p50": 14.6,
+        "p95": 48.4,
+        "p99": 51.6
+      }
+    }
+  },
+  "preSnapshot": {
+    "at": "2026-10-20T07:20:18.317Z",
+    "ordersByStatus": {},
+    "telegramUpdates": {
+      "jobs": 0,
+      "jobsByStatus": {},
+      "repliesByStatus": {},
+      "jobDoneLatencySec": {
+        "p50": null,
+        "p95": null,
+        "max": null
+      }
+    },
+    "offersByStatus": {},
+    "availability": {
+      "available": 0,
+      "total": 0
+    },
+    "outbox": {
+      "byStatus": {},
+      "byKind": {},
+      "byKindAllTime": {},
+      "oldestPendingSec": null
+    },
+    "egress": null,
+    "engagedDuplicates": 0,
+    "activeRides": 0,
+    "riderTripChannel": {
+      "phaseRows": 0,
+      "miniappAck": 0,
+      "telegram": 0,
+      "pending": 0,
+      "other": 0,
+      "receipts": 0,
+      "lateReceiptsAfterTelegram": 0,
+      "duplicateReceipts": 0,
+      "ackLatencySec": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "telegramLatencySec": {
+        "p50": null,
+        "p95": null,
+        "p99": null
+      }
+    }
+  },
+  "diff": {
+    "availabilityLeftover": 0,
+    "activeRidesDelta": 24,
+    "ordersDelta": {
+      "searching": 24,
+      "completed": 4095
+    }
+  },
+  "outcomes": {
+    "total": 4119,
+    "verified": 4095,
+    "failed": 24,
+    "closeDeadlineHits": 0
+  },
+  "mismatches": [],
+  "failuresDetail": [
+    {
+      "index": 35,
+      "orderId": "02619684-bc67-4a85-980a-1dff01085a09",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "25f60910",
+          "status": "expired",
+          "driver": "55c057f9",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:32.12083+00",
+          "expiresAt": "2026-10-20 07:21:17.12+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "070bcc00",
+          "status": "expired",
+          "driver": "bd54b40c",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:32.12083+00",
+          "expiresAt": "2026-10-20 07:21:17.12+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9e1e0bce",
+          "status": "expired",
+          "driver": "55bbc99d",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:32.12083+00",
+          "expiresAt": "2026-10-20 07:21:17.12+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b8917a72",
+          "status": "expired",
+          "driver": "837823ee",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:32.12083+00",
+          "expiresAt": "2026-10-20 07:21:17.12+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "711bed7a",
+          "status": "expired",
+          "driver": "c125687e",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:32.12083+00",
+          "expiresAt": "2026-10-20 07:21:17.12+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "598395c2",
+          "status": "expired",
+          "driver": "e8533778",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:36.060398+00",
+          "expiresAt": "2026-10-20 07:21:21.059+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "871a0b7a",
+          "status": "expired",
+          "driver": "0892918b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:36.060398+00",
+          "expiresAt": "2026-10-20 07:21:21.059+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "58fb162b",
+          "status": "expired",
+          "driver": "0e57db64",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:36.060398+00",
+          "expiresAt": "2026-10-20 07:21:21.059+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "df7699bd",
+          "status": "expired",
+          "driver": "52d72afe",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:36.060398+00",
+          "expiresAt": "2026-10-20 07:21:21.059+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "3031a028",
+          "status": "expired",
+          "driver": "4c8e5e6e",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:36.060398+00",
+          "expiresAt": "2026-10-20 07:21:21.059+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9d8eaa2d",
+          "status": "expired",
+          "driver": "785101b1",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:39.9665+00",
+          "expiresAt": "2026-10-20 07:21:24.966+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "524304e8",
+          "status": "expired",
+          "driver": "9e980a9b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:39.9665+00",
+          "expiresAt": "2026-10-20 07:21:24.966+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "e34a744f",
+          "status": "expired",
+          "driver": "23e36e6a",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:39.9665+00",
+          "expiresAt": "2026-10-20 07:21:24.966+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "a13c5f40",
+          "status": "expired",
+          "driver": "93e94ecf",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:39.9665+00",
+          "expiresAt": "2026-10-20 07:21:24.966+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "39f7f65d",
+          "status": "expired",
+          "driver": "b33a1b1b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:39.9665+00",
+          "expiresAt": "2026-10-20 07:21:24.966+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 87,
+      "orderId": "92fdcfa5-c73a-482a-98b6-112f9f84cd31",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "d97dfbd6",
+          "status": "expired",
+          "driver": "6e3c397c",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:34.337023+00",
+          "expiresAt": "2026-10-20 07:21:19.336+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "2990cdac",
+          "status": "expired",
+          "driver": "40760567",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:34.337023+00",
+          "expiresAt": "2026-10-20 07:21:19.336+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "43306f27",
+          "status": "expired",
+          "driver": "2792efab",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:34.337023+00",
+          "expiresAt": "2026-10-20 07:21:19.336+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "45c2a18a",
+          "status": "expired",
+          "driver": "f118ca0d",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:34.337023+00",
+          "expiresAt": "2026-10-20 07:21:19.336+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "f3a87409",
+          "status": "expired",
+          "driver": "0fbea60a",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:34.337023+00",
+          "expiresAt": "2026-10-20 07:21:19.336+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "d8562536",
+          "status": "expired",
+          "driver": "1db51d68",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:38.043723+00",
+          "expiresAt": "2026-10-20 07:21:23.041+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9a01e795",
+          "status": "expired",
+          "driver": "64acf6f6",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:38.043723+00",
+          "expiresAt": "2026-10-20 07:21:23.041+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "d8c0dd69",
+          "status": "expired",
+          "driver": "fcd964bd",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:38.043723+00",
+          "expiresAt": "2026-10-20 07:21:23.041+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "14c528a8",
+          "status": "expired",
+          "driver": "1ecf1e38",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:38.043723+00",
+          "expiresAt": "2026-10-20 07:21:23.041+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "d28bdd02",
+          "status": "expired",
+          "driver": "0fd4a9a3",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:38.043723+00",
+          "expiresAt": "2026-10-20 07:21:23.041+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b8604e48",
+          "status": "expired",
+          "driver": "1d3b6e0a",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:41.962236+00",
+          "expiresAt": "2026-10-20 07:21:26.961+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "aeca4e70",
+          "status": "expired",
+          "driver": "8bb7160d",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:41.962236+00",
+          "expiresAt": "2026-10-20 07:21:26.961+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "7fb1823d",
+          "status": "expired",
+          "driver": "e628071b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:41.962236+00",
+          "expiresAt": "2026-10-20 07:21:26.961+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "6017fa08",
+          "status": "expired",
+          "driver": "ec575c7c",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:41.962236+00",
+          "expiresAt": "2026-10-20 07:21:26.961+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "d4df62dc",
+          "status": "expired",
+          "driver": "3129be6b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:20:41.962236+00",
+          "expiresAt": "2026-10-20 07:21:26.961+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 313,
+      "orderId": "c11b6b15-8612-44dd-a27f-62e23237436f",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "021025d8",
+          "status": "expired",
+          "driver": "51c9b0d9",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:54.402963+00",
+          "expiresAt": "2026-10-20 07:21:39.402+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "78959aee",
+          "status": "expired",
+          "driver": "3cb146b7",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:54.402963+00",
+          "expiresAt": "2026-10-20 07:21:39.402+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "7d8c9105",
+          "status": "expired",
+          "driver": "dd781b2d",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:54.402963+00",
+          "expiresAt": "2026-10-20 07:21:39.402+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "6018af6b",
+          "status": "expired",
+          "driver": "83c0caf0",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:54.402963+00",
+          "expiresAt": "2026-10-20 07:21:39.402+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "85957a15",
+          "status": "expired",
+          "driver": "d4e6bb2c",
+          "round": 1,
+          "createdAt": "2026-10-20 07:20:54.402963+00",
+          "expiresAt": "2026-10-20 07:21:39.402+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "243ce188",
+          "status": "expired",
+          "driver": "1c8e75ca",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:58.022399+00",
+          "expiresAt": "2026-10-20 07:21:43.022+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "8652a5db",
+          "status": "expired",
+          "driver": "b8f086a8",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:58.022399+00",
+          "expiresAt": "2026-10-20 07:21:43.022+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "ce4dd72a",
+          "status": "expired",
+          "driver": "5b5c786a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:58.022399+00",
+          "expiresAt": "2026-10-20 07:21:43.022+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "f1f5b15f",
+          "status": "expired",
+          "driver": "88c11b1e",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:58.022399+00",
+          "expiresAt": "2026-10-20 07:21:43.022+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9d77bd1e",
+          "status": "expired",
+          "driver": "8c80a4ea",
+          "round": 2,
+          "createdAt": "2026-10-20 07:20:58.022399+00",
+          "expiresAt": "2026-10-20 07:21:43.022+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "aafa6950",
+          "status": "expired",
+          "driver": "d2ef605a",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:01.974578+00",
+          "expiresAt": "2026-10-20 07:21:46.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "416eb42b",
+          "status": "expired",
+          "driver": "37963888",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:01.974578+00",
+          "expiresAt": "2026-10-20 07:21:46.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "628ae150",
+          "status": "expired",
+          "driver": "8a1aadda",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:01.974578+00",
+          "expiresAt": "2026-10-20 07:21:46.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "d32d8968",
+          "status": "expired",
+          "driver": "02b6c07f",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:01.974578+00",
+          "expiresAt": "2026-10-20 07:21:46.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "a2fd3d22",
+          "status": "expired",
+          "driver": "e03ca629",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:01.974578+00",
+          "expiresAt": "2026-10-20 07:21:46.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 928,
+      "orderId": "e042b0f5-629a-4094-93c8-0d9e1b5c7032",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "e873e8ab",
+          "status": "expired",
+          "driver": "692e8051",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.272499+00",
+          "expiresAt": "2026-10-20 07:21:51.27+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "848586f7",
+          "status": "expired",
+          "driver": "e063c045",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.272499+00",
+          "expiresAt": "2026-10-20 07:21:51.27+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b4a91708",
+          "status": "expired",
+          "driver": "35386aeb",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.272499+00",
+          "expiresAt": "2026-10-20 07:21:51.27+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "fc973b90",
+          "status": "expired",
+          "driver": "21828bf3",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.272499+00",
+          "expiresAt": "2026-10-20 07:21:51.27+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "f5a84ef8",
+          "status": "expired",
+          "driver": "9ef42e26",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.272499+00",
+          "expiresAt": "2026-10-20 07:21:51.27+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "21e44c8e",
+          "status": "expired",
+          "driver": "8a46a4f7",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.012189+00",
+          "expiresAt": "2026-10-20 07:21:55.011+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "4f6aa000",
+          "status": "expired",
+          "driver": "82e62351",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.012189+00",
+          "expiresAt": "2026-10-20 07:21:55.011+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "854d293b",
+          "status": "expired",
+          "driver": "440b16ed",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.012189+00",
+          "expiresAt": "2026-10-20 07:21:55.011+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "1cbfa962",
+          "status": "expired",
+          "driver": "a6315560",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.012189+00",
+          "expiresAt": "2026-10-20 07:21:55.011+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "1d9ec7af",
+          "status": "expired",
+          "driver": "9ae7129a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.012189+00",
+          "expiresAt": "2026-10-20 07:21:55.011+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "4b3ffef7",
+          "status": "expired",
+          "driver": "6669ff0d",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.975673+00",
+          "expiresAt": "2026-10-20 07:21:58.975+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "0e8dbe26",
+          "status": "expired",
+          "driver": "20f90aeb",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.975673+00",
+          "expiresAt": "2026-10-20 07:21:58.975+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "76392a5b",
+          "status": "expired",
+          "driver": "ca551d82",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.975673+00",
+          "expiresAt": "2026-10-20 07:21:58.975+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "1bbf8692",
+          "status": "expired",
+          "driver": "e60fcfa4",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.975673+00",
+          "expiresAt": "2026-10-20 07:21:58.975+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b0aa98bd",
+          "status": "expired",
+          "driver": "f49ecb23",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.975673+00",
+          "expiresAt": "2026-10-20 07:21:58.975+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 935,
+      "orderId": "0d840762-a451-4336-923c-f4f027f9c28b",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "78d250a3",
+          "status": "expired",
+          "driver": "8990f7f4",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.28343+00",
+          "expiresAt": "2026-10-20 07:21:51.283+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "ebcf937c",
+          "status": "expired",
+          "driver": "e7e2160b",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.28343+00",
+          "expiresAt": "2026-10-20 07:21:51.283+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "954d7d13",
+          "status": "expired",
+          "driver": "0d8bee7f",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.28343+00",
+          "expiresAt": "2026-10-20 07:21:51.283+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "08f9ae71",
+          "status": "expired",
+          "driver": "efb643cd",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.28343+00",
+          "expiresAt": "2026-10-20 07:21:51.283+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "1a136818",
+          "status": "expired",
+          "driver": "453faabe",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:06.28343+00",
+          "expiresAt": "2026-10-20 07:21:51.283+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "e8fd5208",
+          "status": "expired",
+          "driver": "a0bc6d17",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.020636+00",
+          "expiresAt": "2026-10-20 07:21:55.02+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "94efdc7c",
+          "status": "expired",
+          "driver": "a823da2e",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.020636+00",
+          "expiresAt": "2026-10-20 07:21:55.02+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "08db9a91",
+          "status": "expired",
+          "driver": "aa4b6fa3",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.020636+00",
+          "expiresAt": "2026-10-20 07:21:55.02+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "a5005d52",
+          "status": "expired",
+          "driver": "c976c9ac",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.020636+00",
+          "expiresAt": "2026-10-20 07:21:55.02+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "12975003",
+          "status": "expired",
+          "driver": "e186e11b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:10.020636+00",
+          "expiresAt": "2026-10-20 07:21:55.02+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "08343d77",
+          "status": "expired",
+          "driver": "4aad7f05",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.986251+00",
+          "expiresAt": "2026-10-20 07:21:58.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "fef12fec",
+          "status": "expired",
+          "driver": "25dd2c2b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.986251+00",
+          "expiresAt": "2026-10-20 07:21:58.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "5e5a2cef",
+          "status": "expired",
+          "driver": "e9b1ec04",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.986251+00",
+          "expiresAt": "2026-10-20 07:21:58.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "46b24dd0",
+          "status": "expired",
+          "driver": "20d03935",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.986251+00",
+          "expiresAt": "2026-10-20 07:21:58.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "040fa62a",
+          "status": "expired",
+          "driver": "8f40b487",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:13.986251+00",
+          "expiresAt": "2026-10-20 07:21:58.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 1045,
+      "orderId": "7f9496ec-913a-4a98-94b6-31f8da5f2e39",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "223dbbbf",
+          "status": "expired",
+          "driver": "20f90aeb",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:10.317297+00",
+          "expiresAt": "2026-10-20 07:21:55.317+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "50f05d7b",
+          "status": "expired",
+          "driver": "0672c824",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:10.317297+00",
+          "expiresAt": "2026-10-20 07:21:55.317+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "8f6a8248",
+          "status": "expired",
+          "driver": "ca551d82",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:10.317297+00",
+          "expiresAt": "2026-10-20 07:21:55.317+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "04e122c9",
+          "status": "expired",
+          "driver": "9ae7129a",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:10.317297+00",
+          "expiresAt": "2026-10-20 07:21:55.317+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9848323e",
+          "status": "expired",
+          "driver": "440b16ed",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:10.317297+00",
+          "expiresAt": "2026-10-20 07:21:55.317+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "21282dd9",
+          "status": "expired",
+          "driver": "aec09363",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:14.12688+00",
+          "expiresAt": "2026-10-20 07:21:59.125+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "29583dd8",
+          "status": "expired",
+          "driver": "9eb520d9",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:14.12688+00",
+          "expiresAt": "2026-10-20 07:21:59.125+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "aca62f0c",
+          "status": "expired",
+          "driver": "692e8051",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:14.12688+00",
+          "expiresAt": "2026-10-20 07:21:59.125+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b2935bea",
+          "status": "expired",
+          "driver": "a6315560",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:14.12688+00",
+          "expiresAt": "2026-10-20 07:21:59.125+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "33771e4f",
+          "status": "expired",
+          "driver": "7770d16c",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:14.12688+00",
+          "expiresAt": "2026-10-20 07:21:59.125+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9bfbb020",
+          "status": "expired",
+          "driver": "f49ecb23",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:17.988793+00",
+          "expiresAt": "2026-10-20 07:22:02.988+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "4757fd33",
+          "status": "expired",
+          "driver": "ccf3e1ed",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:17.988793+00",
+          "expiresAt": "2026-10-20 07:22:02.988+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "db1110de",
+          "status": "expired",
+          "driver": "9ef42e26",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:17.988793+00",
+          "expiresAt": "2026-10-20 07:22:02.988+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b1f1c24d",
+          "status": "expired",
+          "driver": "2599f7b5",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:17.988793+00",
+          "expiresAt": "2026-10-20 07:22:02.988+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "dbe6360a",
+          "status": "expired",
+          "driver": "35df1b2b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:17.988793+00",
+          "expiresAt": "2026-10-20 07:22:02.988+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 1182,
+      "orderId": "c54bb029-c8f2-4562-a695-da590262b853",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "0e182349",
+          "status": "expired",
+          "driver": "35051d4c",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.19733+00",
+          "expiresAt": "2026-10-20 07:22:03.196+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "22edf642",
+          "status": "expired",
+          "driver": "5663ed22",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.19733+00",
+          "expiresAt": "2026-10-20 07:22:03.196+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "0a69975f",
+          "status": "expired",
+          "driver": "b2797442",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.19733+00",
+          "expiresAt": "2026-10-20 07:22:03.196+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "6594b17b",
+          "status": "expired",
+          "driver": "5f650ae5",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.19733+00",
+          "expiresAt": "2026-10-20 07:22:03.196+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "d4fd5b4d",
+          "status": "expired",
+          "driver": "867f719b",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.19733+00",
+          "expiresAt": "2026-10-20 07:22:03.196+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "5124f7a1",
+          "status": "expired",
+          "driver": "a7881bb5",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.03107+00",
+          "expiresAt": "2026-10-20 07:22:07.03+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "c17821e5",
+          "status": "expired",
+          "driver": "9b711cb4",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.03107+00",
+          "expiresAt": "2026-10-20 07:22:07.03+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b1c24260",
+          "status": "expired",
+          "driver": "0835c7c9",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.03107+00",
+          "expiresAt": "2026-10-20 07:22:07.03+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "a200b58a",
+          "status": "expired",
+          "driver": "07aff0d6",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.03107+00",
+          "expiresAt": "2026-10-20 07:22:07.03+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "423382d0",
+          "status": "expired",
+          "driver": "fa0eee52",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.03107+00",
+          "expiresAt": "2026-10-20 07:22:07.03+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "1a99cbbd",
+          "status": "expired",
+          "driver": "b44bb59a",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.973283+00",
+          "expiresAt": "2026-10-20 07:22:10.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "f1c697dc",
+          "status": "expired",
+          "driver": "c643d164",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.973283+00",
+          "expiresAt": "2026-10-20 07:22:10.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "ec37f0bd",
+          "status": "expired",
+          "driver": "24c25ad0",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.973283+00",
+          "expiresAt": "2026-10-20 07:22:10.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "17bcd79c",
+          "status": "expired",
+          "driver": "812b7845",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.973283+00",
+          "expiresAt": "2026-10-20 07:22:10.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "93d7dd40",
+          "status": "expired",
+          "driver": "186b0d99",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.973283+00",
+          "expiresAt": "2026-10-20 07:22:10.973+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 1201,
+      "orderId": "788b5a0b-89c4-4ca1-80e0-9e3c210feba1",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "04fd9c17",
+          "status": "expired",
+          "driver": "f89676e7",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.409387+00",
+          "expiresAt": "2026-10-20 07:22:03.409+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "378ccf9d",
+          "status": "expired",
+          "driver": "33068ad0",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.409387+00",
+          "expiresAt": "2026-10-20 07:22:03.409+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "f08efa01",
+          "status": "expired",
+          "driver": "f943b377",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.409387+00",
+          "expiresAt": "2026-10-20 07:22:03.409+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "e1a831da",
+          "status": "expired",
+          "driver": "2b0735e4",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.409387+00",
+          "expiresAt": "2026-10-20 07:22:03.409+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "6eb34705",
+          "status": "expired",
+          "driver": "ff4195d7",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:18.409387+00",
+          "expiresAt": "2026-10-20 07:22:03.409+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "2db85c29",
+          "status": "expired",
+          "driver": "5f2888e9",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.101765+00",
+          "expiresAt": "2026-10-20 07:22:07.101+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "80002b0d",
+          "status": "expired",
+          "driver": "faae3a90",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.101765+00",
+          "expiresAt": "2026-10-20 07:22:07.101+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "8d58252d",
+          "status": "expired",
+          "driver": "fe7c31f5",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.101765+00",
+          "expiresAt": "2026-10-20 07:22:07.101+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "ba6b90ce",
+          "status": "expired",
+          "driver": "3e992d1a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.101765+00",
+          "expiresAt": "2026-10-20 07:22:07.101+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "43da663d",
+          "status": "expired",
+          "driver": "33a0249a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:22.101765+00",
+          "expiresAt": "2026-10-20 07:22:07.101+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "f304453c",
+          "status": "expired",
+          "driver": "4bf80b65",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.986172+00",
+          "expiresAt": "2026-10-20 07:22:10.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "dd97c14e",
+          "status": "expired",
+          "driver": "a70f2c2a",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.986172+00",
+          "expiresAt": "2026-10-20 07:22:10.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "c05cc6a4",
+          "status": "expired",
+          "driver": "241b8d1b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.986172+00",
+          "expiresAt": "2026-10-20 07:22:10.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "e34e8ea7",
+          "status": "expired",
+          "driver": "61f36eee",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.986172+00",
+          "expiresAt": "2026-10-20 07:22:10.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "a0651e75",
+          "status": "expired",
+          "driver": "a04fa2dc",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:25.986172+00",
+          "expiresAt": "2026-10-20 07:22:10.985+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        }
+      ]
+    },
+    {
+      "index": 1296,
+      "orderId": "cbac6837-11ff-42f1-bcdf-94a7623e2ef4",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "402bbf38",
+          "status": "expired",
+          "driver": "b2797442",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.208176+00",
+          "expiresAt": "2026-10-20 07:22:09.208+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "5a844892",
+          "status": "expired",
+          "driver": "5663ed22",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.208176+00",
+          "expiresAt": "2026-10-20 07:22:09.208+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "230be701",
+          "status": "expired",
+          "driver": "0835c7c9",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.208176+00",
+          "expiresAt": "2026-10-20 07:22:09.208+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b062284e",
+          "status": "expired",
+          "driver": "9b711cb4",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.208176+00",
+          "expiresAt": "2026-10-20 07:22:09.208+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "b4b69850",
+          "status": "expired",
+          "driver": "c643d164",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.208176+00",
+          "expiresAt": "2026-10-20 07:22:09.208+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9241be14",
+          "status": "expired",
+          "driver": "35051d4c",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.029368+00",
+          "expiresAt": "2026-10-20 07:22:13.029+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "456ce0cb",
+          "status": "expired",
+          "driver": "b44bb59a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.029368+00",
+          "expiresAt": "2026-10-20 07:22:13.029+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "a01246be",
+          "status": "expired",
+          "driver": "186b0d99",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.029368+00",
+          "expiresAt": "2026-10-20 07:22:13.029+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "2de6c965",
+          "status": "expired",
+          "driver": "867f719b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.029368+00",
+          "expiresAt": "2026-10-20 07:22:13.029+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "21a43ec4",
+          "status": "expired",
+          "driver": "812b7845",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.029368+00",
+          "expiresAt": "2026-10-20 07:22:13.029+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "c4907433",
+          "status": "expired",
+          "driver": "905b5968",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:31.998205+00",
+          "expiresAt": "2026-10-20 07:22:16.995+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "70bb52a0",
+          "status": "expired",
+          "driver": "11288ab1",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:31.998205+00",
+          "expiresAt": "2026-10-20 07:22:16.995+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b353fe2d",
+          "status": "expired",
+          "driver": "871078b8",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:31.998205+00",
+          "expiresAt": "2026-10-20 07:22:16.995+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "294aa0e0",
+          "status": "expired",
+          "driver": "07aff0d6",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:31.998205+00",
+          "expiresAt": "2026-10-20 07:22:16.995+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "f2a1b6d1",
+          "status": "expired",
+          "driver": "a7881bb5",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:31.998205+00",
+          "expiresAt": "2026-10-20 07:22:16.995+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1309,
+      "orderId": "df6e72a1-9345-4d47-b536-66e663476c7c",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "ea4aaf35",
+          "status": "expired",
+          "driver": "a68713fa",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.263847+00",
+          "expiresAt": "2026-10-20 07:22:09.263+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "2c7381e9",
+          "status": "expired",
+          "driver": "143e2e4f",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.263847+00",
+          "expiresAt": "2026-10-20 07:22:09.263+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "93ca5751",
+          "status": "expired",
+          "driver": "546196c1",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.263847+00",
+          "expiresAt": "2026-10-20 07:22:09.263+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "413ffc6e",
+          "status": "expired",
+          "driver": "ba63e056",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.263847+00",
+          "expiresAt": "2026-10-20 07:22:09.263+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "8bbee7db",
+          "status": "expired",
+          "driver": "5ac70eff",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.263847+00",
+          "expiresAt": "2026-10-20 07:22:09.263+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "1a00975d",
+          "status": "expired",
+          "driver": "19ca8a5d",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.065653+00",
+          "expiresAt": "2026-10-20 07:22:13.065+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "844035a1",
+          "status": "expired",
+          "driver": "61ce5516",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.065653+00",
+          "expiresAt": "2026-10-20 07:22:13.065+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "ca9f876b",
+          "status": "expired",
+          "driver": "6f98d20b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.065653+00",
+          "expiresAt": "2026-10-20 07:22:13.065+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "86f8257b",
+          "status": "expired",
+          "driver": "26c5413a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.065653+00",
+          "expiresAt": "2026-10-20 07:22:13.065+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "aac95fb7",
+          "status": "expired",
+          "driver": "d3c7f889",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.065653+00",
+          "expiresAt": "2026-10-20 07:22:13.065+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "be3b89cd",
+          "status": "expired",
+          "driver": "4cc76ff5",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.015406+00",
+          "expiresAt": "2026-10-20 07:22:17.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "70197905",
+          "status": "expired",
+          "driver": "9f729462",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.015406+00",
+          "expiresAt": "2026-10-20 07:22:17.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "51c0948e",
+          "status": "expired",
+          "driver": "82b09f01",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.015406+00",
+          "expiresAt": "2026-10-20 07:22:17.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "94b609c5",
+          "status": "expired",
+          "driver": "1692e135",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.015406+00",
+          "expiresAt": "2026-10-20 07:22:17.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "071d0230",
+          "status": "expired",
+          "driver": "31fc96e9",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.015406+00",
+          "expiresAt": "2026-10-20 07:22:17.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1310,
+      "orderId": "35a94f5a-5ff8-45a4-bed3-58f95a690fd7",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "44617ab1",
+          "status": "expired",
+          "driver": "a85d87ef",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.28619+00",
+          "expiresAt": "2026-10-20 07:22:09.286+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "a4953447",
+          "status": "expired",
+          "driver": "849ec710",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.28619+00",
+          "expiresAt": "2026-10-20 07:22:09.286+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "882ee7f1",
+          "status": "expired",
+          "driver": "35051d4c",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.28619+00",
+          "expiresAt": "2026-10-20 07:22:09.286+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9806c006",
+          "status": "expired",
+          "driver": "1a4418b4",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.28619+00",
+          "expiresAt": "2026-10-20 07:22:09.286+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "9b33a486",
+          "status": "expired",
+          "driver": "8f8aef36",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:24.28619+00",
+          "expiresAt": "2026-10-20 07:22:09.286+00",
+          "respondedAt": "2026-10-20 07:22:11.456819+00"
+        },
+        {
+          "id": "47f6001b",
+          "status": "expired",
+          "driver": "a7881bb5",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.081511+00",
+          "expiresAt": "2026-10-20 07:22:13.081+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "2fbc9992",
+          "status": "expired",
+          "driver": "867f719b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.081511+00",
+          "expiresAt": "2026-10-20 07:22:13.081+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "4791a86d",
+          "status": "expired",
+          "driver": "fa0eee52",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.081511+00",
+          "expiresAt": "2026-10-20 07:22:13.081+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "46ab72c8",
+          "status": "expired",
+          "driver": "b44bb59a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.081511+00",
+          "expiresAt": "2026-10-20 07:22:13.081+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "ee71c7e1",
+          "status": "expired",
+          "driver": "5663ed22",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:28.081511+00",
+          "expiresAt": "2026-10-20 07:22:13.081+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "c2ffe4fb",
+          "status": "expired",
+          "driver": "871078b8",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.052324+00",
+          "expiresAt": "2026-10-20 07:22:17.05+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b99789c5",
+          "status": "expired",
+          "driver": "8ad38b99",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.052324+00",
+          "expiresAt": "2026-10-20 07:22:17.05+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "ef9692ec",
+          "status": "expired",
+          "driver": "f2c755ca",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.052324+00",
+          "expiresAt": "2026-10-20 07:22:17.05+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "981bdc23",
+          "status": "expired",
+          "driver": "4b269787",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.052324+00",
+          "expiresAt": "2026-10-20 07:22:17.05+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "4ea2623b",
+          "status": "expired",
+          "driver": "5a4bc0bb",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:32.052324+00",
+          "expiresAt": "2026-10-20 07:22:17.05+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1384,
+      "orderId": "7b4dfa2f-c2e1-4c0c-8572-46d1f0dd6dce",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "e750c50c",
+          "status": "expired",
+          "driver": "2a0370a9",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:28.317659+00",
+          "expiresAt": "2026-10-20 07:22:13.317+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "92afeafe",
+          "status": "expired",
+          "driver": "1803fb13",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:28.317659+00",
+          "expiresAt": "2026-10-20 07:22:13.317+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "d28d2e5b",
+          "status": "expired",
+          "driver": "433d23b5",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:28.317659+00",
+          "expiresAt": "2026-10-20 07:22:13.317+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "73beb85e",
+          "status": "expired",
+          "driver": "e26f24ba",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:28.317659+00",
+          "expiresAt": "2026-10-20 07:22:13.317+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "56b6e1f0",
+          "status": "expired",
+          "driver": "ade2a9c8",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:28.317659+00",
+          "expiresAt": "2026-10-20 07:22:13.317+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "44474ad7",
+          "status": "expired",
+          "driver": "339aa4dc",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:32.25586+00",
+          "expiresAt": "2026-10-20 07:22:17.254+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "74b78d3a",
+          "status": "expired",
+          "driver": "519b1d37",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:32.25586+00",
+          "expiresAt": "2026-10-20 07:22:17.254+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "c910abc2",
+          "status": "expired",
+          "driver": "4e02e79a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:32.25586+00",
+          "expiresAt": "2026-10-20 07:22:17.254+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "926186a3",
+          "status": "expired",
+          "driver": "27fa38b7",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:32.25586+00",
+          "expiresAt": "2026-10-20 07:22:17.254+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "8b69a0eb",
+          "status": "expired",
+          "driver": "bcfa5bd4",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:32.25586+00",
+          "expiresAt": "2026-10-20 07:22:17.254+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "7d5fce11",
+          "status": "expired",
+          "driver": "c3cf4f88",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:35.995139+00",
+          "expiresAt": "2026-10-20 07:22:20.994+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "95120fae",
+          "status": "expired",
+          "driver": "b34cc2d1",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:35.995139+00",
+          "expiresAt": "2026-10-20 07:22:20.994+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "3a8f1afd",
+          "status": "expired",
+          "driver": "cf88fdc7",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:35.995139+00",
+          "expiresAt": "2026-10-20 07:22:20.994+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "f039d530",
+          "status": "expired",
+          "driver": "9946357f",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:35.995139+00",
+          "expiresAt": "2026-10-20 07:22:20.994+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "502d84c9",
+          "status": "expired",
+          "driver": "63ed507c",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:35.995139+00",
+          "expiresAt": "2026-10-20 07:22:20.994+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1482,
+      "orderId": "337503f4-5e51-4b3f-8833-2e6de5e89a2c",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "2c97d7b0",
+          "status": "expired",
+          "driver": "2a0370a9",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:34.435614+00",
+          "expiresAt": "2026-10-20 07:22:19.434+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b8bc37e8",
+          "status": "expired",
+          "driver": "b34cc2d1",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:34.435614+00",
+          "expiresAt": "2026-10-20 07:22:19.434+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "f0feb9e5",
+          "status": "expired",
+          "driver": "433d23b5",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:34.435614+00",
+          "expiresAt": "2026-10-20 07:22:19.434+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "19b50a7b",
+          "status": "expired",
+          "driver": "e26f24ba",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:34.435614+00",
+          "expiresAt": "2026-10-20 07:22:19.434+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "f6145e82",
+          "status": "expired",
+          "driver": "c3cf4f88",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:34.435614+00",
+          "expiresAt": "2026-10-20 07:22:19.434+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "0d420fe1",
+          "status": "expired",
+          "driver": "1803fb13",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:38.128637+00",
+          "expiresAt": "2026-10-20 07:22:23.127+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "c301b0e3",
+          "status": "expired",
+          "driver": "4e02e79a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:38.128637+00",
+          "expiresAt": "2026-10-20 07:22:23.127+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "1ab84cf6",
+          "status": "expired",
+          "driver": "339aa4dc",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:38.128637+00",
+          "expiresAt": "2026-10-20 07:22:23.127+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "022c2b14",
+          "status": "expired",
+          "driver": "cf88fdc7",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:38.128637+00",
+          "expiresAt": "2026-10-20 07:22:23.127+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "681043da",
+          "status": "expired",
+          "driver": "63ed507c",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:38.128637+00",
+          "expiresAt": "2026-10-20 07:22:23.127+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "6fb4628e",
+          "status": "expired",
+          "driver": "3d07e40b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:41.988776+00",
+          "expiresAt": "2026-10-20 07:22:26.988+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "58c933a4",
+          "status": "expired",
+          "driver": "b3281edb",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:41.988776+00",
+          "expiresAt": "2026-10-20 07:22:26.988+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "88bec304",
+          "status": "expired",
+          "driver": "9946357f",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:41.988776+00",
+          "expiresAt": "2026-10-20 07:22:26.988+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "37d00b32",
+          "status": "expired",
+          "driver": "519b1d37",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:41.988776+00",
+          "expiresAt": "2026-10-20 07:22:26.988+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "254c0e10",
+          "status": "expired",
+          "driver": "27fa38b7",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:41.988776+00",
+          "expiresAt": "2026-10-20 07:22:26.988+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1710,
+      "orderId": "9dbe0bbb-3b82-4a58-8910-d7ef01e659da",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "cd3f8841",
+          "status": "expired",
+          "driver": "3d07e40b",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.079956+00",
+          "expiresAt": "2026-10-20 07:22:33.079+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "bace8318",
+          "status": "expired",
+          "driver": "27fa38b7",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.079956+00",
+          "expiresAt": "2026-10-20 07:22:33.079+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "0300dca4",
+          "status": "expired",
+          "driver": "1803fb13",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.079956+00",
+          "expiresAt": "2026-10-20 07:22:33.079+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "24366bb6",
+          "status": "expired",
+          "driver": "3271080a",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.079956+00",
+          "expiresAt": "2026-10-20 07:22:33.079+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "d83fcaa0",
+          "status": "expired",
+          "driver": "d8ca6de5",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.079956+00",
+          "expiresAt": "2026-10-20 07:22:33.079+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "99e13d1f",
+          "status": "expired",
+          "driver": "cbc77d8f",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:51.978806+00",
+          "expiresAt": "2026-10-20 07:22:36.978+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "3e08b220",
+          "status": "expired",
+          "driver": "519b1d37",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:51.978806+00",
+          "expiresAt": "2026-10-20 07:22:36.978+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "343a3818",
+          "status": "expired",
+          "driver": "769bcd2d",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:51.978806+00",
+          "expiresAt": "2026-10-20 07:22:36.978+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "e4323ce5",
+          "status": "expired",
+          "driver": "9946357f",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:51.978806+00",
+          "expiresAt": "2026-10-20 07:22:36.978+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "bd8130b6",
+          "status": "expired",
+          "driver": "a3c5bced",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:51.978806+00",
+          "expiresAt": "2026-10-20 07:22:36.978+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "0dfe5c2b",
+          "status": "expired",
+          "driver": "77d2e99d",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:55.980295+00",
+          "expiresAt": "2026-10-20 07:22:40.98+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "1609fffa",
+          "status": "expired",
+          "driver": "bcfa5bd4",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:55.980295+00",
+          "expiresAt": "2026-10-20 07:22:40.98+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "c32213f9",
+          "status": "expired",
+          "driver": "9820b8c3",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:55.980295+00",
+          "expiresAt": "2026-10-20 07:22:40.98+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "68dd8c94",
+          "status": "expired",
+          "driver": "a879da8b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:55.980295+00",
+          "expiresAt": "2026-10-20 07:22:40.98+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b6117e07",
+          "status": "expired",
+          "driver": "c3cf4f88",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:55.980295+00",
+          "expiresAt": "2026-10-20 07:22:40.98+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1721,
+      "orderId": "6b5c4ede-b23d-4411-90d8-e1a037d2c736",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "2fb97742",
+          "status": "expired",
+          "driver": "76925f52",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.194966+00",
+          "expiresAt": "2026-10-20 07:22:33.194+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "1023a7d4",
+          "status": "expired",
+          "driver": "3ecba73e",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.194966+00",
+          "expiresAt": "2026-10-20 07:22:33.194+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "0711fc9e",
+          "status": "expired",
+          "driver": "d8ca6de5",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.194966+00",
+          "expiresAt": "2026-10-20 07:22:33.194+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "969ebaec",
+          "status": "expired",
+          "driver": "3271080a",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.194966+00",
+          "expiresAt": "2026-10-20 07:22:33.194+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "295338ec",
+          "status": "expired",
+          "driver": "91b4b643",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:48.194966+00",
+          "expiresAt": "2026-10-20 07:22:33.194+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "1c48ecb2",
+          "status": "expired",
+          "driver": "27fa38b7",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:52.015877+00",
+          "expiresAt": "2026-10-20 07:22:37.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "9f113165",
+          "status": "expired",
+          "driver": "a879da8b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:52.015877+00",
+          "expiresAt": "2026-10-20 07:22:37.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "5c39348a",
+          "status": "expired",
+          "driver": "17257522",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:52.015877+00",
+          "expiresAt": "2026-10-20 07:22:37.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "077876d6",
+          "status": "expired",
+          "driver": "cbc77d8f",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:52.015877+00",
+          "expiresAt": "2026-10-20 07:22:37.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "974defeb",
+          "status": "expired",
+          "driver": "3d07e40b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:52.015877+00",
+          "expiresAt": "2026-10-20 07:22:37.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "98188cbc",
+          "status": "expired",
+          "driver": "769bcd2d",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:56.002995+00",
+          "expiresAt": "2026-10-20 07:22:41.001+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b961f8e4",
+          "status": "expired",
+          "driver": "9946357f",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:56.002995+00",
+          "expiresAt": "2026-10-20 07:22:41.001+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "9571f9c8",
+          "status": "expired",
+          "driver": "77d2e99d",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:56.002995+00",
+          "expiresAt": "2026-10-20 07:22:41.001+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b4c590fc",
+          "status": "expired",
+          "driver": "b38de8ef",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:56.002995+00",
+          "expiresAt": "2026-10-20 07:22:41.001+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "029f3a2b",
+          "status": "expired",
+          "driver": "d8f4f821",
+          "round": 3,
+          "createdAt": "2026-10-20 07:21:56.002995+00",
+          "expiresAt": "2026-10-20 07:22:41.001+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1842,
+      "orderId": "46352a72-0552-4e96-a7ed-ab2e9ef8bd9b",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "eb995f6e",
+          "status": "expired",
+          "driver": "3dbc109c",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:54.287777+00",
+          "expiresAt": "2026-10-20 07:22:39.287+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "f925e4b3",
+          "status": "expired",
+          "driver": "73b0ba5e",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:54.287777+00",
+          "expiresAt": "2026-10-20 07:22:39.287+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "2170d1a2",
+          "status": "expired",
+          "driver": "e9b2fc96",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:54.287777+00",
+          "expiresAt": "2026-10-20 07:22:39.287+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "edb46c4f",
+          "status": "expired",
+          "driver": "09751f1f",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:54.287777+00",
+          "expiresAt": "2026-10-20 07:22:39.287+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "1c177746",
+          "status": "expired",
+          "driver": "9f2173c9",
+          "round": 1,
+          "createdAt": "2026-10-20 07:21:54.287777+00",
+          "expiresAt": "2026-10-20 07:22:39.287+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b07e03a0",
+          "status": "expired",
+          "driver": "a6504f7d",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:58.027047+00",
+          "expiresAt": "2026-10-20 07:22:43.026+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "59be3058",
+          "status": "expired",
+          "driver": "3fbf558d",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:58.027047+00",
+          "expiresAt": "2026-10-20 07:22:43.026+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "46da9de2",
+          "status": "expired",
+          "driver": "27883216",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:58.027047+00",
+          "expiresAt": "2026-10-20 07:22:43.026+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "fc8b3d6e",
+          "status": "expired",
+          "driver": "ec3d037c",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:58.027047+00",
+          "expiresAt": "2026-10-20 07:22:43.026+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "d54b14aa",
+          "status": "expired",
+          "driver": "115faeae",
+          "round": 2,
+          "createdAt": "2026-10-20 07:21:58.027047+00",
+          "expiresAt": "2026-10-20 07:22:43.026+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "92f92042",
+          "status": "expired",
+          "driver": "1aa60902",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:01.999414+00",
+          "expiresAt": "2026-10-20 07:22:46.997+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "435aca0d",
+          "status": "expired",
+          "driver": "6a526674",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:01.999414+00",
+          "expiresAt": "2026-10-20 07:22:46.997+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "cae1ffb9",
+          "status": "expired",
+          "driver": "a5d33a9a",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:01.999414+00",
+          "expiresAt": "2026-10-20 07:22:46.997+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "4cb93527",
+          "status": "expired",
+          "driver": "6dbfd94c",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:01.999414+00",
+          "expiresAt": "2026-10-20 07:22:46.997+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "fef1ef16",
+          "status": "expired",
+          "driver": "1eb63f43",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:01.999414+00",
+          "expiresAt": "2026-10-20 07:22:46.997+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 1962,
+      "orderId": "416a9fa1-89ce-4068-af7b-97b30ed1f1ed",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "701d2370",
+          "status": "expired",
+          "driver": "12345d6f",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:02.121946+00",
+          "expiresAt": "2026-10-20 07:22:47.121+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "154d6d78",
+          "status": "expired",
+          "driver": "e9de7dbf",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:02.121946+00",
+          "expiresAt": "2026-10-20 07:22:47.121+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "d91eec9c",
+          "status": "expired",
+          "driver": "94ea681b",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:02.121946+00",
+          "expiresAt": "2026-10-20 07:22:47.121+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "e79b99b6",
+          "status": "expired",
+          "driver": "68f03d16",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:02.121946+00",
+          "expiresAt": "2026-10-20 07:22:47.121+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "511d7363",
+          "status": "expired",
+          "driver": "ad4b8227",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:02.121946+00",
+          "expiresAt": "2026-10-20 07:22:47.121+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "536140a8",
+          "status": "expired",
+          "driver": "d6368d8d",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:06.01174+00",
+          "expiresAt": "2026-10-20 07:22:51.01+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "0285fe6f",
+          "status": "expired",
+          "driver": "59922b9c",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:06.01174+00",
+          "expiresAt": "2026-10-20 07:22:51.01+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "061e7c11",
+          "status": "expired",
+          "driver": "948d977a",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:06.01174+00",
+          "expiresAt": "2026-10-20 07:22:51.01+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "cd1d56a0",
+          "status": "expired",
+          "driver": "3605f295",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:06.01174+00",
+          "expiresAt": "2026-10-20 07:22:51.01+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "37342c9f",
+          "status": "expired",
+          "driver": "4eedf7a7",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:06.01174+00",
+          "expiresAt": "2026-10-20 07:22:51.01+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "728735a1",
+          "status": "expired",
+          "driver": "2c2dcb38",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:09.974716+00",
+          "expiresAt": "2026-10-20 07:22:54.974+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "def483a6",
+          "status": "expired",
+          "driver": "fd5eab85",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:09.974716+00",
+          "expiresAt": "2026-10-20 07:22:54.974+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "14dd9551",
+          "status": "expired",
+          "driver": "29a6ab62",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:09.974716+00",
+          "expiresAt": "2026-10-20 07:22:54.974+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "5f25615e",
+          "status": "expired",
+          "driver": "011633e5",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:09.974716+00",
+          "expiresAt": "2026-10-20 07:22:54.974+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "2e7e2c40",
+          "status": "expired",
+          "driver": "2a676855",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:09.974716+00",
+          "expiresAt": "2026-10-20 07:22:54.974+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 2170,
+      "orderId": "945b8f8c-d5c2-4752-bda9-0b8ef6a8797d",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "93842c26",
+          "status": "expired",
+          "driver": "28c139e1",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:12.642694+00",
+          "expiresAt": "2026-10-20 07:22:57.641+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "70c527e7",
+          "status": "expired",
+          "driver": "fc09eebb",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:12.642694+00",
+          "expiresAt": "2026-10-20 07:22:57.641+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "8b7e1bb1",
+          "status": "expired",
+          "driver": "de5b1290",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:12.642694+00",
+          "expiresAt": "2026-10-20 07:22:57.641+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "7af11f25",
+          "status": "expired",
+          "driver": "65df9a8f",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:12.642694+00",
+          "expiresAt": "2026-10-20 07:22:57.641+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b66c13cf",
+          "status": "expired",
+          "driver": "9701afd8",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:12.642694+00",
+          "expiresAt": "2026-10-20 07:22:57.641+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b5edeaf4",
+          "status": "expired",
+          "driver": "0900b8c2",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:16.055322+00",
+          "expiresAt": "2026-10-20 07:23:01.053+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "2029e135",
+          "status": "expired",
+          "driver": "9318c8fb",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:16.055322+00",
+          "expiresAt": "2026-10-20 07:23:01.053+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "3d92a355",
+          "status": "expired",
+          "driver": "58ee06e3",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:16.055322+00",
+          "expiresAt": "2026-10-20 07:23:01.053+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "792dbbbb",
+          "status": "expired",
+          "driver": "eb8a9a03",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:16.055322+00",
+          "expiresAt": "2026-10-20 07:23:01.053+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "35203549",
+          "status": "expired",
+          "driver": "18b29191",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:16.055322+00",
+          "expiresAt": "2026-10-20 07:23:01.053+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "57fce503",
+          "status": "expired",
+          "driver": "e9cb9c62",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:19.97628+00",
+          "expiresAt": "2026-10-20 07:23:04.976+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "15224a5b",
+          "status": "expired",
+          "driver": "301491fe",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:19.97628+00",
+          "expiresAt": "2026-10-20 07:23:04.976+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "e58cfbb5",
+          "status": "expired",
+          "driver": "fdad80d3",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:19.97628+00",
+          "expiresAt": "2026-10-20 07:23:04.976+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "17c43fa5",
+          "status": "expired",
+          "driver": "8bc03d94",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:19.97628+00",
+          "expiresAt": "2026-10-20 07:23:04.976+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "4e28bad6",
+          "status": "expired",
+          "driver": "a12257b5",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:19.97628+00",
+          "expiresAt": "2026-10-20 07:23:04.976+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        }
+      ]
+    },
+    {
+      "index": 2316,
+      "orderId": "bd7e6bed-21e3-47a1-a5f8-d3c259fc742b",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "4068a11f",
+          "status": "expired",
+          "driver": "4963de92",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.109762+00",
+          "expiresAt": "2026-10-20 07:23:05.109+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "582c8f38",
+          "status": "expired",
+          "driver": "7d9e0f27",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.109762+00",
+          "expiresAt": "2026-10-20 07:23:05.109+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "fc5f27cf",
+          "status": "expired",
+          "driver": "5c85e07b",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.109762+00",
+          "expiresAt": "2026-10-20 07:23:05.109+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "41e76635",
+          "status": "expired",
+          "driver": "f2f968a4",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.109762+00",
+          "expiresAt": "2026-10-20 07:23:05.109+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "1de14d9a",
+          "status": "expired",
+          "driver": "ff20dddb",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.109762+00",
+          "expiresAt": "2026-10-20 07:23:05.109+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "56ba2963",
+          "status": "expired",
+          "driver": "42bfc2ff",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.015682+00",
+          "expiresAt": "2026-10-20 07:23:09.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "c6c76d8a",
+          "status": "expired",
+          "driver": "12d36abf",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.015682+00",
+          "expiresAt": "2026-10-20 07:23:09.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "1c8f97ae",
+          "status": "expired",
+          "driver": "0373588b",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.015682+00",
+          "expiresAt": "2026-10-20 07:23:09.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "13b5756a",
+          "status": "expired",
+          "driver": "f76e036e",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.015682+00",
+          "expiresAt": "2026-10-20 07:23:09.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "92fbf999",
+          "status": "expired",
+          "driver": "c7a06bd1",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.015682+00",
+          "expiresAt": "2026-10-20 07:23:09.015+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "7c4fe758",
+          "status": "expired",
+          "driver": "87d380aa",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:27.98314+00",
+          "expiresAt": "2026-10-20 07:23:12.982+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "173a220d",
+          "status": "expired",
+          "driver": "95f04a5c",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:27.98314+00",
+          "expiresAt": "2026-10-20 07:23:12.982+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "6b918bc7",
+          "status": "expired",
+          "driver": "ffc40546",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:27.98314+00",
+          "expiresAt": "2026-10-20 07:23:12.982+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "87609068",
+          "status": "expired",
+          "driver": "ca0a4d92",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:27.98314+00",
+          "expiresAt": "2026-10-20 07:23:12.982+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "f9ce710c",
+          "status": "expired",
+          "driver": "93e94ecf",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:27.98314+00",
+          "expiresAt": "2026-10-20 07:23:12.982+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        }
+      ]
+    },
+    {
+      "index": 2326,
+      "orderId": "f6c34ec6-d48d-4104-b0ba-6e0d26c7a592",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "4ddf70c5",
+          "status": "expired",
+          "driver": "6e552485",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.161317+00",
+          "expiresAt": "2026-10-20 07:23:05.158+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "3377ba48",
+          "status": "expired",
+          "driver": "69b1f2af",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.161317+00",
+          "expiresAt": "2026-10-20 07:23:05.158+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "511788f7",
+          "status": "expired",
+          "driver": "71e419b9",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.161317+00",
+          "expiresAt": "2026-10-20 07:23:05.158+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "707122dc",
+          "status": "expired",
+          "driver": "9cc590c8",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.161317+00",
+          "expiresAt": "2026-10-20 07:23:05.158+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "9c103577",
+          "status": "expired",
+          "driver": "a5d22792",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:20.161317+00",
+          "expiresAt": "2026-10-20 07:23:05.158+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "f8697583",
+          "status": "expired",
+          "driver": "73b1ceef",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.042279+00",
+          "expiresAt": "2026-10-20 07:23:09.042+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "3417fda7",
+          "status": "expired",
+          "driver": "685ded39",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.042279+00",
+          "expiresAt": "2026-10-20 07:23:09.042+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b5622460",
+          "status": "expired",
+          "driver": "9f042bf9",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.042279+00",
+          "expiresAt": "2026-10-20 07:23:09.042+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "dbca3d35",
+          "status": "expired",
+          "driver": "fdcd47af",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.042279+00",
+          "expiresAt": "2026-10-20 07:23:09.042+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "92f74235",
+          "status": "expired",
+          "driver": "8e1331b5",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:24.042279+00",
+          "expiresAt": "2026-10-20 07:23:09.042+00",
+          "respondedAt": "2026-10-20 07:23:11.457935+00"
+        },
+        {
+          "id": "b159aebc",
+          "status": "expired",
+          "driver": "774b5f89",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:28.000764+00",
+          "expiresAt": "2026-10-20 07:23:13+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "2197d4bf",
+          "status": "expired",
+          "driver": "8592f368",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:28.000764+00",
+          "expiresAt": "2026-10-20 07:23:13+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "d7e8a52f",
+          "status": "expired",
+          "driver": "c4620d65",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:28.000764+00",
+          "expiresAt": "2026-10-20 07:23:13+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "e6e535e8",
+          "status": "expired",
+          "driver": "f406c833",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:28.000764+00",
+          "expiresAt": "2026-10-20 07:23:13+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "53737e91",
+          "status": "expired",
+          "driver": "161c0942",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:28.000764+00",
+          "expiresAt": "2026-10-20 07:23:13+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        }
+      ]
+    },
+    {
+      "index": 2948,
+      "orderId": "e9c8531b-f567-422f-b183-1969ab16f0bc",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "799a2f1d",
+          "status": "expired",
+          "driver": "b598281c",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:52.29441+00",
+          "expiresAt": "2026-10-20 07:23:37.293+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "c48a4db8",
+          "status": "expired",
+          "driver": "87d380aa",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:52.29441+00",
+          "expiresAt": "2026-10-20 07:23:37.293+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "e1721247",
+          "status": "expired",
+          "driver": "1950eed5",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:52.29441+00",
+          "expiresAt": "2026-10-20 07:23:37.293+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "30426d7e",
+          "status": "expired",
+          "driver": "78c61a77",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:52.29441+00",
+          "expiresAt": "2026-10-20 07:23:37.293+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "2eab79ad",
+          "status": "expired",
+          "driver": "87b97ebb",
+          "round": 1,
+          "createdAt": "2026-10-20 07:22:52.29441+00",
+          "expiresAt": "2026-10-20 07:23:37.293+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "227888f8",
+          "status": "expired",
+          "driver": "610bb612",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:56.068873+00",
+          "expiresAt": "2026-10-20 07:23:41.067+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "d71b69cc",
+          "status": "expired",
+          "driver": "e686af9e",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:56.068873+00",
+          "expiresAt": "2026-10-20 07:23:41.067+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "208e7969",
+          "status": "expired",
+          "driver": "407cbdbd",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:56.068873+00",
+          "expiresAt": "2026-10-20 07:23:41.067+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "0cca9abc",
+          "status": "expired",
+          "driver": "ffc40546",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:56.068873+00",
+          "expiresAt": "2026-10-20 07:23:41.067+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "bc9576f1",
+          "status": "expired",
+          "driver": "38e1e49e",
+          "round": 2,
+          "createdAt": "2026-10-20 07:22:56.068873+00",
+          "expiresAt": "2026-10-20 07:23:41.067+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "43db5992",
+          "status": "expired",
+          "driver": "c55f61dd",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:59.980791+00",
+          "expiresAt": "2026-10-20 07:23:44.98+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "0b8603cc",
+          "status": "expired",
+          "driver": "62078e7a",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:59.980791+00",
+          "expiresAt": "2026-10-20 07:23:44.98+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "b7d0c223",
+          "status": "expired",
+          "driver": "caa23d76",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:59.980791+00",
+          "expiresAt": "2026-10-20 07:23:44.98+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "89a3b5ea",
+          "status": "expired",
+          "driver": "b0f53ed2",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:59.980791+00",
+          "expiresAt": "2026-10-20 07:23:44.98+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "df54d88f",
+          "status": "expired",
+          "driver": "fd8d7db6",
+          "round": 3,
+          "createdAt": "2026-10-20 07:22:59.980791+00",
+          "expiresAt": "2026-10-20 07:23:44.98+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        }
+      ]
+    },
+    {
+      "index": 3102,
+      "orderId": "ba343b84-b814-4cd2-af8a-ace3229a3654",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "91251751",
+          "status": "expired",
+          "driver": "170c709f",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:00.239568+00",
+          "expiresAt": "2026-10-20 07:23:45.239+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "fc50e8c6",
+          "status": "expired",
+          "driver": "2598b403",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:00.239568+00",
+          "expiresAt": "2026-10-20 07:23:45.239+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "1050733c",
+          "status": "expired",
+          "driver": "7d3f5219",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:00.239568+00",
+          "expiresAt": "2026-10-20 07:23:45.239+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "4f5c267f",
+          "status": "expired",
+          "driver": "83bb0bac",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:00.239568+00",
+          "expiresAt": "2026-10-20 07:23:45.239+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "a51a3f46",
+          "status": "expired",
+          "driver": "0e5ea3a7",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:00.239568+00",
+          "expiresAt": "2026-10-20 07:23:45.239+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "34c19da5",
+          "status": "expired",
+          "driver": "53c3478f",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:04.066749+00",
+          "expiresAt": "2026-10-20 07:23:49.066+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "7ea4e0bd",
+          "status": "expired",
+          "driver": "77f8bcc4",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:04.066749+00",
+          "expiresAt": "2026-10-20 07:23:49.066+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "43c8a4af",
+          "status": "expired",
+          "driver": "389a7a44",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:04.066749+00",
+          "expiresAt": "2026-10-20 07:23:49.066+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "3b7956ea",
+          "status": "expired",
+          "driver": "f61d9916",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:04.066749+00",
+          "expiresAt": "2026-10-20 07:23:49.066+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "a2090c7c",
+          "status": "expired",
+          "driver": "c24da86d",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:04.066749+00",
+          "expiresAt": "2026-10-20 07:23:49.066+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "47ba0606",
+          "status": "expired",
+          "driver": "f240093c",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:08.017452+00",
+          "expiresAt": "2026-10-20 07:23:53.016+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "fbfc7abf",
+          "status": "expired",
+          "driver": "4abeb5f8",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:08.017452+00",
+          "expiresAt": "2026-10-20 07:23:53.016+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "1926aefd",
+          "status": "expired",
+          "driver": "7fa09218",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:08.017452+00",
+          "expiresAt": "2026-10-20 07:23:53.016+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "7357091c",
+          "status": "expired",
+          "driver": "a9971fb9",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:08.017452+00",
+          "expiresAt": "2026-10-20 07:23:53.016+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "76da4388",
+          "status": "expired",
+          "driver": "22ca4b5d",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:08.017452+00",
+          "expiresAt": "2026-10-20 07:23:53.016+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        }
+      ]
+    },
+    {
+      "index": 3305,
+      "orderId": "ed631e0d-93b3-403c-bf79-6150f3bf38a5",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "47901c67",
+          "status": "expired",
+          "driver": "37b2804d",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:12.178269+00",
+          "expiresAt": "2026-10-20 07:23:57.177+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "9708b2c1",
+          "status": "expired",
+          "driver": "976b39d5",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:12.178269+00",
+          "expiresAt": "2026-10-20 07:23:57.177+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "8a9a22de",
+          "status": "expired",
+          "driver": "c62c9659",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:12.178269+00",
+          "expiresAt": "2026-10-20 07:23:57.177+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "1256b5ee",
+          "status": "expired",
+          "driver": "5967f259",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:12.178269+00",
+          "expiresAt": "2026-10-20 07:23:57.177+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "2ea42f20",
+          "status": "expired",
+          "driver": "203ee1e0",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:12.178269+00",
+          "expiresAt": "2026-10-20 07:23:57.177+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "56512600",
+          "status": "expired",
+          "driver": "603867cf",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:16.042806+00",
+          "expiresAt": "2026-10-20 07:24:01.042+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "afb1763e",
+          "status": "expired",
+          "driver": "1e5ed204",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:16.042806+00",
+          "expiresAt": "2026-10-20 07:24:01.042+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "941607ca",
+          "status": "expired",
+          "driver": "8229370e",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:16.042806+00",
+          "expiresAt": "2026-10-20 07:24:01.042+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "26e444fd",
+          "status": "expired",
+          "driver": "79dea893",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:16.042806+00",
+          "expiresAt": "2026-10-20 07:24:01.042+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "eab9f368",
+          "status": "expired",
+          "driver": "149d6bf0",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:16.042806+00",
+          "expiresAt": "2026-10-20 07:24:01.042+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "dcf1fcd7",
+          "status": "expired",
+          "driver": "4ffbea6c",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:20.005507+00",
+          "expiresAt": "2026-10-20 07:24:05.004+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "147eab6d",
+          "status": "expired",
+          "driver": "c301d35b",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:20.005507+00",
+          "expiresAt": "2026-10-20 07:24:05.004+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "49f3eafd",
+          "status": "expired",
+          "driver": "65dd8d2c",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:20.005507+00",
+          "expiresAt": "2026-10-20 07:24:05.004+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "4a66ef21",
+          "status": "expired",
+          "driver": "e734a176",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:20.005507+00",
+          "expiresAt": "2026-10-20 07:24:05.004+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "fd6d35bd",
+          "status": "expired",
+          "driver": "e26d3f1e",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:20.005507+00",
+          "expiresAt": "2026-10-20 07:24:05.004+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        }
+      ]
+    },
+    {
+      "index": 3347,
+      "orderId": "461900a3-de27-4ef8-994d-9d4ee05a9226",
+      "kind": "undecided",
+      "reason": "offer:offer_not_found_in_time",
+      "orderStatus": "searching",
+      "assignedDriver": null,
+      "offers": [
+        {
+          "id": "5d6ec07d",
+          "status": "expired",
+          "driver": "5ea165e3",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:14.188019+00",
+          "expiresAt": "2026-10-20 07:23:59.187+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "7f4db8c2",
+          "status": "expired",
+          "driver": "ae5bf97d",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:14.188019+00",
+          "expiresAt": "2026-10-20 07:23:59.187+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "adb4549f",
+          "status": "expired",
+          "driver": "1051fedb",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:14.188019+00",
+          "expiresAt": "2026-10-20 07:23:59.187+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "404bc046",
+          "status": "expired",
+          "driver": "c1c4d84a",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:14.188019+00",
+          "expiresAt": "2026-10-20 07:23:59.187+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "b4219f26",
+          "status": "expired",
+          "driver": "75ff9604",
+          "round": 1,
+          "createdAt": "2026-10-20 07:23:14.188019+00",
+          "expiresAt": "2026-10-20 07:23:59.187+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "a154d0a5",
+          "status": "expired",
+          "driver": "827912d2",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:18.00963+00",
+          "expiresAt": "2026-10-20 07:24:03.009+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "a650b53f",
+          "status": "expired",
+          "driver": "03ac39a3",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:18.00963+00",
+          "expiresAt": "2026-10-20 07:24:03.009+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "27a7b731",
+          "status": "expired",
+          "driver": "510081d6",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:18.00963+00",
+          "expiresAt": "2026-10-20 07:24:03.009+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "7a41691c",
+          "status": "expired",
+          "driver": "670ea6b4",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:18.00963+00",
+          "expiresAt": "2026-10-20 07:24:03.009+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "88e54310",
+          "status": "expired",
+          "driver": "56032134",
+          "round": 2,
+          "createdAt": "2026-10-20 07:23:18.00963+00",
+          "expiresAt": "2026-10-20 07:24:03.009+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "a1145405",
+          "status": "expired",
+          "driver": "18629602",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:21.986872+00",
+          "expiresAt": "2026-10-20 07:24:06.986+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "916eeb07",
+          "status": "expired",
+          "driver": "681f0070",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:21.986872+00",
+          "expiresAt": "2026-10-20 07:24:06.986+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "d0459022",
+          "status": "expired",
+          "driver": "34525f9d",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:21.986872+00",
+          "expiresAt": "2026-10-20 07:24:06.986+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "594ead89",
+          "status": "expired",
+          "driver": "9bb48e2f",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:21.986872+00",
+          "expiresAt": "2026-10-20 07:24:06.986+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        },
+        {
+          "id": "9d0bec99",
+          "status": "expired",
+          "driver": "1c3858cd",
+          "round": 3,
+          "createdAt": "2026-10-20 07:23:21.986872+00",
+          "expiresAt": "2026-10-20 07:24:06.986+00",
+          "respondedAt": "2026-10-20 07:24:11.410225+00"
+        }
+      ]
+    }
+  ],
+  "violations": [],
+  "verdict": "CLEAN"
+}

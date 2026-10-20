@@ -1,0 +1,5 @@
+pkill: killing pid 8303 failed: Operation not permitted
+   133 /srv/ceezr-cap-20261016/runs/b24-s1-C2-750/evidence/pgss-full.csv
+  4158 /srv/ceezr-cap-20261016/runs/b24-s1-C2-750/evidence/telegram-jobs.csv
+  4291 total
+POST_DIAG_DONE
