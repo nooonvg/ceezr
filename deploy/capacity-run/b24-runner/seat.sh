@@ -101,13 +101,18 @@ for r in $RUNS; do
   [ -f "$E/dispatch-trace.jsonl" ] && gzip -9c "$E/dispatch-trace.jsonl" > "$D/dispatch-trace.jsonl.gz" || true
   # تفكيكُ P4 لكلِّ موجةٍ من أدلّتِها (orders/offers/trace/events في evidence)
   python3 "$H/deploy/capacity-run/monitor/p4-decompose.py" "$E" > "$D/p4-decompose.out.json" 2>"$D/p4-decompose.err" || true
+  # مدخلاتُ التفكيكِ نفسُها داخلَ الدليلِ — لا يُقالُ «قابلٌ لإعادةِ الحسابِ» دونَها
+  for f in orders.csv offers.csv; do [ -f "$E/$f" ] && gzip -9c "$E/$f" > "$D/$f.gz" || true; done
   for g in $B/bin/gates.sh; do $g "$r" > "$D/gates.txt" 2>&1 || true; done
 done
-mkdir -p "$OUT/service-logs"
-for f in shim telegram-mock gateway; do tail -n 400 "$B/runs/current/evidence/$f.log" > "$OUT/service-logs/$f.tail.log" 2>/dev/null || true; done
-cp "$B/runs/current/evidence/gateway-starts.jsonl" "$OUT/service-logs/" 2>/dev/null || true
-
 log "تدقيقُ الأسرارِ على الدليلِ قبلَ أيِّ رفعٍ"
-python3 "$H/deploy/capacity-run/b24-runner/seat-bin/b24-secret-audit.py" "$B/secrets.env" "$OUT/raw" "$OUT/service-logs" "$OUT/idle-b24" > "$OUT/secret-audit.txt" 2>&1
-SA_RC=$?; cat "$OUT/secret-audit.txt"; [ $SA_RC -ne 0 ] && echo "SECRET_AUDIT_FAIL" || echo "SECRET_AUDIT_CLEAN"
+python3 "$H/deploy/capacity-run/b24-runner/seat-bin/b24-secret-audit.py" "$B/secrets.env" "$OUT" > "$OUT/secret-audit.txt" 2>&1
+SA_RC=$?; cat "$OUT/secret-audit.txt"
+if [ $SA_RC -ne 0 ]; then
+  echo "SECRET_AUDIT_FAIL — حجرُ الدليلِ الخامِّ ولا يُرفعَ إلّا تقريرُ التدقيقِ"
+  rm -rf "$OUT/raw" "$OUT/idle-b24"
+  log "FAIL (secret audit)"
+  exit 1
+fi
+echo "SECRET_AUDIT_CLEAN"
 log "DONE"

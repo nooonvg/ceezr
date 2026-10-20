@@ -50,11 +50,19 @@ jobs:
             --setenv=R_SHA="$R_SHA" --setenv=C_SHA="$C_SHA" \
             bash /home/user/workspace/ceezr/deploy/capacity-run/b24-runner/seat.sh "$MODE"
 
-      - name: رفع الدليل (بعد تدقيق الأسرار)
-        if: always()
+      - name: رفع الدليل (لا يُرفعُ إلا بنجاحِ تدقيقِ الأسرارِ — الفشلُ يحجرُ الخامَّ في المقعدِ)
         uses: actions/upload-artifact@v5
         with:
           name: b24-seat-evidence
           path: /home/user/b24-out/
           if-no-files-found: warn
+          retention-days: 14
+
+      - name: رفع تقرير الفشل المنقح (تدقيقُ الأسرارِ وحدَه)
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: b24-seat-failure-report
+          path: /home/user/b24-out/secret-audit.txt
+          if-no-files-found: ignore
           retention-days: 14
