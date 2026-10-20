@@ -1,0 +1,8 @@
+\pset format unaligned
+\pset tuples_only on
+select 'fn_md5='||md5(string_agg(p.proname||'('||pg_get_function_identity_arguments(p.oid)||')='||md5(pg_get_functiondef(p.oid)), ',' order by p.proname, pg_get_function_identity_arguments(p.oid))) ||' fn_count='||count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prokind in ('f','p') and not exists (select 1 from pg_depend d where d.objid=p.oid and d.deptype='e');
+select 'col_md5='||md5(string_agg(c.table_name||'.'||c.column_name||':'||c.data_type||':'||coalesce(c.column_default,''), ',' order by c.table_name, c.ordinal_position)) from information_schema.columns c join pg_class k on k.relname=c.table_name join pg_namespace n on n.oid=k.relnamespace and n.nspname='public' where c.table_schema='public' and not exists (select 1 from pg_depend d where d.objid=k.oid and d.deptype='e');
+select 'idx_md5='||md5(string_agg(indexdef, ',' order by indexname)) from pg_indexes i where schemaname='public' and tablename not in ('spatial_ref_sys');
+create temp table _rc(t text, n bigint);
+do $$ declare r record; c bigint; begin for r in select c.relname from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind in ('r','p') and not exists (select 1 from pg_depend d where d.objid=c.oid and d.deptype='e') loop execute format('select count(*) from public.%I', r.relname) into c; insert into _rc values (r.relname, c); end loop; end $$;
+select 'rows_md5='||md5(string_agg(t||'='||n, ',' order by t))||' nonempty='||string_agg(case when n>0 then t||'='||n end, ' ' order by t) from _rc;
