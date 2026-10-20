@@ -1,0 +1,60 @@
+name: LOAD-01 الدفعة 24 — مقعد 4 vCPU (لقطة الطلب من القارئ)
+
+# تشخيصٌ معزولٌ على فرعِ التجربةِ وحدَه ولا يُدمَج: مقارنةُ R (أدواتُ القياسِ فوقَ main)
+# مقابلَ C (اللقطةُ) على مشغّلِ GitHub القياسيّ 4 vCPU حيثُ الموزّعُ هو عنقُ الزجاجةِ.
+# لا أسرار: القاعدةُ وRedis والمحاكي داخلَ netns بلا شبكة؛ أسرارُ المقعدِ مولَّدةٌ عشوائيًّا.
+# الأثرُ الخامُّ داخلَ الدليلِ + تدقيقُ الأسرارِ قبلَ أيِّ رفعٍ (فجوةُ ب23 مُغلَقة).
+on:
+  push:
+    branches: [exp/load01-b24-cpu4]
+    paths:
+      - deploy/capacity-run/b24-runner/**
+      - .github/workflows/load01-b24-cpu4.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load01-b24-seat
+  cancel-in-progress: false
+
+jobs:
+  seat:
+    name: مقعد B24 (R=قياس مقابل C=لقطة الطلب)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 340
+    env:
+      R_SHA: 98ac336554e80eca058dcbf6fbc6ad7199e723ec
+      C_SHA: 65ee82eccbf689e70578c3b0fe183541a632678e
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: تجهيز المقعد (حزم المقعد الأصلي والمستخدم user)
+        run: sudo bash deploy/capacity-run/b24-runner/provision-root.sh
+
+      - name: نسخة المستودع للمستخدم user
+        run: |
+          sudo cp -a "$GITHUB_WORKSPACE" /home/user/workspace/ceezr
+          sudo chown -R user:user /home/user/workspace/ceezr
+          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$R_SHA^{commit}"
+          sudo -u user git -C /home/user/workspace/ceezr cat-file -e "$C_SHA^{commit}"
+
+      - name: المقعد والموجات (داخل ceezrseat.slice)
+        run: |
+          MODE=$(cat deploy/capacity-run/b24-runner/MODE)
+          echo "MODE=$MODE"
+          sudo systemd-run --quiet --wait --pipe --collect --slice=ceezrseat.slice \
+            --uid=user --gid=user -p LimitNOFILE=4096 -p WorkingDirectory=/home/user \
+            --setenv=R_SHA="$R_SHA" --setenv=C_SHA="$C_SHA" \
+            bash /home/user/workspace/ceezr/deploy/capacity-run/b24-runner/seat.sh "$MODE"
+
+      - name: رفع الدليل (بعد تدقيق الأسرار)
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: b24-seat-evidence
+          path: /home/user/b24-out/
+          if-no-files-found: warn
+          retention-days: 14
