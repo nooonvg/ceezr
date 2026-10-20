@@ -22,7 +22,7 @@ import type {
 import { err, ok, type Result } from "../../shared/result/index.ts";
 import type { Sql } from "../db/client.ts";
 
-interface AccountRow {
+export interface AccountRow {
   readonly role: string;
   readonly is_blocked: boolean;
   readonly language_code: string;
@@ -44,7 +44,7 @@ function lookupFailed(reason: ViewerLookupFailure["reason"]): ViewerLookupFailur
  * **لا يُرسَل إلى القاعدةِ أصلاً**: لا صفَّ يمكن أن يطابقه، وإرسالُه يورِّث خطأَ
  * تحويلٍ يُقرأ خطأَ خادمٍ لا «لا صفَّ».
  */
-function asTelegramId(value: string): string | null {
+export function asTelegramId(value: string): string | null {
   return /^[0-9]{1,19}$/.test(value) ? value : null;
 }
 
@@ -67,17 +67,30 @@ export function createViewerAccountReader(sql: Sql): ViewerAccountReader {
         return err(lookupFailed("READER_ERROR"));
       }
 
-      const row = rows[0];
-      if (row === undefined) return ok(null);
-
-      const role = readRole(row.role);
-      if (role === null) {
-        // دورٌ في القاعدةِ لا يعرفه الكودُ: يُعلَن خطأً ولا يُخشَّن إلى `rider`.
-        // الترقيةُ الخاطئةُ والتخفيضُ الخاطئُ كلاهما خطر، والصمتُ أخطرُ منهما.
-        return err(lookupFailed("UNSUPPORTED_ROLE"));
-      }
-
-      return ok({ role, isBlocked: row.is_blocked === true, languageCode: row.language_code });
+      return accountFromRow(rows[0]);
     },
   };
+}
+
+/**
+ * صفُّ `users` (أو غيابُه) ← حسابُ المُشاهد — **القارئُ الوحيدُ** للصفِّ، يستعملُه هذا المحوّلُ
+ * وقراءةُ الإقلاعِ المدمجة (`bootstrap-account-consents.ts`، الدفعةُ 21) فلا يتفرّعُ الحكم.
+ */
+export function accountFromRow(
+  row: AccountRow | undefined,
+): Result<ViewerAccount | null, ViewerLookupFailure> {
+  if (row === undefined) return ok(null);
+
+  const role = readRole(row.role);
+  if (role === null) {
+    // دورٌ في القاعدةِ لا يعرفه الكودُ: يُعلَن خطأً ولا يُخشَّن إلى `rider`.
+    // الترقيةُ الخاطئةُ والتخفيضُ الخاطئُ كلاهما خطر، والصمتُ أخطرُ منهما.
+    return err(lookupFailed("UNSUPPORTED_ROLE"));
+  }
+
+  return ok({ role, isBlocked: row.is_blocked === true, languageCode: row.language_code });
+}
+
+export function viewerLookupFailed(reason: ViewerLookupFailure["reason"]): ViewerLookupFailure {
+  return lookupFailed(reason);
 }

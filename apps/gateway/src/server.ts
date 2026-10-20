@@ -318,6 +318,9 @@ export function createServer(deps: ServerDependencies): Hono {
         bootstrap: {
           ...(deps.me?.viewer === undefined ? {} : { viewer: deps.me.viewer }),
           ...(deps.consents?.consent === undefined ? {} : { consent: deps.consents.consent }),
+          ...(deps.sessionTelegram.bootstrapScoped === undefined
+            ? {}
+            : { scoped: deps.sessionTelegram.bootstrapScoped }),
         },
       }),
     );

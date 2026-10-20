@@ -52,6 +52,7 @@ import {
   createWebhookEventStore,
 } from "../../../packages/infrastructure/financial/index.ts";
 import { createCityDirectory } from "../../../packages/infrastructure/geo/city-directory.ts";
+import { createBootstrapAccountConsents } from "../../../packages/infrastructure/identity/bootstrap-account-consents.ts";
 import {
   createDriverDirectory,
   createRiderDirectory,
@@ -626,6 +627,8 @@ const sessionTelegram =
           log,
         },
         limits: { perAddress: limiterFor("POST", "/v1/session/telegram", "عنوانُ العميلِ") },
+        // LOAD-01 (الدفعةُ 21): قراءتا الإقلاعِ في عبارةٍ واحدةٍ لكلِّ مبادلة — بلا تخزينٍ عبرَ الطلبات.
+        bootstrapScoped: createBootstrapAccountConsents(container.sql),
         log,
       };
 

@@ -54,6 +54,13 @@ export interface SessionTelegramDependencies {
    */
   readonly limits?: { readonly perAddress: RateLimiter };
   /**
+   * مصنعُ القارئَين المتقاسمَين لقراءتَي الإقلاع (الدفعةُ 21)؛ يمرّرُه `server.ts` إلى `bootstrap.scoped`.
+   */
+  readonly bootstrapScoped?: () => {
+    readonly accounts: ResolveViewerDeps["accounts"];
+    readonly consents: ConsentDeps["reader"];
+  };
+  /**
    * `F1-09` · `ADR 0210`: قراءتا الإقلاعِ (`GET /v1/me` · `GET /v1/consents`) تُضمَّنانِ في
    * ردِّ المبادلةِ **بالرمزِ المُصدَرِ نفسِه وبحالتَي الاستخدامِ نفسَيهما** — فيسقطُ ذهابٌ
    * وإيابٌ كاملٌ من مسارِ الإقلاعِ (~560 ms على «Slow 4G»). والتضمينُ **إضافةٌ لا بديلٌ**:
@@ -63,6 +70,14 @@ export interface SessionTelegramDependencies {
   readonly bootstrap?: {
     readonly viewer?: ResolveViewerDeps;
     readonly consent?: ConsentDeps;
+    /**
+     * LOAD-01 (الدفعةُ 21) — قارئانِ يتقاسمانِ عبارةً واحدةً **في هذا الطلبِ وحدَه** (يُنادى لكلِّ
+     * مبادلة). غيابُه = القارئانِ المستقلّانِ كما كانا. لا يمسُّ تحقّقَ الجلسةِ في أيٍّ منهما.
+     */
+    readonly scoped?: () => {
+      readonly accounts: ResolveViewerDeps["accounts"];
+      readonly consents: ConsentDeps["reader"];
+    };
   };
 }
 
@@ -75,10 +90,24 @@ export async function bootstrapReads(
   accessToken: string,
 ): Promise<Record<string, unknown>> {
   if (bootstrap === undefined) return {};
+  const shared =
+    bootstrap.scoped !== undefined &&
+    bootstrap.viewer !== undefined &&
+    bootstrap.consent !== undefined
+      ? bootstrap.scoped()
+      : undefined;
+  const viewerDeps =
+    shared === undefined || bootstrap.viewer === undefined
+      ? bootstrap.viewer
+      : { ...bootstrap.viewer, accounts: shared.accounts };
+  const consentDeps =
+    shared === undefined || bootstrap.consent === undefined
+      ? bootstrap.consent
+      : { ...bootstrap.consent, reader: shared.consents };
   const viewer =
-    bootstrap.viewer === undefined
+    viewerDeps === undefined
       ? Promise.resolve(undefined)
-      : resolveViewer({ accessToken }, bootstrap.viewer).then(
+      : resolveViewer({ accessToken }, viewerDeps).then(
           (r) =>
             r.ok
               ? {
@@ -91,9 +120,9 @@ export async function bootstrapReads(
           () => undefined,
         );
   const consents =
-    bootstrap.consent === undefined
+    consentDeps === undefined
       ? Promise.resolve(undefined)
-      : readConsentStatus(bootstrap.consent, { accessToken }).then(
+      : readConsentStatus(consentDeps, { accessToken }).then(
           (r) =>
             r.ok
               ? { ok: true, documents: r.value.documents, onboarding: r.value.onboarding }

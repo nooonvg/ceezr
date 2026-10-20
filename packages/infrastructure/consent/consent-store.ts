@@ -32,11 +32,11 @@ function failed(reason: ConsentStoreFailure["reason"]): ConsentStoreFailure {
 }
 
 /** كما في `viewer-account.ts`: نصٌّ غيرُ رقميٍّ لا يُرسَلُ إلى `bigint` أصلاً. */
-function asTelegramId(value: string): string | null {
+export function asTelegramId(value: string): string | null {
   return /^[0-9]{1,19}$/.test(value) ? value : null;
 }
 
-interface ConsentRow {
+export interface ConsentRow {
   readonly kind: string;
   readonly version: string;
   readonly accepted_at: string | Date;
@@ -66,18 +66,32 @@ export function createConsentRecordReader(sql: Sql): ConsentRecordReader {
         return err(failed("STORE_ERROR"));
       }
 
-      const recorded: RecordedConsent[] = [];
-      for (const row of rows) {
-        const acceptedAtMs = readAcceptedAtMs(row.accepted_at);
-        // ختمٌ لا يُقرأُ زمناً **يُعلَنُ خطأً** ولا يُطرَحُ صامتاً: صفٌّ مطروحٌ
-        // قد يحوِّلُ «وافقَ» إلى «ناقصٌ» فيُعادُ سؤالُه بلا سببٍ، أو أخطرُ من ذاكَ
-        // يحوِّلُ «منسوخٌ» إلى «مُستوفىً» لو كانَ المطروحُ هوَ الأحدثَ.
-        if (acceptedAtMs === null) return err(failed("STORE_ERROR"));
-        recorded.push({ kind: row.kind, version: row.version, acceptedAtMs });
-      }
-      return ok(recorded);
+      return consentsFromRows(rows);
     },
   };
+}
+
+/**
+ * صفوفُ `list_user_consents` ← سجلُّ الموافقات — **القارئُ الوحيدُ** للصفوف، يستعملُه هذا المحوّلُ
+ * وقراءةُ الإقلاعِ المدمجة (الدفعةُ 21) فلا يتفرّعُ حكمُ الختمِ غيرِ المقروء.
+ */
+export function consentsFromRows(
+  rows: readonly ConsentRow[],
+): Result<readonly RecordedConsent[], ConsentStoreFailure> {
+  const recorded: RecordedConsent[] = [];
+  for (const row of rows) {
+    const acceptedAtMs = readAcceptedAtMs(row.accepted_at);
+    // ختمٌ لا يُقرأُ زمناً **يُعلَنُ خطأً** ولا يُطرَحُ صامتاً: صفٌّ مطروحٌ
+    // قد يحوِّلُ «وافقَ» إلى «ناقصٌ» فيُعادُ سؤالُه بلا سببٍ، أو أخطرُ من ذاكَ
+    // يحوِّلُ «منسوخٌ» إلى «مُستوفىً» لو كانَ المطروحُ هوَ الأحدثَ.
+    if (acceptedAtMs === null) return err(failed("STORE_ERROR"));
+    recorded.push({ kind: row.kind, version: row.version, acceptedAtMs });
+  }
+  return ok(recorded);
+}
+
+export function consentStoreFailed(reason: ConsentStoreFailure["reason"]): ConsentStoreFailure {
+  return failed(reason);
 }
 
 interface RecordResultRow {
