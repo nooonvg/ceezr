@@ -23,3 +23,5 @@ runtime_agent/memory/*.json
 runtime_agent/memory/*.jsonl
 runtime_agent/memory/*.tmp
 runtime_agent/experience/*.jsonl
+
+__pycache__/
