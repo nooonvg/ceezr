@@ -1,0 +1,28 @@
+{
+  "id": "wr-28-ecosystem-roadmap",
+  "goal": "WR-28 / XR-0: خارطة منظومة وَصْلة المشتركة (Revision 1) بنسخة مطابقة في المستودعات الثلاثة، وفحص تطابقها، وقرار DEC-26 وADR 0292 بتقييد O-7 لا إلغائه.",
+  "canonical_source": [
+    "docs/decisions/DEC-26-20261021-ecosystem-roadmap.md",
+    "docs/adr/0292-ecosystem-roadmap-qualifies-o7.md"
+  ],
+  "implementation": [
+    ".github/workflows/ecosystem-sync.yml",
+    "docs/ecosystem/check-ecosystem-sync.mjs"
+  ],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "AGENTS.md",
+    "docs/adr/0292-ecosystem-roadmap-qualifies-o7.md",
+    "docs/decisions/DEC-26-20261021-ecosystem-roadmap.md",
+    "docs/ecosystem/ECOSYSTEM_ROADMAP.md",
+    "docs/ecosystem/check-ecosystem-sync.mjs",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "DEC-26 · ADR 0292",
+  "tests": ["docs/ecosystem/check-ecosystem-sync.mjs --offline"],
+  "constraints": ["لا شيفرة تطبيق", "لا هجرة", "لا نشر", "deferred/core-integration يبقى مقفلًا"],
+  "limitations": "فحص التطابق يقرأ نسخ main العامة عبر raw.githubusercontent.com؛ في طلبات الدمج تنبيه فقط لأن أحد الطلبات الثلاثة يسبق الآخرين."
+}

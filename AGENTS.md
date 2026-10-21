@@ -26,6 +26,7 @@
 | أسئلةٌ تنتظرُ قرارَ المالك | `docs/governance/OWNER-QUESTIONS-20261009.md` | |
 | ما الحالةُ الراهنةُ لكلِّ بندٍ هندسيّ، وسجلُّ ما نُفِّذ | `docs/SYSTEM_STATE.md` | سجلٌّ تراكميّ: الأحدثُ قربَ الأعلى |
 | **خارطةُ التنفيذِ الحاكمة وحالةُ بنودِها** | `docs/roadmap/execution/ORDER-20261012.md` · `docs/roadmap/execution/STATUS.md` | **`DEC-25`: ملزمةٌ لكلِّ عمل؛ الحالةُ تتغيّرُ في PR التنفيذِ نفسِه ويفرضُها `check-execution-roadmap.ts` (ADR 0262)** |
+| **ملكيّةُ المجالاتِ بين MOVE وMARKET وCORE وترتيبُ العملِ المشترك** | `docs/ecosystem/ECOSYSTEM_ROADMAP.md` | `DEC-26` · ADR 0292: نسخةٌ مطابقةٌ في المستودعاتِ الثلاثة (`nooonvg/ceezr` · `nooonvg/wasla` · `nooonvg/wasla-core`) ويفرضُ تطابقَها `ecosystem-sync.yml`. لا تُعدَّلُ هنا وحدَها |
 | خارطةُ البنودِ السابقةِ ومعاييرُ قبولِها | `docs/ROADMAP-MASTER.md` · `docs/ROADMAP-PRODUCT-DEBT.md` (زيادةٌ لها) | سارية؛ وعندَ التداخلِ يحكمُ أمرُ المالكِ الأحدث (`DEC-25`) |
 | سجلُّ التنفيذِ المرتبطُ بالتغييرات | `ROADMAP.md` | يفرضُه `check-roadmap.mjs` على كلِّ تغييرٍ في الكود |
 | لماذا اتُّخذَ قرارٌ معماريّ | `docs/adr/NNNN-*.md` | الترقيمُ يفرضُه `check-adr-numbering.ts` |
@@ -58,7 +59,7 @@
 ```bash
 # حالةُ GitHub: رأسُ main، والطلباتُ المفتوحة، والفروع
 git fetch --prune origin && git log --oneline -1 origin/main
-gh pr list --repo uxxxug/ceezr --state open
+gh pr list --repo nooonvg/ceezr --state open
 git branch -r
 
 # الإنتاج (قراءةٌ عامّة لا تغيّرُ شيئًا)
