@@ -9562,3 +9562,10 @@ SHA متميِّزة. هذا هو أولُها (`7d9a7d6`).
 - **حكمُه على `O-7`:** يبقى إطلاقُ MOVE مستقلًّا ولا ينتظرُ MARKET أو CORE. يُستأنَفُ `deferred/core-integration/` في محطّةِ `XR-4` وحدَها (`WR-28`)، بعدَ `XR-3.1` و`XR-3.2` في CORE، ولا يُفعَّلُ في الإنتاجِ قبلَ «Production Ready».
 - **حكمُه على `DEP-CORE-001..008`:** لا يتغيّرُ قبلَ `XR-4`.
 - **ما تغيّرَ في هذا الدفع:** وثائقُ وفحصُ تطابقٍ وسيرُ عملٍ واحد. لا شيفرةَ تطبيقٍ ولا هجرةَ ولا نشر.
+
+## Owner instruction `DEC-27`, recorded 2026-10-21 — multichannel, one account, three apps (additive; `DEC-07` stays for launch one; no item text is changed)
+
+- **النصّ والقرار:** [`docs/decisions/DEC-27-20261021-multichannel-one-account.md`](docs/decisions/DEC-27-20261021-multichannel-one-account.md) · [ADR 0293](docs/adr/0293-multichannel-after-launch-one.md).
+- **الخارطة المشتركة:** Revision 2 من [`docs/ecosystem/ECOSYSTEM_ROADMAP.md`](docs/ecosystem/ECOSYSTEM_ROADMAP.md) — المرحلة `XR-8` وقرارات المالك `OD-XR-1..9`.
+- **حصة MOVE (`WR-29`):** «وصلة كابتن» على تيليجرام وديسكورد والمتصفح وAndroid وiOS، ونشر عقد المشوار لتطبيق «وصلة»، وطلب الانضمام سائقًا من حساب CORE. كلها بعد `XR-2.1`.
+- **ما تغيّرَ في هذا الدفع:** وثائق فقط. لا شيفرةَ تطبيقٍ ولا هجرةَ ولا نشر.
