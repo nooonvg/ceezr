@@ -9573,6 +9573,6 @@ SHA متميِّزة. هذا هو أولُها (`7d9a7d6`).
 ## Shared roadmap Revision 3, recorded 2026-10-21 — measured status (no decision, no item text changed)
 
 - **الخارطة المشتركة:** Revision 3 من [`docs/ecosystem/ECOSYSTEM_ROADMAP.md`](docs/ecosystem/ECOSYSTEM_ROADMAP.md) — قسم §9 جديد لحالة التنفيذ المقيسة بأدلتها المدموجة.
-- **ما يخص MOVE:** `XR-3.2` (`B-42` في CORE) أُغلق في wasla-core PR #3: اعتماد الخدمة يُصدر جلسات على قنواته المعلنة فقط (`bootstrap:credential --issue-for`)، ولا يُصدر لخدمة أخرى. شرط `WR-28` الباقي من CORE هو `XR-3.1` (بيئة CORE).
+- **ما يخص MOVE:** `XR-3.2` (حاجزُ CORE لنطاق `session.issue`) أُغلق في wasla-core PR #3: اعتماد الخدمة يُصدر جلسات على قنواته المعلنة فقط (`bootstrap:credential --issue-for`)، ولا يُصدر لخدمة أخرى. شرط `WR-28` الباقي من CORE هو `XR-3.1` (بيئة CORE).
 - **ما تغيّرَ في هذا الدفع:** وثائق فقط. لا شيفرةَ تطبيقٍ ولا هجرةَ ولا نشر.
 
