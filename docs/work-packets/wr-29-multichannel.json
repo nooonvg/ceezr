@@ -1,0 +1,24 @@
+{
+  "id": "wr-29-multichannel",
+  "goal": "WR-29 / XR-8: الخارطة المشتركة Revision 2 — حساب CORE واحد بأدوار تُضاف وثلاثة تطبيقات على تيليجرام وديسكورد والمتصفح وAndroid وiOS؛ حصة MOVE «وصلة كابتن» بعد XR-2.1، وDEC-07 باقٍ للإطلاق الأول.",
+  "canonical_source": [
+    "docs/decisions/DEC-27-20261021-multichannel-one-account.md",
+    "docs/adr/0293-multichannel-after-launch-one.md"
+  ],
+  "implementation": ["docs/ecosystem/ECOSYSTEM_ROADMAP.md"],
+  "state": ["docs/SYSTEM_STATE.md"],
+  "roadmap": ["ROADMAP.md"],
+  "affected_docs": [
+    "AGENTS.md",
+    "docs/adr/0293-multichannel-after-launch-one.md",
+    "docs/decisions/DEC-27-20261021-multichannel-one-account.md",
+    "docs/ecosystem/ECOSYSTEM_ROADMAP.md",
+    "docs/roadmap/execution/STATUS.md",
+    "docs/SYSTEM_STATE.md",
+    "ROADMAP.md"
+  ],
+  "decision": "DEC-27 · ADR 0293",
+  "tests": ["docs/ecosystem/check-ecosystem-sync.mjs --offline"],
+  "constraints": ["لا شيفرة تطبيق", "لا هجرة", "لا نشر", "DEC-07 وPRD-010 باقيان"],
+  "limitations": "الخارطة تقرأ وثائق رسمية لـCapacitor وDiscord وTelegram Login وApple دون تجربتها في الشيفرة."
+}
