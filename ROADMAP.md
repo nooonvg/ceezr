@@ -9569,3 +9569,10 @@ SHA متميِّزة. هذا هو أولُها (`7d9a7d6`).
 - **الخارطة المشتركة:** Revision 2 من [`docs/ecosystem/ECOSYSTEM_ROADMAP.md`](docs/ecosystem/ECOSYSTEM_ROADMAP.md) — المرحلة `XR-8` وقرارات المالك `OD-XR-1..9`.
 - **حصة MOVE (`WR-29`):** «وصلة كابتن» على تيليجرام وديسكورد والمتصفح وAndroid وiOS، ونشر عقد المشوار لتطبيق «وصلة»، وطلب الانضمام سائقًا من حساب CORE. كلها بعد `XR-2.1`.
 - **ما تغيّرَ في هذا الدفع:** وثائق فقط. لا شيفرةَ تطبيقٍ ولا هجرةَ ولا نشر.
+
+## Shared roadmap Revision 3, recorded 2026-10-21 — measured status (no decision, no item text changed)
+
+- **الخارطة المشتركة:** Revision 3 من [`docs/ecosystem/ECOSYSTEM_ROADMAP.md`](docs/ecosystem/ECOSYSTEM_ROADMAP.md) — قسم §9 جديد لحالة التنفيذ المقيسة بأدلتها المدموجة.
+- **ما يخص MOVE:** `XR-3.2` (حاجزُ CORE لنطاق `session.issue`) أُغلق في wasla-core PR #3: اعتماد الخدمة يُصدر جلسات على قنواته المعلنة فقط (`bootstrap:credential --issue-for`)، ولا يُصدر لخدمة أخرى. شرط `WR-28` الباقي من CORE هو `XR-3.1` (بيئة CORE).
+- **ما تغيّرَ في هذا الدفع:** وثائق فقط. لا شيفرةَ تطبيقٍ ولا هجرةَ ولا نشر.
+
