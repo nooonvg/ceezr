@@ -1,7 +1,10 @@
 {
   "id": "wr-28-ecosystem-roadmap",
   "goal": "WR-28 / XR-0: خارطة منظومة وَصْلة المشتركة (Revision 1) بنسخة مطابقة في المستودعات الثلاثة، وفحص تطابقها، وقرار DEC-26 وADR 0292 بتقييد O-7 لا إلغائه.",
-  "canonical_source": ["docs/decisions/DEC-26-20261021-ecosystem-roadmap.md", "docs/adr/0292-ecosystem-roadmap-qualifies-o7.md"],
+  "canonical_source": [
+    "docs/decisions/DEC-26-20261021-ecosystem-roadmap.md",
+    "docs/adr/0292-ecosystem-roadmap-qualifies-o7.md"
+  ],
   "implementation": [
     ".github/workflows/ecosystem-sync.yml",
     "docs/ecosystem/check-ecosystem-sync.mjs"
